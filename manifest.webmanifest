@@ -1,0 +1,57 @@
+{
+  "name": "Grilln Chill – Halal Burger Bielefeld",
+  "short_name": "Grilln Chill",
+  "description": "Frische, 100 % Halal Burger & Streetfood aus Bielefeld-Brackwede. Direkt bestellen, liefern lassen oder abholen.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0A0A",
+  "theme_color": "#0A0A0A",
+  "lang": "de",
+  "dir": "ltr",
+  "categories": [
+    "food",
+    "shopping",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Jetzt bestellen",
+      "short_name": "Bestellen",
+      "description": "Direkt zur Speisekarte",
+      "url": "/?source=pwa#menu"
+    },
+    {
+      "name": "Catering anfragen",
+      "short_name": "Catering",
+      "url": "/?source=pwa#catering"
+    }
+  ],
+  "id": "/",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "prefer_related_applications": false
+}

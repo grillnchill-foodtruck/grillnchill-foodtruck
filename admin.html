@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/admin.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GNC Admin">
+<meta name="robots" content="noindex, nofollow">
+<title>Grill'n Chill · Admin</title>
+<link rel="icon" href="logo.png">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/bowlby-one-latin-400-normal.woff2" crossorigin>
+<style>
+  /* Selbst gehostete Schrift (DSGVO-sauber, wie auf der Hauptseite – kein Google-Roundtrip) */
+  @font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+  :root{
+    --bg:#0C0B09; --card:#17140F; --card2:#1D1913; --border:#2E2820; --border-hi:#4A3E30;
+    --cream:#F5E9D0; --dim:#A2957D; --faint:#8B7E68;
+    --ember:#E85A24; --ember-hi:#FF7A3D; --ember-solid:#CC4715;
+    --live:#6DBE45; --amber:#FFB020; --red:#E04848;
+    --r-sm:10px; --r-md:14px; --r-lg:18px;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg);color:var(--cream);line-height:1.5;
+    padding-bottom:calc(env(safe-area-inset-bottom) + 96px);
+  }
+  .display{font-family:'Bowlby One',cursive;font-weight:400;letter-spacing:.01em}
+  .wrap{max-width:560px;margin:0 auto;padding:0 1.1rem}
+  button{font-family:inherit}
+  :focus-visible{outline:2px solid var(--ember);outline-offset:2px;border-radius:4px}
+  .hidden{display:none!important}
+
+  /* ================= HEADER ================= */
+  .hdr{
+    position:sticky;top:0;z-index:40;
+    background:rgba(12,11,9,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+    padding-top:env(safe-area-inset-top);
+  }
+  .hdr-inner{max-width:560px;margin:0 auto;padding:.7rem 1.1rem;display:flex;align-items:center;gap:.7rem}
+  .hdr img{width:34px;height:34px;border-radius:9px;flex:none}
+  .hdr .brand{flex:1;min-width:0}
+  .hdr .brand .display{font-size:.95rem;line-height:1.1}
+  .hdr .brand small{display:block;color:var(--faint);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+  .icon-btn{
+    width:44px;height:44px;border-radius:10px;border:1px solid var(--border);
+    background:var(--card);color:var(--dim);display:grid;place-items:center;cursor:pointer;flex:none;
+  }
+  .icon-btn:active{transform:scale(.94)}
+  .icon-btn svg{width:17px;height:17px}
+  .icon-btn.spin svg{animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ============ STATUS-TICKET (Signature) ============ */
+  .ticket{margin:1rem 0 0}
+  .ticket-inner{
+    position:relative;border-radius:var(--r-md) var(--r-md) 0 0;
+    background:linear-gradient(180deg,var(--card2),var(--card));
+    border:1px solid var(--border);border-bottom:none;
+    padding:.95rem 1.15rem .9rem;display:flex;align-items:center;gap:.85rem;
+  }
+  .ticket-perf{
+    height:14px;border:1px solid var(--border);border-top:none;
+    border-radius:0 0 var(--r-md) var(--r-md);
+    background:
+      radial-gradient(circle at 8px -2px, var(--bg) 5px, transparent 5.5px) left top/16px 100% repeat-x,
+      var(--card);
+  }
+  .dot{width:12px;height:12px;border-radius:50%;flex:none;position:relative}
+  .dot::after{content:"";position:absolute;inset:-5px;border-radius:50%;opacity:.35}
+  .live .dot{background:var(--live)} .live .dot::after{background:var(--live);animation:pulse 2.2s ease-out infinite}
+  .paused .dot{background:var(--amber)} .paused .dot::after{background:var(--amber);animation:pulse 1.4s ease-out infinite}
+  @keyframes pulse{0%{transform:scale(.6);opacity:.45}70%{transform:scale(1.5);opacity:0}100%{opacity:0}}
+  .ticket .state{flex:1;min-width:0}
+  .ticket .state .display{font-size:1.28rem;line-height:1.05}
+  .live  .state .display{color:var(--cream)}
+  .paused .state .display{color:var(--amber)}
+  .ticket .state small{color:var(--dim);font-size:.78rem;display:block;margin-top:.1rem}
+  .ticket .stamp{
+    font-family:var(--mono);font-size:.66rem;color:var(--faint);text-align:right;line-height:1.5;flex:none;
+  }
+
+  /* ================= TABS ================= */
+  .tabs{
+    position:sticky;top:calc(env(safe-area-inset-top) + 55px);z-index:39;
+    background:rgba(12,11,9,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    padding:.7rem 0 .8rem;
+  }
+  .tabs-inner{max-width:560px;margin:0 auto;padding:0 1.1rem;display:flex;gap:.5rem;
+    flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;
+    scrollbar-width:none;scroll-snap-type:x proximity;scroll-padding-inline:1.1rem;padding-bottom:2px}
+  .tabs-inner::-webkit-scrollbar{display:none}
+  .tabs-inner .tab{flex:none;white-space:nowrap;scroll-snap-align:start}
+  .tab{
+    flex:1;padding:.62rem .5rem;min-height:44px;border-radius:999px;border:1px solid var(--border);
+    background:var(--card);color:var(--dim);font-weight:700;font-size:.88rem;cursor:pointer;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .tab[aria-selected="true"]{background:var(--ember-solid);border-color:var(--ember-solid);color:#fff}
+  .tab:active{transform:scale(.97)}
+
+  /* ================= CARDS & FORMS ================= */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.15rem;margin-bottom:1rem}
+  .card h2{font-size:.98rem;margin:0 0 .15rem}
+  .card .hint{color:var(--dim);font-size:.8rem;margin:0}
+  .sec{display:flex;align-items:baseline;justify-content:space-between;margin:1.35rem 0 .55rem}
+  .sec h3{font-size:.74rem;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin:0;font-weight:800}
+  .sec .count{font-family:var(--mono);font-size:.72rem;color:var(--faint)}
+  .sec .count.warn{color:var(--red);font-weight:700}
+  label{display:block;font-weight:600;font-size:.86rem;margin:0 0 .4rem}
+  input[type=password],input[type=text],input[type=number],input[type=date],input[type=search],input[type=tel],input[type=email],textarea,select{
+    width:100%;padding:.8rem .95rem;background:#0E0C0A;border:1px solid var(--border);
+    border-radius:var(--r-sm);color:var(--cream);font-size:1rem;font-family:inherit;
+  }
+  select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--dim) 50%),linear-gradient(135deg,var(--dim) 50%,transparent 50%);background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--ember)}
+  input[type=date],input[type=number],input[type=search]{color-scheme:dark}
+  textarea{min-height:72px;resize:vertical}
+  .field{margin-bottom:.95rem}
+  .field:last-child{margin-bottom:0}
+  .counter{font-family:var(--mono);font-size:.68rem;color:var(--faint);text-align:right;margin-top:.3rem}
+
+  .btn{
+    display:block;width:100%;padding:.95rem;border:none;border-radius:12px;
+    background:var(--ember-solid);color:#fff;font-size:1rem;font-weight:800;cursor:pointer;
+    transition:transform .1s,filter .15s;
+  }
+  .btn:hover{filter:brightness(1.08)}
+  .btn:active{transform:translateY(1px) scale(.995)}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn.confirm{background:var(--amber);color:#221A00}
+  .btn-ghost{background:none;border:1px solid var(--border);color:var(--dim);padding:.55rem .9rem;min-height:44px;font-size:.82rem;font-weight:700;border-radius:10px;width:auto;cursor:pointer}
+  button,input,select,textarea{touch-action:manipulation}
+  /* Catering-Anfragen: Links im Theme, lange Adressen sauber umbrechen, innere Karten abgesetzt */
+  #cateringOut .card{background:var(--card2)}
+  #cateringOut a{color:var(--ember-hi);text-decoration:none;word-break:break-all}
+  #cateringOut a:active{opacity:.7}
+
+  /* ================= PAUSE ================= */
+  .pause-card{transition:border-color .25s,box-shadow .25s}
+  .pause-card.on{border-color:rgba(255,176,32,.55);box-shadow:0 0 26px rgba(255,176,32,.09)}
+  .switch-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+  .switch{position:relative;width:58px;height:33px;flex:none}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .slider{position:absolute;inset:0;background:#3B342B;border-radius:999px;transition:.2s;cursor:pointer}
+  .slider::before{content:"";position:absolute;width:25px;height:25px;left:4px;top:4px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .switch input:checked + .slider{background:var(--amber)}
+  .switch input:checked + .slider::before{transform:translateX(25px)}
+  #pauseMsgWrap{margin-top:1rem;display:none}
+  .pause-card.on #pauseMsgWrap{display:block}
+
+  /* ============ AUSVERKAUFT: CHIPS ============ */
+  .chip-grid{display:flex;flex-wrap:wrap;gap:.5rem}
+  .chip{
+    padding:.5rem .8rem;border-radius:999px;border:1px solid var(--border);
+    background:var(--card2);color:var(--cream);font-size:.85rem;font-weight:600;cursor:pointer;
+    transition:all .13s;user-select:none;-webkit-user-select:none;
+  }
+  .chip:active{transform:scale(.95)}
+  .chip[aria-pressed="true"]{
+    background:rgba(232,90,36,.16);border-color:var(--ember-hi);color:var(--ember-hi);
+  }
+  /* Nur pausierte Artikel: aktiv = ausverkauft = rot durchgestrichen */
+  #itemsCard .chip[aria-pressed="true"]{
+    background:rgba(224,72,72,.14);border-color:var(--red);color:var(--red);
+    text-decoration:line-through;text-decoration-thickness:1.5px;
+  }
+  .grp{margin-bottom:1rem}
+  .grp:last-child{margin-bottom:0}
+  .grp-title{font-size:.78rem;font-weight:800;color:var(--dim);margin:0 0 .5rem;display:flex;justify-content:space-between;align-items:baseline}
+  .grp-title .n{font-family:var(--mono);font-size:.68rem;color:var(--red);opacity:0;transition:.15s}
+  .grp-title .n.show{opacity:1}
+
+  /* ============ SPECIAL PREVIEW ============ */
+  .preview{
+    margin-top:.9rem;padding:.7rem .9rem;border:1px dashed var(--border-hi);border-radius:var(--r-sm);
+    display:none;
+  }
+  .preview.show{display:block}
+  .preview .eyebrow{font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ember-hi);font-weight:800}
+  .preview .pname{font-size:.95rem;font-weight:700;margin-top:.1rem}
+  .preview .pnote{font-size:.78rem;color:var(--dim)}
+
+  /* ============ TEMPLATES / RESULT-CHIPS ============ */
+  .tpl-row{display:flex;flex-wrap:wrap;gap:.45rem;margin-bottom:1rem}
+  .tpl{padding:.42rem .75rem;border-radius:999px;border:1px solid var(--border);background:none;color:var(--dim);font-size:.78rem;font-weight:600;cursor:pointer}
+  .tpl:active{transform:scale(.95)}
+  .stat-chips{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.85rem}
+  .schip{font-family:var(--mono);font-size:.72rem;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:.35rem .6rem}
+  .schip b{color:var(--cream);font-weight:700}
+
+  /* ================= ZAHLEN ================= */
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-bottom:1rem}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:.85rem .7rem;text-align:center}
+  .kpi .v{font-family:var(--mono);font-size:1.35rem;font-weight:700;color:var(--ember-hi);line-height:1.1}
+  .kpi .l{font-size:.66rem;color:var(--dim);margin-top:.25rem;letter-spacing:.04em;text-transform:uppercase;font-weight:700}
+  .table-wrap{overflow-x:auto;margin:0 -1.15rem;padding:0 1.15rem}
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.74rem;white-space:nowrap}
+  th{color:var(--faint);font-weight:700;text-align:right;padding:.4rem .5rem;border-bottom:1px solid var(--border);font-size:.64rem;letter-spacing:.04em}
+  th:first-child{text-align:left}
+  td{padding:.42rem .5rem;border-bottom:1px solid #201B14;text-align:right;color:var(--dim)}
+  td:first-child{text-align:left;color:var(--cream)}
+  tr.today td{color:var(--cream);background:rgba(232,90,36,.06)}
+  tr.today td:first-child{color:var(--ember-hi);font-weight:700}
+  .empty{color:var(--faint);font-size:.85rem;text-align:center;padding:1.2rem 0}
+
+  /* ============ SAVEBAR & TOAST ============ */
+  .savebar{
+    position:fixed;left:0;right:0;bottom:0;z-index:45;
+    padding:.8rem 1.1rem calc(.8rem + env(safe-area-inset-bottom));
+    background:rgba(12,11,9,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border-top:1px solid var(--border);
+    transform:translateY(110%);transition:transform .28s cubic-bezier(.22,.61,.36,1);
+  }
+  .savebar.show{transform:translateY(0)}
+  .savebar .inner{max-width:560px;margin:0 auto;display:flex;gap:.6rem;align-items:center}
+  .savebar .note{flex:1;font-size:.78rem;color:var(--amber);font-weight:700}
+  .savebar .btn{flex:1.4}
+  .toast{
+    position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));z-index:60;
+    transform:translateX(-50%) translateY(24px);opacity:0;pointer-events:none;
+    background:var(--card2);border:1px solid var(--border);border-radius:12px;
+    padding:.75rem 1.15rem;font-weight:700;font-size:.9rem;transition:.25s;max-width:88vw;text-align:center;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .toast.ok{border-color:var(--live);color:var(--live)}
+  .toast.err{border-color:var(--red);color:var(--red)}
+
+  /* ================= LOGIN ================= */
+  .login{min-height:100dvh;display:grid;place-items:center;padding:1.5rem}
+  .login-card{
+    width:100%;max-width:380px;background:var(--card);border:1px solid var(--border);
+    border-radius:var(--r-lg);padding:2rem 1.6rem;text-align:center;
+    box-shadow:0 0 60px rgba(232,90,36,.08);
+  }
+  .login-card img{width:76px;height:76px;border-radius:18px;margin-bottom:.9rem}
+  .login-card .display{font-size:1.25rem}
+  .login-card .sub{color:var(--dim);font-size:.82rem;margin:.2rem 0 1.4rem}
+  .pw-row{position:relative}
+  .pw-row input{padding-right:3rem}
+  .stay-row{display:flex;align-items:flex-start;gap:.6rem;margin:.75rem 0 0;text-align:left;cursor:pointer;color:var(--dim);font-size:.84rem;line-height:1.35;font-weight:600}
+  .stay-row input[type=checkbox]{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:var(--ember);cursor:pointer}
+  .stay-row span small{display:block;color:var(--faint);font-size:.74rem;font-weight:400}
+  .pw-eye{position:absolute;right:.4rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--faint);cursor:pointer;padding:.5rem}
+  .pw-eye svg{width:18px;height:18px}
+  .shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+
+  /* ============ BESTELLUNGEN ============ */
+  .ord{border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:.55rem;overflow:hidden;background:var(--card2)}
+  .ord-head{display:flex;align-items:center;gap:.6rem;padding:.7rem .8rem;cursor:pointer;user-select:none;-webkit-user-select:none}
+  .ord-head:active{background:rgba(255,255,255,.02)}
+  .ord-when{font-family:var(--mono);font-size:.68rem;color:var(--faint);line-height:1.35;flex:none;width:52px}
+  .ord-main{flex:1;min-width:0}
+  .ord-name{font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ord-ref{font-family:var(--mono);font-size:.66rem;color:var(--faint)}
+  .ord-sum{font-family:var(--mono);font-weight:700;font-size:.92rem;color:var(--ember-hi);flex:none}
+  .badges{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.2rem}
+  .bdg{font-size:.6rem;font-weight:800;letter-spacing:.05em;padding:.14rem .42rem;border-radius:6px;border:1px solid var(--border);color:var(--dim);text-transform:uppercase}
+  .bdg.delivery{color:var(--ember-hi);border-color:rgba(232,90,36,.4)}
+  .bdg.pre{color:var(--amber);border-color:rgba(255,176,32,.4)}
+  .bdg.pending{color:var(--amber);border-color:rgba(255,176,32,.5);background:rgba(255,176,32,.08)}
+  .bdg.abandoned{color:var(--faint);text-decoration:line-through}
+  .bdg.refund{color:#8FB7E8;border-color:rgba(143,183,232,.45)}
+  .ord-actions{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.7rem;padding-top:.7rem;border-top:1px solid #201B14}
+  .abtn{flex:1;min-width:120px;padding:.55rem .6rem;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--cream);font-size:.76rem;font-weight:700;cursor:pointer}
+  .abtn:active{transform:scale(.97)}
+  .abtn[disabled]{opacity:.5;cursor:wait}
+  .abtn.primary{background:var(--ember-solid);border-color:var(--ember-solid);color:#fff}
+  .abtn.danger{color:#8FB7E8;border-color:rgba(143,183,232,.45)}
+  .bdg.online{color:var(--live);border-color:rgba(109,190,69,.4)}
+  .ord-body{display:none;border-top:1px dashed var(--border);padding:.75rem .85rem;font-size:.83rem}
+  .ord.open .ord-body{display:block}
+  .ord-items{margin:0 0 .6rem;padding:0;list-style:none}
+  .ord-items li{display:flex;justify-content:space-between;gap:.8rem;padding:.28rem 0;border-bottom:1px solid #201B14}
+  .ord-items li:last-child{border-bottom:none}
+  .ord-items .q{font-family:var(--mono);color:var(--ember-hi);flex:none}
+  .ord-items .nm{flex:1;color:var(--cream)}
+  .ord-items .pr{font-family:var(--mono);color:var(--dim);flex:none}
+  .ord-meta{color:var(--dim);font-size:.78rem;line-height:1.7}
+  .ord-meta b{color:var(--cream)}
+
+  .team-row{display:flex;align-items:center;justify-content:space-between;gap:.7rem;
+    padding:.8rem 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .team-row>div:last-child{display:flex;gap:.45rem;flex-wrap:wrap;row-gap:.45rem;flex:1 1 100%;justify-content:flex-start}
+  @media (min-width:560px){ .team-row>div:last-child{flex:0 1 auto;justify-content:flex-end} }
+  .team-row .btn-ghost{flex:none;white-space:nowrap}
+  .team-row:last-child{border-bottom:none}
+  .team-row .tn{font-weight:700}
+  .team-row small{color:var(--faint);font-family:var(--mono);font-size:.66rem;display:block}
+  .tabpane{animation:fadein .22s ease-out}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+  }
+.copy-mini{background:none;border:none;color:var(--ember-hi);cursor:pointer;font-size:.85rem;padding:0 .1rem;vertical-align:middle;line-height:1}
+.copy-mini:hover{color:var(--cream)}
+</style>
+</head>
+<body>
+<div id="toast" class="toast" role="status"></div>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginView" class="login">
+  <div class="login-card" id="loginCard">
+    <img src="logo.png" alt="">
+    <div class="display">GRILL'N CHILL</div>
+    <p class="sub">Admin · Laden, Push &amp; Zahlen</p>
+    <div class="pw-row">
+      <input type="password" id="pw" autocomplete="current-password" placeholder="Passwort" aria-label="Passwort">
+      <button class="pw-eye" id="pwEye" type="button" aria-label="Passwort anzeigen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <label class="stay-row">
+      <input type="checkbox" id="pwStay">
+      <span>Angemeldet bleiben<small>30 Tage · nur auf diesem Gerät</small></span>
+    </label>
+    <div style="height:.9rem"></div>
+    <button class="btn" id="unlockBtn">Entsperren</button>
+  </div>
+</div>
+
+<!-- ================= PANEL ================= -->
+<div id="panelView" class="hidden">
+  <header class="hdr">
+    <div class="hdr-inner">
+      <img src="logo.png" alt="">
+      <div class="brand">
+        <div class="display">ADMIN</div>
+        <small>Grill'n Chill · Bielefeld</small>
+      </div>
+      <button class="icon-btn" id="refreshBtn" aria-label="Status neu laden" title="Neu laden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <button class="icon-btn" id="logoutBtn" aria-label="Abmelden" title="Abmelden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- Status-Ticket -->
+    <div class="ticket live" id="ticket">
+      <div class="ticket-inner">
+        <span class="dot"></span>
+        <div class="state">
+          <div class="display" id="ticketState">ONLINE</div>
+          <small id="ticketSub">Der Grill nimmt Bestellungen an.</small>
+        </div>
+        <div class="stamp" id="ticketStamp">—</div>
+      </div>
+      <div class="ticket-perf" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <nav class="tabs" aria-label="Bereiche">
+    <div class="tabs-inner" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="today" id="tabToday">Heute</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="orders">Bestellungen</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="catering">Catering</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="push" id="tabPush">Push</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="vouchers" id="tabVouchers">Gutscheine</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="scan" id="tabScan">Scan</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="stats" id="tabStats">Zahlen</button>
+      <button class="tab hidden" role="tab" aria-selected="false" data-tab="team" id="tabTeam">Team</button>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <!-- ============ TAB: HEUTE ============ -->
+    <section class="tabpane" id="pane-today" role="tabpanel">
+      <div class="card pause-card" id="pauseCard">
+        <div class="switch-row">
+          <div>
+            <h2>Bestellungen pausieren</h2>
+            <p class="hint">Stoppt neue Online-Bestellungen. Ab Mitternacht automatisch wieder online.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="pausedToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="pauseMsgWrap">
+          <label for="pauseMsg">Hinweis für Kunden (optional)</label>
+          <textarea id="pauseMsg" maxlength="200" placeholder="z. B. Heute geschlossen – morgen wieder ab 17 Uhr!"></textarea>
+        </div>
+      </div>
+
+      <div class="sec"><h3>Live-Wartezeit</h3></div>
+      <div class="card">
+        <p class="hint" style="margin-bottom:.8rem;">Wird Kunden auf der Website angezeigt („Aktuelle Wartezeit: ca. X Min."). Bei viel Betrieb hochsetzen – ab Mitternacht automatisch wieder aus.</p>
+        <div class="chip-grid" id="waitChips">
+          <button type="button" class="chip" data-wait="0" aria-pressed="true">Aus</button>
+          <button type="button" class="chip" data-wait="10" aria-pressed="false">~10 Min</button>
+          <button type="button" class="chip" data-wait="15" aria-pressed="false">~15 Min</button>
+          <button type="button" class="chip" data-wait="20" aria-pressed="false">~20 Min</button>
+          <button type="button" class="chip" data-wait="30" aria-pressed="false">~30 Min</button>
+          <button type="button" class="chip" data-wait="45" aria-pressed="false">~45 Min</button>
+          <button type="button" class="chip" data-wait="60" aria-pressed="false">~60 Min</button>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>Ausverkauft heute</h3>
+        <span class="count" id="soCount">0 markiert</span>
+      </div>
+      <div class="card" id="itemsCard"><!-- Chips per JS --></div>
+      <p class="hint" style="margin:-.35rem 0 1.2rem;color:var(--faint);font-size:.75rem;">
+        Antippen = ausverkauft. Ab Mitternacht ist automatisch alles wieder bestellbar.
+      </p>
+
+      <div class="sec"><h3>Special der Woche</h3></div>
+      <div class="card">
+        <div class="field">
+          <label for="specialSelect">Produkt</label>
+          <select id="specialSelect">
+            <option value="">Kein Special</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="specialNote">Hinweiszeile (optional)</label>
+          <textarea id="specialNote" maxlength="120" placeholder="Nur für kurze Zeit"></textarea>
+        </div>
+        <div class="preview" id="specialPreview">
+          <div class="eyebrow">Special der Woche</div>
+          <div class="pname" id="pvName"></div>
+          <div class="pnote" id="pvNote"></div>
+        </div>
+        <p class="hint" style="margin-top:.7rem;">Erscheint als erster Slide im Best-of-Karussell. Bleibt bestehen, bis du es hier änderst.</p>
+      </div>
+    </section>
+
+    <!-- ============ TAB: BESTELLUNGEN ============ -->
+    <section class="tabpane hidden" id="pane-orders" role="tabpanel">
+      <div class="card">
+        <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.8rem;">
+          <input type="text" id="ordSearch" placeholder="Suche: Nr., Name, Telefon" style="flex:1" inputmode="search">
+          <button class="icon-btn" id="ordReload" aria-label="Neu laden" title="Neu laden">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          </button>
+          <button class="btn-ghost" id="ordCsv">CSV</button>
+        </div>
+        <div id="ordFilters" style="display:flex;gap:.45rem;flex-wrap:wrap;margin:.7rem 0 .9rem;"></div>
+        <div id="ordersOut"><p class="empty">Bestellungen werden geladen …</p></div>
+        <p class="hint" style="margin-top:.7rem;">Letzte 30 Tage · Aufbewahrung 90 Tage · aktualisiert sich automatisch alle 5 Minuten. <span id="ordUpdated" style="font-family:var(--mono);color:var(--faint);"></span></p>
+      </div>
+    </section>
+
+    <!-- ============ TAB: CATERING ============ -->
+    <section class="tabpane hidden" id="pane-catering" role="tabpanel">
+      <div class="card">
+        <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.8rem;">
+          <h2 style="flex:1;margin:0;">Catering-Anfragen</h2>
+          <button class="icon-btn" id="catReload" aria-label="Neu laden" title="Neu laden">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          </button>
+        </div>
+        <div id="cateringOut"><p class="empty">Anfragen werden geladen …</p></div>
+        <p class="hint" style="margin-top:.7rem;">Jede Formular-Anfrage wird hier zusätzlich zur E-Mail gespeichert – auch wenn der Mail-Versand mal ausfällt. Aufbewahrung 12 Monate.<br>✉︎ = E-Mail versendet · ⚠︎ = nur hier gespeichert</p>
+      </div>
+    </section>
+
+    <!-- ============ TAB: PUSH ============ -->
+    <section class="tabpane hidden" id="pane-push" role="tabpanel">
+      <div class="card">
+        <h2>Bestell-Alarm auf diesem Gerät</h2>
+        <p class="hint" style="margin-bottom:.9rem;">Push-Benachrichtigung an dich, sobald eine neue Bestellung eingeht – mit Nummer, Name, Summe und Modus. Ein Tipp öffnet direkt die Bestellliste.</p>
+        <button class="btn" id="alertBtn">Bestell-Alarm aktivieren</button>
+        <p class="hint" id="alertState" style="margin-top:.6rem;"></p>
+      </div>
+      <div class="card">
+        <h2>Nachricht an alle Abonnenten</h2>
+        <p class="hint" style="margin-bottom:1rem;">Erscheint als Benachrichtigung auf Handy &amp; Desktop. Faustregel: höchstens 1–2 pro Woche.</p>
+        <div class="tpl-row" id="tplRow">
+          <button class="tpl" type="button" data-t="Der Grill ist heiß" data-b="Ab jetzt frisch für dich am Start – bestell dir dein Mittagessen online.">Grill ist heiß</button>
+          <button class="tpl" type="button" data-t="Special der Woche" data-b="Diese Woche neu im Best-of: Jetzt probieren, solange es da ist.">Special der Woche</button>
+          <button class="tpl" type="button" data-t="Wochenende bei Grilln Chill" data-b="Freitag und Samstag bis 20:30 Uhr für euch da – Abholung oder Lieferung.">Wochenende</button>
+          <button class="tpl" type="button" data-t="Regenwetter? Wir liefern!" data-b="Bleib trocken – wir bringen dir frische Burger bis an die Tür. Jetzt online bestellen.">Regentag</button>
+        </div>
+        <div class="field">
+          <label for="pushTitle">Titel</label>
+          <input type="text" id="pushTitle" maxlength="80" placeholder="Der Grill ist heiß">
+          <div class="counter"><span id="cntTitle">0</span>/80</div>
+        </div>
+        <div class="field">
+          <label for="pushBody">Nachricht</label>
+          <textarea id="pushBody" maxlength="200" placeholder="Heute Mittag: Special der Woche frisch vom Grill. Jetzt online bestellen."></textarea>
+          <div class="counter"><span id="cntBody">0</span>/200</div>
+        </div>
+        <button class="btn" id="pushSendBtn">An alle senden</button>
+        <div class="stat-chips" id="pushMeta"></div>
+      </div>
+    </section>
+
+    <!-- ============ TAB: GUTSCHEINE (nur Admin) ============ -->
+    <section class="tabpane hidden" id="pane-vouchers" role="tabpanel">
+      <div class="card">
+        <h2>Gutschein anlegen</h2>
+        <div class="field" style="margin-top:.9rem;">
+          <label for="vCode">Code</label>
+          <div style="display:flex;gap:.5rem;">
+            <input type="text" id="vCode" maxlength="20" placeholder="z. B. SOMMER10" style="flex:1;text-transform:uppercase;" autocomplete="off">
+            <button class="btn-ghost" id="vRandom" type="button">Zufällig</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Art des Rabatts</label>
+          <div class="chip-grid" id="vTypeChips">
+            <button type="button" class="chip" data-vtype="fixed" aria-pressed="true">Festbetrag (€)</button>
+            <button type="button" class="chip" data-vtype="percent" aria-pressed="false">Prozent (%)</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;">
+          <div class="field">
+            <label for="vValue" id="vValueLabel">Betrag in €</label>
+            <input type="number" id="vValue" min="0" step="0.5" placeholder="5">
+          </div>
+          <div class="field" id="vMaxWrap" style="display:none;">
+            <label for="vMax">Max. Rabatt in € <span style="color:var(--faint);font-weight:400;">(0 = ohne)</span></label>
+            <input type="number" id="vMax" min="0" step="0.5" placeholder="10">
+          </div>
+          <div class="field">
+            <label for="vMin">Mindestbestellwert €</label>
+            <input type="number" id="vMin" min="0" step="1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="vUses">Einlösungen max. <span style="color:var(--faint);font-weight:400;">(0 = ∞)</span></label>
+            <input type="number" id="vUses" min="0" step="1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="vFrom">Gültig ab</label>
+            <input type="date" id="vFrom">
+          </div>
+          <div class="field">
+            <label for="vTo">Gültig bis (einschl.)</label>
+            <input type="date" id="vTo">
+          </div>
+        </div>
+        <div class="field">
+          <label for="vMode">Gilt für</label>
+          <select id="vMode">
+            <option value="any">Abholung &amp; Lieferung</option>
+            <option value="pickup">Nur Abholung</option>
+            <option value="delivery">Nur Lieferung</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="vPerCust">Einlösungen pro Kunde <span style="color:var(--faint);font-weight:400;">(0 = unbegrenzt)</span></label>
+          <input type="number" id="vPerCust" min="0" max="50" step="1" value="1" placeholder="1">
+          <p class="hint" style="margin-top:.3rem;">Zuordnung über die E-Mail-Adresse der Bestellung.</p>
+        </div>
+        <div class="switch-row" style="margin-bottom:1rem;">
+          <div><h2 style="font-size:.9rem;">Kombinierbar</h2><p class="hint">Mit Aktionscode &amp; Treuebonus kombinierbar. Aus = Gutschein ersetzt andere Rabatte.</p></div>
+          <label class="switch"><input type="checkbox" id="vComb"><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label for="vNote">Interne Notiz <span style="color:var(--faint);font-weight:400;">(nur für euch)</span></label>
+          <input type="text" id="vNote" maxlength="120" placeholder="z. B. Flyer Gewerbegebiet Q3">
+        </div>
+        <button class="btn" id="vCreateBtn">Gutschein anlegen</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;">
+          <h2 style="margin:0">Gekaufte Gutscheine</h2>
+          <span class="hint" style="margin:0;">Verkäufe über /gutscheine</span>
+        </div>
+        <div id="vPurchases"><p class="empty">Noch keine Gutschein-Verkäufe.</p></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;">
+          <h2 style="margin:0">Aktive &amp; vergangene Gutscheine</h2>
+          <button class="btn-ghost" id="vReload">Neu laden</button>
+        </div>
+        <input type="search" id="vSearch" placeholder="Suche: Code, Notiz, Konto-E-Mail" oninput="renderVouchers()" style="width:100%;margin:.2rem 0 .6rem;padding:.6rem .8rem;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--cream);font-size:.9rem;">
+        <div id="vTypeFilter" style="display:flex;gap:.45rem;flex-wrap:wrap;margin:.2rem 0 .8rem;"></div>
+        <div id="vList"><p class="empty">Gutscheine werden geladen …</p></div>
+      </div>
+    </section>
+
+    <!-- ============ TAB: TEAM (nur Admin) ============ -->
+    <section class="tabpane hidden" id="pane-team" role="tabpanel">
+      <div class="card">
+        <h2>Team-Zugänge</h2>
+        <p class="hint" style="margin-bottom:1rem;">Jedes Team-Mitglied bekommt ein eigenes Passwort für dieses Admin-Tool. Mitarbeiter können: pausieren, Ausverkauft &amp; Special setzen und Bestellungen einsehen/abschließen. Nur du (Admin) siehst Push, Zahlen, Team und kannst Rückerstattungen markieren.</p>
+        <div id="teamList"><p class="empty">Team wird geladen …</p></div>
+      </div>
+      <div class="card">
+        <h2>Mitarbeiter anlegen</h2>
+        <div class="field">
+          <label for="tmName">Name</label>
+          <input type="text" id="tmName" maxlength="40" placeholder="z. B. Kutluay" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="tmPw">Passwort (mind. 6 Zeichen)</label>
+          <input type="text" id="tmPw" maxlength="60" placeholder="eigenes Passwort für diese Person" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="tmRole">Rolle</label>
+          <select id="tmRole">
+            <option value="staff">Mitarbeiter – Laden-Status &amp; Bestellungen</option>
+            <option value="admin">Admin – Vollzugriff (Push, Zahlen, Team, Rückerstattungen)</option>
+          </select>
+        </div>
+        <button class="btn" id="tmAddBtn">Zugang anlegen</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;">
+          <h2 style="margin:0">Protokoll</h2>
+          <button class="btn-ghost" id="logReload">Neu laden</button>
+        </div>
+        <p class="hint" style="margin-bottom:.7rem;">Wer hat wann was umgestellt – Status, Push, Bestellungen, Team. Letzte 14 Tage, Aufbewahrung 30 Tage.</p>
+        <div id="auditOut"><p class="empty">Protokoll wird geladen …</p></div>
+      </div>
+    </section>
+
+    <!-- Änderungs-Protokoll (Team-Tab, nur Admins) -->
+    <section class="tabpane hidden" id="pane-team-log-marker" style="display:none"></section>
+    <!-- ============ TAB: ZAHLEN ============ -->
+    <section class="tabpane hidden" id="pane-scan" role="tabpanel">
+      <div class="card">
+        <h2>Kundenkarte scannen</h2>
+        <p class="hint" style="margin-bottom:.7rem;">Kunde zeigt den QR-Code aus seinem Konto. Kamera erlauben, Code ins Bild halten.</p>
+        <div id="scanStage" style="position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:1/1;max-width:340px;margin:0 auto .8rem;">
+          <video id="scanVideo" playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
+          <div style="position:absolute;inset:12%;border:2px solid rgba(255,122,61,.85);border-radius:14px;pointer-events:none;"></div>
+        </div>
+        <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:.8rem;">
+          <button type="button" class="abtn" id="scanStart">Kamera starten</button>
+          <button type="button" class="abtn" id="scanStop" style="display:none;">Stopp</button>
+        </div>
+        <div style="display:flex;gap:.5rem;max-width:340px;margin:0 auto;">
+          <input type="text" id="scanManual" placeholder="Oder Code manuell: GNCQR:…" style="flex:1;">
+          <button type="button" class="abtn" id="scanManualGo">Öffnen</button>
+        </div>
+        <div id="scanResult" style="max-width:340px;margin:1rem auto 0;"></div>
+      </div>
+    </section>
+    <section class="tabpane hidden" id="pane-stats" role="tabpanel">
+      <div class="card" id="revCard">
+        <h2>Umsatzübersicht</h2>
+        <p class="hint" style="margin-bottom:.7rem;">Brutto-Umsatz abgeschlossener Vorgänge (Rückerstattungen nicht abgezogen).</p>
+        <div id="revRanges" style="display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.6rem;"></div>
+        <div id="revCustom" style="display:none;gap:.5rem;align-items:center;margin-bottom:.6rem;flex-wrap:wrap;">
+          <input type="date" id="revFrom"> <span style="color:var(--faint);">bis</span> <input type="date" id="revTo">
+          <button type="button" class="abtn" id="revGo">Anzeigen</button>
+        </div>
+        <div id="revFilters" style="display:flex;gap:.45rem;flex-wrap:wrap;margin-bottom:.9rem;"></div>
+        <div class="kpis" style="margin-bottom:.8rem;">
+          <div class="kpi"><div class="v" id="revTotal">–</div><div class="l">Umsatz</div></div>
+          <div class="kpi"><div class="v" id="revCount">–</div><div class="l">Vorgänge</div></div>
+          <div class="kpi"><div class="v" id="revAvg">–</div><div class="l">Ø je Vorgang</div></div>
+        </div>
+        <div id="revDays" style="max-height:260px;overflow:auto;"></div>
+      </div>
+      <div class="kpis" id="kpis">
+        <div class="kpi"><div class="v" id="kpiViews">–</div><div class="l">Aufrufe heute</div></div>
+        <div class="kpi"><div class="v" id="kpiOrders">–</div><div class="l">Bestellungen</div></div>
+        <div class="kpi"><div class="v" id="kpiConv">–</div><div class="l">Conversion</div></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;">
+          <h2 style="margin:0">Letzte 7 Tage</h2>
+          <button class="btn-ghost" id="statsBtn">Neu laden</button>
+        </div>
+        <div class="table-wrap" id="statsOut">
+          <p class="empty">Zahlen werden geladen …</p>
+        </div>
+        <p class="hint" style="margin-top:.7rem;">Anonym gezählt, ohne Cookies – keine Personendaten.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Speicher-Leiste: erscheint nur bei ungespeicherten Änderungen -->
+<div id="savebar" class="savebar">
+  <div class="inner">
+    <span class="note">Ungespeicherte Änderungen</span>
+    <button class="btn" id="saveBtn">Speichern</button>
+  </div>
+</div>
+
+<script>
+const API = '/shop-status';
+const PW_KEY = 'gnc_admin_pw';
+
+// Artikel (Quelle: MENU in index.html – bei Menü-Änderungen hier mitpflegen)
+const ITEMS = [
+  {id:"classic",cat:"burger",name:"Classic Burger"},
+  {id:"cheese",cat:"burger",name:"Cheeseburger"},
+  {id:"chilicheese",cat:"burger",name:"Chili-Cheese-Burger"},
+  {id:"whitebbq",cat:"burger",name:"White BBQ Burger"},
+  {id:"crispy",cat:"burger",name:"Crispy Chicken Burger"},
+  {id:"sucuk",cat:"burger",name:"Sucuk Burger"},
+  {id:"kubis",cat:"burger",name:"Kubis Special"},
+  {id:"classic-veg",cat:"burger",name:"Classic (Veggie/Vegan)"},
+  {id:"cheese-veg",cat:"burger",name:"Cheeseburger (Veggie/Vegan)"},
+  {id:"chilicheese-veg",cat:"burger",name:"Chili-Cheese (Veggie/Vegan)"},
+  {id:"whitebbq-veg",cat:"burger",name:"White BBQ (Veggie/Vegan)"},
+  {id:"nug6",cat:"sides",name:"6er Nuggets"},
+  {id:"nug9",cat:"sides",name:"9er Nuggets"},
+  {id:"nug20",cat:"sides",name:"20er Nuggets"},
+  {id:"pommes",cat:"sides",name:"Pommes"},
+  {id:"spommes",cat:"sides",name:"Süßkartoffelpommes"},
+  {id:"dip-mayo",cat:"dips",name:"Mayo"},
+  {id:"dip-ket",cat:"dips",name:"Ketchup"},
+  {id:"dip-mango",cat:"dips",name:"Mango-Curry"},
+  {id:"dip-sweetsour",cat:"dips",name:"Süß-Sauer"},
+  {id:"fritz-kola",cat:"drinks",name:"Fritz Kola"},
+  {id:"fritz-or",cat:"drinks",name:"Fritz Orange"},
+  {id:"fritz-zero",cat:"drinks",name:"Fritz Super Zero"},
+];
+const CAT_LABELS = {burger:"Burger",sides:"Beilagen",dips:"Dips",drinks:"Getränke"};
+
+const $ = (id) => document.getElementById(id);
+let currentPw = '';
+let currentRole = 'admin';
+let currentName = '';
+let dirty = false;
+let statsLoaded = false;
+let savedPaused = false;
+
+/* ---------------- Toast ---------------- */
+function toast(msg, kind){
+  const t=$('toast'); t.textContent=msg;
+  t.className='toast show '+(kind||'');
+  clearTimeout(t._t); t._t=setTimeout(()=>{t.className='toast '+(kind||'');},2600);
+}
+
+/* ---------------- Dirty-State ---------------- */
+function setDirty(on){
+  dirty = on;
+  $('savebar').classList.toggle('show', on);
+}
+
+/* ---------------- Status-Ticket ---------------- */
+let savedWait = 0;
+function paintTicket(paused, updatedAt, waitTime){
+  savedPaused = !!paused;
+  if (typeof waitTime !== 'undefined') savedWait = parseInt(waitTime,10)||0;
+  const tk=$('ticket');
+  tk.classList.toggle('paused', savedPaused);
+  tk.classList.toggle('live', !savedPaused);
+  $('ticketState').textContent = savedPaused ? 'PAUSIERT' : 'ONLINE';
+  $('ticketSub').textContent = savedPaused
+    ? 'Keine neuen Online-Bestellungen. Reset um Mitternacht.'
+    : ('Der Grill nimmt Bestellungen an.' + (savedWait ? ' · Wartezeit ~' + savedWait + ' Min' : ''));
+  $('ticketStamp').innerHTML = 'Stand<br>' + fmtDate(updatedAt);
+}
+function fmtDate(iso){
+  if(!iso) return '—';
+  try{
+    return new Date(iso).toLocaleString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  }catch(e){ return '—'; }
+}
+
+/* ---------------- Ausverkauft-Chips ---------------- */
+function renderItems(soldOut){
+  const set=new Set(soldOut||[]);
+  let html='';
+  ['burger','sides','dips','drinks'].forEach(cat=>{
+    const items=ITEMS.filter(i=>i.cat===cat);
+    if(!items.length) return;
+    html+=`<div class="grp"><div class="grp-title"><span>${CAT_LABELS[cat]}</span><span class="n" data-cat="${cat}"></span></div><div class="chip-grid">`;
+    items.forEach(i=>{
+      const on=set.has(i.id);
+      html+=`<button type="button" class="chip" data-id="${i.id}" data-cat="${cat}" aria-pressed="${on?'true':'false'}">${i.name}</button>`;
+    });
+    html+='</div></div>';
+  });
+  $('itemsCard').innerHTML=html;
+  updateSoldCounts();
+}
+function updateSoldCounts(){
+  const all=[...document.querySelectorAll('#itemsCard .chip[aria-pressed="true"]')];
+  const c=$('soCount');
+  c.textContent = all.length===0 ? 'alles verfügbar' : all.length+' markiert';
+  c.classList.toggle('warn', all.length>0);
+  ['burger','sides','dips','drinks'].forEach(cat=>{
+    const n=all.filter(ch=>ch.dataset.cat===cat).length;
+    const el=document.querySelector('.grp-title .n[data-cat="'+cat+'"]');
+    if(el){ el.textContent = n ? n+' ausverkauft' : ''; el.classList.toggle('show', n>0); }
+  });
+}
+document.addEventListener('click', (e)=>{
+  const wchip=e.target.closest('#waitChips .chip');
+  if(wchip){
+    document.querySelectorAll('#waitChips .chip').forEach(c=>c.setAttribute('aria-pressed', c===wchip?'true':'false'));
+    setDirty(true);
+    return;
+  }
+  const chip=e.target.closest('#itemsCard .chip');
+  if(!chip) return;
+  chip.setAttribute('aria-pressed', chip.getAttribute('aria-pressed')==='true' ? 'false' : 'true');
+  updateSoldCounts();
+  setDirty(true);
+});
+function collectSoldOut(){
+  return [...document.querySelectorAll('#itemsCard .chip[aria-pressed="true"]')].map(ch=>ch.dataset.id);
+}
+
+/* ---------------- Special-Vorschau ---------------- */
+function updatePreview(){
+  const id=$('specialSelect').value;
+  const box=$('specialPreview');
+  if(!id){ box.classList.remove('show'); return; }
+  const item=ITEMS.find(i=>i.id===id);
+  $('pvName').textContent = item ? item.name : id;
+  $('pvNote').textContent = $('specialNote').value.trim() || 'Nur für kurze Zeit';
+  box.classList.add('show');
+}
+
+/* ---------------- Laden ---------------- */
+async function loadStatus(){
+  const rb=$('refreshBtn'); rb.classList.add('spin');
+  try{
+    const res=await fetch(API,{cache:'no-store'});
+    const s=await res.json();
+    $('pausedToggle').checked=!!s.paused;
+    $('pauseCard').classList.toggle('on', !!s.paused);
+    $('pauseMsg').value=s.pauseMessage||'';
+    $('specialSelect').value=(s.special&&s.special.id)||'';
+    $('specialNote').value=(s.special&&s.special.note)||'';
+    const wt=parseInt(s.waitTime,10)||0;
+    document.querySelectorAll('#waitChips .chip').forEach(c=>c.setAttribute('aria-pressed', parseInt(c.dataset.wait,10)===wt?'true':'false'));
+    renderItems(s.soldOut||[]);
+    updatePreview();
+    paintTicket(s.paused, s.updatedAt, s.waitTime);
+    setDirty(false);
+    return true;
+  }catch(e){
+    toast('Status konnte nicht geladen werden','err');
+    renderItems([]);
+    return false;
+  }finally{
+    rb.classList.remove('spin');
+  }
+}
+
+/* ---------------- Speichern ---------------- */
+async function save(){
+  const btn=$('saveBtn'); btn.disabled=true; btn.textContent='Speichern …';
+  const payload={
+    password: currentPw,
+    paused: $('pausedToggle').checked,
+    pauseMessage: $('pauseMsg').value.trim(),
+    soldOut: collectSoldOut(),
+    waitTime: (()=>{ const c=document.querySelector('#waitChips .chip[aria-pressed="true"]'); return c?parseInt(c.dataset.wait,10)||0:0; })(),
+    special: $('specialSelect').value
+      ? { id: $('specialSelect').value, note: $('specialNote').value.trim() }
+      : null,
+  };
+  try{
+    const res=await fetch(API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload),
+    });
+    const data=await res.json().catch(()=>({}));
+    if(res.status===401){
+      toast('Falsches Passwort','err');
+      sessionStorage.removeItem(PW_KEY);
+      showLogin();
+      return;
+    }
+    if(!res.ok){
+      toast((data.error||'Speichern fehlgeschlagen')+(data.detail?(' – '+data.detail):''),'err');
+      return;
+    }
+    toast('Gespeichert','ok');
+    setDirty(false);
+    if(data.status) paintTicket(data.status.paused, data.status.updatedAt, data.status.waitTime);
+  }catch(e){
+    toast('Netzwerkfehler – bitte erneut versuchen','err');
+  }finally{
+    btn.disabled=false; btn.textContent='Speichern';
+  }
+}
+
+/* ---------------- Login / Session ---------------- */
+function showPanel(){
+  $('loginView').classList.add('hidden');
+  $('panelView').classList.remove('hidden');
+}
+function showLogin(){
+  $('panelView').classList.add('hidden');
+  $('savebar').classList.remove('show');
+  $('loginView').classList.remove('hidden');
+  $('pw').value='';
+  currentPw='';
+}
+async function unlock(){
+  const pw=$('pw').value.trim();
+  if(!pw){
+    $('loginCard').classList.remove('shake'); void $('loginCard').offsetWidth;
+    $('loginCard').classList.add('shake');
+    toast('Bitte Passwort eingeben','err');
+    return;
+  }
+  const btn=$('unlockBtn'); btn.disabled=true; btn.textContent='Prüfen …';
+  const who=await whoami(pw);
+  btn.disabled=false; btn.textContent='Entsperren';
+  if(!who){
+    $('loginCard').classList.remove('shake'); void $('loginCard').offsetWidth;
+    $('loginCard').classList.add('shake');
+    toast('Passwort falsch','err');
+    return;
+  }
+  currentPw=pw;
+  currentRole=who.role; currentName=who.name||'';
+  sessionStorage.setItem(PW_KEY,pw);
+  try{
+    if($('pwStay')&&$('pwStay').checked){
+      localStorage.setItem(PW_KEY+'_p', JSON.stringify({pw, exp: Date.now()+30*86400000}));
+    }
+  }catch(e){}
+  applyRole();
+  showPanel();
+  await loadStatus();
+}
+
+async function whoami(pw){
+  try{
+    const res=await fetch('/.netlify/functions/team',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:pw,action:'whoami'})
+    });
+    if(res.status===401) return null;
+    const d=await res.json().catch(()=>null);
+    return (d&&d.ok)?d:{role:'admin',name:''}; // bei Störung nicht aussperren – Server prüft ohnehin jede Aktion
+  }catch(e){ return {role:'admin',name:''}; }
+}
+
+function applyRole(){
+  const staff=currentRole==='staff';
+  $('tabPush').classList.toggle('hidden',staff);
+  $('tabVouchers').classList.toggle('hidden',staff);
+  $('tabStats').classList.toggle('hidden',staff);
+  $('tabTeam').classList.toggle('hidden',staff);
+  const b=document.querySelector('.hdr .brand small');
+  if(b) b.textContent = currentName ? ('Angemeldet: '+currentName+(staff?' · Mitarbeiter':(currentRole==='superadmin'?' · Superadmin':' · Admin'))) : "Grill'n Chill · Bielefeld";
+}
+function logout(){
+  sessionStorage.removeItem(PW_KEY);
+  try{ localStorage.removeItem(PW_KEY+'_p'); }catch(e){}
+  showLogin();
+}
+$('pwEye').addEventListener('click',()=>{
+  const f=$('pw');
+  f.type = f.type==='password' ? 'text' : 'password';
+});
+
+/* ---------------- Tabs ---------------- */
+document.addEventListener('gesturestart',e=>e.preventDefault());
+let _lastTouch=0;
+document.addEventListener('touchend',e=>{
+  const now=Date.now();
+  if(now-_lastTouch<300 && !e.target.closest('input,textarea,select,button,a,.chip,.tab,.abtn')) e.preventDefault();
+  _lastTouch=now;
+},{passive:false});
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t===tab ? 'true':'false'));
+    ['today','orders','catering','push','vouchers','scan','stats','team'].forEach(k=>{
+      $('pane-'+k).classList.toggle('hidden', tab.dataset.tab!==k);
+    });
+    if(tab.dataset.tab!=='scan') stopScan();
+    if(tab.dataset.tab==='stats' && !statsLoaded) loadStats();
+    if(tab.dataset.tab==='stats' && !revLoaded){ renderRevControls(); loadRevenue(); }
+    if(tab.dataset.tab==='orders' && !ordersLoaded) loadOrders();
+    if(tab.dataset.tab==='catering' && !cateringLoaded) loadCatering();
+    if(tab.dataset.tab==='team' && !teamLoaded) loadTeam();
+    if(tab.dataset.tab==='vouchers' && !vouchersLoaded) loadVouchers();
+  });
+});
+
+/* ---------------- Änderungen erkennen ---------------- */
+['pauseMsg','specialNote'].forEach(id=>$(id).addEventListener('input',()=>{ setDirty(true); if(id==='specialNote') updatePreview(); }));
+$('specialSelect').addEventListener('change',()=>{ setDirty(true); updatePreview(); });
+$('pausedToggle').addEventListener('change',()=>{
+  $('pauseCard').classList.toggle('on', $('pausedToggle').checked);
+  setDirty(true);
+});
+window.addEventListener('beforeunload',(e)=>{
+  if(dirty){ e.preventDefault(); e.returnValue=''; }
+});
+
+/* ---------------- Special-Select füllen ---------------- */
+(function fillSpecialSelect(){
+  const sel=$('specialSelect');
+  ['burger','sides','dips','drinks'].forEach(cat=>{
+    ITEMS.filter(i=>i.cat===cat).forEach(i=>{
+      const o=document.createElement('option');
+      o.value=i.id; o.textContent=CAT_LABELS[cat]+' – '+i.name;
+      sel.appendChild(o);
+    });
+  });
+})();
+
+/* ---------------- Push ---------------- */
+$('pushTitle').addEventListener('input',()=>{ $('cntTitle').textContent=$('pushTitle').value.length; });
+$('pushBody').addEventListener('input',()=>{ $('cntBody').textContent=$('pushBody').value.length; });
+document.querySelectorAll('.tpl').forEach(b=>b.addEventListener('click',()=>{
+  $('pushTitle').value=b.dataset.t; $('pushBody').value=b.dataset.b;
+  $('cntTitle').textContent=b.dataset.t.length; $('cntBody').textContent=b.dataset.b.length;
+}));
+
+let pushArmed=false, pushArmTimer=null;
+async function sendPush(){
+  const btn=$('pushSendBtn');
+  const title=$('pushTitle').value.trim();
+  const body=$('pushBody').value.trim();
+  if(!title||!body){ toast('Titel und Nachricht ausfüllen','err'); return; }
+
+  // Zwei-Tipp-Bestätigung gegen versehentliches Senden an alle
+  if(!pushArmed){
+    pushArmed=true;
+    btn.classList.add('confirm');
+    btn.textContent='Wirklich an alle? Erneut tippen';
+    clearTimeout(pushArmTimer);
+    pushArmTimer=setTimeout(()=>{
+      pushArmed=false; btn.classList.remove('confirm'); btn.textContent='An alle senden';
+    },3500);
+    return;
+  }
+  pushArmed=false; clearTimeout(pushArmTimer);
+  btn.classList.remove('confirm');
+  btn.disabled=true; btn.textContent='Senden …';
+  try{
+    const res=await fetch('/push-send',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:currentPw,title,body,url:'/'})
+    });
+    const d=await res.json().catch(()=>({}));
+    if(res.status===401){ toast('Falsches Passwort','err'); return; }
+    if(!res.ok){ toast((d.error||'Senden fehlgeschlagen')+(d.detail?(' – '+d.detail):''),'err'); return; }
+    toast('Gesendet an '+d.sent+' Abonnenten','ok');
+    $('pushMeta').innerHTML =
+      '<span class="schip">Abonnenten <b>'+d.total+'</b></span>'+
+      '<span class="schip">Zugestellt <b>'+d.sent+'</b></span>'+
+      '<span class="schip">Fehlgeschlagen <b>'+d.failed+'</b></span>'+
+      '<span class="schip">Bereinigt <b>'+d.removed+'</b></span>';
+  }catch(e){ toast('Netzwerkfehler','err'); }
+  finally{ btn.disabled=false; btn.textContent='An alle senden'; }
+}
+$('pushSendBtn').addEventListener('click',sendPush);
+
+/* ---------------- Zahlen ---------------- */
+const STAT_LABELS={pageview:'Aufrufe',add_to_cart:'In den Warenkorb',checkout_details:'Checkout gestartet',order_success:'Bestellungen',sig_add:'Best-of-3-Klicks',fab_open:'Warenkorb-Pill',push_enabled:'Push aktiviert',voucher_sent:'Gutschein versendet',voucher_redeemed:'Gutschein eingelöst'};
+const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+/* ================== Umsatzübersicht ================== */
+let revRangeKey='today', revFilterKey='all', REV_DAYS=[], revLoaded=false;
+const REV_RANGES=[
+  {key:'today',label:'Heute'},{key:'yesterday',label:'Gestern'},{key:'7',label:'7 Tage'},
+  {key:'30',label:'30 Tage'},{key:'365',label:'1 Jahr'},{key:'custom',label:'Eigener Zeitraum'},
+];
+const REV_FILTERS=[
+  {key:'all',label:'Gesamt',count:d=>d.oCount+d.gcCount,total:d=>d.oTotal+d.gcTotal},
+  {key:'pickup',label:'Nur Abholung',count:d=>d.pickupCount,total:d=>d.pickupTotal},
+  {key:'delivery',label:'Nur Lieferung',count:d=>d.deliveryCount,total:d=>d.deliveryTotal},
+  {key:'giftcard',label:'Nur Gutscheine',count:d=>d.gcCount,total:d=>d.gcTotal},
+];
+function revIso(d){ return d.toLocaleDateString('en-CA',{timeZone:'Europe/Berlin'}); }
+function revRangeDates(){
+  const now=new Date(), today=revIso(now);
+  if(revRangeKey==='today') return [today,today];
+  if(revRangeKey==='yesterday'){ const y=revIso(new Date(now.getTime()-86400000)); return [y,y]; }
+  if(revRangeKey==='custom'){
+    const f=$('revFrom').value, t=$('revTo').value;
+    return (f&&t)?[f,t]:null;
+  }
+  const n=parseInt(revRangeKey,10);
+  return [revIso(new Date(now.getTime()-(n-1)*86400000)), today];
+}
+function renderRevControls(){
+  $('revRanges').innerHTML=REV_RANGES.map(r=>'<button type="button" class="chip" data-rrange="'+r.key+'" aria-pressed="'+(revRangeKey===r.key?'true':'false')+'">'+r.label+'</button>').join('');
+  $('revFilters').innerHTML=REV_FILTERS.map(f=>'<button type="button" class="chip" data-rfilter="'+f.key+'" aria-pressed="'+(revFilterKey===f.key?'true':'false')+'">'+f.label+'</button>').join('');
+  $('revCustom').style.display=revRangeKey==='custom'?'flex':'none';
+}
+function renderRevenue(){
+  renderRevControls();
+  const F=REV_FILTERS.find(f=>f.key===revFilterKey)||REV_FILTERS[0];
+  let total=0,count=0;
+  REV_DAYS.forEach(d=>{ total+=F.total(d); count+=F.count(d); });
+  total=Math.round(total*100)/100;
+  $('revTotal').textContent=total.toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+  $('revCount').textContent=count;
+  $('revAvg').textContent=count?(total/count).toLocaleString('de-DE',{style:'currency',currency:'EUR'}):'–';
+  const rows=[...REV_DAYS].reverse().filter(d=>F.count(d)>0||F.total(d)>0);
+  const max=Math.max(1,...rows.map(d=>F.total(d)));
+  $('revDays').innerHTML=rows.length?rows.map(d=>{
+    const t=F.total(d), pct=Math.round(t/max*100);
+    const dt=new Date(d.date+'T12:00:00');
+    return '<div style="display:flex;align-items:center;gap:.6rem;padding:.35rem 0;border-bottom:1px solid var(--border);">'
+      +'<span style="width:86px;color:var(--dim);font-size:.8rem;flex:none;">'+dt.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'})+'</span>'
+      +'<span style="flex:1;height:8px;background:var(--card2);border-radius:4px;overflow:hidden;"><span style="display:block;height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--ember),var(--ember-hi));"></span></span>'
+      +'<span style="width:56px;text-align:right;color:var(--dim);font-size:.8rem;flex:none;">'+F.count(d)+'×</span>'
+      +'<span style="width:92px;text-align:right;font-weight:700;font-size:.85rem;flex:none;">'+t.toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</span></div>';
+  }).join(''):'<p class="empty">Keine Umsätze im gewählten Zeitraum.</p>';
+}
+async function loadRevenue(){
+  const range=revRangeDates();
+  if(!range) return;
+  $('revDays').innerHTML='<p class="empty">Lade Umsätze …</p>';
+  try{
+    const res=await fetch('/.netlify/functions/revenue-stats',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:currentPw,from:range[0],to:range[1]})
+    });
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok){
+      if(res.status===403){
+        // Nur der Inhaber: Team-Admins & Mitarbeiter sehen die Karte gar nicht erst
+        $('revCard').style.display='none';
+        revLoaded=true;
+        return;
+      }
+      $('revDays').innerHTML='<p class="empty">Konnte Umsätze nicht laden.</p>';
+      return;
+    }
+    REV_DAYS=d.days||[];
+    revLoaded=true;
+    renderRevenue();
+  }catch(e){ $('revDays').innerHTML='<p class="empty">Netzwerkfehler – bitte erneut.</p>'; }
+}
+document.addEventListener('click',(e)=>{
+  const r=e.target.closest('[data-rrange]');
+  if(r){ revRangeKey=r.dataset.rrange; renderRevControls(); if(revRangeKey!=='custom') loadRevenue(); return; }
+  const f=e.target.closest('[data-rfilter]');
+  if(f){ revFilterKey=f.dataset.rfilter; renderRevenue(); return; }
+});
+/* ================== Kundenkarten-Scan ================== */
+let scanStream=null, scanRAF=null, scanBusy=false, scanCard=null, scanToken=null, jsqrLoading=false;
+function scanSetResult(html){ $('scanResult').innerHTML=html; }
+function renderScanCard(){
+  if(!scanCard){ scanSetResult(''); return; }
+  const c=scanCard;
+  scanSetResult('<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding: .9rem 1rem;">'
+    +'<div style="font-weight:700;">'+esc2(c.name||'Kunde')+'</div>'
+    +'<div class="hint">'+esc2(c.emailMasked||'')+(c.level?(' · <span style="color:'+(c.level>=10?'#E6C15A':'var(--ember-hi)')+';font-weight:700;">'+(c.level>=10?'\u{1F451} ':'')+'Level '+c.level+' – '+esc2(c.levelName||'')+(c.level>=6?' · 10 €/Karte':'')+'</span>'):'')+'</div>'
+    +'<div style="display:flex;gap:1.2rem;margin:.6rem 0;">'
+    +'<div><div style="font-size:1.3rem;font-weight:700;color:var(--ember-hi);">'+(c.rewards||0)+'</div><div class="hint">Boni (je 5 €)</div></div>'
+    +'<div><div style="font-size:1.3rem;font-weight:700;">'+(c.spent||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</div><div class="hint">noch '+(c.toNext||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+' bis zum Bonus</div></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:.5rem;align-items:stretch;margin-bottom:.5rem;">'
+    +'<input type="number" id="scanAmount" min="0.5" max="500" step="0.5" placeholder="Betrag €" style="flex:1;">'
+    +'<button type="button" class="abtn" id="scanCredit">Gutschreiben</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;">'
+    +'<button type="button" class="abtn" id="scanRedeem"'+((c.rewards||0)<1?' disabled':'')+'>5-€-Bonus einlösen</button>'
+    +'<button type="button" class="abtn" id="scanAgain">Neu scannen</button>'
+    +'</div></div>');
+  $('scanCredit').addEventListener('click',()=>scanAction('credit'));
+  $('scanRedeem').addEventListener('click',()=>scanAction('redeem'));
+  $('scanAgain').addEventListener('click',()=>{ scanCard=null; scanToken=null; scanSetResult(''); startScan(); });
+}
+async function scanAction(action){
+  const body={password:currentPw,action,token:scanToken};
+  if(action==='credit'){
+    body.amount=parseFloat(($('scanAmount').value||'').replace(',','.'));
+    if(!isFinite(body.amount)){ toast('Betrag eingeben'); return; }
+  }
+  try{
+    const res=await fetch('/.netlify/functions/loyalty-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok){ toast(d.hint||d.error||'Fehler'); return; }
+    scanCard=d.card; renderScanCard();
+    toast(action==='credit'?('Gutgeschrieben'+(d.earned?' · +'+d.earned+' Bonus!':'')):'Bonus eingelöst');
+  }catch(e){ toast('Netzwerkfehler'); }
+}
+async function scanFound(text){
+  const m=String(text||'').match(/GNCQR:([a-f0-9]{12,40})/);
+  if(!m||scanBusy) return;
+  scanBusy=true; stopScan();
+  try{
+    const res=await fetch('/.netlify/functions/loyalty-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:currentPw,action:'lookup',token:m[1]})});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok){ toast(d.error==='not_found'?'Karte unbekannt':'Fehler'); scanBusy=false; startScan(); return; }
+    scanToken=m[1]; scanCard=d.card; renderScanCard();
+    if(navigator.vibrate) navigator.vibrate(60);
+  }catch(e){ toast('Netzwerkfehler'); }
+  scanBusy=false;
+}
+function scanLoop(detector,canvas,ctx){
+  const v=$('scanVideo');
+  const tick=async()=>{
+    if(!scanStream) return;
+    if(v.readyState>=2){
+      if(detector){
+        try{ const codes=await detector.detect(v); if(codes.length) scanFound(codes[0].rawValue); }catch(e){}
+      } else if(window.jsQR){
+        canvas.width=v.videoWidth; canvas.height=v.videoHeight;
+        ctx.drawImage(v,0,0);
+        try{
+          const img=ctx.getImageData(0,0,canvas.width,canvas.height);
+          const code=window.jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+          if(code&&code.data) scanFound(code.data);
+        }catch(e){}
+      }
+    }
+    scanRAF=requestAnimationFrame(tick);
+  };
+  scanRAF=requestAnimationFrame(tick);
+}
+async function startScan(){
+  stopScan();
+  try{
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+  }catch(e){ toast('Kamera nicht verfügbar – Code manuell eingeben'); return; }
+  const v=$('scanVideo'); v.srcObject=scanStream; await v.play().catch(()=>{});
+  $('scanStart').style.display='none'; $('scanStop').style.display='';
+  let detector=null;
+  if('BarcodeDetector' in window){
+    try{ detector=new BarcodeDetector({formats:['qr_code']}); }catch(e){ detector=null; }
+  }
+  if(!detector&&!window.jsQR&&!jsqrLoading){
+    jsqrLoading=true;
+    const sc=document.createElement('script'); sc.src='vendor/jsqr.js'; document.head.appendChild(sc);
+  }
+  const canvas=document.createElement('canvas');
+  scanLoop(detector,canvas,canvas.getContext('2d',{willReadFrequently:true}));
+}
+function stopScan(){
+  if(scanRAF){ cancelAnimationFrame(scanRAF); scanRAF=null; }
+  if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
+  const st=$('scanStart'), sp=$('scanStop');
+  if(st) st.style.display=''; if(sp) sp.style.display='none';
+}
+$('scanStart').addEventListener('click',startScan);
+$('scanStop').addEventListener('click',stopScan);
+$('scanManualGo').addEventListener('click',()=>{ scanFound($('scanManual').value.indexOf('GNCQR:')===0?$('scanManual').value:'GNCQR:'+$('scanManual').value.trim()); });
+async function loadStats(){
+  const btn=$('statsBtn'); btn.disabled=true; btn.textContent='Laden …';
+  try{
+    const res=await fetch('/track?days=7&password='+encodeURIComponent(currentPw));
+    if(res.status===401){ toast('Falsches Passwort','err'); return; }
+    const d=await res.json();
+    statsLoaded=true;
+    const today=d.days && d.days[0] ? d.days[0] : {};
+    const views=today.pageview||0, orders=today.order_success||0;
+    $('kpiViews').textContent=views;
+    $('kpiOrders').textContent=orders;
+    $('kpiConv').textContent = views>0 ? (Math.round(orders/views*1000)/10).toLocaleString('de-DE')+' %' : '–';
+    const evs=Object.keys(STAT_LABELS);
+    if(!d.days || !d.days.length){
+      $('statsOut').innerHTML='<p class="empty">Noch keine Daten – schau nach dem ersten Bestell-Tag wieder rein.</p>';
+      return;
+    }
+    let html='<table><tr><th>Tag</th>'+evs.map(e=>'<th>'+STAT_LABELS[e]+'</th>').join('')+'</tr>';
+    d.days.forEach((day,idx)=>{
+      let lbl=day.date;
+      try{
+        const dt=new Date(day.date+'T12:00:00');
+        lbl=WD[dt.getDay()]+' '+day.date.slice(8,10)+'.'+day.date.slice(5,7)+'.';
+      }catch(e){}
+      html+='<tr'+(idx===0?' class="today"':'')+'><td>'+(idx===0?'Heute':lbl)+'</td>'+
+        evs.map(e=>'<td>'+(day[e]||0)+'</td>').join('')+'</tr>';
+    });
+    html+='</table>';
+    $('statsOut').innerHTML=html;
+  }catch(e){ toast('Zahlen konnten nicht geladen werden','err'); }
+  finally{ btn.disabled=false; btn.textContent='Neu laden'; }
+}
+$('statsBtn').addEventListener('click',loadStats);
+$('revGo').addEventListener('click',loadRevenue);
+
+/* ---------------- Bestellungen ---------------- */
+let ordersLoaded=false, ORDERS=[];
+function euro(n){ return (typeof n==='number'? n : parseFloat(n)||0).toFixed(2).replace('.',',')+' €'; }
+function ordTime(iso){
+  try{
+    const d=new Date(iso);
+    return {
+      d: WD[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.',
+      t: d.toLocaleTimeString('de-DE',{timeZone:'Europe/Berlin',hour:'2-digit',minute:'2-digit'})
+    };
+  }catch(e){ return {d:'—',t:''}; }
+}
+function esc2(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+let ordFilterKey='all';
+const ORD_FILTERS=[
+  {key:'all',     label:'Alle',           test:r=>true},
+  {key:'today',   label:'Heute',          test:r=>{const d=new Date(r.completedAt||r.createdAt||0);const n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}},
+  {key:'pending', label:'Offene Zahlung', test:r=>r.status==='pending'},
+  {key:'pickup',  label:'Abholung',       test:r=>((r.order||{}).mode!=='delivery')&&r.status==='completed'},
+  {key:'delivery',label:'Lieferung',      test:r=>((r.order||{}).mode==='delivery')&&r.status==='completed'},
+  {key:'preorder',label:'Vorbestellung',  test:r=>{const o=r.order||{};return !!(o.isPreorder||o.scheduledFor)&&r.status==='completed';}},
+  {key:'cash',    label:'Bar/EC vor Ort', test:r=>((r.order||{}).payment!=='sumup')&&r.status==='completed'},
+  {key:'ended',   label:'Storniert & Co.',test:r=>['abandoned','cancelled','refunded'].includes(r.status)},
+];
+function ordFilterTest(r){
+  const f=ORD_FILTERS.find(x=>x.key===ordFilterKey)||ORD_FILTERS[0];
+  return f.test(r);
+}
+function renderOrdFilters(){
+  const wrap=$('ordFilters');
+  if(!wrap) return;
+  wrap.innerHTML=ORD_FILTERS.map(f=>{
+    const n=ORDERS.filter(f.test).length;
+    if(f.key!=='all'&&n===0&&ordFilterKey!==f.key) return '';
+    return '<button type="button" class="chip" data-ofilter="'+f.key+'" aria-pressed="'+(ordFilterKey===f.key?'true':'false')+'">'
+      +f.label+' <span style="opacity:.65;font-weight:600;">('+n+')</span></button>';
+  }).join('');
+}
+document.addEventListener('click',(e)=>{
+  const c=e.target.closest('[data-ofilter]');
+  if(!c) return;
+  ordFilterKey=c.dataset.ofilter;
+  renderOrders();
+});
+function renderOrders(){
+  // Aufgeklappte Zeilen über den Refresh hinweg offen halten
+  const openRefs=new Set([...document.querySelectorAll('#ordersOut .ord.open')].map(el=>el.dataset.ref));
+  renderOrdFilters();
+  const q=$('ordSearch').value.trim().toLowerCase();
+  const list=ORDERS.filter(r=>{
+    if(!ordFilterTest(r)) return false;
+    if(!q) return true;
+    const o=r.order||{};
+    const g=r.gift||{};
+    return (r.reference||'').toLowerCase().includes(q)
+      || (o.name||'').toLowerCase().includes(q)
+      || (o.phone||'').toLowerCase().includes(q)
+      || (g.buyerName||'').toLowerCase().includes(q)
+      || (g.email||'').toLowerCase().includes(q)
+      || (r.code||'').toLowerCase().includes(q);
+  });
+  if(!list.length){
+    $('ordersOut').innerHTML='<p class="empty">'+(
+      !ORDERS.length ? 'Noch keine Bestellungen im Archiv – neue Bestellungen erscheinen hier automatisch.'
+      : ordFilterKey!=='all' ? 'Keine Treffer für diesen Filter'+(q?' und „'+esc2(q)+'"':'')+'.'
+      : q ? 'Keine Treffer für „'+esc2(q)+'".'
+      : 'Noch keine Bestellungen im Archiv – neue Bestellungen erscheinen hier automatisch.')+'</p>';
+    return;
+  }
+  $('ordersOut').innerHTML=list.map((r,idx)=>{
+    const o=r.order||{};
+    const when=ordTime(r.completedAt||r.createdAt);
+    const items=(o.items||[]).map(it=>
+      '<li><span class="q">'+esc2(it.qty)+'×</span><span class="nm">'+esc2(it.name)+'</span><span class="pr">'+euro(it.total)+'</span></li>'
+    ).join('');
+    const badges=[
+      o.mode==='delivery' ? '<span class="bdg delivery">Lieferung</span>' : '<span class="bdg">Abholung</span>',
+      o.isPreorder||o.scheduledFor ? '<span class="bdg pre">Vorbestellung</span>' : '',
+      o.payment==='sumup' ? '<span class="bdg online">Online bezahlt</span>' : '<span class="bdg">Bar/EC vor Ort</span>',
+      r.status==='pending' ? '<span class="bdg pending">Zahlung offen</span>' : '',
+      r.status==='abandoned' ? '<span class="bdg abandoned">Abgebrochen</span>' : '',
+      r.status==='cancelled' ? '<span class="bdg abandoned">Storniert</span>' : '',
+      r.status==='refunded' ? '<span class="bdg refund">Rückerstattet</span>' : '',
+    ].join('');
+    const meta=[
+      o.phone?('Telefon: <b>'+esc2(o.phone)+'</b>'):'',
+      o.email?('E-Mail: <b>'+esc2(o.email)+'</b>'):'',
+      (o.mode==='delivery'&&o.deliveryAddress)?('Adresse: <b>'+esc2([o.deliveryAddress.street,(o.deliveryAddress.zip||'')+' '+(o.deliveryAddress.city||'')].filter(Boolean).join(', ').trim())+'</b>'):'',
+      (o.mode!=='delivery'&&o.pickupTime)?('Abholzeit: <b>'+esc2(o.pickupTime)+'</b>'):'',
+      o.scheduledFor?('Wunschzeit: <b>'+esc2(o.scheduledFor)+'</b>'):'',
+      o.note?('Notiz: <b>'+esc2(o.note)+'</b>'):'',
+      (o.discount>0)?('Rabatt'+(o.promo&&o.promo.code?(' ('+esc2(o.promo.code)+')'):'')+': <b>− '+euro(o.discount)+'</b>'):'',
+      (o.loyaltyDiscount>0)?('Treuebonus: <b>− '+euro(o.loyaltyDiscount)+'</b>'):'',
+      (o.deliveryFee>0)?('Liefergebühr: <b>'+euro(o.deliveryFee)+'</b>'):'',
+      (o.tip>0)?('Trinkgeld: <b>'+euro(o.tip)+'</b>'):'',
+    ].filter(Boolean).join(' · ');
+    return '<div class="ord" data-ref="'+esc2(r.reference)+'">'
+      +'<div class="ord-head" data-toggle>'
+      +'<div class="ord-when">'+when.d+'<br>'+when.t+'</div>'
+      +'<div class="ord-main"><div class="ord-name">'+esc2(o.name||'–')+'</div>'
+      +'<div class="ord-ref">#'+esc2(r.reference)+'</div>'
+      +'<div class="badges">'+badges+'</div></div>'
+      +'<div class="ord-sum">'+euro(o.total)+'</div>'
+      +'</div>'
+      +'<div class="ord-body"><ul class="ord-items">'+(items||'<li><span class="nm" style="color:var(--faint)">Keine Artikeldetails vorhanden</span></li>')+'</ul>'
+      +(meta?('<div class="ord-meta">'+meta+'</div>'):'')
+      +buildStatusChips(r)+buildOrdActions(r)
+      +'</div></div>';
+  }).join('');
+  openRefs.forEach(ref=>{
+    const el=document.querySelector('#ordersOut .ord[data-ref="'+CSS.escape(ref)+'"]');
+    if(el) el.classList.add('open');
+  });
+}
+document.addEventListener('click',(e)=>{
+  const head=e.target.closest('.ord-head');
+  if(head) head.closest('.ord').classList.toggle('open');
+  const ab=e.target.closest('.abtn[data-action]');
+  if(ab) orderAction(ab.dataset.ref, ab.dataset.action, ab, ab.dataset.gc==='1');
+});
+
+const FSTATE_STEPS={
+  pickup:[['confirmed','Bestätigt'],['preparing','Auf dem Grill'],['ready_for_pickup','Fertig'],['picked_up','Abgeholt']],
+  delivery:[['confirmed','Bestätigt'],['preparing','Auf dem Grill'],['on_the_way','Unterwegs'],['delivered','Geliefert']],
+};
+function buildStatusChips(r){
+  if(r.status!=='completed'||r.giftcard||r.kind==='giftcard') return ''; // Giftcards nie mit Pickup/Delivery-Status rendern
+  const steps=FSTATE_STEPS[(r.order&&r.order.mode)==='delivery'?'delivery':'pickup'];
+  const cur=r.fstate||'confirmed';
+  return '<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin:.5rem 0 .2rem;">'
+    +steps.map(st=>'<button type="button" class="chip" data-fstate="'+st[0]+'" data-fref="'+esc2(r.reference)+'" aria-pressed="'+(cur===st[0]?'true':'false')+'">'+st[1]+'</button>').join('')
+    +'</div><div class="hint" style="margin:.1rem 0 .4rem;">Kunde sieht den Status live und bekommt Push (falls aktiviert).</div>';
+}
+document.addEventListener('click',async(e)=>{
+  const c=e.target.closest('[data-fstate]');
+  if(!c) return;
+  const ref=c.dataset.fref, state=c.dataset.fstate;
+  c.disabled=true;
+  try{
+    const res=await fetch('/.netlify/functions/order-status',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'set',password:currentPw,reference:ref,state})
+    });
+    const d=await res.json().catch(()=>({}));
+    if(res.ok){
+      const o=ORDERS.find(x=>x.reference===ref);
+      if(o) o.fstate=state;
+      renderOrders();
+      toast('Status gesetzt'+(d.pushed?' · Push raus':'')+(d.mailed?' · Mail raus':''));
+    } else toast(d.hint||d.error||'Fehler beim Setzen');
+  }catch(err){ toast('Netzwerkfehler'); }
+  c.disabled=false;
+});
+function buildOrdActions(r){
+  const btns=[];
+  const gc=r.kind==='giftcard';
+  const completeLabel=gc?'Gutschein ausstellen + Mail senden':'Abschließen + Mails senden';
+  if(r.status==='pending'||r.status==='abandoned'){
+    btns.push('<button type="button" class="abtn" data-action="check" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Zahlung prüfen</button>');
+    btns.push('<button type="button" class="abtn primary" data-action="complete" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">'+completeLabel+'</button>');
+    btns.push('<button type="button" class="abtn" data-action="cancel" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Stornieren</button>');
+  }
+  if(currentRole==='admin' && r.status==='completed'){
+    btns.push('<button type="button" class="abtn danger" data-action="refund" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Als rückerstattet markieren</button>');
+  }
+  if(currentRole==='admin' && (r.status==='pending'||r.status==='abandoned')){
+    btns.push('<button type="button" class="abtn danger" data-action="refund" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Rückerstattet</button>');
+  }
+  return btns.length ? '<div class="ord-actions">'+btns.join('')+'</div>' : '';
+}
+
+async function orderAction(ref, action, btn, isGc){
+  if(action==='cancel' && !confirm('#'+ref+' stornieren?\n\nVorher wird live bei SumUp geprüft, dass wirklich KEINE Zahlung vorliegt. Der Eintrag bleibt 14 Tage als „Storniert" sichtbar und wird dann automatisch aufgeräumt.')) return;
+  if(action==='complete' && isGc && !confirm('Gutschein für #'+ref+' JETZT ausstellen?\n\nErzeugt den Code und mailt ihn an den Käufer – bitte nur, wenn die Zahlung sicher eingegangen ist (SumUp-Dashboard). Tipp: Erst „Zahlung prüfen" versuchen.')) return;
+  if(action==='complete' && !isGc && !confirm('Bestellung #'+ref+' abschließen?\n\nLöst Kundenbestätigung, Inhaber-Mail und Telegram aus (nur einmal – Doppelversand ist ausgeschlossen).')) return;
+  if(action==='refund' && !confirm('#'+ref+' als rückerstattet markieren?'+(isGc?'\n\nDer zugehörige Gutschein-Code wird dabei deaktiviert.':'')+'\n\nDie eigentliche Erstattung machst du in SumUp – hier wird nur der Status gesetzt.')) return;
+  if(btn){ btn.disabled=true; btn.textContent='Moment …'; }
+  try{
+    const res=await fetch('/.netlify/functions/orders-action',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:currentPw,reference:ref,action})
+    });
+    const d=await res.json().catch(()=>({}));
+    if(res.status===401){ toast('Falsches Passwort','err'); return; }
+    if(!res.ok){
+      toast(d.error==='is_paid' ? 'Achtung: Diese Bestellung IST bezahlt – bitte „Zahlung prüfen" nutzen'
+        : d.error==='notify_failed' ? 'Mails konnten nicht gesendet werden – bitte erneut'
+        : (d.hint||'Aktion fehlgeschlagen'),'err');
+      return;
+    }
+    const i=ORDERS.findIndex(o=>o.reference===ref);
+    if(i>=0){
+      ORDERS[i].status=d.status||ORDERS[i].status;
+      if(d.status==='completed') ORDERS[i].completedAt=ORDERS[i].completedAt||new Date().toISOString();
+    }
+    renderOrders();
+    if(isGc && typeof loadVouchers==='function') loadVouchers();
+    if(action==='cancel'){ toast('Storniert – kein Phantom mehr in der Liste','ok'); }
+    if(action==='check'){
+      toast(d.status==='completed' ? 'Bezahlt – Benachrichtigungen gesendet'
+        : d.status==='abandoned' ? 'Zahlung '+(d.payStatus==='EXPIRED'?'abgelaufen':'fehlgeschlagen')
+        : 'Noch offen (SumUp: '+(d.payStatus||'unbekannt')+')', d.status==='completed'?'ok':'');
+    } else if(action==='complete'){
+      toast('Abgeschlossen – Benachrichtigungen gesendet','ok');
+    } else {
+      toast('Als rückerstattet markiert','ok');
+    }
+  }catch(e){ toast('Netzwerkfehler','err'); }
+  finally{ if(btn){ btn.disabled=false; } }
+}
+
+// Auto-Abgleich: offene Zahlungen beim Laden des Tabs selbst prüfen
+// (macht das Badge unabhängig davon, ob der SumUp-Webhook feuert)
+async function autoCheckPending(){
+  const pendings=ORDERS.filter(r=>r.status==='pending').slice(0,6);
+  if(!pendings.length) return;
+  let changed=false;
+  for(const r of pendings){
+    try{
+      const res=await fetch('/.netlify/functions/orders-action',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({password:currentPw,reference:r.reference,action:'check'})
+      });
+      const d=await res.json().catch(()=>({}));
+      if(res.ok && d.status && d.status!==r.status){
+        const i=ORDERS.findIndex(o=>o.reference===r.reference);
+        if(i>=0){ ORDERS[i].status=d.status; if(d.status==='completed') ORDERS[i].completedAt=new Date().toISOString(); }
+        changed=true;
+        if(d.status==='completed') toast('#'+r.reference+': bezahlt – Benachrichtigungen gesendet','ok');
+      }
+    }catch(e){}
+  }
+  if(changed) renderOrders();
+}
+let ordersLastLoad=0;
+async function loadOrders(silent){
+  if(!silent) $('ordersOut').innerHTML='<p class="empty">Bestellungen werden geladen …</p>';
+  try{
+    const res=await fetch('/.netlify/functions/orders-list?days=30&password='+encodeURIComponent(currentPw),{cache:'no-store'});
+    if(res.status===401){ if(!silent) toast('Falsches Passwort','err'); return; }
+    const d=await res.json();
+    ORDERS=d.orders||[];
+    ordersLoaded=true;
+    ordersLastLoad=Date.now();
+    renderOrders();
+    const st=$('ordUpdated');
+    if(st) st.textContent='Aktualisiert '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    autoCheckPending();
+  }catch(e){
+    if(!silent) $('ordersOut').innerHTML='<p class="empty">Bestellungen konnten nicht geladen werden – bitte neu versuchen.</p>';
+  }
+}
+
+// Auto-Refresh: alle 5 Minuten, aber nur wenn der Tab sichtbar und "Bestellungen" aktiv ist
+const ORDERS_REFRESH_MS=5*60*1000;
+setInterval(()=>{
+  if(document.hidden) return;
+  if($('panelView').classList.contains('hidden')) return;
+  if($('pane-orders').classList.contains('hidden')) return;
+  loadOrders(true);
+},ORDERS_REFRESH_MS);
+// Beim Zurückkehren zur App (Handy-Wechsel etc.): sofort auffrischen, wenn älter als 5 Min.
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) return;
+  if($('panelView').classList.contains('hidden')) return;
+  if($('pane-orders').classList.contains('hidden')) return;
+  if(ordersLoaded && Date.now()-ordersLastLoad>ORDERS_REFRESH_MS) loadOrders(true);
+});
+$('ordSearch').addEventListener('input',renderOrders);
+$('ordReload').addEventListener('click',()=>loadOrders()); // ohne Event-Arg – sonst wuerde silent=true die Fehlermeldungen unterdruecken
+$('ordCsv').addEventListener('click',()=>{
+  if(!ORDERS.length){ toast('Keine Daten zum Export','err'); return; }
+  const rows=[['Datum','Uhrzeit','Bestellnr','Status','Name','Telefon','Modus','Zahlung','Summe','Artikel']];
+  ORDERS.forEach(r=>{
+    const o=r.order||{};
+    const w=ordTime(r.completedAt||r.createdAt);
+    rows.push([w.d,w.t,r.reference,r.status,(o.name||''),(o.phone||''),
+      o.mode==='delivery'?'Lieferung':'Abholung',
+      o.payment==='sumup'?'Online':'Bar/EC',
+      String(o.total||'').replace('.',','),
+      (o.items||[]).map(it=>it.qty+'x '+it.name).join(' | ')]);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='grillnchill-bestellungen.csv';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+});
+
+/* ---------------- Catering-Anfragen ---------------- */
+let CATERING=[]; let cateringLoaded=false;
+async function loadCatering(silent){
+  if(!silent) $('cateringOut').innerHTML='<p class="empty">Anfragen werden geladen …</p>';
+  try{
+    const res=await fetch('/.netlify/functions/catering-list?days=180&password='+encodeURIComponent(currentPw),{cache:'no-store'});
+    if(res.status===401){ if(!silent) toast('Falsches Passwort','err'); return; }
+    const d=await res.json();
+    CATERING=d.requests||[];
+    cateringLoaded=true;
+    renderCatering();
+  }catch(e){
+    if(!silent) $('cateringOut').innerHTML='<p class="empty">Anfragen konnten nicht geladen werden – bitte neu versuchen.</p>';
+  }
+}
+function renderCatering(){
+  if(!CATERING.length){ $('cateringOut').innerHTML='<p class="empty">Keine Catering-Anfragen in den letzten 180 Tagen.</p>'; return; }
+  $('cateringOut').innerHTML=CATERING.map(r=>{
+    const w=new Date(r.receivedAt);
+    const when=isNaN(w)?'':w.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+w.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    const evDate=r.date?r.date.split('-').reverse().join('.'):'–';
+    return `<div class="card" style="margin:.55rem 0;padding:.8rem .9rem;${r.done?'opacity:.55;':''}">
+      <div style="display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap;">
+        <strong>${esc2(r.name)}</strong>
+        <span style="font-family:var(--mono);color:var(--faint);font-size:.78rem;">${when}</span>
+        ${r.emailSent?'<span title="E-Mail wurde versendet">✉︎</span>':'<span style="color:var(--red);font-size:.78rem;font-weight:700;" title="E-Mail-Versand fehlgeschlagen – nur hier gespeichert">⚠︎ nur gespeichert</span>'}
+        ${r.done?'<span style="font-size:.78rem;">✓ erledigt</span>':''}
+      </div>
+      <div style="font-size:.85rem;margin:.35rem 0;line-height:1.55;">
+        📅 ${esc2(evDate)} · 👥 ${esc2(r.guests||'–')} Gäste · 📍 ${esc2(r.location||'–')}${r.package?' · 📦 '+esc2(r.package):''}<br>
+        <a href="mailto:${esc2(r.email)}">${esc2(r.email)}</a>${r.phone?' · <a href="tel:'+esc2(r.phone)+'">'+esc2(r.phone)+'</a>':''}${r.contactPref?' · 📲 '+esc2(r.contactPref):''}
+        ${r.msg?'<br><span style="color:var(--faint);">„'+esc2(r.msg)+'“</span>':''}
+      </div>
+      <div style="display:flex;gap:.45rem;">
+        <button class="btn-ghost" onclick="cateringAction('${r.key}','${r.done?'undone':'done'}')">${r.done?'Wieder öffnen':'Erledigt'}</button>
+        <button class="btn-ghost" onclick="cateringAction('${r.key}','delete')" style="color:var(--red);">Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function cateringAction(key,action){
+  if(action==='delete' && !confirm('Anfrage wirklich endgültig löschen?')) return;
+  try{
+    const res=await fetch('/.netlify/functions/catering-list',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:currentPw,key,action}),
+    });
+    if(!res.ok){ toast('Aktion fehlgeschlagen','err'); return; }
+    loadCatering(true);
+  }catch(e){ toast('Aktion fehlgeschlagen','err'); }
+}
+$('catReload').addEventListener('click',()=>loadCatering());
+
+/* ---------------- Gutscheine (Admin) ---------------- */
+let vouchersLoaded=false, VOUCHERS=[];
+function vType(){ const c=document.querySelector('#vTypeChips .chip[aria-pressed="true"]'); return c?c.dataset.vtype:'fixed'; }
+document.addEventListener('click',(e)=>{
+  const c=e.target.closest('#vTypeChips .chip');
+  if(!c) return;
+  document.querySelectorAll('#vTypeChips .chip').forEach(x=>x.setAttribute('aria-pressed',x===c?'true':'false'));
+  const pct=c.dataset.vtype==='percent';
+  $('vValueLabel').textContent=pct?'Prozent (1–100)':'Betrag in €';
+  $('vMaxWrap').style.display=pct?'':'none';
+});
+$('vRandom').addEventListener('click',()=>{
+  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c='GNC'; for(let i=0;i<5;i++) c+=A[Math.floor(Math.random()*A.length)];
+  $('vCode').value=c;
+});
+async function vApi(payload){
+  const res=await fetch('/.netlify/functions/vouchers-admin',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:currentPw,...payload})
+  });
+  return {ok:res.ok,d:await res.json().catch(()=>({}))};
+}
+function vStatus(v){
+  const today=new Date().toISOString().slice(0,10);
+  if(v.archived) return ['Archiv','bdg abandoned'];
+  if(v.system) return v.active?['Aktiv · System','bdg online']:['Beendet','bdg abandoned'];
+  if(!v.active) return ['Pausiert','bdg abandoned'];
+  if(v.validUntil && v.validUntil<today) return ['Abgelaufen','bdg abandoned'];
+  if(v.maxUses>0 && (v.uses||0)>=v.maxUses) return ['Aufgebraucht','bdg abandoned'];
+  if(v.validFrom && v.validFrom>today) return ['Geplant','bdg pre'];
+  return ['Aktiv','bdg online'];
+}
+let vFilterKey='all';
+const V_FILTERS=[
+  {key:'all',    label:'Alle',             test:v=>true},
+  {key:'action', label:'Aktionsgutscheine',test:v=>!v.referral},
+  {key:'account',label:'Kontogutscheine',  test:v=>!!v.referral},
+];
+document.addEventListener('click',(e)=>{
+  const c=e.target.closest('[data-vfilter]');
+  if(!c) return;
+  vFilterKey=c.dataset.vfilter;
+  renderVouchers();
+});
+function renderVouchers(){
+  const wrap=$('vTypeFilter');
+  if(wrap){
+    wrap.innerHTML=V_FILTERS.map(f=>{
+      const n=VOUCHERS.filter(f.test).length;
+      return '<button type="button" class="chip" data-vfilter="'+f.key+'" aria-pressed="'+(vFilterKey===f.key?'true':'false')+'">'
+        +f.label+' <span style="opacity:.65;font-weight:600;">('+n+')</span></button>';
+    }).join('');
+  }
+  if(!VOUCHERS.length){ $('vList').innerHTML='<p class="empty">Noch keine Gutscheine – leg oben den ersten an.</p>'; return; }
+  const vq=($('vSearch')&&$('vSearch').value||'').trim().toLowerCase();
+  const shown=VOUCHERS.filter(v=>{
+    if(!(V_FILTERS.find(f=>f.key===vFilterKey)||V_FILTERS[0]).test(v)) return false;
+    if(!vq) return true;
+    return [v.code,v.note,v.ownerEmail,v.ownerName].some(x=>x&&String(x).toLowerCase().includes(vq));
+  });
+  if(!shown.length){ $('vList').innerHTML='<p class="empty">Keine Treffer'+(vq?' für „'+esc2(vq)+'"':' in dieser Kategorie')+'.</p>'; return; }
+  $('vList').innerHTML=shown.map(v=>{
+    const [stLabel,stCls]=vStatus(v);
+    const val=v.valueLabel ? esc2(v.valueLabel) : (v.type==='percent' ? v.value+' %'+(v.maxDiscount?(' (max '+euro(v.maxDiscount)+')'):'') : euro(v.value));
+    const period=(v.validFrom||v.validUntil)?((v.validFrom?v.validFrom.split('-').reverse().join('.'):'…')+' – '+(v.validUntil?v.validUntil.split('-').reverse().join('.'):'…')):(v.archived?'beendet':'unbegrenzt');
+    const uses=v.system ? (v.archived?'—':'zentral im Shop') : ((v.uses||0)+(v.maxUses>0?(' / '+v.maxUses):'')+' eingelöst');
+    return '<div class="ord"><div class="ord-head" style="cursor:default;">'
+      +'<div class="ord-main">'
+      +'<div class="ord-name" style="font-family:var(--mono);">'+esc2(v.code)+' <span style="color:var(--ember-hi);">· '+val+'</span></div>'
+      +'<div class="ord-ref">'+period+' · '+uses+(v.minOrder?(' · ab '+euro(v.minOrder)):'')+'</div>'
+      +'<div class="badges">'
+      +'<span class="'+stCls+'">'+stLabel+'</span>'
+      +(v.mode==='pickup'?'<span class="bdg">Nur Abholung</span>':v.mode==='delivery'?'<span class="bdg delivery">Nur Lieferung</span>':'')
+      +((v.maxPerCustomer>0||v.oncePerCustomer)?'<span class="bdg">max '+(v.maxPerCustomer>0?v.maxPerCustomer:1)+'× pro Kunde</span>':'')
+      +(v.combinable?'<span class="bdg pre">Kombinierbar</span>':'')
+      +(v.giftcard?'<span class="bdg online">Geschenk-Gutschein</span>':'')
+      +(v.referral?'<span class="bdg pre">Empfehlungs-Code</span>':'')
+      +'</div>'
+      +(v.note?('<div class="ord-ref" style="margin-top:.25rem;color:var(--dim);">'+esc2(v.note)+'</div>'):'')
+      +(v.referral&&v.ownerEmail?('<div class="ord-ref" style="margin-top:.25rem;color:var(--ember-hi);">Konto: '+esc2(v.ownerEmail)+(v.ownerName?(' · '+esc2(v.ownerName)):'')+'</div>'):'')
+      +'</div>'
+      +'<div style="display:flex;flex-direction:column;gap:.35rem;flex:none;">'
+      +(v.system
+        ? '<small style="color:var(--faint);font-size:.62rem;max-width:90px;text-align:right;">wird im Shop verwaltet</small>'
+        : '<button class="btn-ghost" data-v-toggle="'+esc2(v.code)+'">'+(v.active?'Pausieren':'Aktivieren')+'</button>'
+          +'<button class="btn-ghost" data-v-del="'+esc2(v.code)+'" style="color:var(--red);border-color:rgba(224,72,72,.35);">Löschen</button>')
+      +'</div></div></div>';
+  }).join('');
+}
+function renderPurchases(P){
+  if(!P||!P.length){ $('vPurchases').innerHTML='<p class="empty">Noch keine Gutschein-Verkäufe.</p>'; return; }
+  $('vPurchases').innerHTML=P.map(r=>{
+    const g=r.gift||{};
+    const when=ordTime(r.completedAt||r.createdAt);
+    const st=r.status==='completed'?['Code versendet','bdg online']
+      : r.status==='pending'?['Zahlung offen','bdg pending']
+      : r.status==='refunded'?['Rückerstattet','bdg refund']
+      : r.status==='cancelled'?['Storniert','bdg abandoned']
+      : ['Abgebrochen','bdg abandoned'];
+    const dOnly=x=>x?x.split('T')[0].split('-').reverse().join('.'):null;
+    const redeemBadge = r.status!=='completed' ? ''
+      : r.redeemed
+        ? '<span class="bdg refund">Eingelöst'+(r.redeemedVia==='manual'?' (manuell)':r.redeemedVia==='checkout'?' im Checkout':'')+(r.redeemedAt?(' am '+dOnly(r.redeemedAt)):'')+'</span>'
+        : '<span class="bdg pre">Noch nicht eingelöst</span>';
+    const actions=[];
+    if(r.status==='pending'||r.status==='abandoned'){
+      actions.push('<button type="button" class="abtn" data-action="check" data-ref="'+esc2(r.reference)+'" data-gc="1">Zahlung prüfen</button>');
+      actions.push('<button type="button" class="abtn primary" data-action="complete" data-ref="'+esc2(r.reference)+'" data-gc="1">Gutschein ausstellen + Mail senden</button>');
+      actions.push('<button type="button" class="abtn" data-action="cancel" data-ref="'+esc2(r.reference)+'" data-gc="1">Stornieren</button>');
+    }
+    if(r.status==='completed' && r.code){
+      actions.push('<button type="button" class="abtn" data-v-resend="'+esc2(r.reference)+'" data-v-mail="'+esc2(g.email||'')+'">Mail erneut senden</button>');
+      if(!r.redeemed) actions.push('<button type="button" class="abtn" data-v-used="'+esc2(r.code)+'">Als eingelöst markieren</button>');
+      else actions.push('<button type="button" class="abtn" data-v-unused="'+esc2(r.code)+'">Einlösung zurücknehmen</button>');
+    }
+    if(currentRole==='admin' && r.status!=='refunded'){
+      actions.push('<button type="button" class="abtn danger" data-action="refund" data-ref="'+esc2(r.reference)+'" data-gc="1">Rückerstattet</button>');
+    }
+    const metaBits=[
+      g.recipientName?('Gutschein für: <b>'+esc2(g.recipientName)+'</b>'):'',
+      r.validUntil?('Gültig bis: <b>'+dOnly(r.validUntil)+'</b>'):'',
+    ].filter(Boolean).join(' · ');
+    return '<div class="ord open" data-ref="'+esc2(r.reference)+'"><div class="ord-head" style="cursor:default;">'
+      +'<div class="ord-when">'+when.d+'<br>'+when.t+'</div>'
+      +'<div class="ord-main"><div class="ord-name">'+esc2(g.buyerName||g.email||'–')+'</div>'
+      +'<div class="ord-ref">#'+esc2(r.reference)+' · '+esc2(g.email||'')+'</div>'
+      +'<div class="badges"><span class="'+st[1]+'">'+st[0]+'</span>'
+      +(r.code?('<span class="bdg" style="font-family:var(--mono);letter-spacing:1px;">'+esc2(r.code)
+        +' <button type="button" class="copy-mini" data-v-copy="'+esc2(r.code)+'" title="Code kopieren" aria-label="Code kopieren">⧉</button></span>'):'')
+      +redeemBadge
+      +'</div>'
+      +(metaBits?('<div class="ord-ref" style="margin-top:.25rem;">'+metaBits+'</div>'):'')
+      +'</div>'
+      +'<div class="ord-sum">'+euro(g.amount||0)+'</div>'
+      +'</div>'
+      +(actions.length?('<div class="ord-body" style="display:block;"><div class="ord-actions">'+actions.join('')+'</div></div>'):'')
+      +'</div>';
+  }).join('');
+}
+async function loadVouchers(){
+  const r=await vApi({action:'list'});
+  vouchersLoaded=true;
+  if(!r.ok){ $('vList').innerHTML='<p class="empty">Gutscheine konnten nicht geladen werden.</p>'; return; }
+  VOUCHERS=r.d.vouchers||[];
+  renderVouchers();
+  renderPurchases(r.d.purchases||[]);
+}
+$('vReload').addEventListener('click',loadVouchers);
+async function copyText(txt){
+  try{ await navigator.clipboard.writeText(txt); return true; }
+  catch(err){
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      const ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    }catch(e2){ return false; }
+  }
+}
+document.addEventListener('click',async(e)=>{
+  const cp=e.target.closest('[data-v-copy]');
+  if(cp){
+    const ok=await copyText(cp.dataset.vCopy);
+    if(ok) toast('Code '+cp.dataset.vCopy+' kopiert','ok');
+    else toast('Kopieren fehlgeschlagen – Code bitte manuell markieren','err');
+    return;
+  }
+  const rs=e.target.closest('[data-v-resend]');
+  if(rs){
+    const mail=rs.dataset.vMail||'den Käufer';
+    if(!confirm('Gutschein-Mail erneut senden an '+mail+'?\n\nDer Kunde erhält dieselbe Mail wie beim Kauf (Code, Betrag, Einlöse-Anleitung).')) return;
+    rs.disabled=true; const t0=rs.textContent; rs.textContent='Sende …';
+    try{
+      const res=await fetch('/.netlify/functions/orders-action',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({password:currentPw,reference:rs.dataset.vResend,action:'resend'})
+      });
+      const d=await res.json().catch(()=>({}));
+      if(res.ok){ toast('Mail erneut gesendet'+(d.sentTo?(' an '+d.sentTo):''),'ok'); }
+      else toast(d.hint||'Mailversand fehlgeschlagen','err');
+    }catch(err){ toast('Netzwerkfehler – bitte erneut versuchen','err'); }
+    rs.disabled=false; rs.textContent=t0;
+    return;
+  }
+  const mu=e.target.closest('[data-v-used]');
+  if(mu){
+    if(!confirm('Gutschein „'+mu.dataset.vUsed+'" als eingelöst markieren?\n\nNutze das, wenn er z. B. am Truck angenommen wurde. Online ist er danach nicht mehr einlösbar.')) return;
+    const r=await vApi({action:'markUsed',code:mu.dataset.vUsed});
+    if(r.ok){ toast('Als eingelöst markiert','ok'); loadVouchers(); } else toast('Fehlgeschlagen','err');
+    return;
+  }
+  const mn=e.target.closest('[data-v-unused]');
+  if(mn){
+    if(!confirm('Einlösung von „'+mn.dataset.vUnused+'" zurücknehmen?\n\nDer Gutschein ist danach wieder einlösbar.')) return;
+    const r=await vApi({action:'markUnused',code:mn.dataset.vUnused});
+    if(r.ok){ toast('Einlösung zurückgenommen','ok'); loadVouchers(); } else toast('Fehlgeschlagen','err');
+    return;
+  }
+  const tg=e.target.closest('[data-v-toggle]');
+  if(tg){
+    const r=await vApi({action:'toggle',code:tg.dataset.vToggle});
+    if(r.ok){ toast(r.d.active?'Gutschein aktiviert':'Gutschein pausiert','ok'); loadVouchers(); }
+    else toast('Umschalten fehlgeschlagen','err');
+    return;
+  }
+  const del=e.target.closest('[data-v-del]');
+  if(del){
+    const code=del.dataset.vDel;
+    if(!confirm('Gutschein „'+code+'" endgültig löschen?\n\nTipp: „Pausieren" reicht meist – dann bleiben die Einlöse-Zahlen erhalten.')) return;
+    const r=await vApi({action:'delete',code});
+    if(r.ok){ toast('Gutschein gelöscht','ok'); loadVouchers(); }
+    else toast('Löschen fehlgeschlagen','err');
+  }
+});
+$('vCreateBtn').addEventListener('click',async()=>{
+  const code=$('vCode').value.trim().toUpperCase();
+  const type=vType();
+  const value=parseFloat($('vValue').value);
+  if(code.length<3){ toast('Code: mindestens 3 Zeichen','err'); return; }
+  if(!value||value<=0){ toast('Bitte einen Wert eingeben','err'); return; }
+  if(type==='percent'&&value>100){ toast('Prozent: maximal 100','err'); return; }
+  const btn=$('vCreateBtn'); btn.disabled=true; btn.textContent='Anlegen …';
+  const r=await vApi({action:'create',voucher:{
+    code,type,value,
+    maxDiscount:parseFloat($('vMax').value)||0,
+    minOrder:parseFloat($('vMin').value)||0,
+    maxUses:parseInt($('vUses').value,10)||0,
+    validFrom:$('vFrom').value||null,
+    validUntil:$('vTo').value||null,
+    maxPerCustomer:parseInt($('vPerCust').value,10)||0,
+    oncePerCustomer:(parseInt($('vPerCust').value,10)||0)===1,
+    combinable:$('vComb').checked,
+    mode:$('vMode').value,
+    note:$('vNote').value.trim(),
+  }});
+  btn.disabled=false; btn.textContent='Gutschein anlegen';
+  if(r.ok){
+    toast('Gutschein '+code+' angelegt','ok');
+    ['vCode','vValue','vMax','vMin','vUses','vFrom','vTo','vNote'].forEach(id=>$(id).value='');
+    $('vPerCust').value='1';
+    loadVouchers();
+  } else {
+    toast(r.d.hint||r.d.error||'Anlegen fehlgeschlagen','err');
+  }
+});
+
+/* ---------------- Team-Verwaltung (Admin) ---------------- */
+let teamLoaded=false;
+async function teamApi(payload){
+  const res=await fetch('/.netlify/functions/team',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:currentPw,...payload})
+  });
+  const d=await res.json().catch(()=>({}));
+  return {ok:res.ok,status:res.status,d};
+}
+async function loadTeam(){
+  // Admin-Rolle kann nur der Superadmin vergeben
+  const adminOpt=document.querySelector('#tmRole option[value="admin"]');
+  if(adminOpt) adminOpt.hidden = currentRole!=='superadmin';
+  loadAudit();
+  const r=await teamApi({action:'list'});
+  teamLoaded=true;
+  if(!r.ok){ $('teamList').innerHTML='<p class="empty">Team konnte nicht geladen werden.</p>'; return; }
+  const staff=r.d.staff||[];
+  $('teamList').innerHTML = staff.length
+    ? staff.map(u=>{
+        const isAdmin=u.role==='admin';
+        const superOnly=currentRole==='superadmin';
+        // Team-Admins dürfen nur Mitarbeiter verwalten; Admin-Zugänge schützt der Superadmin
+        const canTouch = superOnly || !isAdmin;
+        const btns = [
+          canTouch ? '<button class="btn-ghost" data-tm-pw="'+esc2(u.name)+'">Passwort ändern</button>' : '',
+          superOnly ? '<button class="btn-ghost" data-tm-role="'+esc2(u.name)+'" data-to="'+(isAdmin?'staff':'admin')+'">'+(isAdmin?'Zu Mitarbeiter':'Zum Admin')+'</button>' : '',
+          canTouch ? '<button class="btn-ghost" data-tm-remove="'+esc2(u.name)+'">Entfernen</button>' : '',
+        ].join('');
+        return '<div class="team-row"><div><span class="tn">'+esc2(u.name)+'</span>'
+          +'<small>'+(isAdmin?'Admin – Vollzugriff':'Mitarbeiter')+(u.createdAt?(' · seit '+new Date(u.createdAt).toLocaleDateString('de-DE')):'')+'</small></div>'
+          +'<div style="display:flex;gap:.4rem;flex:none;flex-wrap:wrap;justify-content:flex-end;">'
+          +(btns||'<small style="color:var(--faint);">geschützt – nur Superadmin</small>')
+          +'</div></div>';
+      }).join('')
+    : '<p class="empty">Noch keine Team-Zugänge. Leg unten den ersten an.</p>';
+}
+document.addEventListener('click',async(e)=>{
+  const pwBtn=e.target.closest('[data-tm-pw]');
+  if(pwBtn){
+    const name=pwBtn.dataset.tmPw;
+    const npw=prompt('Neues Passwort für „'+name+'" (mind. 6 Zeichen):\n\nTipp-Schema: wort-wort-zahl, z. B. glut-sesam-42');
+    if(npw===null) return;
+    if(npw.trim().length<6){ toast('Passwort: mindestens 6 Zeichen','err'); return; }
+    const r=await teamApi({action:'setpassword',name,staffPassword:npw.trim()});
+    if(r.ok){ toast('Passwort geändert – '+name+' meldet sich damit neu an','ok'); }
+    else toast(r.d.hint||r.d.error||'Ändern fehlgeschlagen','err');
+    return;
+  }
+  const rl=e.target.closest('[data-tm-role]');
+  if(rl){
+    const name=rl.dataset.tmRole, to=rl.dataset.to;
+    const msg = to==='admin'
+      ? '„'+name+'" zum Admin machen?\n\nAdmins haben Vollzugriff: Push an Kunden, Zahlen, Team-Verwaltung und Rückerstattungen.'
+      : '„'+name+'" zum Mitarbeiter zurückstufen?\n\nDanach nur noch Laden-Status und Bestellungen.';
+    if(!confirm(msg)) return;
+    const r=await teamApi({action:'setrole',name,role:to});
+    if(r.ok){ toast('Rolle geändert: '+name+' ist jetzt '+(to==='admin'?'Admin':'Mitarbeiter'),'ok'); loadTeam(); }
+    else toast('Rollenwechsel fehlgeschlagen','err');
+    return;
+  }
+  const rm=e.target.closest('[data-tm-remove]');
+  if(!rm) return;
+  const name=rm.dataset.tmRemove;
+  if(!confirm('Zugang von „'+name+'" entfernen? Die Person kann sich danach nicht mehr anmelden.')) return;
+  const r=await teamApi({action:'remove',name});
+  if(r.ok){ toast('Zugang entfernt','ok'); loadTeam(); } else toast('Entfernen fehlgeschlagen','err');
+});
+$('tmAddBtn').addEventListener('click',async()=>{
+  const name=$('tmName').value.trim();
+  const pw=$('tmPw').value;
+  if(!name){ toast('Name fehlt','err'); return; }
+  if(pw.length<6){ toast('Passwort: mindestens 6 Zeichen','err'); return; }
+  const btn=$('tmAddBtn'); btn.disabled=true; btn.textContent='Anlegen …';
+  const r=await teamApi({action:'add',name,staffPassword:pw,role:$('tmRole').value});
+  btn.disabled=false; btn.textContent='Zugang anlegen';
+  if(r.ok){ toast(name+' angelegt','ok'); $('tmName').value=''; $('tmPw').value=''; loadTeam(); }
+  else toast(r.d.hint||r.d.error||'Anlegen fehlgeschlagen','err');
+});
+
+async function loadAudit(){
+  try{
+    const res=await fetch('/.netlify/functions/audit-log?days=14&password='+encodeURIComponent(currentPw),{cache:'no-store'});
+    if(!res.ok){ $('auditOut').innerHTML='<p class="empty">Protokoll konnte nicht geladen werden.</p>'; return; }
+    const d=await res.json();
+    const list=d.entries||[];
+    if(!list.length){ $('auditOut').innerHTML='<p class="empty">Noch keine Einträge – ab der nächsten Änderung wird hier protokolliert.</p>'; return; }
+    $('auditOut').innerHTML=list.map(e=>{
+      const w=ordTime(e.at);
+      return '<div class="team-row" style="align-items:flex-start;">'
+        +'<div class="ord-when" style="width:64px;">'+w.d+'<br>'+w.t+'</div>'
+        +'<div style="flex:1;min-width:0;"><span class="tn" style="font-size:.82rem;">'+esc2(e.name)+' <small style="display:inline;color:var(--faint);">· '+esc2(e.action)+'</small></span>'
+        +'<small style="font-family:inherit;font-size:.76rem;color:var(--dim);">'+esc2(e.detail)+'</small></div>'
+        +'</div>';
+    }).join('');
+  }catch(e){ $('auditOut').innerHTML='<p class="empty">Protokoll konnte nicht geladen werden.</p>'; }
+}
+$('logReload').addEventListener('click',loadAudit);
+
+/* ---------------- Bestell-Alarm (Push auf dieses Gerät) ---------------- */
+function b64ToU8(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64); const arr=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+async function alertSub(){
+  if(!('serviceWorker' in navigator)) return null;
+  const reg=await navigator.serviceWorker.register('/sw.js').catch(()=>null);
+  if(!reg) return null;
+  await navigator.serviceWorker.ready;
+  return {reg,sub:await reg.pushManager.getSubscription()};
+}
+async function refreshAlertUI(){
+  try{
+    const st=await alertSub();
+    const on=!!(st&&st.sub);
+    $('alertBtn').textContent = on ? 'Bestell-Alarm deaktivieren' : 'Bestell-Alarm aktivieren';
+    $('alertState').textContent = on ? 'Aktiv auf diesem Gerät – du bekommst jede neue Bestellung als Benachrichtigung.' : (('Notification' in window)&&Notification.permission==='denied' ? 'Benachrichtigungen sind im Browser blockiert – bitte in den Website-Einstellungen erlauben.' : '');
+  }catch(e){}
+}
+$('alertBtn').addEventListener('click',async()=>{
+  const btn=$('alertBtn'); btn.disabled=true;
+  try{
+    const st=await alertSub();
+    if(!st){ toast('Push wird auf diesem Gerät nicht unterstützt','err'); return; }
+    if(st.sub){
+      // Deaktivieren
+      await fetch('/.netlify/functions/push-subscribe',{method:'DELETE',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({endpoint:st.sub.endpoint,channel:'admin'})}).catch(()=>{});
+      await st.sub.unsubscribe().catch(()=>{});
+      toast('Bestell-Alarm deaktiviert','ok');
+    }else{
+      const perm=await Notification.requestPermission();
+      if(perm!=='granted'){ toast('Benachrichtigungen nicht erlaubt','err'); return; }
+      const keyRes=await fetch('/.netlify/functions/push-subscribe');
+      const keyData=await keyRes.json();
+      if(!keyData.publicKey){ toast('Push ist serverseitig nicht konfiguriert','err'); return; }
+      const sub=await st.reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToU8(keyData.publicKey)});
+      const res=await fetch('/.netlify/functions/push-subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({subscription:sub.toJSON(),channel:'admin',password:currentPw})});
+      if(!res.ok){ await sub.unsubscribe().catch(()=>{}); toast('Anmeldung fehlgeschlagen','err'); return; }
+      toast('Bestell-Alarm aktiv','ok');
+    }
+  }catch(e){ toast('Das hat nicht geklappt – bitte erneut versuchen','err'); }
+  finally{ btn.disabled=false; refreshAlertUI(); }
+});
+setTimeout(refreshAlertUI,600);
+
+/* ---------------- Wire-up ---------------- */
+$('unlockBtn').addEventListener('click',unlock);
+$('pw').addEventListener('keydown',e=>{ if(e.key==='Enter') unlock(); });
+$('saveBtn').addEventListener('click',save);
+$('logoutBtn').addEventListener('click',logout);
+$('refreshBtn').addEventListener('click',()=>{
+  if(dirty && !confirm('Ungespeicherte Änderungen verwerfen und neu laden?')) return;
+  loadStatus();
+});
+
+// Session fortsetzen: Dauer-Anmeldung (30 Tage) vor Tab-Sitzung
+let saved=sessionStorage.getItem(PW_KEY);
+try{
+  if(!saved){
+    const p=JSON.parse(localStorage.getItem(PW_KEY+'_p')||'null');
+    if(p&&p.pw&&p.exp>Date.now()) saved=p.pw;
+    else if(p) localStorage.removeItem(PW_KEY+'_p');
+  }
+}catch(e){}
+if(saved){
+  currentPw=saved; showPanel(); loadStatus();
+  whoami(saved).then(w=>{ if(w){ currentRole=w.role; currentName=w.name||''; applyRole(); } });
+}
+// Direktsprung aus der Bestell-Alarm-Push: /admin.html?tab=orders
+(function(){
+  const tp=new URLSearchParams(location.search).get('tab');
+  if(tp){
+    const btn=document.querySelector('.tab[data-tab="'+tp+'"]');
+    if(btn) setTimeout(()=>btn.click(),80);
+  }
+})();
+</script>
+</body>
+</html>

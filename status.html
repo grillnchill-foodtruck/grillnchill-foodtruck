@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bestellstatus – Grill'n Chill</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/logo.png">
+<meta name="theme-color" content="#0A0A0A">
+<style>
+  @font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/inter-latin-700-normal.woff2')format('woff2')}
+  *{box-sizing:border-box;margin:0}
+  body{min-height:100svh;background:#0C0B09;color:#F5E9D0;font-family:'Inter',-apple-system,sans-serif;
+    background-image:radial-gradient(circle at 50% -10%, rgba(232,90,36,0.10), transparent 55%);}
+  .wrap{max-width:440px;margin:0 auto;padding:0 1.1rem 3rem;}
+  header{padding:1.2rem 0 1rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;}
+  .brand{font-family:'Bowlby One',cursive;font-size:1.05rem;letter-spacing:.08em;color:#F5E9D0;text-decoration:none;}
+  .refpill{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:#C9BCA4;background:#17140F;border:1px solid #2E2820;border-radius:999px;padding:.35rem .7rem;white-space:nowrap;}
+  .card{background:#14110D;border:1px solid #2E2820;border-radius:16px;padding:1.1rem 1.15rem;margin-bottom:.9rem;}
+  .eta{display:flex;align-items:center;gap:.8rem;}
+  .eta .big{font-size:1.35rem;font-weight:700;}
+  .eta .lbl{font-size:.72rem;color:#8F8471;}
+  .tl{position:relative;padding-left:28px;}
+  .tl .line{position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:#2E2820;border-radius:2px;}
+  .tl .fill{position:absolute;left:7px;top:8px;width:2px;background:linear-gradient(180deg,#CC4715,#FF7A3D);border-radius:2px;transition:height .6s ease;}
+  .step{position:relative;padding-bottom:1.15rem;}
+  .step:last-child{padding-bottom:0;}
+  .dot{position:absolute;left:-28px;top:2px;width:16px;height:16px;border-radius:50%;background:#14110D;border:2px solid #3a342b;}
+  .step.done .dot{background:#E85A24;border-color:#E85A24;}
+  .step.done .dot::after{content:'';position:absolute;left:4px;top:1.5px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(42deg);}
+  .step.now .dot{background:#E85A24;border-color:#E85A24;box-shadow:0 0 0 5px rgba(232,90,36,0.22);animation:pulse 1.6s ease-out infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 3px rgba(232,90,36,0.30)}70%{box-shadow:0 0 0 9px rgba(232,90,36,0)}100%{box-shadow:0 0 0 3px rgba(232,90,36,0)}}
+  .step .t{font-size:.9rem;font-weight:700;color:#6b6357;}
+  .step.done .t{color:#F5E9D0;}
+  .step.now .t{color:#FF7A3D;}
+  .step .s{font-size:.72rem;color:#8F8471;margin-top:.1rem;}
+  .pushcard{display:flex;align-items:center;gap:.7rem;border-color:#E85A24;}
+  .pushcard p{flex:1;font-size:.8rem;color:#C9BCA4;line-height:1.45;}
+  .btn{background:#CC4715;color:#fff;border:none;font:inherit;font-weight:700;font-size:.8rem;padding:.55rem 1rem;border-radius:999px;cursor:pointer;}
+  .btn[disabled]{opacity:.55;cursor:default;}
+  .items div{display:flex;justify-content:space-between;gap:.8rem;font-size:.82rem;color:#C9BCA4;padding:.22rem 0;}
+  .items div span:last-child{color:#F5E9D0;white-space:nowrap;}
+  .items .sum{border-top:1px solid #2E2820;margin-top:.4rem;padding-top:.5rem;font-weight:700;color:#F5E9D0;}
+  .actions{display:flex;gap:.6rem;}
+  .actions a{flex:1;text-align:center;border:1px solid #3a342b;color:#C9BCA4;font-size:.8rem;text-decoration:none;padding:.65rem 0;border-radius:12px;}
+  .actions a:hover{border-color:#E85A24;color:#F5E9D0;}
+  .empty{color:#8F8471;text-align:center;padding:3rem 1rem;font-size:.9rem;line-height:1.6;}
+  footer{color:#5f584c;font-size:.68rem;text-align:center;margin-top:1.4rem;}
+  @media (prefers-reduced-motion: reduce){ .step.now .dot{animation:none} .tl .fill{transition:none} }
+
+  /* ============ DESIGN PASS v2 · ui-ux-pro-max ============ */
+  .btn{transition:transform .2s cubic-bezier(0.34,1.56,0.64,1),box-shadow .2s cubic-bezier(0.16,1,0.3,1),filter .2s ease;will-change:transform}
+  .btn:not([disabled]):hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(232,90,36,.34)}
+  .btn:not([disabled]):active{transform:scale(.97)}
+  a:focus-visible,button:focus-visible,.btn:focus-visible,[tabindex]:focus-visible{outline:3px solid #FF7A3D;outline-offset:3px;border-radius:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="/">GRILL'N CHILL</a>
+    <span class="refpill" id="refPill">…</span>
+  </header>
+  <div id="app"><p class="empty" id="loadingTxt">Status wird geladen …</p></div>
+  <footer id="footTxt">Diese Seite aktualisiert sich automatisch.</footer>
+</div>
+<script>
+var LANG = (function () {
+  try { var sv = localStorage.getItem('gnc_lang'); if (sv === 'en' || sv === 'tr') return sv; if (sv === 'de') return 'de'; } catch (e) {}
+  var nv = (navigator.language || 'de').toLowerCase();
+  return nv.indexOf('tr') === 0 ? 'tr' : (nv.indexOf('en') === 0 ? 'en' : 'de');
+})();
+document.documentElement.lang = LANG;
+var STR = {
+  de: {
+    order: 'Bestellung', loading: 'Status wird geladen …',
+    notfound: 'Bestellung nicht gefunden oder Link ungültig.<br>Den korrekten Link findest du in deiner Bestätigungs-Mail.',
+    planPickup: 'Geplante Abholung', planDelivery: 'Geplante Lieferung',
+    push: 'Sag dir Bescheid, sobald es weitergeht – direkt aufs Handy.',
+    pushOn: 'Alles klar – wir melden uns, sobald sich der Status ändert.',
+    enable: 'Aktivieren', busy: 'Moment …', total: 'Gesamt', call: 'Anrufen', truck: 'Zum Truck',
+    auto: 'Diese Seite aktualisiert sich automatisch.', clock: ' Uhr',
+    steps: {
+      pickup: [
+        { id: 'confirmed', t: 'Bestellung bestätigt' },
+        { id: 'preparing', t: 'Auf dem Grill', s: 'Deine Burger werden frisch zubereitet' },
+        { id: 'ready_for_pickup', t: 'Fertig zur Abholung', s: 'Komm zum Truck – es ist angerichtet' },
+        { id: 'picked_up', t: 'Abgeholt – guten Appetit' },
+      ],
+      delivery: [
+        { id: 'confirmed', t: 'Bestellung bestätigt' },
+        { id: 'preparing', t: 'Auf dem Grill', s: 'Dein Essen wird frisch zubereitet' },
+        { id: 'on_the_way', t: 'Unterwegs zu dir' },
+        { id: 'delivered', t: 'Geliefert – guten Appetit' },
+      ],
+    },
+  },
+  en: {
+    order: 'Order', loading: 'Loading status …',
+    notfound: 'Order not found or invalid link.<br>You can find the correct link in your confirmation email.',
+    planPickup: 'Scheduled pickup', planDelivery: 'Scheduled delivery',
+    push: 'Get notified the moment things move on – right on your phone.',
+    pushOn: 'All set – we will let you know when the status changes.',
+    enable: 'Enable', busy: 'One sec …', total: 'Total', call: 'Call us', truck: 'Find the truck',
+    auto: 'This page refreshes automatically.', clock: '',
+    steps: {
+      pickup: [
+        { id: 'confirmed', t: 'Order confirmed' },
+        { id: 'preparing', t: 'On the grill', s: 'Your burgers are being made fresh' },
+        { id: 'ready_for_pickup', t: 'Ready for pickup', s: 'Come to the truck – it is ready' },
+        { id: 'picked_up', t: 'Picked up – enjoy!' },
+      ],
+      delivery: [
+        { id: 'confirmed', t: 'Order confirmed' },
+        { id: 'preparing', t: 'On the grill', s: 'Your food is being made fresh' },
+        { id: 'on_the_way', t: 'On its way to you' },
+        { id: 'delivered', t: 'Delivered – enjoy!' },
+      ],
+    },
+  },
+  tr: {
+    order: 'Sipariş', loading: 'Durum yükleniyor …',
+    notfound: 'Sipariş bulunamadı veya bağlantı geçersiz.<br>Doğru bağlantıyı onay e-postanda bulabilirsin.',
+    planPickup: 'Planlanan teslim alma', planDelivery: 'Planlanan teslimat',
+    push: 'Sipariş ilerlediğinde haber verelim – doğrudan telefonuna.',
+    pushOn: 'Tamamdır – durum değişince haber vereceğiz.',
+    enable: 'Aç', busy: 'Bir saniye …', total: 'Toplam', call: 'Ara', truck: 'Trucka git',
+    auto: 'Bu sayfa otomatik olarak yenilenir.', clock: '',
+    steps: {
+      pickup: [
+        { id: 'confirmed', t: 'Sipariş onaylandı' },
+        { id: 'preparing', t: 'Izgarada', s: 'Burgerlerin taze hazırlanıyor' },
+        { id: 'ready_for_pickup', t: 'Teslim almaya hazır', s: 'Trucka gel – her şey hazır' },
+        { id: 'picked_up', t: 'Teslim alındı – afiyet olsun' },
+      ],
+      delivery: [
+        { id: 'confirmed', t: 'Sipariş onaylandı' },
+        { id: 'preparing', t: 'Izgarada', s: 'Yemeğin taze hazırlanıyor' },
+        { id: 'on_the_way', t: 'Sana geliyor' },
+        { id: 'delivered', t: 'Teslim edildi – afiyet olsun' },
+      ],
+    },
+  },
+};
+var T = STR[LANG];
+var REF = (location.pathname.split('/s/')[1] || '').split('/')[0].replace(/[^A-Za-z0-9-]/g, '');
+var KEY = new URLSearchParams(location.search).get('k') || '';
+var DATA = null, PUSH_STATE = 'idle';
+
+
+function euro(x) { return (typeof x === 'number') ? x.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : ''; }
+function hhmm(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleTimeString(LANG === 'tr' ? 'tr-TR' : (LANG === 'en' ? 'en-GB' : 'de-DE'), { hour: '2-digit', minute: '2-digit' }) + T.clock; } catch (e) { return ''; }
+}
+
+function render() {
+  var el = document.getElementById('app');
+  if (!DATA) { el.innerHTML = '<p class="empty">' + T.notfound + '</p>'; return; }
+  document.getElementById('refPill').textContent = '#' + DATA.reference;
+  var steps = T.steps[DATA.mode] || T.steps.pickup;
+  var idx = 0;
+  for (var i = 0; i < steps.length; i++) { if (steps[i].id === DATA.state) idx = i; }
+  var isFinal = idx === steps.length - 1;
+  var fillPct = steps.length > 1 ? Math.round(idx / (steps.length - 1) * 100) : 0;
+
+  var html = '';
+  if (DATA.isPreorder && DATA.scheduledFor) {
+    html += '<div class="card eta"><div><div class="lbl">' + (DATA.mode === 'delivery' ? T.planDelivery : T.planPickup) + '</div><div class="big">' + DATA.scheduledFor.replace(/</g, '&lt;') + '</div></div></div>';
+  }
+  html += '<div class="card"><div class="tl"><span class="line"></span><span class="fill" style="height:' + fillPct + '%"></span>';
+  for (var j = 0; j < steps.length; j++) {
+    var st = steps[j];
+    var cls = j < idx ? 'done' : (j === idx ? (isFinal ? 'done' : 'now') : '');
+    var time = DATA.times && DATA.times[st.id] ? hhmm(DATA.times[st.id]) : '';
+    html += '<div class="step ' + cls + '"><span class="dot"></span><div class="t">' + st.t + '</div>';
+    if (time) html += '<div class="s">' + time + '</div>';
+    else if (j === idx && !isFinal && st.s) html += '<div class="s">' + st.s + '</div>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+
+  if (!isFinal && 'serviceWorker' in navigator && 'PushManager' in window && PUSH_STATE !== 'on') {
+    html += '<div class="card pushcard"><p>' + T.push + '</p>'
+      + '<button class="btn" id="pushBtn"' + (PUSH_STATE === 'busy' ? ' disabled' : '') + '>'
+      + (PUSH_STATE === 'busy' ? T.busy : T.enable) + '</button></div>';
+  } else if (PUSH_STATE === 'on' && !isFinal) {
+    html += '<div class="card pushcard"><p>' + T.pushOn + '</p></div>';
+  }
+
+  if (DATA.items && DATA.items.length) {
+    html += '<div class="card items">';
+    for (var m = 0; m < DATA.items.length; m++) {
+      var it = DATA.items[m];
+      html += '<div><span>' + (it.qty || 1) + '× ' + String(it.name).replace(/</g, '&lt;') + '</span><span>' + euro((it.price || 0) * (it.qty || 1)) + '</span></div>';
+    }
+    if (typeof DATA.total === 'number') html += '<div class="sum"><span>' + T.total + '</span><span>' + euro(DATA.total) + '</span></div>';
+    html += '</div>';
+  }
+
+  html += '<div class="actions">'
+    + '<a href="tel:+4915118540604">' + T.call + '</a>'
+    + '<a href="https://maps.google.com/maps?cid=2860232172322750720" target="_blank" rel="noopener">' + T.truck + '</a>'
+    + '</div>';
+  el.innerHTML = html;
+  var pb = document.getElementById('pushBtn');
+  if (pb) pb.addEventListener('click', enablePush);
+}
+
+function urlBase64ToUint8Array(base64String) {
+  var padding = '='.repeat((4 - base64String.length % 4) % 4);
+  var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var raw = atob(base64), arr = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+function enablePush() {
+  PUSH_STATE = 'busy'; render();
+  navigator.serviceWorker.register('/sw.js').then(function (reg) {
+    return fetch('/.netlify/functions/push-subscribe').then(function (r) { return r.json(); }).then(function (kd) {
+      if (!kd.publicKey) throw new Error('no key');
+      return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(kd.publicKey) });
+    });
+  }).then(function (sub) {
+    return fetch('/.netlify/functions/order-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'subscribe', reference: REF, k: KEY, subscription: sub, lang: LANG }),
+    });
+  }).then(function (r) {
+    PUSH_STATE = r.ok ? 'on' : 'idle'; render();
+  }).catch(function () { PUSH_STATE = 'idle'; render(); });
+}
+
+function load() {
+  if (!REF || !KEY) { DATA = null; render(); return; }
+  fetch('/.netlify/functions/order-status?ref=' + encodeURIComponent(REF) + '&k=' + encodeURIComponent(KEY))
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d) { DATA = d; } render(); }) // transienter Fehler (null) beim Polling: zuletzt geladene Daten behalten statt "nicht gefunden"
+    .catch(function () { render(); });
+}
+
+(function initStatic() {
+  var lt = document.getElementById('loadingTxt'); if (lt) lt.textContent = T.loading;
+  var ft = document.getElementById('footTxt'); if (ft) ft.textContent = T.auto;
+  document.title = LANG === 'en' ? "Order status - Grill'n Chill" : (LANG === 'tr' ? "Sipariş durumu - Grill'n Chill" : "Bestellstatus - Grill'n Chill");
+})();
+load();
+setInterval(load, 20000);
+document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
+</script>
+</body>
+</html>

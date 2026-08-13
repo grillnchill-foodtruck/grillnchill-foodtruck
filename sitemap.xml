@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://grillnchill-foodtruck.de/</loc>
+    <lastmod>2026-08-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://grillnchill-foodtruck.de/team.webp</image:loc>
+      <image:title>Grilln Chill Halal Burger Foodtruck Bielefeld</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://grillnchill-foodtruck.de/produktbilder/kubis.webp</image:loc>
+      <image:title>Kubis Special – Halal Smashburger mit Double Patty</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://grillnchill-foodtruck.de/catering</loc>
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://grillnchill-foodtruck.de/gutscheine</loc>
+    <lastmod>2026-07-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>

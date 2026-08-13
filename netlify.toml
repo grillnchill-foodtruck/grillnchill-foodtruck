@@ -1,0 +1,186 @@
+# ============================================================
+#  Grilln Chill – Netlify Konfiguration
+# ============================================================
+
+[build]
+  # Statische Dateien im Root-Verzeichnis
+  publish    = "."
+  # Hier liegen die Netlify-Functions
+  functions  = "netlify/functions"
+
+# Saubere URL für SumUp-Endpoint:
+[[redirects]]
+  from   = "/sumup-checkout"
+  to     = "/.netlify/functions/sumup-checkout"
+  status = 200
+
+# Saubere URL für E-Mail-Endpoint:
+[[redirects]]
+  from   = "/send-email"
+  to     = "/.netlify/functions/send-email"
+  status = 200
+
+# Status-Update (vom Owner per E-Mail-Klick):
+[[redirects]]
+  from   = "/status-update"
+  to     = "/.netlify/functions/status-update"
+  status = 200
+
+# Laden-Status (Pause / Ausverkauft) – lesen + schreiben:
+[[redirects]]
+  from   = "/shop-status"
+  to     = "/.netlify/functions/shop-status"
+  status = 200
+
+[[redirects]]
+  from   = "/google-reviews"
+  to     = "/.netlify/functions/google-reviews"
+  status = 200
+
+# Admin-Panel unter sauberer URL /admin erreichbar:
+[[redirects]]
+  from   = "/admin"
+  to     = "/admin.html"
+  status = 200
+
+# Sicherheits-Header
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "SAMEORIGIN"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://nominatim.openstreetmap.org; frame-src https://maps.google.com https://www.google.com https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+    Permissions-Policy     = "geolocation=(self), microphone=(), camera=(self), payment=(), usb=()"
+
+# Cache-Optimierung für statische Dateien
+[[headers]]
+  for = "/logo.png"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+# Service Worker: NICHT cachen + Scope auf Root erlauben
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control       = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+# Manifest: korrekter Content-Type, moderat cachen
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type  = "application/manifest+json"
+    Cache-Control = "public, max-age=3600"
+
+# App-Icons: lange cachen (ändern sich selten)
+[[headers]]
+  for = "/icon-*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[redirects]]
+  from   = "/track"
+  to     = "/.netlify/functions/track"
+  status = 200
+
+[[redirects]]
+  from   = "/push-subscribe"
+  to     = "/.netlify/functions/push-subscribe"
+  status = 200
+
+[[redirects]]
+  from   = "/push-send"
+  to     = "/.netlify/functions/push-send"
+  status = 200
+
+# Retargeting: täglicher Gutschein-Versand (09:00 UTC = 11:00 dt. Sommerzeit)
+[functions."retarget-daily"]
+  schedule = "0 9 * * *"
+
+# Geburtstags-Bonus: täglich morgens prüfen (07:00 UTC ≈ 09:00 dt. Sommerzeit)
+[functions."birthday-daily"]
+  schedule = "0 7 * * *"
+
+[[redirects]]
+  from   = "/voucher-check"
+  to     = "/.netlify/functions/voucher-check"
+  status = 200
+
+[[redirects]]
+  from   = "/retarget-optout"
+  to     = "/.netlify/functions/retarget-optout"
+  status = 200
+
+# Zahlungs-Abgleich: Sicherheitsnetz hinter dem Realtime-Webhook (alle 5 Min.)
+[functions."orders-reconcile"]
+  schedule = "*/5 * * * *"
+
+[[redirects]]
+  from   = "/catering"
+  to     = "/catering.html"
+  status = 200
+
+[[redirects]]
+  from   = "/team"
+  to     = "/?team=start"
+  status = 302
+
+[[redirects]]
+  from   = "/gutscheine"
+  to     = "/gutscheine.html"
+  status = 200
+
+# Schriften: selbst gehostet, ändern sich nie → 1 Jahr, immutable
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Produktbilder: 7 Tage Browser-Cache (SW hält sie zusätzlich frisch)
+[[headers]]
+  for = "/produktbilder/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Hero-Assets (Poster + Video): ändern sich praktisch nie, 1 Woche cachen
+[[headers]]
+  for = "/hero/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Team-Foto & Halal-Siegel: statische Bilder im Root
+[[headers]]
+  for = "/team.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/hcg-siegel.*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[redirects]]
+  from   = "/account"
+  to     = "/.netlify/functions/account"
+  status = 200
+
+[[redirects]]
+  from   = "/s/*"
+  to     = "/status.html"
+  status = 200
+
+[[headers]]
+  for = "/admin.html"
+  [headers.values]
+    X-Robots-Tag    = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    Cache-Control   = "no-store"
+
+# Gebrandete 404-Seite
+[[redirects]]
+  from   = "/*"
+  to     = "/404.html"
+  status = 404
+
