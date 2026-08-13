@@ -10868,14 +10868,16 @@ window.addEventListener('load', function () {
   window.addEventListener('offline', function () { showToast(t('toast.offline'), 4000); });
   window.addEventListener('online',  function () { showToast(t('toast.online')); });
 
-  /* ---------- Mobil: Nav versteckt sich beim Runterscrollen ---------- */
+  /* ---------- Nav beim Runterscrollen verstecken: nur noch im App-Modus.
+     Auf der normalen Mobil-Website bleibt der Header dauerhaft sticky sichtbar. ---------- */
   function initNavAutoHide() {
     var nav = document.getElementById('nav');
     if (!nav) return;
     var lastY = window.scrollY, raf = 0;
     function onScroll() {
       raf = 0;
-      if (window.innerWidth >= 900) { nav.classList.remove('nav-hidden'); lastY = window.scrollY; return; }
+      var appMode = document.body.classList.contains('app-forced');
+      if (window.innerWidth >= 900 || !appMode) { nav.classList.remove('nav-hidden'); lastY = window.scrollY; return; }
       var y = window.scrollY;
       if (y < 140) nav.classList.remove('nav-hidden');
       else if (y > lastY + 6) nav.classList.add('nav-hidden');
