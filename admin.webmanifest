@@ -1,0 +1,9 @@
+{
+  "name": "Grill'n Chill Admin",
+  "short_name": "GNC Admin",
+  "start_url": "/admin.html",
+  "display": "standalone",
+  "background_color": "#0C0B09",
+  "theme_color": "#0C0B09",
+  "icons": [{ "src": "/logo.png", "sizes": "512x512", "type": "image/png" }]
+}
