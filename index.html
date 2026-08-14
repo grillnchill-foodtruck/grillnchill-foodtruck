@@ -1984,6 +1984,71 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   align-items: center;
 }
 .cart-item:last-child { border-bottom: none; }
+
+/* ---- Wischen zum Entfernen (iOS-Muster) ---- */
+.cart-swipe {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;            /* vertikales Scrollen bleibt beim Browser */
+  border-bottom: 1px solid var(--color-border);
+}
+.cart-swipe:last-child { border-bottom: none; }
+.cart-swipe .cart-item {
+  border-bottom: none;
+  position: relative;
+  background: var(--color-bg-elev);
+  will-change: transform;
+}
+.cart-swipe-action {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 1.3rem;
+  background: var(--color-error, #E04848);
+  color: #fff;
+  opacity: 0;                     /* wird während der Geste hochgeblendet */
+}
+.cart-swipe-action svg {
+  width: 26px; height: 26px;
+  transform: scale(var(--trash-scale, 0.85));
+  transform-origin: center;
+}
+.cart-swipe.swipe-armed .cart-swipe-action { background: var(--color-error, #E04848); }
+/* Reduzierte Bewegung: Geste bleibt nutzbar, nur ohne Feder-Nachschwingen */
+@media (prefers-reduced-motion: reduce) {
+  .cart-swipe .cart-item { will-change: auto; }
+}
+.cart-swipe-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  opacity: 0.75;
+}
+/* Rückgängig statt Sicherheitsabfrage – ein Fehlwisch kostet nichts */
+.cart-undo-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 1rem;
+  font-size: 0.86rem;
+  color: var(--color-cream-dim);
+  animation: undoIn .22s ease-out;
+}
+.cart-undo-bar button {
+  background: none; border: none; cursor: pointer;
+  color: var(--color-orange-bright);
+  font-family: inherit; font-weight: 700; font-size: 0.86rem;
+  padding: 0.35rem 0.5rem; min-height: 36px;
+  border-radius: 8px;
+}
+.cart-undo-bar button:active { transform: scale(0.96); }
+@keyframes undoIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cart-undo-bar { animation: none; } }
 .cart-item-icon {
   width: 52px; height: 52px;
   border-radius: var(--radius-sm);
@@ -6800,6 +6865,197 @@ function removeFromCart(key) {
   updateCartUI();
 }
 
+/* ====================================================================
+   WISCHEN ZUM ENTFERNEN – Warenkorb
+   Nach Apple-Fluid-Prinzipien: 1:1-Tracking ab 10 px Hysterese,
+   Rubber-Banding nach rechts, Momentum-Projektion beim Loslassen,
+   kritisch gedämpfte Feder (response 0.34 s) und Undo statt Nachfrage.
+   ==================================================================== */
+(function () {
+  const THRESHOLD = 88;          // px – ab hier löst das Entfernen aus
+  const HYSTERESIS = 10;         // px – erst dann steht die Richtung fest
+  const RESPONSE = 0.34;         // Feder-Response in Sekunden
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Kritisch gedämpfte Feder, analytisch gelöst – startet immer beim aktuellen
+  // Bildschirmwert und übernimmt die Geschwindigkeit der Geste (kein Bruch).
+  function spring(from, to, velocity, onFrame, onRest) {
+    if (reduce) { onFrame(to); if (onRest) onRest(); return function () {}; }
+    const w = 2 * Math.PI / RESPONSE;
+    const A = from - to, B = velocity + w * A;
+    const t0 = performance.now();
+    let raf = 0, stopped = false;
+    (function step(now) {
+      if (stopped) return;
+      const t = (now - t0) / 1000;
+      const val = to + (A + B * t) * Math.exp(-w * t);
+      // Ruhe erkannt – oder Notbremse, damit ein Abschluss nie ausbleibt
+      if ((Math.abs(val - to) < 0.4 && Math.abs(B * Math.exp(-w * t)) < 12) || t > 1.2) {
+        onFrame(to); if (onRest) onRest(); return;
+      }
+      onFrame(val);
+      raf = requestAnimationFrame(step);
+    })(t0);
+    return function () { stopped = true; cancelAnimationFrame(raf); };
+  }
+  // Weicher Widerstand jenseits der Grenze (nach rechts gibt es nichts zu holen)
+  function rubber(over, dim) { return (over * dim * 0.55) / (dim + 0.55 * Math.abs(over)); }
+
+  let g = null;             // laufende Geste
+  let suppressClick = false;
+  let undoTimer = 0;
+
+  function itemsOf(wrap) {
+    return { card: wrap.querySelector('.cart-item'), action: wrap.querySelector('.cart-swipe-action') };
+  }
+  function paint(wrap, x) {
+    const { card, action } = itemsOf(wrap);
+    if (!card) return;
+    card.style.transform = 'translate3d(' + x + 'px,0,0)';
+    if (action) {
+      const p = Math.min(1, Math.abs(Math.min(0, x)) / THRESHOLD);
+      action.style.opacity = String(p);
+      // Der Papierkorb wächst dem Finger entgegen – die Bewegung zeigt an, was kommt
+      action.style.setProperty('--trash-scale', (0.85 + p * 0.25).toFixed(3));
+    }
+  }
+  function settle(wrap, from, velocity) {
+    spring(from, 0, velocity, function (v) { paint(wrap, v); }, function () {
+      const { card, action } = itemsOf(wrap);
+      if (card) card.style.transform = '';
+      if (action) { action.style.opacity = '0'; action.style.setProperty('--trash-scale', '0.85'); }
+      wrap.classList.remove('swipe-armed');
+    });
+  }
+  function commitRemove(wrap, key, from, velocity) {
+    const { card } = itemsOf(wrap);
+    const target = -(wrap.offsetWidth + 24);
+    const finish = function () {
+      // Für Undo: Eintrag samt Position sichern, bevor er verschwindet
+      const entry = cart[key];
+      const order = Object.keys(cart);
+      const idx = order.indexOf(key);
+      removeFromCart(key);
+      showUndoRemove(key, entry, order, idx);
+    };
+    if (reduce) { finish(); return; }
+    wrap.style.overflow = 'hidden';
+    spring(from, target, velocity, function (v) { paint(wrap, v); }, function () {
+      // Höhe kollabieren lassen, damit die Liste nicht springt
+      const h = wrap.offsetHeight;
+      wrap.style.height = h + 'px';
+      wrap.style.transition = 'height .22s ease, opacity .18s ease';
+      if (card) card.style.opacity = '0';
+      requestAnimationFrame(function () { wrap.style.height = '0px'; wrap.style.opacity = '0'; });
+      setTimeout(finish, 210);
+    });
+  }
+
+  function showUndoRemove(key, entry, order, idx) {
+    if (!entry) return;
+    const old = document.getElementById('cartUndoBar');
+    if (old) old.remove();
+    clearTimeout(undoTimer);
+    const bar = document.createElement('div');
+    bar.id = 'cartUndoBar';
+    bar.className = 'cart-undo-bar';
+    bar.setAttribute('role', 'status');
+    bar.innerHTML = '<span>' + t('cart.removed') + '</span><button type="button">' + t('cart.undo') + '</button>';
+    bar.querySelector('button').addEventListener('click', function () {
+      // Eintrag an seiner alten Stelle wieder einsetzen
+      const rebuilt = {};
+      const keys = order.filter(function (k) { return k !== key; });
+      keys.splice(Math.max(0, idx), 0, key);
+      keys.forEach(function (k) { if (k === key) rebuilt[k] = entry; else if (cart[k]) rebuilt[k] = cart[k]; });
+      Object.keys(cart).forEach(function (k) { delete cart[k]; });
+      Object.keys(rebuilt).forEach(function (k) { cart[k] = rebuilt[k]; });
+      saveCart(); renderMenu(); renderCart(); updateCartUI();
+      bar.remove();
+      if (window.hapticTick) hapticTick(10);
+    });
+    const body = document.getElementById('cartBody');
+    if (body) { body.insertBefore(bar, body.firstChild); body.scrollTop = 0; }
+    undoTimer = setTimeout(function () { bar.remove(); }, 6000);
+  }
+
+  const body = document.getElementById('cartBody');
+  if (!body) return;
+
+  body.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const wrap = e.target.closest('.cart-swipe');
+    if (!wrap || !body.contains(wrap)) return;
+    g = {
+      wrap: wrap, key: wrap.dataset.swipekey, id: e.pointerId,
+      x0: e.clientX, y0: e.clientY, x: 0, dir: null, armed: false,
+      hist: [{ x: e.clientX, t: performance.now() }],
+    };
+  }, { passive: true });
+
+  body.addEventListener('pointermove', function (e) {
+    if (!g || e.pointerId !== g.id) return;
+    const dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+    if (!g.dir) {
+      if (Math.abs(dx) < HYSTERESIS && Math.abs(dy) < HYSTERESIS) return;
+      // Beide Kandidaten laufen mit, bis die Absicht klar ist
+      g.dir = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (g.dir === 'y') { g = null; return; }          // Scrollen gewinnt
+      try { g.wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    if (g.dir !== 'x') return;
+    e.preventDefault();
+    const raw = dx - (dx > 0 ? HYSTERESIS : -HYSTERESIS);
+    // Nach links frei, nach rechts nur mit Widerstand
+    g.x = raw < 0 ? raw : rubber(raw, g.wrap.offsetWidth);
+    paint(g.wrap, g.x);
+    const armed = g.x <= -THRESHOLD;
+    if (armed !== g.armed) {
+      g.armed = armed;
+      g.wrap.classList.toggle('swipe-armed', armed);
+      if (armed && window.hapticTick) hapticTick(11);   // spürbarer Rastpunkt
+    }
+    g.hist.push({ x: e.clientX, t: performance.now() });
+    if (g.hist.length > 5) g.hist.shift();
+  });
+
+  function endGesture(e) {
+    if (!g || (e && e.pointerId !== g.id)) return;
+    const cur = g;
+    g = null;
+    if (cur.dir !== 'x') return;
+    suppressClick = true;
+    setTimeout(function () { suppressClick = false; }, 60);
+    // Geschwindigkeit aus den letzten Bewegungen (px/s).
+    // Nur Messpunkte mit echtem Zeitabstand verwenden – sonst liefern zwei
+    // Events in derselben Millisekunde absurde Werte und werfen das Item raus.
+    const last = cur.hist[cur.hist.length - 1];
+    let first = cur.hist[0];
+    for (let i = cur.hist.length - 1; i >= 0; i--) {
+      if (last.t - cur.hist[i].t >= 25) { first = cur.hist[i]; break; }
+    }
+    const dt = last.t - first.t;
+    let v = dt >= 8 ? (last.x - first.x) / dt * 1000 : 0;
+    v = Math.max(-2200, Math.min(2200, v));   // auf realistische Wischgeschwindigkeit begrenzen
+    // Entscheidung nach Absicht, nicht nach Zufall: weit genug gezogen ODER
+    // entschlossen geflickt. Die volle Scroll-Projektion wäre hier zu scharf –
+    // sie würde schon sanfte Züge in ein Löschen umdeuten.
+    const far = cur.x <= -THRESHOLD;
+    const flick = v <= -600 && cur.x <= -44;
+    if (far || flick) {
+      if (window.hapticTick) hapticTick([9, 30, 14]);
+      commitRemove(cur.wrap, cur.key, cur.x, v);
+    } else {
+      settle(cur.wrap, cur.x, v);
+    }
+  }
+  body.addEventListener('pointerup', endGesture);
+  body.addEventListener('pointercancel', endGesture);
+  // Ein Wisch darf keinen Klick auf den darunterliegenden Button auslösen
+  body.addEventListener('click', function (e) {
+    if (suppressClick) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+})();
+
 // Wie viele Stück eines Burgers gesamt im Warenkorb (single + double zusammen)?
 function cartQtyForMenuItem(menuId) {
   let total = 0;
@@ -7652,6 +7908,10 @@ function renderCart() {
       }
 
       itemsHtml += `
+        <div class="cart-swipe" data-swipekey="${key}">
+        <div class="cart-swipe-action" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/><path d="M10.5 11v5.5M13.5 11v5.5"/></svg>
+        </div>
         <div class="cart-item">
           <div class="cart-item-icon">${item.image ? `<img src="${item.image}" alt="${productName(item)}" loading="lazy" />` : item.emoji}</div>
           <div class="cart-item-info">
@@ -7669,8 +7929,13 @@ function renderCart() {
             </div>
           </div>
         </div>
+        </div>
       `;
     });
+    // Dezenter Hinweis auf die Geste – nur dort, wo sie überhaupt möglich ist
+    if (window.matchMedia && matchMedia('(pointer: coarse)').matches) {
+      itemsHtml += `<p class="cart-swipe-hint">${t('cart.swipe_hint')}</p>`;
+    }
     const suggestions = suggestUpsellItems();
 
     const sub = cartSubtotal();
