@@ -2337,7 +2337,15 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .mini-btn svg, .grp-discard-btn svg { width: 15px; height: 15px; flex: none; }
 .mini-btn:active, .grp-discard-btn:active { transform: scale(0.96); }
 @media (hover: hover) and (pointer: fine) {
-  .mini-btn:hover, .grp-discard-btn:hover {
+  /* Neutrale Nebenaktionen in der Hausfarbe. Rot bleibt dem vorbehalten, was
+     wirklich etwas wegnimmt – sonst liest sich jeder Knopf wie "loeschen". */
+  .mini-btn:hover {
+    border-color: var(--color-orange);
+    color: var(--color-orange-bright);
+    background: rgba(232, 90, 36, 0.10);
+  }
+  /* Gruppe verwerfen ist ein Ausstieg – hier ist Rot richtig. */
+  .grp-discard-btn:hover {
     border-color: var(--color-error);
     color: var(--color-error);
     background: rgba(224, 72, 72, 0.08);
