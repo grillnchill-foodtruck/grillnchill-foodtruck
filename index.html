@@ -795,10 +795,35 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   top: 0;
   z-index: 100;
   background: rgba(10, 10, 10, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--color-border);
-  transition: transform .3s;
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  /* Trennlinie erst, wenn wirklich Inhalt darunterliegt (siehe .nav-scrolled) */
+  border-bottom: 1px solid transparent;
+  transition: transform .3s, border-color .25s ease, background-color .25s ease;
+}
+/* Weiche Kante statt harter Linie: der Verlauf zeigt sich nur beim Scrollen –
+   dort, wo die schwebende Leiste den Inhalt tatsächlich überlappt. */
+.nav::after {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 100%;
+  height: 14px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.38), transparent);
+  opacity: 0;
+  transition: opacity .25s ease;
+  pointer-events: none;
+}
+.nav.nav-scrolled { border-bottom-color: var(--color-border); background: rgba(10, 10, 10, 0.96); }
+.nav.nav-scrolled::after { opacity: 1; }
+/* Systemeinstellungen respektieren: weniger Transparenz, mehr Kontrast */
+@media (prefers-reduced-transparency: reduce) {
+  .nav { background: var(--color-bg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .nav::after { display: none; }
+}
+@media (prefers-contrast: more) {
+  .nav { background: var(--color-bg); border-bottom-color: var(--color-cream-dim); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav, .nav::after { transition: none; }
 }
 .nav-inner {
   max-width: var(--container);
@@ -954,6 +979,13 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   display: block; width: 22px; height: 2px;
   background: var(--color-cream); transition: .25s;
   border-radius: 2px;
+}
+/* Rückmeldung beim Drücken – nicht erst beim Loslassen */
+.nav-burger:active { transform: scale(0.92); }
+.nav-logo:active { transform: scale(0.97); }
+.nav-logo { transition: transform .12s; }
+@media (prefers-reduced-motion: reduce) {
+  .nav-burger:active, .nav-logo:active { transform: none; }
 }
 .nav-burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .nav-burger.open span:nth-child(2) { opacity: 0; }
@@ -11249,6 +11281,8 @@ window.addEventListener('load', function () {
     var lastY = window.scrollY, raf = 0;
     function onScroll() {
       raf = 0;
+      // Kante der schwebenden Leiste: nur zeigen, wenn Inhalt darunter durchläuft
+      nav.classList.toggle('nav-scrolled', window.scrollY > 8);
       var appMode = document.body.classList.contains('app-forced');
       if (window.innerWidth >= 900 || !appMode) { nav.classList.remove('nav-hidden'); lastY = window.scrollY; return; }
       var y = window.scrollY;
@@ -11260,6 +11294,7 @@ window.addEventListener('load', function () {
     window.addEventListener('scroll', function () {
       if (!raf) raf = requestAnimationFrame(onScroll);
     }, { passive: true });
+    onScroll();   // Startzustand setzen (z. B. bei Aufruf mit #anker)
   }
 
   /* ---------- Mobil: Bottom-Sheet-Geste (am Griff ziehen zum Schließen) ---------- */
