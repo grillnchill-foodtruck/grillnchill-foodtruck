@@ -1297,7 +1297,8 @@ async function scanAction(action){
 async function scanAdjust(){
   const rwRaw=($('scanAdjRewards').value||'').trim();
   const spRaw=($('scanAdjSpent').value||'').replace(',','.').trim();
-  if(rwRaw===''&&spRaw===''){ toast('Nichts zu ändern'); return; }
+  const bdRaw=(($('scanAdjBday')||{}).value||'').trim();
+  if(rwRaw===''&&spRaw===''&&bdRaw===''){ toast('Nichts zu ändern'); return; }
   const cust=(scanCard&&scanCard.name)||'Kunde';
   const lines=[];
   if(rwRaw!==''){
@@ -1310,6 +1311,10 @@ async function scanAdjust(){
     if(!isFinite(sp)||sp<0||sp>99.99){ toast('Kartenstand zwischen 0 und 99,99 €'); return; }
     lines.push('Kartenstand: '+eur(scanCard.spent||0)+' → '+eur(sp));
   }
+  if(bdRaw!==''){
+    if(!/^\d{1,2}\.\d{1,2}\.?$/.test(bdRaw)){ toast('Geburtstag als TT.MM. eingeben'); return; }
+    lines.push('Geburtstag: '+(scanCard.birthday||'–')+' → '+bdRaw);
+  }
   const ok=await confirmBooking({
     title:'Guthaben ändern?', customer:cust, amount:lines.join('\n'),
     note:'Diese Korrektur wird mit deinem Namen im Protokoll festgehalten.',
@@ -1319,6 +1324,7 @@ async function scanAdjust(){
   const body={password:currentPw,action:'adjust',token:scanToken};
   if(rwRaw!=='') body.rewards=parseInt(rwRaw,10);
   if(spRaw!=='') body.spent=parseFloat(spRaw);
+  if(bdRaw!=='') body.birthday=bdRaw;
   try{
     const res=await fetch('/.netlify/functions/loyalty-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await res.json().catch(()=>({}));

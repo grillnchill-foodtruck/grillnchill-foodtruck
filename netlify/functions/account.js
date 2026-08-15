@@ -29,6 +29,8 @@ const CODE_TTL_MS = 10 * 60 * 1000;
 const CODE_RESEND_MS = 60 * 1000;
 const MAX_TRIES = 5;
 const MAX_TOKENS = 5;
+// Erstes Eintragen ist frei, danach genau eine Korrektur (Tippfehler)
+const BIRTHDAY_MAX_CHANGES = 1;
 const MAX_ADDRESSES = 3;
 
 const CORS = {
@@ -103,6 +105,10 @@ function publicProfile(rec) {
     name: rec.name || '',
     phone: rec.phone || '',
     birthday: rec.birthday || '',
+    // Sagt dem Konto, ob das Feld noch bearbeitet werden darf
+    birthdayLocked: !!(rec.birthday && Number(rec.birthdayChanges || 0) >= BIRTHDAY_MAX_CHANGES),
+    birthdayChangesLeft: rec.birthday
+      ? Math.max(0, BIRTHDAY_MAX_CHANGES - Number(rec.birthdayChanges || 0)) : BIRTHDAY_MAX_CHANGES,
     refCode: rec.refCode || '',
     qrToken: rec.qrToken || '',
     ...custLevel(rec),
@@ -249,16 +255,34 @@ exports.handler = async (event) => {
     if (action === 'save') {
       if (input.name !== undefined) rec.name = clean(input.name, 60);
       if (input.phone !== undefined) rec.phone = clean(input.phone, 30);
+      /* Geburtstag: einmal eintragen, eine Korrektur fuer Tippfehler, danach
+         gesperrt. Die Sperre steht hier im Server – im Browser waere sie in
+         zehn Sekunden umgangen. Das Team kann den Tag beim Scannen der
+         Kundenkarte weiterhin aendern (loyalty-scan).
+         Zur Einordnung: Der Geburtstagsbonus hat ohnehin eine Jahressperre
+         (lastBirthdayGiftYear), es gibt also hoechstens 5 EUR im Kalenderjahr.
+         Die Sperre verhindert vor allem, dass jemand den Zeitpunkt frei
+         waehlt. */
       if (input.birthday !== undefined) {
         const b = String(input.birthday || '').trim();
-        if (b === '') rec.birthday = '';
-        else {
+        const bisher = rec.birthday || '';
+        const aenderungen = Number(rec.birthdayChanges || 0);
+        const neu = (() => {
+          if (b === '') return '';
           const m = b.match(/^(\d{1,2})\.(\d{1,2})\.?$/);
-          if (m) {
-            const dd = Math.min(31, Math.max(1, parseInt(m[1], 10)));
-            const mm = Math.min(12, Math.max(1, parseInt(m[2], 10)));
-            rec.birthday = String(dd).padStart(2, '0') + '.' + String(mm).padStart(2, '0') + '.';
+          if (!m) return null;                       // unlesbar -> ignorieren
+          const dd = Math.min(31, Math.max(1, parseInt(m[1], 10)));
+          const mm = Math.min(12, Math.max(1, parseInt(m[2], 10)));
+          return String(dd).padStart(2, '0') + '.' + String(mm).padStart(2, '0') + '.';
+        })();
+        if (neu !== null && neu !== bisher) {
+          if (bisher && aenderungen >= BIRTHDAY_MAX_CHANGES) {
+            return json(403, { error: 'birthday_locked',
+              hint: 'Der Geburtstag kann nicht mehr geändert werden. Das Team am Truck kann ihn korrigieren.' });
           }
+          rec.birthday = neu;
+          // Nur echte Aenderungen zaehlen, das erste Eintragen nicht
+          if (bisher) rec.birthdayChanges = aenderungen + 1;
         }
       }
       if (Array.isArray(input.addresses)) {

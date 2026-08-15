@@ -83,6 +83,7 @@ function cardView(rec) {
     })(rec.email),
     spent: Math.round((rec.spent || 0) * 100) / 100,
     rewards: rec.rewards || 0,
+    birthday: rec.birthday || '',   // damit das Team den aktuellen Tag sieht
     toNext: Math.max(0, Math.round((100 - (rec.spent || 0)) * 100) / 100),
     ...custLevel(rec),
   };
@@ -168,6 +169,30 @@ exports.handler = async (event) => {
       rec.spent = sp;
       if (sp !== before.spent) parts.push('Kartenstand ' + before.spent.toFixed(2) + ' € → ' + sp.toFixed(2) + ' €');
     }
+    // Geburtstag korrigieren. Kunden duerfen ihn nur einmal aendern, damit
+    // sich niemand den Zeitpunkt des Bonus aussucht; das Team am Truck kann
+    // einen Tippfehler jederzeit richtigstellen. Der Aenderungszaehler des
+    // Kunden wird dabei zurueckgesetzt, damit er nicht doppelt bestraft wird.
+    if (input.birthday !== undefined && input.birthday !== null) {
+      const b = String(input.birthday).trim();
+      if (b === '') {
+        if (rec.birthday) parts.push('Geburtstag ' + rec.birthday + ' → entfernt');
+        rec.birthday = '';
+        rec.birthdayChanges = 0;
+      } else {
+        const m = b.match(/^(\d{1,2})\.(\d{1,2})\.?$/);
+        if (!m) return json(400, { error: 'bad_birthday', hint: 'Format TT.MM.' });
+        const dd = Math.min(31, Math.max(1, parseInt(m[1], 10)));
+        const mm = Math.min(12, Math.max(1, parseInt(m[2], 10)));
+        const neu = String(dd).padStart(2, '0') + '.' + String(mm).padStart(2, '0') + '.';
+        if (neu !== rec.birthday) {
+          parts.push('Geburtstag ' + (rec.birthday || '–') + ' → ' + neu);
+          rec.birthday = neu;
+          rec.birthdayChanges = 0;
+        }
+      }
+    }
+
     if (!parts.length) return json(400, { error: 'no_change', hint: 'Nichts geändert' });
 
     await s.setJSON(idx.key, rec);
