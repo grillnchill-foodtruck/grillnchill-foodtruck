@@ -2007,6 +2007,8 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .upsell-actions .upsell-skip { display: block; width: fit-content; max-width: 100%; margin-inline: auto; }
 
 .cart-drawer {
+  /* iOS-Sheet-Kurve: schnell weg vom Rand, weich in die Ruhe. */
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   position: fixed; top: 0; right: 0; bottom: 0;
   width: 100%;
   max-width: 480px;
@@ -2014,12 +2016,48 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   z-index: 201;
   transform: translateX(100%);
   visibility: hidden; /* geschlossen auch für Screenreader unsichtbar */
-  transition: transform .3s ease, visibility 0s linear .3s;
+  transition: transform .34s var(--ease-sheet), visibility 0s linear .34s;
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--color-border);
 }
-.cart-drawer.open { transform: translateX(0); visibility: visible; transition: transform .3s ease, visibility 0s; }
+.cart-drawer.open { transform: translateX(0); visibility: visible; transition: transform .34s var(--ease-sheet), visibility 0s; }
+
+/* Schrittwechsel: der Inhalt kommt aus der Richtung, in die man geht. */
+@keyframes cart-step-fwd  { from { opacity: 0; transform: translate3d(24px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes cart-step-back { from { opacity: 0; transform: translate3d(-24px, 0, 0); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  @keyframes cart-step-fwd  { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes cart-step-back { from { opacity: 0; } to { opacity: 1; } }
+}
+
+/* Weiche Kante statt harter Trennlinie – nur dort, wo Inhalt unter der
+   Kopf- bzw. Fussleiste verschwindet. */
+.cart-header, .cart-footer { position: relative; }
+.cart-header::after, .cart-footer::after {
+  content: '';
+  position: absolute; left: 0; right: 0;
+  height: 22px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.cart-header::after {
+  top: 100%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.30), rgba(0,0,0,0));
+}
+.cart-footer::after {
+  bottom: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.30), rgba(0,0,0,0));
+}
+.cart-drawer.edge-top .cart-header::after,
+.cart-drawer.edge-bottom .cart-footer::after { opacity: 1; }
+/* Der Verlauf uebernimmt die Trennung – die harte Linie waere doppelt gemoppelt. */
+.cart-drawer.edge-top .cart-header { border-bottom-color: transparent; }
+.cart-drawer.edge-bottom .cart-footer { border-top-color: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  .cart-header::after, .cart-footer::after { transition: none; }
+}
 
 .cart-header {
   padding: 1.1rem 1.2rem;
@@ -2250,6 +2288,17 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .cart-foot-sum-total strong {
   font-family: var(--font-display);
   font-size: 1.55rem;
+}
+/* Rueckmeldung im Moment des Druckens – auf allen Bedienelementen des Korbs. */
+.cart-item-qty button:active { transform: scale(0.88); }
+.cart-item-edit:active, .cart-item-remove:active { transform: scale(0.94); }
+.mode-fork-btn:active { transform: scale(0.97); }
+.cart-item-qty button, .cart-item-edit, .cart-item-remove, .mode-fork-btn {
+  transition: transform .12s ease-out, background .15s, border-color .15s, color .15s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cart-item-qty button:active, .cart-item-edit:active,
+  .cart-item-remove:active, .mode-fork-btn:active { transform: none; }
 }
 .mode-q-inline {
   text-align: center;
@@ -4263,7 +4312,9 @@ body:has(#dipOverlay.open) .cart-fab { display: none; }
     box-shadow: 0 -18px 60px rgba(0,0,0,0.55);
   }
   .cart-drawer.open { transform: translateY(0); }
+    /* Waehrend der Geste keine Uebergaenge – der Finger fuehrt, nichts laeuft nach. */
   .cart-drawer.dragging { transition: none; }
+  .cart-overlay.dragging { transition: none; }
   /* Grabber-Griff */
   .cart-drawer::before {
     content: '';
@@ -7283,6 +7334,8 @@ function removeFromCart(key) {
   }
   // Weicher Widerstand jenseits der Grenze (nach rechts gibt es nichts zu holen)
   function rubber(over, dim) { return (over * dim * 0.55) / (dim + 0.55 * Math.abs(over)); }
+  // Dieselbe Mechanik braucht auch die Sheet-Geste – einmal bauen, zweimal nutzen.
+  window.__gncMotion = { spring: spring, rubber: rubber, reduce: reduce };
 
   let g = null;             // laufende Geste
   let suppressClick = false;
@@ -8226,7 +8279,19 @@ function cartGoBack() {
   renderCart();
   const body = document.getElementById('cartBody');
   if (body) body.scrollTop = 0;
+  if (window.animateCartStep) animateCartStep(-1);
 }
+
+/* Nach jedem Aufbau die weichen Kanten neu bestimmen – der Inhalt und damit
+   die Scrollhoehe aendert sich bei jedem Schritt und bei jeder Mengenaenderung. */
+(function () {
+  const inner = renderCart;
+  renderCart = function () {
+    const r = inner.apply(this, arguments);
+    if (window.updateCartScrollEdges) requestAnimationFrame(window.updateCartScrollEdges);
+    return r;
+  };
+})();
 
 function renderCart() {
   const body = document.getElementById('cartBody');
@@ -8889,6 +8954,7 @@ function chooseMode(mode) {
   renderCart();
   const b = document.getElementById('cartBody');
   if (b) b.scrollTop = 0;
+  if (window.animateCartStep) animateCartStep(1);
   updateCartUI();
 }
 
@@ -8899,6 +8965,7 @@ function goToCheckout() {
   checkoutStep = 'details';
   renderCart();
   document.getElementById('cartBody').scrollTop = 0;
+  if (window.animateCartStep) animateCartStep(1);
 }
 
 async function submitOrder(e) {
@@ -11726,34 +11793,144 @@ window.addEventListener('load', function () {
     });
   }
 
-  /* ---------- Mobil: Bottom-Sheet-Geste (am Griff ziehen zum Schließen) ---------- */
+  /* ---------- Mobil: Bottom-Sheet-Geste (am Griff ziehen zum Schließen) ----------
+     Das Sheet klebt 1:1 am Finger, wehrt sich weich gegen das Ziehen nach oben
+     und uebernimmt beim Loslassen die Geschwindigkeit der Geste. Ein kurzer
+     Stups reicht, ein langsames Ziehen muss weit genug gehen.
+     Vorher: fester Schwellwert ohne Geschwindigkeit, harter Anschlag oben – und
+     beim Schliessen sprang das Sheet erst nach oben, bevor es wegfuhr. */
   function initSheetDrag() {
     var drawer = document.getElementById('cartDrawer');
+    var overlay = document.getElementById('cartOverlay');
     if (!drawer) return;
-    var startY = null, curY = 0, dragging = false;
-    drawer.addEventListener('touchstart', function (e) {
-      if (window.innerWidth > 767) return;
-      // Nur im oberen Griff-/Header-Bereich starten (kein Konflikt mit Scrollen)
-      var rect = drawer.getBoundingClientRect();
-      if (e.touches[0].clientY - rect.top > 64) return;
-      startY = e.touches[0].clientY;
-      dragging = true;
-      drawer.classList.add('dragging');
-    }, { passive: true });
-    drawer.addEventListener('touchmove', function (e) {
-      if (!dragging || startY === null) return;
-      curY = Math.max(0, e.touches[0].clientY - startY);
-      drawer.style.transform = 'translateY(' + curY + 'px)';
-    }, { passive: true });
-    drawer.addEventListener('touchend', function () {
-      if (!dragging) return;
-      dragging = false;
-      drawer.classList.remove('dragging');
+
+    var FAR = 110;        // px – so weit gezogen gilt als eindeutig
+    var FLICK_V = 620;    // px/s – ab hier reicht schon ein kurzer Stups
+    var FLICK_MIN = 34;   // px – aber nicht voellig aus dem Stand
+    var HYST = 8;         // px – erst dann steht die Absicht fest
+    var VMAX = 2600;      // px/s – Deckel gegen Ausreisser
+
+    var M = window.__gncMotion || {};
+    var g = null;         // laufende Geste
+    var stopSpring = null;
+
+    function sheetMode() { return window.innerWidth <= 767; }
+    function sheetH() { return drawer.getBoundingClientRect().height || window.innerHeight; }
+    function curY() {
+      // Immer vom tatsaechlichen Bildschirmwert lesen – so lae sst sich eine
+      // laufende Bewegung jederzeit greifen und umkehren.
+      var m = /translate3d\([^,]+,\s*(-?[\d.]+)px/.exec(drawer.style.transform || '');
+      return m ? parseFloat(m[1]) : 0;
+    }
+    function paint(y) {
+      drawer.style.transform = 'translate3d(0,' + y + 'px,0)';
+      // Der Schleier lichtet sich mit der Bewegung – Rueckmeldung waehrend
+      // der Geste, nicht erst am Ende.
+      if (overlay) overlay.style.opacity = String(Math.max(0, Math.min(1, 1 - y / sheetH())));
+    }
+    function reset() {
       drawer.style.transform = '';
-      if (curY > 110) { window.hapticTick(10); closeCart(); }
-      startY = null; curY = 0;
-    });
+      drawer.classList.remove('dragging');
+      if (overlay) { overlay.style.opacity = ''; overlay.classList.remove('dragging'); }
+    }
+
+    drawer.addEventListener('pointerdown', function (e) {
+      if (!sheetMode() || e.pointerType === 'mouse') return;
+      if (!drawer.classList.contains('open')) return;
+      // Nur im oberen Griff-/Kopfbereich greifen (kein Konflikt mit Scrollen),
+      // aber nicht auf den Knoepfen dort – die haben ihre eigene Aufgabe.
+      var rect = drawer.getBoundingClientRect();
+      if (e.clientY - rect.top > 64) return;
+      if (e.target.closest && e.target.closest('button, a, input, select, textarea')) return;
+      if (stopSpring) { stopSpring(); stopSpring = null; }
+      g = {
+        id: e.pointerId,
+        startY: e.clientY,
+        base: curY(),          // laufende Bewegung wird uebernommen, kein Sprung
+        armed: false,
+        hist: [{ y: e.clientY, t: performance.now() }]
+      };
+    }, { passive: true });
+
+    drawer.addEventListener('pointermove', function (e) {
+      if (!g || e.pointerId !== g.id) return;
+      var dy = e.clientY - g.startY;
+      if (!g.armed) {
+        if (Math.abs(dy) < HYST) return;
+        g.armed = true;
+        drawer.classList.add('dragging');
+        if (overlay) overlay.classList.add('dragging');
+        try { drawer.setPointerCapture(g.id); } catch (err) {}
+      }
+      var y = g.base + dy;
+      // Nach oben gibt es nichts zu holen – weicher Widerstand statt Blockade.
+      if (y < 0) y = -(M.rubber ? M.rubber(-y, sheetH()) : -y * 0.3);
+      paint(y);
+      var now = performance.now();
+      var last = g.hist[g.hist.length - 1];
+      if (now - last.t >= 25) {          // zu dichte Punkte ergeben Fantasiewerte
+        g.hist.push({ y: e.clientY, t: now });
+        if (g.hist.length > 5) g.hist.shift();
+      }
+    }, { passive: true });
+
+    function end(e) {
+      if (!g || (e && e.pointerId !== g.id)) return;
+      var gest = g; g = null;
+      try { drawer.releasePointerCapture(gest.id); } catch (err) {}
+      drawer.classList.remove('dragging');
+      if (!gest.armed) return;           // war doch nur ein Tipp
+
+      var y = curY();
+      // Geschwindigkeit aus zwei ausreichend weit auseinanderliegenden Punkten
+      var v = 0, a = gest.hist[0], b = gest.hist[gest.hist.length - 1];
+      if (b.t - a.t > 0) v = Math.max(-VMAX, Math.min(VMAX, (b.y - a.y) / (b.t - a.t) * 1000));
+
+      var schliessen = y > FAR || (v >= FLICK_V && y >= FLICK_MIN);
+      if (schliessen) {
+        if (window.hapticTick) hapticTick(10);
+        // Weiter in die Richtung der Geste – nicht erst zurueckspringen und
+        // dann wegfahren. Genau das war vorher sichtbar.
+        var ziel = sheetH();
+        stopSpring = M.spring ? M.spring(y, ziel, v, paint, function () {
+          closeCart(); reset();
+        }) : (function () { closeCart(); reset(); return function () {}; })();
+      } else {
+        // Zurueck an den Platz, mit der Geschwindigkeit der Geste im Ruecken
+        stopSpring = M.spring ? M.spring(y, 0, v, paint, function () { reset(); })
+                              : (function () { reset(); return function () {}; })();
+      }
+    }
+    drawer.addEventListener('pointerup', end, { passive: true });
+    drawer.addEventListener('pointercancel', end, { passive: true });
   }
+
+  /* Weicher Uebergang zwischen den Bestellschritten: der Inhalt kommt aus der
+     Richtung, in die man geht – vorwaerts von rechts, zurueck von links.
+     Die Kopf- und Fussleiste bleibt stehen, wie bei einer Navigation. */
+  window.animateCartStep = function (dir) {
+    var body = document.getElementById('cartBody');
+    if (!body || (window.__gncMotion && window.__gncMotion.reduce)) return;
+    body.style.animation = 'none';
+    void body.offsetWidth;                 // Neustart erzwingen
+    body.style.animation = 'cart-step-' + (dir > 0 ? 'fwd' : 'back') +
+      ' 300ms cubic-bezier(0.22, 0.61, 0.36, 1) both';
+  };
+
+  /* Weiche Kante statt harter Linie: Der Verlauf erscheint nur dort, wo
+     wirklich Inhalt unter der Kopf- bzw. Fussleiste verschwindet. */
+  window.updateCartScrollEdges = function () {
+    var body = document.getElementById('cartBody');
+    var drawer = document.getElementById('cartDrawer');
+    if (!body || !drawer) return;
+    drawer.classList.toggle('edge-top', body.scrollTop > 4);
+    drawer.classList.toggle('edge-bottom',
+      body.scrollTop + body.clientHeight < body.scrollHeight - 4);
+  };
+  (function () {
+    var body = document.getElementById('cartBody');
+    if (body) body.addEventListener('scroll', window.updateCartScrollEdges, { passive: true });
+  })();
 
 
   function buildSigDots() {
