@@ -108,6 +108,10 @@
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.15rem;margin-bottom:1rem}
   .card h2{font-size:.98rem;margin:0 0 .15rem}
   .card .hint{color:var(--dim);font-size:.8rem;margin:0}
+  /* Wurde im Rechnungs-Markup benutzt, war aber nie definiert – Datum,
+     Anschrift und Steueraufstellung standen dadurch in voller Textfarbe
+     und die Zeile hatte gar keine Abstufung. */
+  .muted{color:var(--dim)}
   .sec{display:flex;align-items:baseline;justify-content:space-between;margin:1.35rem 0 .55rem}
   .sec h3{font-size:.74rem;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin:0;font-weight:800}
   .sec .count{font-family:var(--mono);font-size:.72rem;color:var(--faint)}
@@ -329,6 +333,22 @@
   #invList .row{display:flex;align-items:flex-start;gap:.8rem;
     padding:.55rem 0;border-bottom:1px solid var(--border)}
   #invList .row:last-child{border-bottom:none}
+
+  /* Mini-Downloads je Rechnung. Bewusst zurueckhaltend: sie stehen in JEDER
+     Zeile, ein kraeftiger Button waere hier reine Unruhe. Trotzdem 34px hoch,
+     damit sie am Handy sicher zu treffen sind. */
+  .inv-dls{display:flex;gap:.35rem;justify-content:flex-end;margin-top:.4rem}
+  .inv-dl{display:inline-flex;align-items:center;gap:.3rem;min-height:34px;
+    padding:.3rem .55rem;border:1px solid var(--border);border-radius:9px;
+    background:var(--card2);color:var(--dim);font:inherit;font-size:.74rem;
+    font-weight:700;letter-spacing:.02em;cursor:pointer;white-space:nowrap;
+    transition:border-color .15s,color .15s,background .15s,transform .12s}
+  .inv-dl svg{width:13px;height:13px;flex:none}
+  .inv-dl:hover{border-color:var(--ember);color:var(--ember-hi);background:var(--card)}
+  .inv-dl:active{transform:scale(.96)}
+  .inv-dl:disabled{opacity:.55;cursor:default;transform:none}
+  .inv-dl:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){ .inv-dl{transition:none} .inv-dl:active{transform:none} }
   .team-row:last-child{border-bottom:none}
   .team-row .tn{font-weight:700}
   .team-row small{color:var(--faint);font-family:var(--mono);font-size:.66rem;display:block}
@@ -1300,6 +1320,11 @@ document.addEventListener('click',(e)=>{
   if(r){ revRangeKey=r.dataset.rrange; renderRevControls(); if(revRangeKey!=='custom') loadRevenue(); return; }
   const f=e.target.closest('[data-rfilter]');
   if(f){ revFilterKey=f.dataset.rfilter; renderRevenue(); return; }
+  // Einzelne Rechnung herunterladen
+  const pdf=e.target.closest('[data-inv-pdf]');
+  if(pdf){ invoicePdf(pdf.dataset.invPdf, pdf); return; }
+  const csv=e.target.closest('[data-inv-csv]');
+  if(csv){ invoiceCsv(csv.dataset.invCsv); return; }
 });
 /* ================== Kundenkarten-Scan ================== */
 let scanStream=null, scanRAF=null, scanBusy=false, scanCard=null, scanToken=null, jsqrLoading=false;
@@ -2076,9 +2101,49 @@ function renderInvoices(){
       <div style="text-align:right;white-space:nowrap;">
         <div><strong>${eur(r.total)}</strong></div>
         <div class="muted" style="font-size:.78rem;">${r.payment==='sumup'?'online bezahlt':'vor Ort'}</div>
+        <div class="inv-dls">
+          <button type="button" class="inv-dl" data-inv-pdf="${esc2(r.invoiceNo)}"
+                  title="Rechnung ${esc2(r.invoiceNo)} als PDF herunterladen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/>
+            </svg>
+            <span>PDF</span>
+          </button>
+          <button type="button" class="inv-dl" data-inv-csv="${esc2(r.invoiceNo)}"
+                  title="Rechnung ${esc2(r.invoiceNo)} als CSV herunterladen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/>
+            </svg>
+            <span>CSV</span>
+          </button>
+        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+/* Einzelne Rechnung als PDF. Wie beim ZIP wird die Antwort als Blob geholt,
+   damit das Passwort nicht in der Adresszeile landet. */
+async function invoicePdf(nummer, btn){
+  const alt = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled=true; btn.innerHTML='<span>Lädt …</span>'; }
+  try{
+    const r=await fetch('/.netlify/functions/invoice-pdf?password='+encodeURIComponent(invPw())
+            +'&no='+encodeURIComponent(nummer));
+    if(r.status===404){ toast('Diese Rechnung gibt es nicht mehr'); return; }
+    if(r.status===403){ toast('Nur für Admins'); return; }
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const blob=await r.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='Rechnung-'+nummer+'.pdf';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast('Rechnung '+nummer+' geladen');
+  }catch(e){ toast('Rechnung konnte nicht erzeugt werden'); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML=alt; } }
 }
 /* Alle Rechnungen als ZIP mit einzelnen PDFs. Der Server erzeugt die PDFs
    und packt sie; wir laden die Antwort als Blob, damit das Passwort nicht
@@ -2106,22 +2171,39 @@ async function invoicesZip(){
   finally{ if(btn){ btn.disabled=false; btn.textContent=alt; } }
 }
 
-function invoicesCsv(){
-  if(!INVOICES.length) return;
-  const kopf=['Rechnungsnummer','Datum','Firma','Strasse','PLZ','Ort','Bestellung','Netto 7','USt 7','Netto 19','USt 19','Brutto','Zahlung'];
-  const zeilen=INVOICES.map(r=>{
-    const a=r.invoiceAddress||{};
-    const v=k=>(r.vat||[]).find(x=>x.satz===k)||{netto:0,steuer:0};
-    const q=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
-    return [r.invoiceNo,r.invoiceDate,r.company,a.street,a.zip,a.city,r.reference,
-            v(7).netto,v(7).steuer,v(19).netto,v(19).steuer,r.total,
-            r.payment==='sumup'?'online':'vor Ort'].map(q).join(';');
-  });
-  const csv='\uFEFF'+[kopf.map(h=>'"'+h+'"').join(';'),...zeilen].join('\r\n');
+/* Spaltenaufbau EINMAL \u2013 die Gesamtliste und die einzelne Rechnung nutzen
+   ihn gemeinsam, damit beide Dateien nie unterschiedliche Spalten haben. */
+const INV_CSV_KOPF=['Rechnungsnummer','Datum','Firma','Strasse','PLZ','Ort','Bestellung',
+                    'Netto 7','USt 7','Netto 19','USt 19','Brutto','Zahlung'];
+function invCsvZeile(r){
+  const a=r.invoiceAddress||{};
+  const v=k=>(r.vat||[]).find(x=>x.satz===k)||{netto:0,steuer:0};
+  const q=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
+  return [r.invoiceNo,r.invoiceDate,r.company,a.street,a.zip,a.city,r.reference,
+          v(7).netto,v(7).steuer,v(19).netto,v(19).steuer,r.total,
+          r.payment==='sumup'?'online':'vor Ort'].map(q).join(';');
+}
+/* BOM voran, sonst zeigt Excel unter Windows Umlaute falsch an. */
+function csvLaden(zeilen, dateiname){
+  const csv='\uFEFF'+[INV_CSV_KOPF.map(h=>'"'+h+'"').join(';'),...zeilen].join('\r\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  a.download='rechnungen.csv'; a.click();
+  a.download=dateiname; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
+function invoicesCsv(){
+  if(!INVOICES.length) return;
+  csvLaden(INVOICES.map(invCsvZeile),'rechnungen.csv');
+}
+
+/* Einzelne Rechnung als CSV \u2013 die Daten liegen bereits geladen vor, daf\u00FCr
+   braucht es keinen Serveraufruf. */
+function invoiceCsv(nummer){
+  const r=INVOICES.find(x=>x.invoiceNo===nummer);
+  if(!r){ toast('Rechnung nicht gefunden'); return; }
+  csvLaden([invCsvZeile(r)],'Rechnung-'+nummer+'.csv');
+  toast('Rechnung '+nummer+' als CSV geladen');
 }
 
 async function loadVouchers(){
