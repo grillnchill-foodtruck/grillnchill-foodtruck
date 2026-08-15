@@ -784,6 +784,11 @@ function buildOwnerNotificationEmail(order, statusUpdateBaseUrl, statusToken) {
       Diese Buttons senden automatisch eine Status-E-Mail an den Kunden.
     </p>
   </td></tr>
+  ${order.company ? `<tr><td style="padding:0 0 8px;">
+    <p style="margin:0 0 6px;color:#888;font-size:12px;text-align:center;">
+      Firmenkunde &ndash; diese Rechnung ging identisch an den Kunden:
+    </p></td></tr>` : ''}
+  ${buildInvoiceBlock(order)}
 </table>
 </body></html>`,
   };
@@ -1246,6 +1251,28 @@ exports.handler = async (event) => {
           order.invoiceNo = await nextInvoiceNo();
           order.invoiceDate = deDate();
           order.serviceDate = deDate();
+          // Ablegen fürs Admin-Tool. Rechnungen sind aufbewahrungspflichtig
+          // (§ 147 AO, 8 Jahre) – deshalb kein automatisches Löschen wie bei
+          // den Bestelldaten nach 90 Tagen.
+          try {
+            await blobStore('invoices').setJSON('inv:' + order.invoiceNo, {
+              invoiceNo: order.invoiceNo,
+              invoiceDate: order.invoiceDate,
+              serviceDate: order.serviceDate,
+              reference: order.reference || null,
+              company: order.company,
+              invoiceAddress: order.invoiceAddress || null,
+              name: order.name || null,
+              email: order.email || null,
+              items: order.items || [],
+              vat: order.vat || [],
+              total: order.total,
+              tip: order.tip || 0,
+              payment: order.payment || null,
+              mode: order.mode || null,
+              createdAt: new Date().toISOString(),
+            });
+          } catch (e) { console.error('Rechnung ablegen fehlgeschlagen:', e); }
         } catch (e) {
           // Ohne Nummer keine Rechnung – die Bestätigung geht trotzdem raus,
           // damit eine Störung im Zähler nie die Bestellung blockiert.

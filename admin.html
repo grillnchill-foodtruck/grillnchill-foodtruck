@@ -398,6 +398,7 @@
       <button class="tab" role="tab" aria-selected="false" data-tab="vouchers" id="tabVouchers">Gutscheine</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="scan" id="tabScan">Scan</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="stats" id="tabStats">Zahlen</button>
+      <button class="tab hidden" role="tab" aria-selected="false" data-tab="invoices" id="tabInvoices">Rechnungen</button>
       <button class="tab hidden" role="tab" aria-selected="false" data-tab="team" id="tabTeam">Team</button>
     </div>
   </nav>
@@ -529,6 +530,25 @@
     </section>
 
     <!-- ============ TAB: GUTSCHEINE (nur Admin) ============ -->
+    <section class="tabpane hidden" id="pane-invoices" role="tabpanel">
+      <div class="card">
+        <div class="card-hd">
+          <h2>Rechnungen</h2>
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <select id="invYear" onchange="loadInvoices()" class="inp" style="width:auto;padding:.45rem .6rem;"></select>
+            <button class="btn ghost" onclick="loadInvoices()">Aktualisieren</button>
+            <button class="btn ghost" onclick="invoicesCsv()">CSV</button>
+          </div>
+        </div>
+        <p class="muted" style="margin:0 0 .8rem;font-size:.85rem;">
+          Automatisch erzeugt, sobald ein Kunde bei der Bestellung eine Firma angibt.
+          Aufbewahrungspflicht 8 Jahre (§ 147 AO) – diese Liste wird nicht automatisch geleert.
+        </p>
+        <div id="invSummary" class="muted" style="margin-bottom:.7rem;"></div>
+        <div id="invList">Lade …</div>
+      </div>
+    </section>
+
     <section class="tabpane hidden" id="pane-vouchers" role="tabpanel">
       <div class="card">
         <h2>Gutschein anlegen</h2>
@@ -976,6 +996,8 @@ function applyRole(){
   $('tabVouchers').classList.toggle('hidden',staff);
   $('tabStats').classList.toggle('hidden',staff);
   $('tabTeam').classList.toggle('hidden',staff);
+  // Rechnungen enthalten Kunden- und Umsatzdaten – nur Admins
+  $('tabInvoices').classList.toggle('hidden',staff);
   const b=document.querySelector('.hdr .brand small');
   if(b) b.textContent = currentName ? ('Angemeldet: '+currentName+(staff?' · Mitarbeiter':(currentRole==='superadmin'?' · Superadmin':' · Admin'))) : "Grill'n Chill · Bielefeld";
 }
@@ -1010,6 +1032,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
     if(tab.dataset.tab==='catering' && !cateringLoaded) loadCatering();
     if(tab.dataset.tab==='team' && !teamLoaded) loadTeam();
     if(tab.dataset.tab==='vouchers' && !vouchersLoaded) loadVouchers();
+    if(tab.dataset.tab==='invoices' && !invoicesLoaded) loadInvoices();
   });
 });
 
@@ -1885,6 +1908,70 @@ function renderPurchases(P){
       +'</div>';
   }).join('');
 }
+/* ---------------- Rechnungen (nur Admins) ---------------- */
+let invoicesLoaded=false, INVOICES=[];
+function invPw(){ return sessionStorage.getItem(PW_KEY)||''; }
+async function loadInvoices(){
+  const jahr=$('invYear').value||'';
+  const url='/.netlify/functions/invoices-list?password='+encodeURIComponent(invPw())
+            +(jahr?('&year='+encodeURIComponent(jahr)):'');
+  let d=null;
+  try{ const r=await fetch(url); d=await r.json();
+       if(r.status===403){ $('invList').innerHTML='<p class="empty">Rechnungen sind nur für Admins sichtbar.</p>'; return; }
+       if(!r.ok) throw 0;
+  }catch(e){ $('invList').innerHTML='<p class="empty">Rechnungen konnten nicht geladen werden.</p>'; return; }
+  invoicesLoaded=true;
+  INVOICES=d.invoices||[];
+  // Jahresauswahl einmalig füllen
+  const sel=$('invYear');
+  if(!sel.options.length){
+    sel.innerHTML='<option value="">Alle Jahre</option>'+(d.years||[]).map(y=>`<option value="${y}">${y}</option>`).join('');
+  }
+  $('invSummary').textContent = d.count
+    ? `${d.count} Rechnungen · ${eur(d.sumBrutto)} brutto · davon ${eur(d.sumSteuer)} Umsatzsteuer`
+    : '';
+  renderInvoices();
+}
+function renderInvoices(){
+  if(!INVOICES.length){ $('invList').innerHTML='<p class="empty">Noch keine Firmenrechnungen. Sie entstehen automatisch, sobald ein Kunde bei der Bestellung eine Firma angibt.</p>'; return; }
+  $('invList').innerHTML = INVOICES.map(r=>{
+    const st=(r.vat||[]).map(v=>`${v.satz} %: ${eur(v.netto)} + ${eur(v.steuer)}`).join(' · ');
+    const a=r.invoiceAddress||{};
+    return `<div class="row" style="align-items:flex-start;gap:.8rem;">
+      <div style="flex:1;min-width:0;">
+        <div><strong>${esc(r.invoiceNo)}</strong> <span class="muted">· ${esc(r.invoiceDate||'')}</span></div>
+        <div style="font-size:.9rem;">${esc(r.company||'')}</div>
+        <div class="muted" style="font-size:.82rem;">
+          ${esc(a.street||'')}${a.street?', ':''}${esc(a.zip||'')} ${esc(a.city||'')}
+          ${r.reference?(' · Bestellung '+esc(r.reference)):''}
+        </div>
+        <div class="muted" style="font-size:.8rem;margin-top:.2rem;">${st}</div>
+      </div>
+      <div style="text-align:right;white-space:nowrap;">
+        <div><strong>${eur(r.total)}</strong></div>
+        <div class="muted" style="font-size:.78rem;">${r.payment==='sumup'?'online bezahlt':'vor Ort'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function invoicesCsv(){
+  if(!INVOICES.length) return;
+  const kopf=['Rechnungsnummer','Datum','Firma','Strasse','PLZ','Ort','Bestellung','Netto 7','USt 7','Netto 19','USt 19','Brutto','Zahlung'];
+  const zeilen=INVOICES.map(r=>{
+    const a=r.invoiceAddress||{};
+    const v=k=>(r.vat||[]).find(x=>x.satz===k)||{netto:0,steuer:0};
+    const q=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
+    return [r.invoiceNo,r.invoiceDate,r.company,a.street,a.zip,a.city,r.reference,
+            v(7).netto,v(7).steuer,v(19).netto,v(19).steuer,r.total,
+            r.payment==='sumup'?'online':'vor Ort'].map(q).join(';');
+  });
+  const csv='\uFEFF'+[kopf.map(h=>'"'+h+'"').join(';'),...zeilen].join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='rechnungen.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
 async function loadVouchers(){
   const r=await vApi({action:'list'});
   vouchersLoaded=true;

@@ -3609,6 +3609,11 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   grid-template-columns: 1fr;
   gap: 1.2rem;
 }
+/* Kontaktzeilen mit echtem Symbol statt Emoji – Emoji rendern je Gerät
+   unterschiedlich und nehmen die Farbe nicht an. */
+.contact-line { display: inline-flex; align-items: center; gap: 0.5rem; }
+.contact-line svg { width: 16px; height: 16px; flex: none; opacity: 0.75; }
+
 .hours-card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
@@ -3630,13 +3635,16 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 .hours-list .day { color: var(--color-cream-dim); font-weight: 500; }
 .hours-list .time { color: var(--color-cream); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
 .hours-list .time-note { display: block; font-size: 0.68rem; font-weight: 500; color: var(--color-cream-dim); text-align: right; margin-top: 1px; }
+/* Heute war vorher fünffach markiert (Farbfläche, Rahmen, oranger Tag,
+   orange Uhrzeit, Pille). Jetzt trägt die Pille die Aussage, Fläche und
+   Rahmen helfen beim Finden der Zeile – die Uhrzeit bleibt neutral. */
 .hours-list li.today {
   margin: 0 -1.5rem;
   padding-left: 1.5rem; padding-right: 1.5rem;
-  background: rgba(232, 90, 36, 0.12);
+  background: rgba(232, 90, 36, 0.06);
   border-left: 3px solid var(--color-orange);
 }
-.hours-list li.today .day { color: var(--color-orange-bright); font-weight: 700; }
+.hours-list li.today .day { color: var(--color-cream); font-weight: 700; }
 /* „Heute" als Wort, damit die Zeile nicht allein über Farbe erkennbar ist */
 .day-today {
   margin-left: 0.5rem;
@@ -3652,37 +3660,30 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   text-transform: uppercase;
   vertical-align: 0.06em;
 }
-.hours-list li.today .time { color: var(--color-orange-bright); }
-.hours-list li.closed .time { color: var(--color-error); }
+.hours-list li.today .time { color: var(--color-cream); }
+/* Ruhetag ist eine Angabe, kein Fehler – gedämpft statt rot. */
+.hours-list li.closed .time { color: var(--color-text-muted); font-weight: 600; }
 
+/* Geschlossen ist ein Normalzustand, kein Fehler – deshalb kein Rot.
+   Rot bleibt echten Problemen vorbehalten (ausverkauft, Bestellung
+   gescheitert). Die Aussage steht ohnehin im Text. */
 .open-status {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: rgba(109, 190, 69, 0.12);
-  border: 1px solid rgba(109, 190, 69, 0.3);
-  color: var(--color-success);
-  padding: 0.35rem 0.8rem;
+  gap: 0.45rem;
+  background: rgba(232, 90, 36, 0.10);
+  border: 1px solid rgba(232, 90, 36, 0.35);
+  color: var(--color-cream);
+  padding: 0.4rem 0.85rem;
   border-radius: var(--radius-full);
   font-size: 0.8rem;
   font-weight: 700;
   margin-bottom: 0.8rem;
 }
 .open-status.closed {
-  background: rgba(224, 72, 72, 0.12);
-  border-color: rgba(224, 72, 72, 0.3);
-  color: var(--color-error);
-}
-.open-status::before {
-  content: '';
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: blink 2s infinite;
-}
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  background: var(--color-bg-elev);
+  border-color: var(--color-border-bright);
+  color: var(--color-cream-dim);
 }
 
 .address-block {
@@ -4254,21 +4255,39 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
-.nav-status-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--color-text-muted);
+/* Zustand steckt in der FORM, nicht nur in der Farbe: brennende Flamme =
+   offen, kalter Umriss = geschlossen. Liest sich auf 16 px sofort und
+   funktioniert auch ohne Farbunterscheidung. Ersetzt den generischen
+   Statuspunkt. */
+.status-flame {
+  width: 13px; height: 16px;
   flex: none;
+  overflow: visible;
 }
-.nav-status.open { color: var(--color-cream-dim); border-color: rgba(232, 90, 36, 0.45); }
-.nav-status.open .nav-status-dot {
-  background: radial-gradient(circle at 35% 35%, #FFC93C, var(--color-orange));
-  box-shadow: 0 0 8px rgba(232, 90, 36, 0.9);
+.status-flame .flame-body {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
 }
+.status-flame .flame-core { fill: none; }
+
+/* Geöffnet: Flamme brennt */
+.nav-status.open, .open-status:not(.closed) { color: var(--color-cream-dim); }
+.nav-status.open { border-color: rgba(232, 90, 36, 0.45); }
+.nav-status.open .flame-body,
+.open-status:not(.closed) .flame-body {
+  fill: var(--color-orange);
+  stroke: none;
+}
+.nav-status.open .flame-core,
+.open-status:not(.closed) .flame-core { fill: var(--color-yellow); }
 @media (prefers-reduced-motion: no-preference) {
-  .nav-status.open .nav-status-dot { animation: emberPulse 2.2s ease-in-out infinite; }
-  @keyframes emberPulse {
-    0%, 100% { box-shadow: 0 0 6px rgba(232, 90, 36, 0.7); }
-    50%      { box-shadow: 0 0 12px rgba(255, 122, 61, 1); }
+  .nav-status.open .status-flame,
+  .open-status:not(.closed) .status-flame { animation: flameLive 2.6s ease-in-out infinite; }
+  @keyframes flameLive {
+    0%, 100% { filter: drop-shadow(0 0 3px rgba(232, 90, 36, 0.55)); }
+    50%      { filter: drop-shadow(0 0 7px rgba(255, 160, 60, 0.85)); }
   }
 }
 /* Konto-Button: 44 px Zielfläche statt 38 (Daumenmaß), Styles aus dem Markup gelöst */
@@ -4921,7 +4940,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
     </ul>
     <div class="nav-actions">
       <span class="nav-status" id="navStatus" hidden>
-        <span class="nav-status-dot" aria-hidden="true"></span>
+        <svg class="status-flame" viewBox="0 0 16 20" aria-hidden="true"><path class="flame-body" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="flame-core" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg>
         <span class="nav-status-text" id="navStatusText"></span>
       </span>
       <button type="button" class="nav-icon-btn" id="accountBtn" onclick="openAccountOverlay()" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto">
@@ -5265,7 +5284,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
     <div class="location-grid">
       <div class="hours-card reveal">
-        <div id="openStatus" class="open-status" data-i18n="location.loading">Wird geladen…</div>
+        <div id="openStatus" class="open-status"><svg class="status-flame" viewBox="0 0 16 20" aria-hidden="true"><path class="flame-body" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="flame-core" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg><span id="openStatusText" data-i18n="location.loading">Wird geladen…</span></div>
         <h3 style="font-size: 1.2rem; margin-bottom: 0.3rem;" data-i18n="location.hours_title">Öffnungszeiten</h3>
         <ul class="hours-list" id="hoursList">
           <li data-day="1"><span class="day" data-i18n="location.mon">Montag</span><span class="time">12:00 – 20:30</span></li>
@@ -5283,8 +5302,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
             33649 Bielefeld
           </p>
           <div class="contact-row">
-            <a href="tel:+4915118540604">📞 +49 151 18 54 06 04</a>
-            <a href="mailto:info@grillnchill-foodtruck.de">✉️ info@grillnchill-foodtruck.de</a>
+            <a href="tel:+4915118540604" class="contact-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h3l1.5 4-2 1.5a12 12 0 0 0 6.5 6.5L17 13l4 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 3.5 5.2 2 2 0 0 1 5.5 3z"/></svg>+49 151 18 54 06 04</a>
+            <a href="mailto:info@grillnchill-foodtruck.de" class="contact-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="M3 6.5l9 6 9-6"/></svg>info@grillnchill-foodtruck.de</a>
           </div>
         </div>
       </div>
@@ -11191,18 +11210,20 @@ function updateOpenStatus() {
   const today = HOURS[day];
   const el = document.getElementById('openStatus');
   if (!el) return;
+  // Text getrennt setzen – das Flammensymbol im selben Element bleibt erhalten
+  const elText = document.getElementById('openStatusText') || el;
 
   // Feiertag in NRW? → geschlossen, unabhängig von normalen Zeiten
   const holiday = getNRWHoliday(now);
   if (holiday) {
-    el.textContent = t('status.holiday');
+    elText.textContent = t('status.holiday');
     el.classList.add('closed');
     return;
   }
 
   const todayEff = hoursFor(now);
   if (todayEff && minutes >= parseTime(todayEff.open) && minutes < parseTime(todayEff.close)) {
-    el.textContent = t('status.open').replace('{time}', todayEff.close);
+    elText.textContent = t('status.open').replace('{time}', todayEff.close);
     el.classList.remove('closed');
   } else {
     // Nächste Öffnung (kann heute später sein, z. B. bei Ausnahme)
@@ -11210,11 +11231,11 @@ function updateOpenStatus() {
     if (nx) {
       const dayKeys = ['location.sun','location.mon','location.tue','location.wed','location.thu','location.fri','location.sat'];
       if (nx.offset === 0) {
-        el.textContent = t('status.closed_today').replace('{time}', nx.open);
+        elText.textContent = t('status.closed_today').replace('{time}', nx.open);
       } else if (nx.offset === 1) {
-        el.textContent = t('status.closed_tomorrow').replace('{time}', nx.open);
+        elText.textContent = t('status.closed_tomorrow').replace('{time}', nx.open);
       } else {
-        el.textContent = t('status.closed_day')
+        elText.textContent = t('status.closed_day')
           .replace('{day}', t(dayKeys[nx.dayIdx]))
           .replace('{time}', nx.open);
       }

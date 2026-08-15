@@ -85,7 +85,14 @@ async function auditLog(who, action, detail) {
   } catch (e) {}
 }
 
-const cleanCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+/* Umlaute sind erlaubt. Wichtig: Schreiben (vouchers-admin) und Prüfen
+   (voucher-check) müssen identisch normalisieren, sonst ist ein angelegter
+   Code nicht einlösbar. toUpperCase() macht aus "ß" von sich aus "SS" –
+   das ist in beiden Richtungen gleich und daher unproblematisch.
+   Türkische Buchstaben Ş, Ğ und Ç sind zugelassen; die i-Familie (ı, i, İ)
+   bewusst NICHT, weil ihre Großschreibung je nach Locale abweicht und ein
+   Code dann nicht mehr zuverlässig gefunden würde. */
+const cleanCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9ÄÖÜŞĞÇ]/g, '').slice(0, 20);
 
 function describe(v) {
   const val = v.type === 'percent' ? v.value + ' %' : v.value.toFixed(2).replace('.', ',') + ' €';

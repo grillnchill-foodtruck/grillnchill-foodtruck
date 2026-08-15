@@ -67,7 +67,8 @@ exports.handler = async (event) => {
   let code = '', email = '', mode = '';
   try {
     const b = JSON.parse(event.body || '{}');
-    code = (b.code || '').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+    // Muss zeichengenau zu cleanCode() in vouchers-admin.js passen
+    code = (b.code || '').toString().trim().toUpperCase().replace(/[^A-Z0-9ÄÖÜŞĞÇ]/g, '').slice(0, 20);
     email = (b.email || '').toString().trim().toLowerCase().slice(0, 120);
     mode = (b.mode || '').toString();
   } catch (e) {}
