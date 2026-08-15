@@ -1423,12 +1423,16 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   border-radius: var(--radius-full);
   font-size: 0.88rem;
   font-weight: 600;
-  transition: all .15s;
+  transition: background .15s, border-color .15s, color .15s, transform .12s;
   flex-shrink: 0;
   scroll-snap-align: start;
-  min-height: 40px;
+  min-height: 44px;               /* Daumenmaß */
 }
-.filter-chip:hover { border-color: var(--color-orange); color: var(--color-cream); }
+@media (hover: hover) and (pointer: fine) {
+  .filter-chip:hover { border-color: var(--color-orange); color: var(--color-cream); }
+}
+.filter-chip:active { transform: scale(0.96); }
+@media (prefers-reduced-motion: reduce) { .filter-chip:active { transform: none; } }
 .filter-chip.active {
   background: var(--color-orange);
   color: #fff;
@@ -1463,10 +1467,20 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   flex-direction: column;
   position: relative;
 }
-.menu-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--color-orange);
-  box-shadow: var(--shadow-md);
+/* Anheben nur dort, wo es einen echten Zeiger gibt – auf Touch bliebe der
+   Hover-Zustand nach dem Tippen kleben und die Karte wirkte eingefroren. */
+@media (hover: hover) and (pointer: fine) {
+  .menu-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-orange);
+    box-shadow: var(--shadow-md);
+  }
+}
+/* Rückmeldung im Moment der Berührung, nicht erst beim Loslassen */
+.menu-card:active { transform: scale(0.985); border-color: var(--color-orange); }
+.menu-card:has(.menu-card-img:active) { transform: scale(0.985); }
+@media (prefers-reduced-motion: reduce) {
+  .menu-card, .menu-card:active { transition: border-color .15s; transform: none; }
 }
 .menu-card-img {
   width: 100%;
@@ -1749,7 +1763,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .add-btn {
   background: var(--color-orange);
   color: #fff;
-  width: 42px; height: 42px;
+  width: 44px; height: 44px;      /* Daumenmaß */
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.5rem; font-weight: 700;
@@ -1757,8 +1771,11 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   line-height: 1;
   box-shadow: 0 4px 12px rgba(232, 90, 36, 0.4);
 }
-.add-btn:hover { background: var(--color-orange-bright); transform: scale(1.1); }
+@media (hover: hover) and (pointer: fine) {
+  .add-btn:hover { background: var(--color-orange-bright); transform: scale(1.1); }
+}
 .add-btn:active { transform: scale(0.92); }
+@media (prefers-reduced-motion: reduce) { .add-btn, .add-btn:active { transition: background .15s; transform: none; } }
 
 .qty-control {
   display: flex; align-items: center;
@@ -1769,7 +1786,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   gap: 2px;
 }
 .qty-control button {
-  width: 34px; height: 34px;
+  width: 38px; height: 38px;
   border-radius: 50%;
   background: var(--color-orange);
   color: #fff;
@@ -1778,8 +1795,16 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   display: flex; align-items: center; justify-content: center;
   line-height: 1;
   flex-shrink: 0;
+  position: relative;
+  transition: transform .12s;
+}
+/* Unsichtbare Trefferzone auf 44 px, ohne die Optik aufzublähen */
+.qty-control button::before {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 44px; height: 44px; transform: translate(-50%, -50%);
 }
 .qty-control button:active { transform: scale(0.9); }
+@media (prefers-reduced-motion: reduce) { .qty-control button:active { transform: none; } }
 .qty-control .qty-val {
   min-width: 30px;
   text-align: center;
@@ -2564,6 +2589,44 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 }
 .sticky-cart.show { transform: translateX(-50%) translateY(0); visibility: visible; transition: transform .3s, visibility 0s; }
 
+/* ============ Zurück nach oben ============ */
+.to-top {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(1rem + var(--safe-bottom));
+  z-index: 90;
+  width: 46px; height: 46px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-bright);
+  background: rgba(23, 20, 15, 0.86);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  color: var(--color-cream);
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+  /* versteckt leicht abgesenkt – es erscheint aus der Richtung, in die es zurückführt */
+  opacity: 0; transform: translateY(12px) scale(0.9); pointer-events: none;
+  transition: opacity .2s ease, transform .25s cubic-bezier(.22,.61,.36,1), border-color .15s;
+}
+.to-top svg { width: 21px; height: 21px; }
+.to-top.show { opacity: 1; transform: none; pointer-events: auto; }
+.to-top:hover { border-color: var(--color-orange); }
+.to-top:active { transform: scale(0.92); }
+/* Platz lassen, wenn Warenkorb-Leiste oder App-Tab-Bar unten sitzen */
+body:has(.sticky-cart.show) .to-top { bottom: calc(4.8rem + var(--safe-bottom)); }
+body.app-forced .to-top { bottom: calc(5.4rem + var(--safe-bottom)); }
+body.app-forced:has(.sticky-cart.show) .to-top { bottom: calc(9rem + var(--safe-bottom)); }
+body:has(#cartOverlay.open) .to-top,
+body:has(#upsellOverlay.open) .to-top,
+body:has(#dipOverlay.open) .to-top { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .to-top { transition: opacity .18s ease; transform: none; }
+  .to-top.show, .to-top:active { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .to-top { background: var(--color-bg-card); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
 /* ============ APP-TAB-BAR (nur mobil) ============ */
 .app-tabbar {
   position: fixed; left: 0; right: 0; bottom: 0;
@@ -3149,6 +3212,21 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   border-left: 3px solid var(--color-orange);
 }
 .hours-list li.today .day { color: var(--color-orange-bright); font-weight: 700; }
+/* „Heute" als Wort, damit die Zeile nicht allein über Farbe erkennbar ist */
+.day-today {
+  margin-left: 0.5rem;
+  margin-right: auto;        /* bleibt beim Wochentag, die Uhrzeit bleibt rechts */
+  align-self: center;
+  padding: 0.1rem 0.42rem;
+  border-radius: var(--radius-full);
+  background: rgba(232, 90, 36, 0.18);
+  color: var(--color-orange-bright);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;   /* kleine Schrift braucht etwas Luft zwischen den Buchstaben */
+  text-transform: uppercase;
+  vertical-align: 0.06em;
+}
 .hours-list li.today .time { color: var(--color-orange-bright); }
 .hours-list li.closed .time { color: var(--color-error); }
 
@@ -5192,6 +5270,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   </div>
 </footer>
 
+<!-- Zurück nach oben – erscheint erst, wenn man ein Stück gescrollt hat -->
+<button type="button" class="to-top" id="toTop" aria-label="Nach oben" data-i18n-aria="a11y.to_top" title="Nach oben">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>
+</button>
+
 <!-- ============================================
      CART DRAWER
      ============================================ -->
@@ -5314,31 +5397,29 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
      COOKIE BANNER
      ============================================ -->
 <div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie-Einstellungen" data-i18n-aria="a11y.cookies">
-  <h4>🍪 Cookies &amp; Datenschutz</h4>
+  <h4><span data-i18n="cookie.title">🍪 Cookies &amp; Datenschutz</span></h4>
   <p>
-    Wir verwenden Cookies, um unsere Website zu betreiben und dein Erlebnis zu verbessern.
-    Notwendige Cookies sind für den Bestellvorgang erforderlich. Optionale Cookies helfen uns,
-    die Seite zu verbessern.
-    Mehr in unserer <a href="#" onclick="openModal('datenschutz'); return false;">Datenschutzerklärung</a>.
+    <span data-i18n="cookie.text">Wir verwenden Cookies, um unsere Website zu betreiben und dein Erlebnis zu verbessern. Notwendige Cookies sind für den Bestellvorgang erforderlich. Optionale Cookies helfen uns, die Seite zu verbessern.</span>
+    <a href="#" onclick="openModal('datenschutz'); return false;" data-i18n="cookie.more">Mehr in unserer Datenschutzerklärung</a>.
   </p>
   <div class="cookie-options">
     <label class="cookie-option">
       <input type="checkbox" checked disabled />
-      <span><strong>Notwendig</strong> Bestellvorgang, Warenkorb, Sicherheit</span>
+      <span><strong data-i18n="cookie.needed">Notwendig</strong> <span data-i18n="cookie.needed_desc">Bestellvorgang, Warenkorb, Sicherheit</span></span>
     </label>
     <label class="cookie-option">
       <input type="checkbox" id="cookieAnalytics" />
-      <span><strong>Statistik</strong> Anonyme Nutzungsanalyse</span>
+      <span><strong data-i18n="cookie.stats">Statistik</strong> <span data-i18n="cookie.stats_desc">Anonyme Nutzungsanalyse</span></span>
     </label>
     <label class="cookie-option">
       <input type="checkbox" id="cookieMarketing" />
-      <span><strong>Marketing</strong> Personalisierte Inhalte &amp; Karten-Einbettung</span>
+      <span><strong data-i18n="cookie.marketing">Marketing</strong> <span data-i18n="cookie.marketing_desc">Personalisierte Inhalte &amp; Karten-Einbettung</span></span>
     </label>
   </div>
   <div class="cookie-actions">
-    <button class="btn btn-ghost" onclick="toggleCookieOptions()">Details</button>
-    <button class="btn btn-secondary" onclick="rejectCookies()">Nur notwendige</button>
-    <button class="btn btn-primary" onclick="acceptAllCookies()">Alle akzeptieren</button>
+    <button class="btn btn-ghost" onclick="toggleCookieOptions()" data-i18n="cookie.details">Details</button>
+    <button class="btn btn-secondary" onclick="rejectCookies()" data-i18n="cookie.reject">Nur notwendige</button>
+    <button class="btn btn-primary" onclick="acceptAllCookies()" data-i18n="cookie.accept">Alle akzeptieren</button>
   </div>
 </div>
 
@@ -10388,7 +10469,26 @@ setAppView(HASH_TO_VIEW[location.hash] || 'home', { noHistory: true, keepScroll:
 
 function highlightToday() {  const today = new Date().getDay();
   document.querySelectorAll('#hoursList li').forEach(li => {
-    if (parseInt(li.dataset.day) === today) li.classList.add('today');
+    const isToday = parseInt(li.dataset.day) === today;
+    li.classList.toggle('today', isToday);
+    // Nicht nur Farbe: der heutige Tag wird auch benannt und vorgelesen
+    if (isToday) li.setAttribute('aria-current', 'date');
+    else li.removeAttribute('aria-current');
+    // Wichtig: als Geschwister der Tagesbezeichnung, nicht darin – applyTranslations()
+    // setzt deren textContent neu und würde ein eingebettetes Label löschen.
+    const dayEl = li.querySelector('.day');
+    let marker = li.querySelector('.day-today');
+    if (isToday) {
+      if (!marker) {
+        marker = document.createElement('span');
+        marker.className = 'day-today';
+        if (dayEl && dayEl.nextSibling) li.insertBefore(marker, dayEl.nextSibling);
+        else li.appendChild(marker);
+      }
+      marker.textContent = t('location.today');
+    } else if (marker) {
+      marker.remove();
+    }
   });
 }
 
@@ -11295,6 +11395,26 @@ window.addEventListener('load', function () {
       if (!raf) raf = requestAnimationFrame(onScroll);
     }, { passive: true });
     onScroll();   // Startzustand setzen (z. B. bei Aufruf mit #anker)
+
+    var toTop = document.getElementById('toTop');
+    // Sichtbar nur, solange der Footer im Bild ist – dort endet die Seite,
+    // dort braucht man den Rückweg. Ein IntersectionObserver statt Scroll-Rechnerei.
+    var footerEl = document.querySelector('.footer');
+    if (toTop && footerEl && 'IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) {
+        toTop.classList.toggle('show', entries[0].isIntersecting);
+      }, { rootMargin: '0px 0px -10% 0px' }).observe(footerEl);
+    } else if (toTop && footerEl) {
+      // Fallback ohne Observer: Footer-Oberkante gegen Fensterhöhe prüfen
+      window.addEventListener('scroll', function () {
+        toTop.classList.toggle('show', footerEl.getBoundingClientRect().top < window.innerHeight);
+      }, { passive: true });
+    }
+    if (toTop) toTop.addEventListener('click', function () {
+      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+      if (window.hapticTick) hapticTick(8);
+    });
   }
 
   /* ---------- Mobil: Bottom-Sheet-Geste (am Griff ziehen zum Schließen) ---------- */
