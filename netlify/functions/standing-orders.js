@@ -47,17 +47,23 @@ function store(name) {
   return getStore(opts);
 }
 
+/* Muss zeichengenau zu account.js passen: dort ist der Schluessel
+   'c:' + sha256(normEmail) als VOLLER Hex-Wert. Vorher auf 32 Zeichen
+   gekuerzt – damit wurde der Kundendatensatz nie gefunden. */
+const normEmail = (e) => String(e || '').trim().toLowerCase().slice(0, 120);
 const emailKey = (e) => 'c:' + crypto.createHash('sha256')
-  .update(String(e || '').trim().toLowerCase()).digest('hex').slice(0, 32);
+  .update(normEmail(e)).digest('hex');
 
-/* Anmeldung prüfen – dieselbe Token-Logik wie im Kundenkonto. */
+/* Anmeldung prüfen. WICHTIG: rec.tokens ist ein OBJEKT { token: zeitstempel },
+   kein Array – genau wie checkToken() in account.js. Vorher stand hier ein
+   .some() auf dem Objekt; das wirft, wurde vom catch geschluckt und endete
+   als 401. Deshalb schlug "Bestellung anlegen" fehl. */
 async function authCustomer(email, token) {
   if (!email || !token) return null;
   try {
     const rec = await store('customers').get(emailKey(email), { type: 'json' });
-    if (!rec) return null;
-    const gueltig = (rec.tokens || []).some(t => t.token === token && (!t.exp || t.exp > Date.now()));
-    return gueltig ? rec : null;
+    if (!rec || !rec.tokens || !rec.tokens[token]) return null;
+    return rec;
   } catch (e) { return null; }
 }
 

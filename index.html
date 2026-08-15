@@ -6589,7 +6589,8 @@ function renderAccProfile(el) {
         ${p.birthdayLocked ? '' : `<button type="button" class="mini-btn" onclick="accSaveBirthday()" style="align-self:stretch;">${t('acc.save')}</button>`}
       </div>
       <p style="font-size:0.7rem;color:var(--color-text-muted);margin:0.35rem 0 0;line-height:1.4;">${
-        p.birthdayLocked ? t('acc.birthday_locked') : t('acc.birthday_hint')}</p>
+        p.birthdayLocked ? t('acc.birthday_locked')
+        : (p.birthday ? t('acc.birthday_once') : t('acc.birthday_hint'))}</p>
     </div>
     ${p.qrToken ? `
     <div style="background:var(--color-bg-elev);border:1px solid var(--color-border);border-radius:12px;padding:0.8rem 0.9rem;margin-bottom:0.9rem;">

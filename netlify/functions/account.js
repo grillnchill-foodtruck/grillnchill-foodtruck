@@ -29,9 +29,10 @@ const CODE_TTL_MS = 10 * 60 * 1000;
 const CODE_RESEND_MS = 60 * 1000;
 const MAX_TRIES = 5;
 const MAX_TOKENS = 5;
-// Einmal eingetragen ist fest. Korrigieren kann nur noch das Team beim
-// Scannen der Kundenkarte – so sucht sich niemand den Zeitpunkt des Bonus aus.
-const BIRTHDAY_MAX_CHANGES = 0;
+// Erstes Eintragen frei, danach genau EINE Korrektur fuer Tippfehler –
+// wer nichts aendert, bleibt beim Eingetragenen. Danach ist das Feld
+// gesperrt; korrigieren kann dann nur noch das Team beim Scannen.
+const BIRTHDAY_MAX_CHANGES = 1;
 const MAX_ADDRESSES = 3;
 
 const CORS = {
