@@ -22,6 +22,7 @@
  */
 
 const { getStore } = require('@netlify/blobs');
+const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 
 const STORE_NAME = 'shop-status';
 const KEY = 'status';
@@ -177,7 +178,11 @@ exports.handler = async (event) => {
       return json(400, { error: 'Ungültiges JSON' });
     }
 
+    // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
+    const gesperrt = await pruefeSperre(event);
+    if (gesperrt) return gesperrt;
     const who = await authRole(body.password);
+    await meldeErgebnis(event, !!who);
     if (!who) {
       return json(401, { error: 'Falsches Passwort' });
     }

@@ -15,6 +15,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 
 const RETENTION_DAYS = 30;
 
@@ -78,7 +79,12 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') return json(405, { error: 'method_not_allowed' });
 
   const p = event.queryStringParameters || {};
-  if (!(await authAdmin(p.password))) return json(401, { error: 'unauthorized' });
+  // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
+  const gesperrt = await pruefeSperre(event);
+  if (gesperrt) return gesperrt;
+  const erlaubt = await authAdmin(p.password);
+  await meldeErgebnis(event, erlaubt);
+  if (!erlaubt) return json(401, { error: 'unauthorized' });
 
   const days = Math.min(parseInt(p.days || '14', 10) || 14, 30);
   const since = Date.now() - days * 86400000;

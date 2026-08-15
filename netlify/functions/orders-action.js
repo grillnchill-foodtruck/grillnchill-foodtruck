@@ -21,6 +21,7 @@
  */
 
 const { getStore } = require('@netlify/blobs');
+const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 
 const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 
@@ -168,7 +169,11 @@ exports.handler = async (event) => {
   let input = {};
   try { input = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'invalid_json' }); }
 
+  // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
+  const gesperrt = await pruefeSperre(event);
+  if (gesperrt) return gesperrt;
   const who = await authRole(input.password);
+  await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });
 
   const reference = String(input.reference || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 60);

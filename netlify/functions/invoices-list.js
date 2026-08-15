@@ -18,6 +18,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { ergaenzeAusBestellung } = require('./lib/invoice');
+const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -64,7 +65,11 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') return json(405, { error: 'method_not_allowed' });
 
   const p = event.queryStringParameters || {};
+  // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
+  const gesperrt = await pruefeSperre(event);
+  if (gesperrt) return gesperrt;
   const who = await authRole(p.password);
+  await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });
   // Nur Admins – Personal ausdrücklich ausgeschlossen
   if (who.role !== 'superadmin' && who.role !== 'admin') {

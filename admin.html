@@ -1109,6 +1109,12 @@ async function unlock(){
   const btn=$('unlockBtn'); btn.disabled=true; btn.textContent='Prüfen …';
   const who=await whoami(pw);
   btn.disabled=false; btn.textContent='Entsperren';
+  if(who && who.gesperrt){
+    $('loginCard').classList.remove('shake'); void $('loginCard').offsetWidth;
+    $('loginCard').classList.add('shake');
+    toast('Zu viele Fehlversuche. Bitte in '+wartezeit(who.retryAfter)+' erneut versuchen.','err');
+    return;
+  }
   if(!who){
     $('loginCard').classList.remove('shake'); void $('loginCard').offsetWidth;
     $('loginCard').classList.add('shake');
@@ -1128,6 +1134,23 @@ async function unlock(){
   await loadStatus();
 }
 
+/* Wartezeit menschlich ausdruecken – "in 900 Sekunden" liest sich niemand gern. */
+function wartezeit(sek){
+  const s=Math.max(1,Number(sek)||0);
+  if(s<60) return s+' Sekunden';
+  const m=Math.ceil(s/60);
+  return m+(m===1?' Minute':' Minuten');
+}
+/* Einheitliche Meldung, wenn die Bremse gegriffen hat. Gibt true zurueck,
+   wenn es eine Sperre war – der Aufrufer bricht dann ab. */
+function sperreGemeldet(res, behaelterId){
+  if(!res || res.status!==429) return false;
+  const sek=Number(res.headers && res.headers.get && res.headers.get('Retry-After'))||900;
+  const txt='Zu viele Fehlversuche. Bitte in '+wartezeit(sek)+' erneut versuchen.';
+  toast(txt,'err');
+  if(behaelterId && $(behaelterId)) $(behaelterId).innerHTML='<p class="empty">'+txt+'</p>';
+  return true;
+}
 async function whoami(pw){
   try{
     const res=await fetch('/.netlify/functions/team',{
@@ -1135,6 +1158,14 @@ async function whoami(pw){
       body:JSON.stringify({password:pw,action:'whoami'})
     });
     if(res.status===401) return null;
+    // 429 = zu viele Fehlversuche (lib/auth-guard.js). MUSS eigens behandelt
+    // werden: die Zeile darunter wertet alles ausser 401 als "Serverstörung"
+    // und liesse den Nutzer sonst ins Panel, obwohl danach JEDER Aufruf
+    // scheitert – verwirrender als eine klare Ansage.
+    if(res.status===429){
+      const d=await res.json().catch(()=>({}));
+      return {gesperrt:true, retryAfter:Number(d.retryAfter)||Number(res.headers.get('Retry-After'))||900};
+    }
     const d=await res.json().catch(()=>null);
     return (d&&d.ok)?d:{role:'admin',name:''}; // bei Störung nicht aussperren – Server prüft ohnehin jede Aktion
   }catch(e){ return {role:'admin',name:''}; }
@@ -1248,6 +1279,7 @@ async function sendPush(){
       body:JSON.stringify({password:currentPw,title,body,url:'/'})
     });
     const d=await res.json().catch(()=>({}));
+    if(sperreGemeldet(res)) return;
     if(res.status===401){ toast('Falsches Passwort','err'); return; }
     if(!res.ok){ toast((d.error||'Senden fehlgeschlagen')+(d.detail?(' – '+d.detail):''),'err'); return; }
     toast('Gesendet an '+d.sent+' Abonnenten','ok');
@@ -1558,6 +1590,7 @@ async function loadStats(){
   const btn=$('statsBtn'); btn.disabled=true; btn.textContent='Laden …';
   try{
     const res=await fetch('/track?days=7&password='+encodeURIComponent(currentPw));
+    if(sperreGemeldet(res)) return;
     if(res.status===401){ toast('Falsches Passwort','err'); return; }
     const d=await res.json();
     statsLoaded=true;
@@ -1776,6 +1809,7 @@ async function orderAction(ref, action, btn, isGc){
       body:JSON.stringify({password:currentPw,reference:ref,action})
     });
     const d=await res.json().catch(()=>({}));
+    if(sperreGemeldet(res)) return;
     if(res.status===401){ toast('Falsches Passwort','err'); return; }
     if(!res.ok){
       toast(d.error==='is_paid' ? 'Achtung: Diese Bestellung IST bezahlt – bitte „Zahlung prüfen" nutzen'
@@ -1834,6 +1868,7 @@ async function loadOrders(silent){
     const res=await fetch('/.netlify/functions/orders-list?days=30&password='+encodeURIComponent(currentPw),{cache:'no-store'});
     // Den Platzhalter ERSETZEN. Sonst stand nach abgelaufener Anmeldung
     // dauerhaft "werden geladen …" da und nur ein Toast wies darauf hin.
+    if(sperreGemeldet(res, silent?null:'ordersOut')) return;
     if(res.status===401){
       if(!silent){ toast('Anmeldung abgelaufen – bitte neu anmelden','err');
         $('ordersOut').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; }
@@ -1895,6 +1930,7 @@ async function loadCatering(silent){
   if(!silent) $('cateringOut').innerHTML='<p class="empty">Anfragen werden geladen …</p>';
   try{
     const res=await fetch('/.netlify/functions/catering-list?days=180&password='+encodeURIComponent(currentPw),{cache:'no-store'});
+    if(sperreGemeldet(res, silent?null:'cateringOut')) return;
     if(res.status===401){
       if(!silent){ toast('Anmeldung abgelaufen – bitte neu anmelden','err');
         $('cateringOut').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; }
@@ -2099,6 +2135,8 @@ async function loadInvoices(){
   let d=null;
   let status=0;
   try{ const r=await fetch(url); status=r.status; d=await r.json().catch(()=>({}));
+       if(status===429){ const t='Zu viele Fehlversuche. Bitte später erneut versuchen.';
+         toast(t,'err'); $('invList').innerHTML='<p class="empty">'+t+'</p>'; return; }
        if(status===403){ $('invList').innerHTML='<p class="empty">Rechnungen sind nur für Admins sichtbar.</p>'; return; }
        if(status===401){ $('invList').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; return; }
        if(!r.ok) throw new Error('HTTP '+status);
@@ -2169,6 +2207,7 @@ async function invoicePdf(nummer, btn){
     const r=await fetch('/.netlify/functions/invoice-pdf?password='+encodeURIComponent(invPw())
             +'&no='+encodeURIComponent(nummer));
     if(r.status===404){ toast('Diese Rechnung gibt es nicht mehr'); return; }
+    if(sperreGemeldet(r)) return;
     if(r.status===403){ toast('Nur für Admins'); return; }
     if(!r.ok) throw new Error('HTTP '+r.status);
     const blob=await r.blob();
@@ -2192,6 +2231,7 @@ async function invoicesZip(){
     const r=await fetch('/.netlify/functions/invoices-zip?password='+encodeURIComponent(invPw())
             +(jahr?('&year='+encodeURIComponent(jahr)):''));
     if(r.status===404){ toast('Noch keine Rechnungen vorhanden'); return; }
+    if(sperreGemeldet(r)) return;
     if(r.status===403){ toast('Nur für Admins'); return; }
     if(!r.ok) throw new Error('HTTP '+r.status);
     const blob=await r.blob();

@@ -20,6 +20,7 @@
 const crypto = require('crypto');
 const webpush = require('web-push');
 const { getStore } = require('@netlify/blobs');
+const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 
 const STATES = ['confirmed', 'preparing', 'ready_for_pickup', 'on_the_way', 'picked_up', 'delivered'];
 const PUSH_TEXT = {
@@ -163,7 +164,12 @@ exports.handler = async (event) => {
     if (input.secret && input.secret === (process.env.STATUS_UPDATE_SECRET || '__none__')) {
       who = { role: 'system', name: 'Status-Mail-Link' };
     } else {
+      // Bremse gegen Durchprobieren – nur hier, der Zweig oben laeuft ueber
+      // das System-Secret der Status-Mails und darf nicht mitgezaehlt werden.
+      const gesperrt = await pruefeSperre(event);
+      if (gesperrt) return gesperrt;
       who = await authRole(input.password);
+      await meldeErgebnis(event, !!who);
     }
     if (!who) return json(401, { error: 'unauthorized' });
     const state = String(input.state || '');

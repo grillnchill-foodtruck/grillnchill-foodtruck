@@ -20,6 +20,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { buildInvoicePdf, ergaenzeAusBestellung } = require('./lib/invoice');
 const { buildZip } = require('./lib/zip');
+const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 
 const MAX_PDF = 150;
 
@@ -55,7 +56,11 @@ const sicherName = (s) => String(s || '').replace(/[^A-Za-z0-9._-]/g, '-').slice
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'method_not_allowed' };
   const p = event.queryStringParameters || {};
+  // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
+  const gesperrt = await pruefeSperre(event);
+  if (gesperrt) return gesperrt;
   const who = await authRole(p.password);
+  await meldeErgebnis(event, !!who);
   if (!who) return { statusCode: 401, body: 'unauthorized' };
   if (who.role !== 'superadmin' && who.role !== 'admin') {
     return { statusCode: 403, body: 'forbidden' };
