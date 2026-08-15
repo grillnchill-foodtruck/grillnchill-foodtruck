@@ -1334,6 +1334,16 @@ exports.handler = async (event) => {
               email: order.email || null,
               items: order.items || [],
               vat: order.vat || [],
+              // Fuer das spaetere Neuerzeugen des PDFs (ZIP-Export) muss der
+              // Datensatz ALLES enthalten, was die Rechnung zeigt – sonst
+              // fehlen Zwischensumme, Rabatt und Gutscheincode.
+              subtotal: order.subtotal ?? null,
+              discount: order.discount || 0,
+              loyaltyDiscount: order.loyaltyDiscount || 0,
+              deliveryFee: order.deliveryFee || 0,
+              promo: order.promo || null,
+              voucherCode: order.voucherCode || null,
+              card: order.card || null,
               total: order.total,
               tip: order.tip || 0,
               payment: order.payment || null,

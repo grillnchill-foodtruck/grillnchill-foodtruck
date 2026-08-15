@@ -330,7 +330,99 @@
   }
 .copy-mini{background:none;border:none;color:var(--ember-hi);cursor:pointer;font-size:.85rem;padding:0 .1rem;vertical-align:middle;line-height:1}
 .copy-mini:hover{color:var(--cream)}
-</style>
+
+  /* ================= DESKTOP =================
+     Ein einziger Breakpoint bei 1024px. Bewusst weit ueber der bereits
+     bestehenden Layout-Abfrage bei 560px (.team-row), damit keine
+     Zwischenzustaende entstehen. Unterhalb von 1024px wird KEINE einzige
+     Regel von hier ausgeliefert – das Mobil-Layout bleibt unveraendert.
+     Alles rein per CSS: kein HTML, kein JS wird angefasst. */
+  @media (min-width:1024px){
+
+    /* Die vier 560px-Deckel sind funktional EIN Wert. Wird nur einer
+       verschoben, laufen Kopfzeile, Reiter, Inhalt und Speicherleiste
+       optisch auseinander. Nur max-width anfassen: das Padding von
+       .hdr-inner bestimmt ueber die Kopfhoehe den sticky-Versatz der
+       Reiterleiste (top:calc(... + 55px)). */
+    .wrap,.hdr-inner,.tabs-inner,.savebar .inner{max-width:1160px}
+    /* Sonst wuerde aus flex:1.4 ein 670px breiter Speichern-Knopf. */
+    .savebar .btn{flex:0 0 220px}
+
+    /* Lesbarkeit: Fliesstext laeuft nicht ueber die ganze Breite. */
+    .card .hint,p.hint{max-width:70ch}
+    .ord-meta{max-width:70ch}
+    #pane-today .field,#pauseMsgWrap{max-width:44rem}
+
+    /* HEUTE – nur das Ausverkauft-Gitter, der Reiter bleibt einspaltig:
+       seine gemischten Kinder wuerden per nth-child Ueberschriften von
+       ihren Karten trennen. */
+    #itemsCard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+               column-gap:1.4rem;row-gap:1rem}
+    #itemsCard .grp{margin-bottom:0}
+
+    /* BESTELLUNGEN – einspaltig (aufgeklappte Zeilen wuerden neben kurzen
+       Nachbarn Loecher reissen), aber verdichtet. Die Regeln zu #ordSearch
+       und .abtn sind Pflicht: sonst wird das Suchfeld 1000px breit und
+       geldwerte Aktionen stehen als riesige Flaechen nebeneinander. */
+    #ordSearch{flex:0 1 420px!important}
+    #ordersOut .ord-head .ord-main{display:flex;align-items:baseline;gap:.9rem;min-width:0}
+    #ordersOut .ord-main .ord-name{flex:0 1 auto;min-width:0}
+    #ordersOut .ord-main .badges{margin-top:0;flex:1 1 auto}
+    .ord-actions{justify-content:flex-end}
+    .ord-actions .abtn{flex:0 1 auto;max-width:240px}
+
+    /* CATERING – nur column-gap; der vertikale Abstand bleibt beim
+       Inline-margin der erzeugten Karten, sonst doppelte Abstaende. */
+    #cateringOut{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+                 column-gap:.8rem;row-gap:0;align-items:start}
+    #cateringOut a{word-break:normal;overflow-wrap:anywhere}
+
+    /* PUSH – genau zwei Karten, kein Wrapper noetig. */
+    #pane-push:not(.hidden){display:grid;
+      grid-template-columns:minmax(0,360px) minmax(0,620px);gap:1rem;align-items:start}
+    #pane-push>.card{margin-bottom:0}
+
+    /* GUTSCHEINE – Formular links ueber beide Zeilen, Listen rechts.
+       460px, weil das zweispaltige Innenraster sonst am Label
+       "Max. Rabatt in Euro" umbricht. */
+    #pane-vouchers:not(.hidden){display:grid;
+      grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:1rem;align-items:start}
+    #pane-vouchers>.card:nth-child(1){grid-column:1;grid-row:1/span 2}
+    #pane-vouchers>.card:nth-child(2){grid-column:2;grid-row:1}
+    #pane-vouchers>.card:nth-child(3){grid-column:2;grid-row:2}
+
+    /* ZAHLEN – Auto-Placement statt benannter Flaechen: Team-Admins sehen
+       die Umsatzkarte nicht (403 blendet sie aus), die Kennzahlen ruecken
+       dann nach links statt ein Loch zu hinterlassen. */
+    #pane-stats:not(.hidden){display:grid;
+      grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:0 1rem;align-items:start}
+    #pane-stats>.card:last-child{grid-column:1/-1}
+    #revDays{max-height:520px!important}
+    #statsOut th,#statsOut td{padding:.5rem .7rem}
+
+    /* TEAM – schmale Werkzeugspalte rechts; loest nebenbei die
+       ueberdehnten Eingabefelder, ohne am globalen width:100% zu drehen. */
+    #pane-team:not(.hidden){display:grid;
+      grid-template-columns:minmax(0,1fr) 22rem;gap:1rem;align-items:start}
+    #pane-team>.card:nth-child(1){grid-column:1;grid-row:1}
+    #pane-team>.card:nth-child(2){grid-column:2;grid-row:1}
+    #pane-team>.card:nth-child(3){grid-column:1;grid-row:2}
+    #teamList{max-width:46rem}
+    /* Im Protokoll wuerde die 560px-Regel Name und Detailtext auseinanderreissen. */
+    #auditOut .team-row>div:last-child{display:block;justify-content:flex-start}
+
+    /* SCAN – bleibt schmal: das Kamerabild ist quadratisch mit fester
+       Breite, in einer Grid-Zelle wuerde die Nachbarspalte die Hoehe
+       diktieren und das Bild verzerren. Nur zentrieren. */
+    #pane-scan .card{max-width:760px;margin-left:auto;margin-right:auto}
+
+    /* RECHNUNGEN */
+    #pane-invoices .card-hd{display:flex;justify-content:space-between;
+                            align-items:center;gap:1rem;flex-wrap:wrap}
+    #invList .row{display:grid;grid-template-columns:minmax(0,1fr) 12rem;
+                  padding:.55rem 0;border-bottom:1px solid var(--border)}
+  }
+  </style>
 </head>
 <body>
 <div id="toast" class="toast" role="status"></div>
@@ -1960,11 +2052,11 @@ function renderInvoices(){
     const a=r.invoiceAddress||{};
     return `<div class="row" style="align-items:flex-start;gap:.8rem;">
       <div style="flex:1;min-width:0;">
-        <div><strong>${esc(r.invoiceNo)}</strong> <span class="muted">· ${esc(r.invoiceDate||'')}</span></div>
-        <div style="font-size:.9rem;">${esc(r.company||'')}</div>
+        <div><strong>${esc2(r.invoiceNo)}</strong> <span class="muted">· ${esc2(r.invoiceDate||'')}</span></div>
+        <div style="font-size:.9rem;">${esc2(r.company||'')}</div>
         <div class="muted" style="font-size:.82rem;">
-          ${esc(a.street||'')}${a.street?', ':''}${esc(a.zip||'')} ${esc(a.city||'')}
-          ${r.reference?(' · Bestellung '+esc(r.reference)):''}
+          ${esc2(a.street||'')}${a.street?', ':''}${esc2(a.zip||'')} ${esc2(a.city||'')}
+          ${r.reference?(' · Bestellung '+esc2(r.reference)):''}
         </div>
         <div class="muted" style="font-size:.8rem;margin-top:.2rem;">${st}</div>
       </div>
