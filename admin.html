@@ -1022,8 +1022,12 @@ document.addEventListener('touchend',e=>{
 document.querySelectorAll('.tab').forEach(tab=>{
   tab.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t===tab ? 'true':'false'));
-    ['today','orders','catering','push','vouchers','scan','stats','team'].forEach(k=>{
-      $('pane-'+k).classList.toggle('hidden', tab.dataset.tab!==k);
+    // Aus dem Markup ableiten statt fest aufzuzaehlen: eine harte Liste
+    // muss bei jedem neuen Reiter nachgepflegt werden – genau daran ist der
+    // Rechnungen-Reiter zuerst haengengeblieben (Daten geladen, Bereich
+    // blieb versteckt).
+    document.querySelectorAll('.tabpane').forEach(pane=>{
+      pane.classList.toggle('hidden', pane.id !== 'pane-'+tab.dataset.tab);
     });
     if(tab.dataset.tab!=='scan') stopScan();
     if(tab.dataset.tab==='stats' && !statsLoaded) loadStats();
