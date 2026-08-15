@@ -2757,9 +2757,13 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem 0.9rem;
-  margin-bottom: 0.9rem;
+  gap: 0.55rem;
+  /* Oben fehlte jeder Abstand – der Knopf klebte an den Upsell-Karten,
+     waehrend alle anderen Bloecke rund 15 px auseinanderstehen. */
+  margin: 0.95rem 0;
 }
+/* Beide Knoepfe in der Zeile gleich hoch, sonst sitzt einer versetzt. */
+.promo-compact .mini-btn { min-height: 42px; }
 /* "GRILL5 anwenden" spart echtes Geld – das darf ein gefuellter Knopf sein.
    Bewusst kleiner als "Weiter zur Kasse" in der Fussleiste, damit er dieser
    nicht die Schau stiehlt. Vorher war es ein gestrichelter Chip, der eher
@@ -6345,7 +6349,12 @@ function loadCart() {
 function saveCustomerData() {
   try {
     const prev = loadCustomerData() || {};
-    const fields = { name:'co-name', phone:'co-phone', email:'co-email', street:'co-street', zip:'co-zip', city:'co-city', note:'co-note' };
+    // Firma und Rechnungsadresse gehoeren dazu, sonst sind sie beim Zurueckgehen
+    // im Bestellvorgang weg.
+    const fields = { name:'co-name', phone:'co-phone', email:'co-email', street:'co-street',
+                     zip:'co-zip', city:'co-city', note:'co-note',
+                     company:'co-company', invStreet:'co-inv-street',
+                     invZip:'co-inv-zip', invCity:'co-inv-city' };
     const data = { ...prev };
     for (const [key, id] of Object.entries(fields)) {
       const el = document.getElementById(id);
@@ -8818,7 +8827,9 @@ function applyPromo() {
     voucherApplied = null;
     renderCart();
     updateCartUI();
-  } else if (/^[A-Z0-9]{3,20}$/.test(code)) {
+    // Zeichensatz muss zur Server-Regel passen (vouchers-admin.js / voucher-check.js),
+    // sonst wird ein Code mit Umlauten hier abgefangen und nie geprueft.
+  } else if (/^[A-Z0-9ÄÖÜŞĞÇ]{3,20}$/.test(code)) {
     // Eigener Empfehlungs-Code? Sofort lokal blocken – der Server würde es beim
     // Absenden ohnehin verweigern, aber so gibt es die Antwort ohne Umweg.
     if (accountLoggedIn() && ACCOUNT.profile.refCode && code === ACCOUNT.profile.refCode) {
@@ -9760,7 +9771,10 @@ function renderCart() {
     // Gespeicherte Kundendaten wiederherstellen + bei jeder Eingabe sichern,
     // damit nichts verloren geht, wenn man das Bestellfenster schließt oder
     // von der SumUp-Seite zurückkommt.
-    const _custMap = { 'co-name':'name','co-phone':'phone','co-email':'email','co-street':'street','co-zip':'zip','co-city':'city','co-note':'note' };
+    const _custMap = { 'co-name':'name','co-phone':'phone','co-email':'email','co-street':'street',
+                       'co-zip':'zip','co-city':'city','co-note':'note',
+                       'co-company':'company','co-inv-street':'invStreet',
+                       'co-inv-zip':'invZip','co-inv-city':'invCity' };
     const _savedCust = loadCustomerData();
     Object.entries(_custMap).forEach(([id, key]) => {
       const el = document.getElementById(id);
@@ -9768,6 +9782,10 @@ function renderCart() {
       if (_savedCust && _savedCust[key]) el.value = _savedCust[key];
       el.addEventListener('input', saveCustomerData);
     });
+    // Stand schon eine Firma drin, muss die Rechnungsadresse wieder sichtbar
+    // und zur Pflicht werden – sonst waere sie zwar gefuellt, aber verborgen.
+    if (typeof onCompanyChange === 'function') onCompanyChange();
+
     // Falls eine Lieferadresse wiederhergestellt wurde: Zone direkt neu prüfen
     if (checkoutMode === 'delivery' && _savedCust && _savedCust.street && _savedCust.zip) {
       checkDeliveryAddress(_savedCust.street, _savedCust.zip, _savedCust.city || 'Bielefeld');
