@@ -158,9 +158,13 @@ function buildInvoicePdf(order) {
       const summe = (label, wert, fett, farbe) => {
         doc.font(fett ? 'Helvetica-Bold' : 'Helvetica').fontSize(fett ? 11 : 9.5)
           .fillColor(farbe || (fett ? dunkel : grau));
-        doc.text(latin1(label), 300, y, { width: 155 });
+        const txt = latin1(label);
+        // Zeilenhoehe messen statt fest weiterzuruecken: lange Gutscheincodes
+        // brechen um, sonst laeuft die zweite Zeile in die naechste Position.
+        const hoehe = doc.heightOfString(txt, { width: 150 });
+        doc.text(txt, 300, y, { width: 150 });
         doc.text(wert, 460, y, { width: 85, align: 'right' });
-        y += fett ? 18 : 14;
+        y += Math.max(hoehe, fett ? 14 : 11) + (fett ? 4 : 3);
       };
       summe('Zwischensumme', eur(order.subtotal));
       if (z(order.discount) > 0) {

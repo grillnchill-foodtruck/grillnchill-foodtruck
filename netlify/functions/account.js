@@ -108,6 +108,7 @@ function publicProfile(rec) {
     phone: rec.phone || '',
     birthday: rec.birthday || '',
     // Sagt dem Konto, ob das Feld noch bearbeitet werden darf
+    business: rec.business || { isBusiness: false, company: '', street: '', zip: '', city: '' },
     birthdayLocked: !!(rec.birthday && Number(rec.birthdayChanges || 0) >= BIRTHDAY_MAX_CHANGES),
     birthdayChangesLeft: rec.birthday
       ? Math.max(0, BIRTHDAY_MAX_CHANGES - Number(rec.birthdayChanges || 0)) : BIRTHDAY_MAX_CHANGES,
@@ -286,6 +287,20 @@ exports.handler = async (event) => {
           // Nur echte Aenderungen zaehlen, das erste Eintragen nicht
           if (bisher) rec.birthdayChanges = aenderungen + 1;
         }
+      }
+      /* Firmendaten. Nur wer sich ausdruecklich als Firmenkunde markiert,
+         bekommt die Felder ueberhaupt zu sehen – deshalb steuert das Kennzeichen
+         alles Weitere. Wird es abgewaehlt, bleiben die Daten stehen (falls
+         jemand versehentlich klickt), werden aber nicht mehr verwendet. */
+      if (input.business !== undefined && input.business !== null) {
+        const b = input.business || {};
+        rec.business = {
+          isBusiness: !!b.isBusiness,
+          company: clean(b.company, 80),
+          street: clean(b.street, 80),
+          zip: clean(b.zip, 10),
+          city: clean(b.city, 40),
+        };
       }
       if (Array.isArray(input.addresses)) {
         rec.addresses = input.addresses.slice(0, MAX_ADDRESSES).map(a => ({

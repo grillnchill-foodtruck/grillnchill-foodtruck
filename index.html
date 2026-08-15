@@ -6636,6 +6636,25 @@ function renderAccProfile(el) {
     ${addr || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.4rem;">${t('acc.no_addresses')}</p>`}
     ${addForm}
     <button class="btn btn-primary btn-block" style="margin-top:1rem;" onclick="accSaveProfile()">${t('acc.save')}</button>
+    <div style="margin:1.2rem 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.biz_title')}</div>
+    <label class="standing-remind" style="margin:0 0 0.5rem;">
+      <input type="checkbox" id="accBizOn" ${(p.business && p.business.isBusiness) ? 'checked' : ''} onchange="accBizToggle()">
+      <span>${t('acc.biz_optin')}</span>
+    </label>
+    <div id="accBizBox" class="invoice-addr" ${(p.business && p.business.isBusiness) ? '' : 'hidden'}>
+      <div class="invoice-addr-head">${t('co.inv_title')}</div>
+      <div style="display:grid;gap:0.5rem;">
+        <input type="text" id="accBizCompany" class="form-input" maxlength="80" placeholder="${t('co.company_ph')}" value="${escG((p.business||{}).company || '')}">
+        <input type="text" id="accBizStreet" class="form-input" maxlength="80" placeholder="${t('co.street_ph')}" value="${escG((p.business||{}).street || '')}">
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.5rem;">
+          <input type="text" id="accBizZip" class="form-input" maxlength="10" inputmode="numeric" placeholder="33649" value="${escG((p.business||{}).zip || '')}">
+          <input type="text" id="accBizCity" class="form-input" maxlength="40" placeholder="${t('co.city')}" value="${escG((p.business||{}).city || '')}">
+        </div>
+        <button type="button" class="mini-btn" style="justify-self:start;" onclick="accSaveBiz()">${t('acc.save')}</button>
+      </div>
+      <p class="field-note">${t('acc.biz_note')}</p>
+    </div>
+
     <div id="standingBox"></div>
     <div class="acc-actions">
       <button type="button" class="mini-btn" onclick="accLogout()">
@@ -6783,6 +6802,34 @@ function flashAccMsgOk(msg) {
   el.appendChild(n);
   setTimeout(() => { try { el.removeChild(n); } catch (e) {} }, 2500);
 }
+/* Firmendaten im Konto -------------------------------------------------------
+   Der Haken steuert die Sichtbarkeit: wer privat bestellt, soll die Felder gar
+   nicht erst sehen. Ist er gesetzt, werden Firma und Rechnungsadresse in der
+   Kasse vorbelegt – man muss sie also nicht bei jeder Bestellung neu tippen. */
+function accBizToggle() {
+  const an = !!document.getElementById('accBizOn')?.checked;
+  const box = document.getElementById('accBizBox');
+  if (box) box.hidden = !an;
+  if (!an) accSaveBiz(true);   // Abwaehlen sofort sichern
+}
+async function accSaveBiz(nurKennzeichen) {
+  const an = !!document.getElementById('accBizOn')?.checked;
+  const wert = id => (document.getElementById(id)?.value || '').trim();
+  const daten = {
+    isBusiness: an,
+    company: wert('accBizCompany'),
+    street: wert('accBizStreet'),
+    zip: wert('accBizZip'),
+    city: wert('accBizCity'),
+  };
+  if (an && !nurKennzeichen && !daten.company) { flashAccMsg(t('acc.biz_need_name')); return; }
+  const r = await accountApi('save', { business: daten });
+  if (r.ok) {
+    ACCOUNT.profile = r.d.profile; saveAccount();
+    if (!nurKennzeichen) showSavedToast(t('acc.saved'));
+  } else flashAccMsg(t('acc.error'));
+}
+
 /* Stehende Bestellungen ------------------------------------------------------
    Es wird bewusst NICHTS automatisch bestellt: ohne hinterlegte
    Zahlungsermächtigung wäre das weder technisch sauber noch dem Kunden
@@ -9782,6 +9829,18 @@ function renderCart() {
       if (_savedCust && _savedCust[key]) el.value = _savedCust[key];
       el.addEventListener('input', saveCustomerData);
     });
+    // Firmenkunden mit hinterlegten Daten: Kasse vorbelegen, damit niemand
+    // dieselbe Anschrift bei jeder Bestellung neu tippt. Bereits Eingetipptes
+    // wird nicht ueberschrieben.
+    if (accountLoggedIn() && ACCOUNT.profile.business && ACCOUNT.profile.business.isBusiness) {
+      const bz = ACCOUNT.profile.business;
+      const setz = (id, v) => { const el = document.getElementById(id); if (el && !el.value && v) el.value = v; };
+      setz('co-company', bz.company);
+      setz('co-inv-street', bz.street);
+      setz('co-inv-zip', bz.zip);
+      setz('co-inv-city', bz.city);
+    }
+
     // Stand schon eine Firma drin, muss die Rechnungsadresse wieder sichtbar
     // und zur Pflicht werden – sonst waere sie zwar gefuellt, aber verborgen.
     if (typeof onCompanyChange === 'function') onCompanyChange();
