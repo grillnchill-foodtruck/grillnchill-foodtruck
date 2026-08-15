@@ -7728,7 +7728,9 @@ function useMyLocation() {
       }
     },
     (err) => {
-      setGeoStatus(err && err.code === 1 ? 'denied' : 'fail'); // 1 = PERMISSION_DENIED
+      // Code 1 = abgelehnt. Safari fragt dann nicht erneut – die Seite kann die
+      // Entscheidung nicht zuruecksetzen, also sagen wir, wo sie steht.
+      setGeoStatus(err && err.code === 1 ? 'denied' : 'fail');
       if (btn) btn.disabled = false;
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
@@ -8918,7 +8920,7 @@ function renderCart() {
         <span>${t('cart.total')}</span>
         <strong data-co-total>${formatPrice(cartGrandTotal())}</strong>
       </div>
-      <button type="submit" form="checkoutForm" id="coSubmit" class="btn btn-primary btn-block btn-lg">
+      <button type="button" id="coSubmit" class="btn btn-primary btn-block btn-lg" onclick="triggerCheckoutSubmit()">
         ${t('checkout.submit_cash')}
       </button>
       <p id="coSubmitHint" style="text-align: center; font-size: 0.78rem; color: var(--color-text-muted); margin: 0.6rem 0 0;">
@@ -9054,6 +9056,45 @@ function validateCheckoutForm() {
   bad.addEventListener('change', clear);
   if (typeof hapticTick === 'function') hapticTick(12);
   return false;
+}
+
+/* Der Bestellknopf sitzt ausserhalb des Formulars (feste Fussleiste). Die
+   Zuordnung ueber das form-Attribut ist auf iOS Safari nicht verlaesslich –
+   der Knopf tat dort schlicht nichts. Deshalb ruft er jetzt selbst auf.
+   Faengt zusaetzlich Fehler ab: lieber eine Meldung als ein toter Knopf. */
+/* Der Bestellknopf sitzt seit dem Umbau in der festen Fussleiste, nicht mehr
+   im Formular. form.querySelector('button[type="submit"]') lief deshalb ins
+   Leere – im Online-Zweig ungeprueft, wodurch submitOrder dort abbrach und
+   der Knopf tot wirkte. Ab jetzt eine Quelle fuer alle Stellen. */
+function checkoutSubmitBtn() { return document.getElementById('coSubmit'); }
+
+/* Die Beschriftung des Bestellknopfes richtet sich nach der gewaehlten Zahlart.
+   Beim Zuruecksetzen nach einem Fehlversuch darf nicht der Bar-Text
+   stehenbleiben, wenn online bezahlt werden soll. */
+function resetCheckoutSubmitLabel() {
+  const btn = checkoutSubmitBtn();
+  if (!btn) return;
+  const checked = document.querySelector('input[name="pay"]:checked');
+  btn.disabled = false;
+  btn.innerHTML = t(checked && checked.value === 'sumup'
+    ? 'checkout.submit_online' : 'checkout.submit_cash');
+}
+
+function triggerCheckoutSubmit() {
+  const form = document.getElementById('checkoutForm');
+  if (!form) return;
+  const zeigeFehler = function (err) {
+    const warn = document.getElementById('coFormWarn');
+    if (warn) { warn.textContent = t('co.submit_error'); warn.style.display = 'block'; }
+    resetCheckoutSubmitLabel();
+    if (window.console) console.error('Bestellung fehlgeschlagen:', err);
+  };
+  try {
+    // submitOrder ist async – ein blosses try/catch faengt den Fehler nicht,
+    // deshalb zusaetzlich am Promise haengen.
+    const r = submitOrder({ preventDefault: function () {}, target: form });
+    if (r && typeof r.catch === 'function') r.catch(zeigeFehler);
+  } catch (err) { zeigeFehler(err); }
 }
 
 async function submitOrder(e) {
@@ -9200,7 +9241,7 @@ async function submitOrder(e) {
 
   // --- SumUp Online-Zahlung ---
   if (pay === 'sumup') {
-    const submitBtn = form.querySelector('button[type="submit"]');
+    const submitBtn = checkoutSubmitBtn();
     // SumUp verlangt mindestens 1,00 € pro Online-Zahlung. Kleinere Beträge
     // (z. B. nur Dips) würden mit einem 400 abgelehnt → hier sauber abfangen.
     const amountToCharge = Math.round(total * 100) / 100;
@@ -9208,8 +9249,7 @@ async function submitOrder(e) {
       flashCartNotice(t('co.min_online'));
       return;
     }
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = t('co.creating_payment');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = t('co.creating_payment'); }
 
     // TEST-MODUS: simulierte Online-Zahlung ohne echtes Backend
     if (TEST_MODE_NO_BACKEND) {
@@ -9227,8 +9267,7 @@ async function submitOrder(e) {
         if (ok) {
           window.location.href = window.location.pathname + '?payment=success&ref=TEST-' + Date.now();
         } else {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = 'Jetzt online bezahlen';
+          resetCheckoutSubmitLabel();
         }
       }, 600);
       return;
@@ -9301,8 +9340,7 @@ async function submitOrder(e) {
       return;
     } catch (err) {
       // Klare Fehleranzeige, statt still auf WhatsApp zu wechseln
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = 'Jetzt online bezahlen';
+      resetCheckoutSubmitLabel();
 
       const errorBox = document.createElement('div');
       errorBox.style.cssText = `
@@ -9323,10 +9361,14 @@ async function submitOrder(e) {
           <span style="font-size: 0.82rem; color: var(--color-cream-dim);">oder ruf uns an: <a href="tel:+4915118540604" style="color: var(--color-orange-bright); font-weight: 600;">+49&nbsp;151&nbsp;18&nbsp;54&nbsp;06&nbsp;04</a></span>
         </div>
       `;
-      // Existierende Fehlerbox entfernen, neue einfügen
-      form.querySelectorAll('.sumup-error-box').forEach(e => e.remove());
+      // Existierende Fehlerbox entfernen, neue einfügen. Der Knopf sitzt seit
+      // dem Umbau in der Fussleiste – dort landet auch die Box, also muss dort
+      // aufgeraeumt werden. Sonst stapeln sich die Boxen bei jedem Fehlversuch.
+      document.querySelectorAll('.sumup-error-box').forEach(e => e.remove());
       errorBox.classList.add('sumup-error-box');
-      submitBtn.parentNode.insertBefore(errorBox, submitBtn);
+      const anker = submitBtn || document.getElementById('cartFooter');
+      if (anker && anker.parentNode && submitBtn) anker.parentNode.insertBefore(errorBox, anker);
+      else if (anker) anker.insertBefore(errorBox, anker.firstChild);
 
       // Bestelldaten für Fallback-Buttons zwischenspeichern
       window.__lastOrderData = orderData;
@@ -9337,15 +9379,15 @@ async function submitOrder(e) {
   // --- Bar / EC vor Ort → Bestellung automatisch per E-Mail an Pasquale ---
   const orderWithRef = { ...orderData, reference: 'GNC-' + Date.now() };
 
-  const submitBtnCash = form.querySelector('button[type="submit"]');
-  if (submitBtnCash) { submitBtnCash.disabled = true; submitBtnCash.innerHTML = '⏳ Sende Bestellung ...'; }
+  const submitBtnCash = checkoutSubmitBtn();
+  if (submitBtnCash) { submitBtnCash.disabled = true; submitBtnCash.innerHTML = t('co.sending'); }
 
   // E-Mail an Pasquale (Owner-Notification mit Status-Buttons) + Bestätigung an Kunde
   sendOrderConfirmationEmails(orderWithRef)
     .then(result => {
       if (result === false) {
         // E-Mail-Versand fehlgeschlagen → Fehler anzeigen, NICHT als erfolgreich werten
-        if (submitBtnCash) { submitBtnCash.disabled = false; submitBtnCash.innerHTML = 'Bestellung senden'; }
+        resetCheckoutSubmitLabel();
         showOrderError(form, orderWithRef);
         return;
       }
@@ -9363,7 +9405,7 @@ async function submitOrder(e) {
 
 // Zeigt einen Fehler an wenn die Bestellung nicht übermittelt werden konnte
 function showOrderError(form, orderData) {
-  const submitBtn = form.querySelector('button[type="submit"]');
+  const submitBtn = checkoutSubmitBtn();
   form.querySelectorAll('.order-error-box').forEach(e => e.remove());
 
   const box = document.createElement('div');
