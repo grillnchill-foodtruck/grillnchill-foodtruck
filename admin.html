@@ -534,10 +534,11 @@
       <div class="card">
         <div class="card-hd">
           <h2>Rechnungen</h2>
-          <div style="display:flex;gap:.5rem;align-items:center;">
-            <select id="invYear" onchange="loadInvoices()" class="inp" style="width:auto;padding:.45rem .6rem;"></select>
-            <button class="btn ghost" onclick="loadInvoices()">Aktualisieren</button>
-            <button class="btn ghost" onclick="invoicesCsv()">CSV</button>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+            <select id="invYear" onchange="loadInvoices()" style="width:auto;min-width:9rem;"></select>
+            <button type="button" class="abtn" onclick="loadInvoices()">Aktualisieren</button>
+            <button type="button" class="abtn" onclick="invoicesCsv()">CSV</button>
+            <button type="button" class="abtn primary" onclick="invoicesZip()">Alle als PDF (ZIP)</button>
           </div>
         </div>
         <p class="muted" style="margin:0 0 .8rem;font-size:.85rem;">
@@ -1920,16 +1921,26 @@ function renderPurchases(P){
 }
 /* ---------------- Rechnungen (nur Admins) ---------------- */
 let invoicesLoaded=false, INVOICES=[];
-function invPw(){ return sessionStorage.getItem(PW_KEY)||''; }
+// currentPw ist die Quelle, die auch alle anderen Aufrufe nutzen. Aus
+// sessionStorage zu lesen ging schief, wenn die Anmeldung aus "angemeldet
+// bleiben" (localStorage) wiederhergestellt wurde – dann kam ein leeres
+// Passwort und der Server antwortete mit 401.
+function invPw(){ return currentPw || sessionStorage.getItem(PW_KEY) || ''; }
 async function loadInvoices(){
   const jahr=$('invYear').value||'';
   const url='/.netlify/functions/invoices-list?password='+encodeURIComponent(invPw())
             +(jahr?('&year='+encodeURIComponent(jahr)):'');
   let d=null;
-  try{ const r=await fetch(url); d=await r.json();
-       if(r.status===403){ $('invList').innerHTML='<p class="empty">Rechnungen sind nur für Admins sichtbar.</p>'; return; }
-       if(!r.ok) throw 0;
-  }catch(e){ $('invList').innerHTML='<p class="empty">Rechnungen konnten nicht geladen werden.</p>'; return; }
+  let status=0;
+  try{ const r=await fetch(url); status=r.status; d=await r.json().catch(()=>({}));
+       if(status===403){ $('invList').innerHTML='<p class="empty">Rechnungen sind nur für Admins sichtbar.</p>'; return; }
+       if(status===401){ $('invList').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; return; }
+       if(!r.ok) throw new Error('HTTP '+status);
+  }catch(e){
+    $('invList').innerHTML='<p class="empty">Rechnungen konnten nicht geladen werden'
+      +(status?(' (Fehler '+status+')'):'')+'.</p>';
+    return;
+  }
   invoicesLoaded=true;
   INVOICES=d.invoices||[];
   // Jahresauswahl einmalig füllen
@@ -1964,6 +1975,32 @@ function renderInvoices(){
     </div>`;
   }).join('');
 }
+/* Alle Rechnungen als ZIP mit einzelnen PDFs. Der Server erzeugt die PDFs
+   und packt sie; wir laden die Antwort als Blob, damit das Passwort nicht
+   in der Adresszeile landet. */
+async function invoicesZip(){
+  const jahr=$('invYear').value||'';
+  const btn=event&&event.target; const alt=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='Erzeuge …'; }
+  try{
+    const r=await fetch('/.netlify/functions/invoices-zip?password='+encodeURIComponent(invPw())
+            +(jahr?('&year='+encodeURIComponent(jahr)):''));
+    if(r.status===404){ toast('Noch keine Rechnungen vorhanden'); return; }
+    if(r.status===403){ toast('Nur für Admins'); return; }
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const blob=await r.blob();
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='Rechnungen'+(jahr?('-'+jahr):'')+'.zip';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    const anzahl=r.headers.get('X-Invoice-Count');
+    const gekuerzt=r.headers.get('X-Invoice-Truncated')==='1';
+    toast(anzahl ? (anzahl+' Rechnungen geladen'+(gekuerzt?' (nur die neuesten – zu viele für ein Paket)':'')) : 'ZIP geladen');
+  }catch(e){ toast('ZIP konnte nicht erzeugt werden'); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=alt; } }
+}
+
 function invoicesCsv(){
   if(!INVOICES.length) return;
   const kopf=['Rechnungsnummer','Datum','Firma','Strasse','PLZ','Ort','Bestellung','Netto 7','USt 7','Netto 19','USt 19','Brutto','Zahlung'];
