@@ -2059,8 +2059,8 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 
 .cart-item {
   display: flex;
-  gap: 0.9rem;
-  padding: 1rem 0;
+  gap: 0.85rem;
+  padding: 0.85rem 0;
   border-bottom: 1px solid var(--color-border);
   align-items: center;
 }
@@ -2131,7 +2131,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 @keyframes undoIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .cart-undo-bar { animation: none; } }
 .cart-item-icon {
-  width: 52px; height: 52px;
+  width: 58px; height: 58px;
   border-radius: var(--radius-sm);
   background: var(--color-bg-card);
   display: flex; align-items: center; justify-content: center;
@@ -2161,7 +2161,44 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   letter-spacing: 0.02em;
   vertical-align: 1px;
 }
-.cart-item-price { color: var(--color-text-muted); font-size: 0.8rem; }
+/* Zeilenpreis: der zu zahlende Betrag steht vorn und kräftig, die Rechnung
+   dahinter tritt zurück – man liest zuerst, was es kostet. */
+.cart-item-price {
+  color: var(--color-cream);
+  font-size: 0.92rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cart-item-price .calc {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-left: 0.35rem;
+}
+/* Summe fest im Fußbereich – ohne Scrollen sichtbar */
+.cart-foot-sum {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--color-border);
+  color: var(--color-cream-dim);
+  font-size: 0.88rem;
+}
+.cart-foot-sum strong {
+  color: var(--color-cream);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;      /* große Zahl braucht etwas engeren Satz */
+  font-variant-numeric: tabular-nums;
+}
+.mode-q-inline {
+  text-align: center;
+  color: var(--color-cream-dim);
+  font-size: 0.86rem;
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+}
 .cart-item-menu-detail {
   font-size: 0.78rem;
   color: var(--color-yellow);
@@ -2193,6 +2230,10 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   display: flex;
   gap: 0.6rem;
   overflow-x: auto;
+  /* Luft nach oben, damit die angehobene Karte beim Zeigen nicht abgeschnitten
+     wird – per Negativ-Margin ausgeglichen, das Layout bleibt unverändert. */
+  padding-top: 4px;
+  margin-top: -4px;
   padding-bottom: 0.35rem;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -2210,7 +2251,11 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   cursor: pointer;
   transition: border-color .15s, transform .15s;
 }
-.cart-upsell-card:hover { border-color: var(--color-orange); transform: translateY(-2px); }
+@media (hover: hover) and (pointer: fine) {
+  .cart-upsell-card:hover { border-color: var(--color-orange); transform: translateY(-2px); }
+}
+.cart-upsell-card:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) { .cart-upsell-card:active { transform: none; } }
 .cart-upsell-card:active { transform: translateY(0); }
 .cart-upsell-img {
   width: 100%;
@@ -2241,7 +2286,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 }
 .cart-item-controls {
   display: flex; align-items: center; gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
 }
 .cart-item-qty {
   display: flex; align-items: center; gap: 0.3rem;
@@ -8132,7 +8177,7 @@ function renderCart() {
           <div class="cart-item-info">
             <div class="cart-item-name">${displayName}</div>
             ${variantDetail}
-            <div class="cart-item-price">${formatPrice(unitPrice)} × ${entry.qty} = ${formatPrice(unitPrice * entry.qty)}</div>
+            <div class="cart-item-price">${formatPrice(unitPrice * entry.qty)}${entry.qty > 1 ? `<span class="calc">${entry.qty} × ${formatPrice(unitPrice)}</span>` : ''}</div>
             <div class="cart-item-controls">
               <div class="cart-item-qty">
                 <button onclick="updateQty('${key}', -1)" aria-label="${t('a11y.less')}">−</button>
@@ -8283,18 +8328,18 @@ function renderCart() {
 
     // ---- Step 1: Warenkorb – Artikel + Abhol-/Liefer-Wahl (aufgeräumt) ----
     if (checkoutStep === 'cart') {
-      body.innerHTML = itemsHtml + `
-        <div class="cart-subtotal-line">
-          <span>${t('cart.subtotal')}</span>
-          <span>${formatPrice(sub)}</span>
-        </div>
-        ${stepBanner}
-        ${groupJoin ? '' : `<div class="mode-q">${t('cart.how')}</div>`}
-      `;
+      // Summe und Frage stehen jetzt fest im Fußbereich – dort sind sie ohne
+      // Scrollen sichtbar. Im Inhalt bleibt nur die Artikelliste (+ Hinweise).
+      body.innerHTML = itemsHtml + `${stepBanner}`;
       footer.innerHTML = groupJoin ? `
         <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitToGroup()" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
         <p style="text-align:center;color:var(--color-cream-dim);font-size:0.78rem;margin:0.6rem 0 0;line-height:1.5;">${t('grp.entry_join').replace('{host}', escG(groupJoin.host || ''))}<br>${t('grp.join_s3')}</p>
       ` : `
+        <div class="cart-foot-sum">
+          <span>${t('cart.subtotal')}</span>
+          <strong>${formatPrice(sub)}</strong>
+        </div>
+        <div class="mode-q-inline">${t('cart.how')}</div>
         <div class="mode-fork">
           <button type="button" class="mode-fork-btn" onclick="chooseMode('pickup')">${t('co.tab_pickup')}</button>
           <button type="button" class="mode-fork-btn${!os.delivery ? ' disabled' : ''}" onclick="chooseMode('delivery')"${!os.delivery ? ' disabled aria-disabled="true"' : ''}>${t('co.tab_delivery')}</button>
