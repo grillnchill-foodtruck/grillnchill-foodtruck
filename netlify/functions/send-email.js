@@ -59,6 +59,7 @@ const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 // --- Retargeting/Gutschein (Netlify Blobs, best effort – stört den Mailfluss nie) ---
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { buildInvoicePdf, buildInvoiceXml } = require('./lib/invoice');
 
 /* Fortlaufende Rechnungsnummer. § 14 Abs. 4 Nr. 4 UStG verlangt eine
    einmalig vergebene, fortlaufende Nummer. Wir zaehlen je Jahr hoch:
@@ -980,7 +981,7 @@ function buildStatusLinks(order, siteUrl, statusSecret) {  const ref = encodeURI
 //  Brevo API-Aufruf
 // ============================================================
 
-async function sendViaBreve(apiKey, senderEmail, senderName, recipient, subject, htmlBody) {
+async function sendViaBreve(apiKey, senderEmail, senderName, recipient, subject, htmlBody, attachments) {
   const response = await fetch(BREVO_API_URL, {
     method: 'POST',
     headers: {
@@ -993,6 +994,8 @@ async function sendViaBreve(apiKey, senderEmail, senderName, recipient, subject,
       to: [{ email: recipient.email, name: recipient.name || '' }],
       subject,
       htmlContent: htmlBody,
+      // Anhaenge (Rechnung als PDF + XRechnung). Brevo erwartet Base64.
+      ...(attachments && attachments.length ? { attachment: attachments } : {}),
     }),
   });
 
@@ -1346,14 +1349,33 @@ exports.handler = async (event) => {
         }
       }
 
+      // Firmenkunden bekommen die Rechnung zusaetzlich als Datei: das PDF zum
+      // Ablegen, die XRechnung fuer die Buchhaltung.
+      let anhaenge = [];
+      if (order.company && order.invoiceNo) {
+        try {
+          const pdf = await buildInvoicePdf(order);
+          anhaenge.push({ name: `Rechnung-${order.invoiceNo}.pdf`, content: pdf.toString('base64') });
+          const xml = buildInvoiceXml(order);
+          anhaenge.push({ name: `Rechnung-${order.invoiceNo}.xml`,
+                          content: Buffer.from(xml, 'utf8').toString('base64') });
+        } catch (e) {
+          // Ohne Anhang geht die Bestaetigung trotzdem raus – die Rechnung
+          // steht ja auch im Mailtext.
+          console.error('Rechnungsanhang fehlgeschlagen:', e);
+          anhaenge = [];
+        }
+      }
+
       const customerMail = buildOrderConfirmationEmail(order);
       const ownerMail = buildOwnerNotificationEmail(order, siteUrl, statusSecret);
 
       await Promise.all([
+        // Kunde und Inhaber bekommen dieselben Rechnungsdateien
         sendViaBreve(apiKey, senderEmail, senderName,
-          { email: order.email, name: order.name }, customerMail.subject, customerMail.html),
+          { email: order.email, name: order.name }, customerMail.subject, customerMail.html, anhaenge),
         sendViaBreve(apiKey, senderEmail, senderName,
-          { email: ownerEmail, name: 'Grilln Chill' }, ownerMail.subject, ownerMail.html),
+          { email: ownerEmail, name: 'Grilln Chill' }, ownerMail.subject, ownerMail.html, anhaenge),
         sendTelegram(order),
       ]);
 

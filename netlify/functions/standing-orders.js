@@ -144,6 +144,7 @@ exports.handler = async (event) => {
       const remind = b.remind === true;
       const rec = {
         id,
+        name: clean(b.name, 32),
         email: String(b.email).trim().toLowerCase(),
         weekday, time,
         mode: b.mode === 'delivery' ? 'delivery' : 'pickup',

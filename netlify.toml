@@ -105,6 +105,10 @@
 
 # Stehende Bestellungen: Erinnerung am Vorabend (17:00 UTC ≈ 19:00 dt. Sommerzeit).
 # Verschickt nur an Kunden, die die Erinnerung ausdrücklich eingeschaltet haben.
+# Das Logo wird für den Rechnungskopf im PDF gebraucht
+[functions]
+  included_files = ["logo.png"]
+
 [functions."standing-remind"]
   schedule = "0 17 * * *"
 

@@ -6552,9 +6552,9 @@ function renderAccProfile(el) {
               ${o.snap ? `<span style="font-size:0.65rem;color:var(--color-orange-bright);margin-left:0.3rem;">▾</span>` : ''}
             </div>
             ${o.snap
-              ? `<button type="button" class="promo-quick-chip" style="margin:0;align-self:center;display:inline-flex;align-items:center;flex:none;" onclick="accReorder(${i})">${t('acc.reorder')}</button>`
+              ? `<button type="button" class="mini-btn" style="flex:none;" onclick="accReorder(${i})">${t('acc.reorder')}</button>`
               : (i === 0 && getLastOrder()
-                ? `<button type="button" class="promo-quick-chip" style="margin:0;align-self:center;display:inline-flex;align-items:center;flex:none;" onclick="accReorderFallback()">${t('acc.reorder')}</button>`
+                ? `<button type="button" class="mini-btn" style="flex:none;" onclick="accReorderFallback()">${t('acc.reorder')}</button>`
                 : '')}
           </div>
           ${o.snap
@@ -6569,7 +6569,7 @@ function renderAccProfile(el) {
     <div style="margin-bottom:0.9rem;">
       <div style="display:flex;gap:0.5rem;align-items:stretch;">
         <input type="text" id="accBirthday" class="form-input" maxlength="6" inputmode="numeric" placeholder="${t('acc.birthday_ph')}" value="${escG(p.birthday || '')}" style="flex:1;" oninput="accBdayFmt(this)">
-        <button type="button" class="promo-quick-chip" onclick="accSaveBirthday()" style="margin:0;align-self:stretch;display:inline-flex;align-items:center;">${t('acc.save')}</button>
+        <button type="button" class="mini-btn" onclick="accSaveBirthday()" style="align-self:stretch;">${t('acc.save')}</button>
       </div>
       <p style="font-size:0.7rem;color:var(--color-text-muted);margin:0.35rem 0 0;line-height:1.4;">${t('acc.birthday_hint')}</p>
     </div>
@@ -6585,7 +6585,7 @@ function renderAccProfile(el) {
       <p style="font-size:0.75rem;color:var(--color-cream-dim);margin:0 0 0.55rem;line-height:1.5;">${t('acc.ref_text')}</p>
       <div style="display:flex;align-items:stretch;gap:0.6rem;flex-wrap:wrap;">
         <code style="display:inline-flex;align-items:center;font-family:ui-monospace,Menlo,monospace;font-size:0.95rem;letter-spacing:0.12em;color:var(--color-orange-bright);background:rgba(232,90,36,0.1);border:1px dashed var(--color-orange-bright);border-radius:999px;padding:0 0.9rem;">${escG(p.refCode)}</code>
-        <button type="button" class="promo-quick-chip" onclick="accShareRef()" style="margin:0;align-self:stretch;display:inline-flex;align-items:center;">${t('acc.ref_share')}</button>
+        <button type="button" class="mini-btn" onclick="accShareRef()" style="align-self:stretch;">${t('acc.ref_share')}</button>
       </div>
       ${p.referrals ? `<p style="font-size:0.72rem;color:var(--color-cream-dim);margin:0.55rem 0 0;">${t('acc.ref_earned').replace('{n}', p.referrals)}</p>` : ''}
     </div>` : ''}
@@ -6639,8 +6639,8 @@ async function renderWalletBtns() {
     const r = await fetch('/.netlify/functions/wallet-pass');
     const d = await r.json();
     const btns = [];
-    if (d.google) btns.push('<button type="button" class="promo-quick-chip" style="margin:0;" onclick="addToWallet(\'google\')">' + t('acc.wallet_google') + '</button>');
-    if (d.apple) btns.push('<button type="button" class="promo-quick-chip" style="margin:0;" onclick="addToWallet(\'apple\')">' + t('acc.wallet_apple') + '</button>');
+    if (d.google) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'google\')">' + t('acc.wallet_google') + '</button>');
+    if (d.apple) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'apple\')">' + t('acc.wallet_apple') + '</button>');
     if (btns.length) { row.innerHTML = btns.join(''); row.style.display = 'flex'; }
   } catch (e) {}
 }
@@ -6777,11 +6777,11 @@ function renderStanding() {
       : '–';
     return `<div class="standing-item${o.paused ? ' is-paused' : ''}">
       <div class="standing-head">
-        <b>${escG(standingDayLabel(o.weekday))}, ${escG(o.time)}</b>
+        <b>${escG(o.name || (standingDayLabel(o.weekday) + ', ' + o.time))}</b>
         <span class="standing-sum">${formatPrice(summe)}</span>
       </div>
       <div class="standing-meta">
-        ${(o.items || []).length} ${t('so.items')} · ${t(o.mode === 'delivery' ? 'co.tab_delivery' : 'co.tab_pickup')}
+        ${o.name ? escG(standingDayLabel(o.weekday)) + ', ' + escG(o.time) + ' · ' : ''}${(o.items || []).length} ${t('so.items')} · ${t(o.mode === 'delivery' ? 'co.tab_delivery' : 'co.tab_pickup')}
         ${o.paused ? ' · ' + t('so.paused') : ' · ' + t('so.next').replace('{when}', naechster)}
       </div>
       <label class="standing-remind">
@@ -6802,29 +6802,56 @@ function renderStanding() {
     <div style="margin:1.2rem 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('so.title')}</div>
     <p class="field-note" style="margin:0 0 0.6rem;">${t('so.intro')}</p>
     ${liste || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.5rem;">${t('so.empty')}</p>`}
-    ${STANDING.length < 3 ? (korbLeer
-        ? `<p class="field-note">${t('so.need_cart')}</p>`
-        : `<details style="margin-top:0.5rem;">
-             <summary style="cursor:pointer;font-size:0.8rem;color:var(--color-orange-bright);font-weight:700;">${t('so.add')}</summary>
-             <div style="display:grid;gap:0.5rem;margin-top:0.6rem;">
-               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
-                 <select id="soDay" class="form-input">${
-                   [1,2,3,4,5,6,0].map(n => `<option value="${n}">${standingDayLabel(n)}</option>`).join('')}</select>
-                 <input type="time" id="soTime" class="form-input" value="12:30">
-               </div>
-               <label class="standing-remind">
-                 <input type="checkbox" id="soRemind">
-                 <span>${t('so.remind_optin')}</span>
-               </label>
-               <button class="btn btn-primary" type="button" onclick="standingCreate()">${t('so.save')}</button>
-               <p class="field-note">${t('so.from_cart')}</p>
-             </div>
-           </details>`)
+    ${STANDING.length < 3 ? `
+      <button type="button" class="btn btn-secondary btn-block" id="soToggle"
+              style="margin-top:0.6rem;" onclick="toggleStandingForm()">${t('so.add')}</button>
+      <div id="soForm" hidden style="display:grid;gap:0.55rem;margin-top:0.7rem;">
+        <input type="text" id="soName" class="form-input" maxlength="32" placeholder="${t('so.name_ph')}">
+        <select id="soSource" class="form-input">${standingSourceOptions()}</select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <select id="soDay" class="form-input">${
+            [1,2,3,4,5,6,0].map(n => `<option value="${n}">${standingDayLabel(n)}</option>`).join('')}</select>
+          <input type="time" id="soTime" class="form-input" value="12:30">
+        </div>
+        <label class="standing-remind">
+          <input type="checkbox" id="soRemind">
+          <span>${t('so.remind_optin')}</span>
+        </label>
+        <button class="btn btn-primary" type="button" onclick="standingCreate()">${t('so.save')}</button>
+      </div>`
       : ''}`;
 }
 
-async function standingCreate() {
-  const items = Object.entries(cart).map(([key, entry]) => {
+/* Quelle der Reihe: der aktuelle Warenkorb oder eine der letzten Bestellungen.
+   Die alten Bestellungen sind ueber Datum, Anzahl und Betrag eindeutig genug –
+   deshalb braucht die Historie keine eigene Umbenennen-Funktion. Der Name
+   gehoert an die stehende Bestellung, weil man DIE jede Woche wiedersieht. */
+function standingSourceOptions() {
+  const opts = [];
+  const imKorb = cartItemCount();
+  if (imKorb > 0) {
+    opts.push(`<option value="cart">${t('so.src_cart').replace('{n}', imKorb)}</option>`);
+  }
+  const hist = (ACCOUNT && ACCOUNT.profile && ACCOUNT.profile.orders) || [];
+  hist.forEach((o, i) => {
+    if (!o.snap || !Object.keys(o.snap).length) return;
+    const anzahl = Object.values(o.snap).reduce((n, e) => n + (e.qty || 0), 0);
+    const datum = o.at ? new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit' }).format(new Date(o.at)) : '';
+    opts.push(`<option value="hist:${i}">${datum} · ${anzahl} ${t('so.items')} · ${formatPrice(o.total || 0)}</option>`);
+  });
+  return opts.join('') || `<option value="">${t('so.need_cart')}</option>`;
+}
+
+function toggleStandingForm() {
+  const f = document.getElementById('soForm');
+  const b = document.getElementById('soToggle');
+  if (!f) return;
+  f.hidden = !f.hidden;
+  if (b) b.textContent = f.hidden ? t('so.add') : t('so.cancel');
+}
+
+function itemsAusKorb(korb) {
+  return Object.entries(korb).map(([key, entry]) => {
     const item = MENU.find(m => m.id === entry.menuId);
     if (!item) return null;
     const p = entryUnitPrice(entry);
@@ -6832,8 +6859,20 @@ async function standingCreate() {
              total: p * entry.qty, double: !!entry.double, isMenu: !!entry.isMenu,
              side: entry.side || null, drink: entry.drink || null, dip: entry.dip || null };
   }).filter(Boolean);
+}
+
+async function standingCreate() {
+  const quelle = document.getElementById('soSource')?.value || 'cart';
+  let korb = cart;
+  if (quelle.startsWith('hist:')) {
+    const idx = Number(quelle.split(':')[1]);
+    const alt = ((ACCOUNT && ACCOUNT.profile && ACCOUNT.profile.orders) || [])[idx];
+    if (alt && alt.snap) korb = alt.snap;
+  }
+  const items = itemsAusKorb(korb);
   if (!items.length) { flashAccMsg(t('so.need_cart')); return; }
   const r = await standingApi('create', {
+    name: (document.getElementById('soName')?.value || '').trim(),
     weekday: Number(document.getElementById('soDay').value),
     time: document.getElementById('soTime').value || '12:30',
     mode: checkoutMode,
@@ -9553,7 +9592,7 @@ function renderCart() {
             <label for="co-street">${t('co.street')}</label>
             ${accountLoggedIn() && (ACCOUNT.profile.addresses || []).length ? `
             <div style="display:flex;gap:0.45rem;flex-wrap:wrap;margin:0 0 0.6rem;">
-              ${(ACCOUNT.profile.addresses || []).map((a, i) => `<button type="button" class="promo-quick-chip" onclick="accFillAddress(${i})">${escG(addressLabel(a))}</button>`).join('')}
+              ${(ACCOUNT.profile.addresses || []).map((a, i) => `<button type="button" class="mini-btn" onclick="accFillAddress(${i})">${escG(addressLabel(a))}</button>`).join('')}
             </div>` : ''}
             <input type="text" id="co-street" class="form-input" required placeholder="${t('co.street_ph')}" autocomplete="street-address" oninput="onAddressChange()" />
           </div>
