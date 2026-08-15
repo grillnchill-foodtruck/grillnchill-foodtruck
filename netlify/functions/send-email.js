@@ -60,6 +60,94 @@ const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 
+/* Fortlaufende Rechnungsnummer. § 14 Abs. 4 Nr. 4 UStG verlangt eine
+   einmalig vergebene, fortlaufende Nummer. Wir zaehlen je Jahr hoch:
+   GNC-2026-0001. Der Zaehler liegt im Blob-Store, damit er auch ueber
+   Neustarts hinweg eindeutig bleibt. */
+function deDate(d) {
+  return new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin',
+    day: '2-digit', month: '2-digit', year: 'numeric' }).format(d || new Date());
+}
+
+async function nextInvoiceNo() {
+  const s = blobStore('invoices');
+  const jahr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric' })
+    .format(new Date());
+  const key = 'counter:' + jahr;
+  const cur = (await s.get(key, { type: 'json' })) || { n: 0 };
+  cur.n += 1;
+  await s.setJSON(key, cur);
+  return `GNC-${jahr}-${String(cur.n).padStart(4, '0')}`;
+}
+
+/* Rechnungsblock fuer Firmenkunden. Erscheint nur, wenn eine Firma
+   angegeben wurde – Privatkunden bekommen die Bestaetigung wie bisher. */
+function buildInvoiceBlock(order) {
+  if (!order.company || !order.invoiceNo) return '';
+  const a = order.invoiceAddress || {};
+  const zeilen = (order.vat || []).map(v => `
+    <tr>
+      <td style="padding:6px 14px;color:#555;">Netto ${String(v.satz).replace('.', ',')}&nbsp;%</td>
+      <td style="padding:6px 14px;text-align:right;color:#555;">${formatPrice(v.netto)}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 14px;color:#555;">zzgl. ${String(v.satz).replace('.', ',')}&nbsp;% USt.</td>
+      <td style="padding:6px 14px;text-align:right;color:#555;">${formatPrice(v.steuer)}</td>
+    </tr>`).join('');
+  const summeNetto = (order.vat || []).reduce((n, v) => n + v.netto, 0);
+  const summeSteuer = (order.vat || []).reduce((n, v) => n + v.steuer, 0);
+  return `
+  <tr><td style="padding:0 30px 26px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ddd;border-radius:8px;">
+      <tr><td style="padding:18px 20px 8px;">
+        <div style="font-size:18px;font-weight:700;color:#1a1a1a;">Rechnung</div>
+        <div style="font-size:13px;color:#888;margin-top:2px;">
+          Rechnungsnummer ${esc(order.invoiceNo)} &middot; Rechnungsdatum ${esc(order.invoiceDate || '')}
+        </div>
+      </td></tr>
+      <tr><td style="padding:8px 20px;font-size:13px;line-height:1.6;color:#444;">
+        <table width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td valign="top" style="font-size:13px;line-height:1.6;color:#444;">
+            <strong style="color:#888;font-size:11px;letter-spacing:.06em;">RECHNUNGSEMPF&Auml;NGER</strong><br>
+            ${esc(order.company)}<br>
+            ${a.street ? esc(a.street) + '<br>' : ''}
+            ${esc(a.zip || '')} ${esc(a.city || '')}
+          </td>
+          <td valign="top" style="font-size:13px;line-height:1.6;color:#444;">
+            <strong style="color:#888;font-size:11px;letter-spacing:.06em;">LEISTENDER</strong><br>
+            Grill&rsquo;n Chill Yildiz und &Ouml;ztas GbR<br>
+            Im Teich 9, 49152 Bad Essen<br>
+            USt-IdNr.: DE459954473
+          </td>
+        </tr></table>
+      </td></tr>
+      <tr><td style="padding:10px 20px 0;font-size:13px;color:#666;">
+        Leistungsdatum: ${esc(order.serviceDate || order.invoiceDate || '')}
+        &middot; Bestellnummer ${esc(order.reference || '')}
+      </td></tr>
+      <tr><td style="padding:12px 6px 4px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-top:1px solid #eee;">
+          ${zeilen}
+          <tr>
+            <td style="padding:10px 14px;border-top:1px solid #ddd;color:#1a1a1a;font-weight:700;">Gesamtbetrag brutto</td>
+            <td style="padding:10px 14px;border-top:1px solid #ddd;text-align:right;color:#1a1a1a;font-weight:700;">
+              ${formatPrice(summeNetto + summeSteuer)}
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+      ${order.tip > 0 ? `<tr><td style="padding:0 20px 8px;font-size:12px;color:#888;">
+        Zus&auml;tzlich gezahltes freiwilliges Trinkgeld in H&ouml;he von ${formatPrice(order.tip)} ist nicht Bestandteil dieser Rechnung.
+      </td></tr>` : ''}
+      <tr><td style="padding:4px 20px 18px;font-size:12px;color:#888;line-height:1.6;">
+        ${order.payment === 'sumup'
+          ? 'Der Betrag wurde online bezahlt. Diese Rechnung dient als Beleg.'
+          : 'Zahlung bei &Uuml;bergabe. Diese Rechnung dient als Beleg.'}
+      </td></tr>
+    </table>
+  </td></tr>`;
+}
+
 function statusPageUrl(ref) {
   const secret = process.env.STATUS_UPDATE_SECRET || '';
   const k = require('crypto').createHash('sha256').update(ref + '|' + secret).digest('hex').slice(0, 20);
@@ -510,6 +598,8 @@ function buildOrderConfirmationEmail(order) {
           <strong>dein Grilln Chill Team</strong>
         </p>
       </td></tr>
+
+      ${buildInvoiceBlock(order)}
 
       <tr><td style="background:#F8F5EE;padding:20px 30px;text-align:center;color:#888;font-size:12px;line-height:1.6;">
         Grilln Chill · Gütersloher Straße 122 · 33649 Bielefeld<br>
@@ -1148,6 +1238,21 @@ exports.handler = async (event) => {
           }
         }
       } catch (e) {}
+
+      // Firmenkunden bekommen eine Rechnung. Die Nummer wird hier vergeben –
+      // nach der Doppelt-Prüfung oben, also genau einmal je Bestellung.
+      if (order.company) {
+        try {
+          order.invoiceNo = await nextInvoiceNo();
+          order.invoiceDate = deDate();
+          order.serviceDate = deDate();
+        } catch (e) {
+          // Ohne Nummer keine Rechnung – die Bestätigung geht trotzdem raus,
+          // damit eine Störung im Zähler nie die Bestellung blockiert.
+          order.invoiceNo = null;
+          console.error('Rechnungsnummer fehlgeschlagen:', e);
+        }
+      }
 
       const customerMail = buildOrderConfirmationEmail(order);
       const ownerMail = buildOwnerNotificationEmail(order, siteUrl, statusSecret);

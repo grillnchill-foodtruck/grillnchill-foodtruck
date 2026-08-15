@@ -3205,6 +3205,27 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   border-top: 1px solid var(--color-border);
   color: var(--color-text-muted);
 }
+/* Rechnungsadresse: klappt unter dem Firmenfeld auf, sichtbar zusammengehörig. */
+.invoice-addr {
+  border: 1px solid var(--color-border-bright);
+  border-left: 3px solid var(--color-orange);
+  border-radius: var(--radius-sm);
+  background: rgba(240, 138, 42, 0.05);
+  padding: 0.9rem 1rem 0.6rem;
+  margin: 0 0 0.9rem;
+  animation: inv-in 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.invoice-addr[hidden] { display: none; }
+.invoice-addr-head {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-orange-bright);
+  margin-bottom: 0.6rem;
+}
+@keyframes inv-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .invoice-addr { animation: none; } }
 .tip-hint {
   margin: 0.55rem 0 0;
   font-size: 0.78rem;
@@ -7172,6 +7193,65 @@ function renderMenu(animate = false) {
 }
 
 /* ====================================================================
+   UMSATZSTEUER FÜR FIRMENRECHNUNGEN
+   --------------------------------------------------------------------
+   ACHTUNG – vom Steuerberater freigeben lassen, bevor die erste Rechnung
+   rausgeht. Ein zu hoch ausgewiesener Steuerbetrag wird nach § 14c UStG
+   tatsächlich geschuldet.
+
+   Angenommen ist die übliche Behandlung beim Außer-Haus-Verkauf:
+     • Speisen (Burger, Beilagen, Dips) ...... ermäßigt, 7 %
+     • Getränke .............................. voll,     19 %
+   Bei Menüs wird der Gesamtpreis nach den Einzelverkaufspreisen
+   aufgeteilt: der Getränkeanteil mit 19 %, der Rest mit 7 %.
+   Rabatte und Liefergebühr werden anteilig auf beide Sätze verteilt.
+   Trinkgeld steht bewusst NICHT auf der Rechnung – es ist freiwillig
+   und keine Gegenleistung für die Speisen.
+   ==================================================================== */
+const VAT_FOOD = 7;
+const VAT_DRINK = 19;
+
+/* Entgelt einer Position auf die Steuersätze aufteilen.
+   Rückgabe: { 7: bruttoAnteil, 19: bruttoAnteil } */
+function splitVat(entry, bruttoGesamt) {
+  const item = MENU.find(m => m.id === entry.menuId);
+  if (!item) return { [VAT_FOOD]: bruttoGesamt, [VAT_DRINK]: 0 };
+  if (!entry.isMenu) {
+    const satz = item.cat === 'drinks' ? VAT_DRINK : VAT_FOOD;
+    return { [VAT_FOOD]: satz === VAT_FOOD ? bruttoGesamt : 0,
+             [VAT_DRINK]: satz === VAT_DRINK ? bruttoGesamt : 0 };
+  }
+  // Menü: Getränk nach seinem Einzelverkaufspreis herausrechnen
+  const drink = MENU.find(m => m.id === entry.drink);
+  const drinkEinzel = (drink ? drink.price : 0) * entry.qty;
+  const anteilDrink = Math.min(drinkEinzel, bruttoGesamt);
+  return { [VAT_FOOD]: bruttoGesamt - anteilDrink, [VAT_DRINK]: anteilDrink };
+}
+
+/* Steueraufstellung für die ganze Bestellung.
+   Rabatte und Liefergebühr werden im Verhältnis der Warenanteile verteilt. */
+function buildVatSummary(cartObj, rabattGesamt, liefergebuehr) {
+  const brutto = { [VAT_FOOD]: 0, [VAT_DRINK]: 0 };
+  Object.values(cartObj).forEach(entry => {
+    const teil = splitVat(entry, entryUnitPrice(entry) * entry.qty);
+    brutto[VAT_FOOD]  += teil[VAT_FOOD];
+    brutto[VAT_DRINK] += teil[VAT_DRINK];
+  });
+  const warenSumme = brutto[VAT_FOOD] + brutto[VAT_DRINK];
+  const zeilen = [];
+  [VAT_FOOD, VAT_DRINK].forEach(satz => {
+    if (brutto[satz] <= 0) return;
+    const anteil = warenSumme > 0 ? brutto[satz] / warenSumme : 0;
+    const bru = brutto[satz] - rabattGesamt * anteil + liefergebuehr * anteil;
+    if (bru <= 0.004) return;
+    const netto = bru / (1 + satz / 100);
+    zeilen.push({ satz, brutto: +bru.toFixed(2), netto: +netto.toFixed(2),
+                  steuer: +(bru - netto).toFixed(2) });
+  });
+  return zeilen;
+}
+
+/* ====================================================================
    CART LOGIC
    Cart-Struktur: { cartKey: { menuId, qty, double } }
    cartKey = menuId (single) oder menuId+'__double'
@@ -8997,6 +9077,32 @@ function renderCart() {
           <label for="co-phone">${t('co.phone')}</label>
           <input type="tel" id="co-phone" class="form-input" required placeholder="${t('co.phone_ph')}" autocomplete="tel" inputmode="tel" />
         </div>
+
+        <div class="form-group">
+          <label for="co-company">${t('co.company')}</label>
+          <input type="text" id="co-company" class="form-input" placeholder="${t('co.company_ph')}"
+                 autocomplete="organization" maxlength="80" oninput="onCompanyChange()" />
+          <p class="field-note">${t('co.company_note')}</p>
+        </div>
+        <!-- Rechnungsadresse erscheint erst, wenn eine Firma eingetragen ist -->
+        <div id="invoiceAddr" class="invoice-addr" hidden>
+          <div class="invoice-addr-head">${t('co.inv_title')}</div>
+          <div class="form-group">
+            <label for="co-inv-street">${t('co.street')}</label>
+            <input type="text" id="co-inv-street" class="form-input" maxlength="80" placeholder="${t('co.street_ph')}" autocomplete="billing street-address" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="co-inv-zip">${t('co.zip')}</label>
+              <input type="text" id="co-inv-zip" class="form-input" maxlength="10" pattern="[0-9]{5}" inputmode="numeric" placeholder="33649" autocomplete="billing postal-code" />
+            </div>
+            <div class="form-group">
+              <label for="co-inv-city">${t('co.city')}</label>
+              <input type="text" id="co-inv-city" class="form-input" maxlength="40" placeholder="${t('co.city')}" autocomplete="billing address-level2" />
+            </div>
+          </div>
+          <p class="field-note">${t('co.inv_note')}</p>
+        </div>
         <div id="phoneUsageInfo" class="phone-usage-info" style="display:none;"></div>
 
         ${checkoutMode === 'delivery' ? `
@@ -9283,6 +9389,32 @@ function resetCheckoutSubmitLabel() {
     ? 'checkout.submit_online' : 'checkout.submit_cash');
 }
 
+/* Firmenfeld steuert die Rechnungsadresse: ohne Firma keine Rechnung, also
+   auch keine Adressfelder. Sobald eine Firma dasteht, wird die Adresse zur
+   Pflicht – eine Rechnung ohne Empfängeranschrift ist ab 250 € nicht zum
+   Vorsteuerabzug geeignet (§ 14 UStG). */
+function onCompanyChange() {
+  const firma = (document.getElementById('co-company')?.value || '').trim();
+  const box = document.getElementById('invoiceAddr');
+  if (!box) return;
+  const an = firma.length > 0;
+  box.hidden = !an;
+  ['co-inv-street', 'co-inv-zip', 'co-inv-city'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.required = an;
+    if (!an) el.classList.remove('cfun-invalid');
+  });
+  // Bei Lieferung die schon eingetippte Adresse als Vorschlag übernehmen
+  if (an && checkoutMode === 'delivery') {
+    const paare = [['co-inv-street','co-street'], ['co-inv-zip','co-zip'], ['co-inv-city','co-city']];
+    paare.forEach(([ziel, quelle]) => {
+      const z = document.getElementById(ziel), q = document.getElementById(quelle);
+      if (z && q && !z.value) z.value = q.value;
+    });
+  }
+}
+
 function triggerCheckoutSubmit() {
   const form = document.getElementById('checkoutForm');
   if (!form) return;
@@ -9379,7 +9511,7 @@ async function submitOrder(e) {
   const total = testPromoApplied ? TEST_TOTAL : (Math.max(0, sub - disc - loyDisc - vDisc + fee) + tip);
 
   // Build order summary (used in WhatsApp & SumUp description)
-  const items = Object.entries(cart).map(([key, entry]) => {
+  const items = Object.entries(cart).map(([key, entry]) => {  // (Steuer siehe VAT_* unten)
     const item = MENU.find(m => m.id === entry.menuId);
     if (!item) return null;
     const unitPrice = entryUnitPrice(entry);
@@ -9419,6 +9551,15 @@ async function submitOrder(e) {
     promo: vDisc > 0 ? { code: voucherApplied.code }
       : (effectivePromo && disc > 0 ? { code: PROMO_CODE, pct: promoTierPercent(sub) } : null),
     voucherCode: vDisc > 0 ? voucherApplied.code : null,
+    // Firmenkunden bekommen eine Rechnung – ohne Firma bleibt alles wie bisher
+    company: (form['co-company'] && form['co-company'].value.trim()) || null,
+    invoiceAddress: (form['co-company'] && form['co-company'].value.trim()) ? {
+      street: (form['co-inv-street'] || {}).value || '',
+      zip: (form['co-inv-zip'] || {}).value || '',
+      city: (form['co-inv-city'] || {}).value || '',
+    } : null,
+    vat: (form['co-company'] && form['co-company'].value.trim())
+      ? buildVatSummary(cart, disc + vDisc + loyDisc, fee) : null,
     deliveryAddress: checkoutMode === 'delivery' ? {
       street: form['co-street'].value,
       zip: form['co-zip'].value,
@@ -11391,6 +11532,11 @@ async function sendOrderConfirmationEmails(orderData) {
       loyaltyProgress: orderData.loyaltyProgress,
       pickupTime: orderData.pickupTime,
       deliveryAddress: orderData.deliveryAddress,
+      // Firmenkunden: Rechnungsdaten mitschicken. Beides sind Whitelists –
+      // was hier fehlt, kommt beim Mailversand nicht an.
+      company: orderData.company || null,
+      invoiceAddress: orderData.invoiceAddress || null,
+      vat: orderData.vat || null,
     },
   };
   try {
@@ -11440,6 +11586,11 @@ async function sendOwnerOrderNotification(orderData) {
       loyaltyProgress: orderData.loyaltyProgress,
       pickupTime: orderData.pickupTime,
       deliveryAddress: orderData.deliveryAddress,
+      // Firmenkunden: Rechnungsdaten mitschicken. Beides sind Whitelists –
+      // was hier fehlt, kommt beim Mailversand nicht an.
+      company: orderData.company || null,
+      invoiceAddress: orderData.invoiceAddress || null,
+      vat: orderData.vat || null,
     },
   };
   try {
