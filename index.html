@@ -4517,7 +4517,6 @@ html { scrollbar-color: var(--color-orange-deep) var(--color-bg); scrollbar-widt
 ::-webkit-scrollbar-track { background: var(--color-bg); }
 ::-webkit-scrollbar-thumb { background: var(--color-orange-deep); border-radius: 5px; border: 2px solid var(--color-bg); }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-orange); }
-:focus-visible { outline: 2px solid var(--color-orange-bright); outline-offset: 2px; border-radius: 4px; }
 section[id], footer[id] { scroll-margin-top: 84px; }
 
 /* ---------- Footer-Wortmarke ---------- */
@@ -4929,7 +4928,7 @@ body::-webkit-scrollbar-track { background: #0C0B09; }
 body::-webkit-scrollbar-thumb { background: #2E2820; border-radius: 6px; border: 2px solid #0C0B09; }
 body::-webkit-scrollbar-thumb:hover { background: #4A3B2A; }
 
-:focus-visible { outline: 2px solid var(--color-orange-bright); outline-offset: 3px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--color-orange-bright); outline-offset: 3px; }
 
 #brandLoader {
   position: fixed; inset: 0; z-index: 12000; background: #0C0B09;
@@ -5036,7 +5035,11 @@ a:focus-visible, button:focus-visible, .btn:focus-visible,
 input:focus-visible, select:focus-visible, textarea:focus-visible,
 [tabindex]:focus-visible, [role="tab"]:focus-visible{
   outline: 3px solid var(--color-orange-bright);
-  outline-offset: 3px; border-radius: 8px;
+  outline-offset: 3px;
+  /* KEIN border-radius hier. Die Regel trifft jedes fokussierbare Element,
+     und ein fester Radius verformte beim Tabben runde Elemente – der Chip
+     "GRILL5 anwenden" und die Pill-Buttons sprangen zum Rechteck. Der
+     Fokusring folgt der vorhandenen Rundung von allein. */
 }
 
 /* --- Karten: eine konsistente, ruhige Hover-Elevation ueberall --- */

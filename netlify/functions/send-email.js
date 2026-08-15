@@ -1334,7 +1334,25 @@ exports.handler = async (event) => {
       // nach der Doppelt-Prüfung oben, also genau einmal je Bestellung.
       if (order.company) {
         try {
-          order.invoiceNo = await nextInvoiceNo();
+          // Hat diese Bestellung schon eine Nummer? Die Sperre oben greift erst
+          // bei Status "completed", den erst afterOrderHooks setzt. Scheitert
+          // der Mailversand davor, ruft orders-reconcile fuenf Minuten spaeter
+          // erneut auf – ohne diese Zuordnung bekaeme derselbe Kauf eine
+          // ZWEITE Rechnungsnummer, und der Umsatz stuende doppelt in der
+          // Liste (§ 14c UStG: ausgewiesene Steuer wird geschuldet).
+          const refKey = order.reference
+            ? 'ref:' + String(order.reference).replace(/[^A-Za-z0-9-]/g, '').slice(0, 60)
+            : null;
+          let bekannt = null;
+          if (refKey) {
+            try { bekannt = await blobStore('invoices').get(refKey, { type: 'json' }); } catch (e) {}
+          }
+          order.invoiceNo = (bekannt && bekannt.invoiceNo) || await nextInvoiceNo();
+          if (refKey && !bekannt) {
+            try {
+              await blobStore('invoices').setJSON(refKey, { invoiceNo: order.invoiceNo });
+            } catch (e) { console.error('Rechnungszuordnung ablegen fehlgeschlagen:', e); }
+          }
           order.invoiceDate = deDate();
           order.serviceDate = deDate();
           // Ablegen fürs Admin-Tool. Rechnungen sind aufbewahrungspflichtig

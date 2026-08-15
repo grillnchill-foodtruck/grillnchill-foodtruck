@@ -1067,12 +1067,36 @@ function showPanel(){
   $('loginView').classList.add('hidden');
   $('panelView').classList.remove('hidden');
 }
+/* Beim Abmelden ALLES zuruecksetzen, nicht nur den Bildschirm umschalten.
+   Das Tablet am Truck teilen sich mehrere Leute. Blieb der Zustand stehen,
+   sah der naechste Angemeldete den zuletzt geoeffneten Reiter unveraendert
+   weiter – bei "Rechnungen" also Firmennamen, Rechnungsanschriften und
+   Betraege, obwohl applyRole() nur den REITERKNOPF ausblendet, nicht den
+   Bereich. Und weil ordersLoaded gesetzt blieb, wurde die Bestellliste
+   nicht neu geholt: die unter Admin-Rechten gezeichneten Schaltflaechen
+   blieben fuer den Mitarbeiter anklickbar. */
+function resetPanelState(){
+  currentRole='admin'; currentName='';
+  ORDERS=[]; INVOICES=[]; VOUCHERS=[]; CATERING=[]; REV_DAYS=[];
+  ordersLoaded=false; invoicesLoaded=false; vouchersLoaded=false;
+  cateringLoaded=false; teamLoaded=false; statsLoaded=false; revLoaded=false;
+  ['ordersOut','invList','vList','vPurchases','cateringOut','statsOut',
+   'teamList','auditOut','scanResult'].forEach(id=>{
+    const el=$(id); if(el) el.innerHTML='';
+  });
+  // Zurueck auf den ersten Reiter, damit niemand auf einem fremden landet.
+  const ersterTab=document.querySelector('.tab[data-tab="today"]');
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t===ersterTab?'true':'false'));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('hidden', p.id!=='pane-today'));
+  try{ stopScan(); }catch(e){}
+}
 function showLogin(){
   $('panelView').classList.add('hidden');
   $('savebar').classList.remove('show');
   $('loginView').classList.remove('hidden');
   $('pw').value='';
   currentPw='';
+  resetPanelState();
 }
 async function unlock(){
   const pw=$('pw').value.trim();
@@ -1741,6 +1765,10 @@ async function orderAction(ref, action, btn, isGc){
   if(action==='complete' && isGc && !confirm('Gutschein für #'+ref+' JETZT ausstellen?\n\nErzeugt den Code und mailt ihn an den Käufer – bitte nur, wenn die Zahlung sicher eingegangen ist (SumUp-Dashboard). Tipp: Erst „Zahlung prüfen" versuchen.')) return;
   if(action==='complete' && !isGc && !confirm('Bestellung #'+ref+' abschließen?\n\nLöst Kundenbestätigung, Inhaber-Mail und Telegram aus (nur einmal – Doppelversand ist ausgeschlossen).')) return;
   if(action==='refund' && !confirm('#'+ref+' als rückerstattet markieren?'+(isGc?'\n\nDer zugehörige Gutschein-Code wird dabei deaktiviert.':'')+'\n\nDie eigentliche Erstattung machst du in SumUp – hier wird nur der Status gesetzt.')) return;
+  // Beschriftung merken: das finally stellte bisher nur disabled zurueck,
+  // der Text kam allein ueber ein spaeteres renderOrders() zurueck. Bei 401,
+  // Serverfehler oder Netzabriss blieb der Knopf auf "Moment …" stehen.
+  const btnAlt = btn ? btn.textContent : '';
   if(btn){ btn.disabled=true; btn.textContent='Moment …'; }
   try{
     const res=await fetch('/.netlify/functions/orders-action',{
@@ -1773,7 +1801,7 @@ async function orderAction(ref, action, btn, isGc){
       toast('Als rückerstattet markiert','ok');
     }
   }catch(e){ toast('Netzwerkfehler','err'); }
-  finally{ if(btn){ btn.disabled=false; } }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=btnAlt; } }
 }
 
 // Auto-Abgleich: offene Zahlungen beim Laden des Tabs selbst prüfen
@@ -1804,7 +1832,12 @@ async function loadOrders(silent){
   if(!silent) $('ordersOut').innerHTML='<p class="empty">Bestellungen werden geladen …</p>';
   try{
     const res=await fetch('/.netlify/functions/orders-list?days=30&password='+encodeURIComponent(currentPw),{cache:'no-store'});
-    if(res.status===401){ if(!silent) toast('Falsches Passwort','err'); return; }
+    // Den Platzhalter ERSETZEN. Sonst stand nach abgelaufener Anmeldung
+    // dauerhaft "werden geladen …" da und nur ein Toast wies darauf hin.
+    if(res.status===401){
+      if(!silent){ toast('Anmeldung abgelaufen – bitte neu anmelden','err');
+        $('ordersOut').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; }
+      return; }
     const d=await res.json();
     ORDERS=d.orders||[];
     ordersLoaded=true;
@@ -1862,7 +1895,10 @@ async function loadCatering(silent){
   if(!silent) $('cateringOut').innerHTML='<p class="empty">Anfragen werden geladen …</p>';
   try{
     const res=await fetch('/.netlify/functions/catering-list?days=180&password='+encodeURIComponent(currentPw),{cache:'no-store'});
-    if(res.status===401){ if(!silent) toast('Falsches Passwort','err'); return; }
+    if(res.status===401){
+      if(!silent){ toast('Anmeldung abgelaufen – bitte neu anmelden','err');
+        $('cateringOut').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; }
+      return; }
     const d=await res.json();
     CATERING=d.requests||[];
     cateringLoaded=true;
@@ -2347,7 +2383,10 @@ async function loadTeam(){
         ].join('');
         return '<div class="team-row"><div><span class="tn">'+esc2(u.name)+'</span>'
           +'<small>'+(isAdmin?'Admin – Vollzugriff':'Mitarbeiter')+(u.createdAt?(' · seit '+new Date(u.createdAt).toLocaleDateString('de-DE')):'')+'</small></div>'
-          +'<div style="display:flex;gap:.4rem;flex:none;flex-wrap:wrap;justify-content:flex-end;">'
+          // Kein flex:none und kein justify-content inline: beides schlug die
+          // Regeln fuer .team-row>div:last-child, und die drei Knoepfe passten
+          // auf schmalen Geraeten nicht mehr in die Karte.
+          +'<div style="display:flex;gap:.4rem;flex-wrap:wrap;">'
           +(btns||'<small style="color:var(--faint);">geschützt – nur Superadmin</small>')
           +'</div></div>';
       }).join('')
