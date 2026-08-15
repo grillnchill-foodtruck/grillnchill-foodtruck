@@ -1883,16 +1883,28 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   line-height: 1.55;
   margin-bottom: 1.2rem;
 }
+/* Zweite Wahl, aber klar als Schaltfläche erkennbar: schmaler, ohne Füllung,
+   mittig – tritt gegenüber „Als Menü hinzufügen" bewusst zurück. */
 .upsell-skip {
+  display: block;
+  width: fit-content;            /* nur so breit wie nötig – der primäre Weg bleibt der breite */
+  max-width: 100%;
+  margin: 0 auto 0.5rem;
   background: none;
-  border: none;
-  color: var(--color-text-muted);
-  font-size: 0.88rem;
+  border: 1px solid var(--color-border-bright);
+  border-radius: var(--radius-full);
+  color: var(--color-cream-dim);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
-  padding: 0.5rem;
+  padding: 0.5rem 1.1rem;
+  min-height: 44px;                    /* Trefferfläche bleibt voll, Optik schlank */
+  transition: border-color .15s, color .15s, transform .12s;
 }
-.upsell-skip:hover { color: var(--color-cream-dim); }
+.upsell-skip:hover { color: var(--color-cream); border-color: var(--color-orange); }
+.upsell-skip:active { transform: scale(0.96); }
+@media (prefers-reduced-motion: reduce) { .upsell-skip:active { transform: none; } }
 
 /* Menü-Konfigurator-Sektionen */
 .config-section {
@@ -1992,7 +2004,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   padding-top: 0.7rem;
   box-shadow: 0 -12px 16px -10px var(--color-bg-elev);
 }
-.upsell-actions .upsell-skip { display: block; width: 100%; }
+.upsell-actions .upsell-skip { display: block; width: fit-content; max-width: 100%; margin-inline: auto; }
 
 .cart-drawer {
   position: fixed; top: 0; right: 0; bottom: 0;
@@ -5311,8 +5323,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
     </div>
 
     <div class="upsell-actions">
-    <button class="upsell-confirm" id="upsellConfirm" onclick="confirmMenuConfig()" data-i18n="config.add">Als Menü hinzufügen</button>
-    <button class="upsell-skip" id="upsellSkip" onclick="skipUpsell()" data-i18n="config.skip">Nein danke, nur den Burger</button>
+    <button class="upsell-confirm" id="upsellConfirm" onclick="confirmMenuConfig(event)" data-i18n="config.add">Als Menü hinzufügen</button>
+    <button class="upsell-skip" id="upsellSkip" onclick="skipUpsell(event)" data-i18n="config.skip">Nein danke, nur den Burger</button>
     </div>
   </div>
 </div>
@@ -5340,7 +5352,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
     </div>
 
     <div class="upsell-actions">
-    <button class="upsell-confirm" id="dipConfirm" onclick="confirmDipConfig()" data-i18n="dip.add">Hinzufügen</button>
+    <button class="upsell-confirm" id="dipConfirm" onclick="confirmDipConfig(event)" data-i18n="dip.add">Hinzufügen</button>
     </div>
   </div>
 </div>
@@ -6726,8 +6738,8 @@ function addToCart(menuId, isDouble = false, ev = null) {
   if (isSoldOut(menuId)) { flashCartNotice(t('shop.soldout_notice')); return; }
   // Neuer Artikel aus dem Menü → zurück zu Step 1 (Abhol-/Lieferwahl neu bestätigen)
   if (checkoutStep === 'options' || checkoutStep === 'details') checkoutStep = 'cart';
-  // Startpunkt der Flug-Animation (Klick-Element) sofort erfassen
-  const srcRect = ev && ev.currentTarget ? ev.currentTarget.getBoundingClientRect() : null;
+  // Startpunkt der Flug-Animation: dort, wo tatsächlich getippt/geklickt wurde
+  const srcRect = gestureOrigin(ev, ev && ev.currentTarget);
   // Produkte mit inkludiertem Dip (Pommes/Süßkartoffelpommes) → Dip-Auswahl öffnen
   const product = MENU.find(m => m.id === menuId);
   if (product && product.includesDip) {
@@ -6873,13 +6885,13 @@ function selectConfigSide(id) { configSide = id; renderConfigOptions(); }
 function selectConfigDrink(id) { configDrink = id; renderConfigOptions(); }
 function selectConfigDip(id) { configDip = id; renderConfigOptions(); }
 
-function confirmMenuConfig() {
+function confirmMenuConfig(ev) {
   if (!configContext || !configSide || !configDrink || !configDip) return;
   const { burgerId, double, fromUpsell, sourceKey, editKey } = configContext;
 
   // Startpunkt der Flug-Animation erfassen, bevor das Modal schließt
   const srcEl = document.getElementById('upsellConfirm');
-  const srcRect = srcEl ? srcEl.getBoundingClientRect() : null;
+  const srcRect = gestureOrigin(ev, srcEl);
   const drawer = document.getElementById('cartDrawer');
   const cartOpen = !!(drawer && drawer.classList.contains('open'));
   const cartBody = document.getElementById('cartBody');
@@ -6918,7 +6930,7 @@ function confirmMenuConfig() {
   }
 }
 
-function skipUpsell() {
+function skipUpsell(ev) {
   // Beim Bearbeiten oder offenem Warenkorb: nur schließen (keine Animation, keine Korb-Änderung)
   const editing = !!(configContext && configContext.editKey);
   const drawer = document.getElementById('cartDrawer');
@@ -6927,7 +6939,7 @@ function skipUpsell() {
   // Schließt den Konfigurator ohne Menü. Beim nächsten Burger erscheint er wieder.
   // Der einzelne Burger liegt bereits im Korb → kleine Flug-Animation als Bestätigung.
   const skipBtn = document.getElementById('upsellSkip');
-  const srcRect = skipBtn ? skipBtn.getBoundingClientRect() : null;
+  const srcRect = gestureOrigin(ev, skipBtn);
   closeUpsell();
   flyToCart(srcRect);
 }
@@ -6994,12 +7006,12 @@ function closeDipConfig() {
   dipContext = null;
 }
 
-function confirmDipConfig() {
+function confirmDipConfig(ev) {
   if (!dipContext || !dipSelection) return;
   const productId = dipContext.productId;
   const editKey = dipContext.editKey;
   const srcEl = document.getElementById('dipConfirm');
-  const srcRect = srcEl ? srcEl.getBoundingClientRect() : null;
+  const srcRect = gestureOrigin(ev, srcEl);
   const drawer = document.getElementById('cartDrawer');
   const cartOpen = !!(drawer && drawer.classList.contains('open'));
   const cartBody = document.getElementById('cartBody');
@@ -7873,11 +7885,34 @@ function pulseCart() {
 }
 
 // UX-Gimmick: kleines Element fliegt vom Auslöser zur Warenkorb-Leiste
-function flyToCart(startRect) {
+/* Startpunkt einer Aktion: bevorzugt der Punkt, den Finger oder Zeiger wirklich
+   berührt haben – erst wenn es keinen gibt (Tastatur, programmatischer Aufruf),
+   die Mitte des Elements. Die Animation soll dort ansetzen, wo die Geste war. */
+function gestureOrigin(ev, fallbackEl) {
   try {
-    if (!startRect) return;
-    const startX = startRect.left + startRect.width / 2;
-    const startY = startRect.top + startRect.height / 2;
+    if (ev) {
+      const t = (ev.changedTouches && ev.changedTouches[0]) || (ev.touches && ev.touches[0]);
+      if (t && typeof t.clientX === 'number') return { x: t.clientX, y: t.clientY };
+      // clientX/Y sind bei Tastatur-Klicks 0 – dann ist es kein echter Zeigerpunkt
+      if (typeof ev.clientX === 'number' && (ev.clientX || ev.clientY)) {
+        return { x: ev.clientX, y: ev.clientY };
+      }
+    }
+  } catch (e) {}
+  const el = fallbackEl || (ev && ev.currentTarget);
+  if (el && el.getBoundingClientRect) {
+    const r = el.getBoundingClientRect();
+    if (r.width || r.height) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+  return null;
+}
+
+function flyToCart(start) {
+  try {
+    if (!start) return;
+    // Punkt {x,y} oder (aus Altbeständen) ein Rechteck
+    const startX = typeof start.x === 'number' ? start.x : start.left + start.width / 2;
+    const startY = typeof start.y === 'number' ? start.y : start.top + start.height / 2;
     // Ziel: Sticky-Leiste (falls sichtbar), sonst unten mittig
     let endX = window.innerWidth / 2, endY = window.innerHeight - 44;
     const sticky = document.getElementById('stickyCart');
