@@ -91,7 +91,14 @@ async function auditLog(who, area, text) {
   try {
     const a = store('audit');
     const key = 'a:' + new Date().toISOString() + '_' + Math.random().toString(36).slice(2, 7);
-    await a.setJSON(key, { at: new Date().toISOString(), who: who.name, role: who.role, area, text });
+    // Feldnamen wie in den übrigen Functions – das Admin-Tool liest name/action/detail
+    await a.setJSON(key, {
+      at: new Date().toISOString(),
+      name: (who && who.name) || '?',
+      role: (who && who.role) || '?',
+      action: area,
+      detail: String(text || '').slice(0, 300),
+    });
   } catch (e) {}
 }
 

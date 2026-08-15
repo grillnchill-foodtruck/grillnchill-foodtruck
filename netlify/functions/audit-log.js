@@ -38,6 +38,25 @@ function store(name) {
   return getStore(opts);
 }
 
+/**
+ * Historisch gibt es zwei Schreibweisen im Store:
+ *   A) { at, name, role, action, detail }   – orders-action, push-send, shop-status, team
+ *   B) { at, who,  role, area,   text   }   – loyalty-scan, order-status
+ * Das Admin-Tool liest name/action/detail; Einträge im Format B erschienen
+ * deshalb leer. Hier wird beim Lesen vereinheitlicht – das repariert auch
+ * alle bereits gespeicherten Einträge.
+ */
+function normalize(rec, key) {
+  const at = rec.at || (key ? key.slice(2, 26) : '');
+  return {
+    at: at,
+    name: rec.name || rec.who || '–',
+    role: rec.role || '',
+    action: rec.action || rec.area || 'Änderung',
+    detail: rec.detail || rec.text || '',
+  };
+}
+
 async function authAdmin(pw) {
   if (!pw) return false;
   const admin = process.env.ADMIN_PASSWORD || '';
@@ -79,7 +98,7 @@ exports.handler = async (event) => {
       }
       if (entries.length >= 200 || (ts && ts < since)) continue;
       const rec = await s.get(b.key, { type: 'json' });
-      if (rec) entries.push(rec);
+      if (rec) entries.push(normalize(rec, b.key));
     }
     return json(200, { entries, days });
   } catch (e) {

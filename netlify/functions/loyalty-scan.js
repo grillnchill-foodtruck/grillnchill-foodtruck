@@ -56,7 +56,14 @@ async function auditLog(who, text) {
   try {
     const a = store('audit');
     const key = 'a:' + new Date().toISOString() + '_' + Math.random().toString(36).slice(2, 7);
-    await a.setJSON(key, { at: new Date().toISOString(), who: who.name, role: who.role, area: 'Kundenkarte', text });
+    // Feldnamen wie in den übrigen Functions – das Admin-Tool liest name/action/detail
+    await a.setJSON(key, {
+      at: new Date().toISOString(),
+      name: (who && who.name) || '?',
+      role: (who && who.role) || '?',
+      action: 'Kundenkarte',
+      detail: String(text || '').slice(0, 300),
+    });
   } catch (e) {}
 }
 
@@ -136,6 +143,37 @@ exports.handler = async (event) => {
     await s.setJSON(idx.key, rec);
     await auditLog(who, 'Vor-Ort-Umsatz ' + amount.toFixed(2) + ' € für ' + (rec.email || '?') + (earned ? ' (+' + earned + ' Bonus)' : ''));
     return json(200, { ok: true, earned, card: cardView(rec) });
+  }
+
+  // Guthaben direkt korrigieren: Boni (je 5 €) und/oder Kartenstand setzen.
+  // Nur für Admins – Personal soll Umsätze buchen, nicht Guthaben frei ändern.
+  if (input.action === 'adjust') {
+    if (who.role !== 'admin') return json(403, { error: 'forbidden', hint: 'Nur Admins dürfen Guthaben ändern' });
+    const before = { rewards: rec.rewards || 0, spent: Math.round((rec.spent || 0) * 100) / 100 };
+    const parts = [];
+
+    if (input.rewards !== undefined && input.rewards !== null && input.rewards !== '') {
+      const rw = Math.round(Number(input.rewards));
+      if (!isFinite(rw) || rw < 0 || rw > 100) {
+        return json(400, { error: 'bad_rewards', hint: 'Boni zwischen 0 und 100' });
+      }
+      rec.rewards = rw;
+      if (rw !== before.rewards) parts.push('Boni ' + before.rewards + ' → ' + rw);
+    }
+    if (input.spent !== undefined && input.spent !== null && input.spent !== '') {
+      const sp = Math.round(Number(input.spent) * 100) / 100;
+      if (!isFinite(sp) || sp < 0 || sp > 99.99) {
+        return json(400, { error: 'bad_spent', hint: 'Kartenstand zwischen 0 € und 99,99 €' });
+      }
+      rec.spent = sp;
+      if (sp !== before.spent) parts.push('Kartenstand ' + before.spent.toFixed(2) + ' € → ' + sp.toFixed(2) + ' €');
+    }
+    if (!parts.length) return json(400, { error: 'no_change', hint: 'Nichts geändert' });
+
+    await s.setJSON(idx.key, rec);
+    await auditLog(who, 'Guthaben korrigiert für ' + (rec.email || '?') + ': ' + parts.join(', ')
+      + (input.reason ? ' – Grund: ' + String(input.reason).slice(0, 80) : ''));
+    return json(200, { ok: true, card: cardView(rec), changed: parts });
   }
 
   if (input.action === 'redeem') {
