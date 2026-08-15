@@ -17,6 +17,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { ergaenzeAusBestellung } = require('./lib/invoice');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -76,7 +77,7 @@ exports.handler = async (event) => {
     const alle = [];
     for (const b of blobs) {
       const r = await s.get(b.key, { type: 'json' });
-      if (r && r.invoiceNo) alle.push(r);
+      if (r && r.invoiceNo) alle.push(await ergaenzeAusBestellung(r, store('orders')));
     }
 
     // Jahre für den Filter – aus der Nummer GNC-JJJJ-NNNN

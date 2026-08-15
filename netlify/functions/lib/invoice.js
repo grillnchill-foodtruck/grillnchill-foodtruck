@@ -323,3 +323,38 @@ ${steuerBloecke}
 }
 
 module.exports = { buildInvoicePdf, buildInvoiceXml, zahlungsText };
+
+/* --------------------------------------------------------------------------
+   Nachtragen fehlender Felder aus dem Bestellarchiv
+   --------------------------------------------------------------------------
+   Rechnungen, die vor der Erweiterung des Datensatzes entstanden sind, haben
+   weder Zwischensumme noch Rabatt oder Gutscheincode gespeichert. Beim
+   Neuerzeugen des PDFs fehlten dadurch genau diese Zeilen.
+   Das Bestellarchiv (Store "orders", Schluessel o:<Referenz>) haelt die
+   vollstaendige Bestellung – von dort laesst sich das nachziehen, solange die
+   Bestellung noch nicht nach 90 Tagen geloescht wurde.
+   -------------------------------------------------------------------------- */
+async function ergaenzeAusBestellung(rec, ordersStore) {
+  // Nur eingreifen, wenn wirklich etwas fehlt
+  if (!rec || rec.subtotal != null || !rec.reference || !ordersStore) return rec;
+  try {
+    const key = 'o:' + String(rec.reference).replace(/[^A-Za-z0-9-]/g, '').slice(0, 60);
+    const eintrag = await ordersStore.get(key, { type: 'json' });
+    const o = eintrag && eintrag.order;
+    if (!o) return rec;
+    const nimm = (feld, ersatz) => (rec[feld] != null ? rec[feld] : (o[feld] != null ? o[feld] : ersatz));
+    return {
+      ...rec,
+      subtotal: nimm('subtotal', null),
+      discount: nimm('discount', 0),
+      loyaltyDiscount: nimm('loyaltyDiscount', 0),
+      deliveryFee: nimm('deliveryFee', 0),
+      promo: nimm('promo', null),
+      voucherCode: nimm('voucherCode', null),
+      card: nimm('card', null),
+      tip: nimm('tip', 0),
+    };
+  } catch (e) { return rec; }
+}
+
+module.exports.ergaenzeAusBestellung = ergaenzeAusBestellung;
