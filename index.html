@@ -5009,7 +5009,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
         </div>
         <div class="hero-trust-row">
           <span style="color: var(--color-success);"><strong style="color: var(--color-success);" data-i18n="hero.trust_halal">100% Halal</strong></span>
-          <span><strong>Gütersloher Str. 122</strong></span>
+          <span><strong data-loc="street-short">Gütersloher Str. 122</strong></span>
           <span><strong>15</strong> <span data-i18n="hero.trust_prep">Min Zubereitung</span></span>
           <span><span data-i18n="hero.trust_delivery">Lieferung in Bielefeld</span></span>
         </div>
@@ -5279,7 +5279,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
         <div class="address-block">
           <strong>Grilln Chill</strong>
           <p>
-            Gütersloher Straße 122<br />
+            <span data-loc="street">Gütersloher Straße 122</span><br />
             33649 Bielefeld
           </p>
           <div class="contact-row">
@@ -5679,7 +5679,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
       <div>
         <h4 data-i18n="footer.col_contact">Kontakt</h4>
         <ul>
-          <li style="color: var(--color-cream-dim); font-size: 0.88rem;">Gütersloher Straße 122<br />33649 Bielefeld</li>
+          <li style="color: var(--color-cream-dim); font-size: 0.88rem;"><span data-loc="street">Gütersloher Straße 122</span><br /><span data-loc="city-line">33649 Bielefeld</span></li>
           <li><a href="tel:+4915118540604">+49 151 18 54 06 04</a></li>
           <li><a href="mailto:info@grillnchill-foodtruck.de">info@grillnchill-foodtruck.de</a></li>
         </ul>
@@ -5915,11 +5915,84 @@ const WHATSAPP_NUMBER = '4915118540604';
 // Den dazugehörigen "Secret Key" trägst du in Netlify als TURNSTILE_SECRET ein.
 const TURNSTILE_SITEKEY = '';
 
-// Dein Standort (für Distanzberechnung der Lieferzone)
+/* ====================================================================
+   STANDORTE
+   --------------------------------------------------------------------
+   Der Truck stand bisher als feste Adresse an vierzehn Stellen im Code.
+   Jetzt liegt er als Datensatz vor: solange es genau einen Standort ohne
+   Terminplan gibt, sieht der Besucher exakt dasselbe wie bisher. Kommt ein
+   zweiter dazu (Markt, Firmenfest, Wochenplan), reicht ein weiterer Eintrag –
+   Anzeige, Abholadresse, Kartenlink und die Entfernungsberechnung für die
+   Lieferzonen ziehen dann von allein nach.
+
+   Terminplan (optional, je Standort):
+     schedule: [
+       { weekday: 5, from: '12:00', to: '20:30' },   // jeden Freitag
+       { date: '2026-09-12', from: '11:00', to: '18:00' },  // einmalig
+     ]
+   Ohne schedule gilt der Standort immer.
+   Achtung: Die Rechtstexte (Impressum, AGB) nennen die Anschrift bewusst
+   ausgeschrieben – die gehören bei einem Umzug von Hand geprüft.
+   ==================================================================== */
+const LOCATIONS = [
+  {
+    id: 'brackwede',
+    label: 'Foodtruck Brackwede',
+    street: 'Gütersloher Straße 122',
+    zip: '33649',
+    city: 'Bielefeld',
+    lat: 51.9784,
+    lon: 8.4814,
+    placeId: 'ChIJJ9h4Tk09ukcRAAFxrgGWsSc',
+    isBase: true,     // Heimatstandort: von hier aus werden Lieferzonen gerechnet
+    schedule: null,
+  },
+];
+
+/* Heimatstandort – Bezugspunkt für Lieferzonen und Abholung. */
+function baseLocation() {
+  return LOCATIONS.find(l => l.isBase) || LOCATIONS[0];
+}
+/* Standort zu einem Zeitpunkt. Einträge mit Terminplan gewinnen, wenn der
+   Termin passt; sonst bleibt der Heimatstandort. */
+function currentLocation(when) {
+  const d = when || new Date();
+  const datum = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(d);
+  const wtag = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', weekday: 'short' })
+    .formatToParts(d).find(x => x.type === 'weekday') ? d.getDay() : d.getDay());
+  const passt = LOCATIONS.find(l => Array.isArray(l.schedule) && l.schedule.some(
+    t => (t.date && t.date === datum) || (typeof t.weekday === 'number' && t.weekday === wtag)));
+  return passt || baseLocation();
+}
+function locationAddress(loc) {
+  const l = loc || currentLocation();
+  return `${l.street}, ${l.zip} ${l.city}`;
+}
+function locationMapsUrl(loc) {
+  const l = loc || currentLocation();
+  return l.placeId
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Grilln Chill")}&query_place_id=${l.placeId}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationAddress(l))}`;
+}
+/* Anzeigestellen aus dem Datensatz füllen. Elemente tragen data-loc:
+   "address" (Straße, PLZ Ort), "street", "citiy-line" (PLZ Ort) oder "maps". */
+function applyLocation() {
+  const l = currentLocation();
+  document.querySelectorAll('[data-loc]').forEach(el => {
+    const art = el.getAttribute('data-loc');
+    if (art === 'address') el.textContent = locationAddress(l);
+    else if (art === 'street') el.textContent = l.street;
+    else if (art === 'city-line') el.textContent = `${l.zip} ${l.city}`;
+    else if (art === 'street-short') el.textContent = l.street.replace('Straße', 'Str.');
+    else if (art === 'maps') el.setAttribute('href', locationMapsUrl(l));
+  });
+}
+
+// Rückwärtskompatibel: alter Name zeigt auf den Heimatstandort
 const RESTAURANT_LOCATION = {
-  lat: 51.9784,    // Gütersloher Str. 122, 33649 Bielefeld
-  lon: 8.4814,
-  address: 'Gütersloher Straße 122, 33649 Bielefeld'
+  get lat() { return baseLocation().lat; },
+  get lon() { return baseLocation().lon; },
+  get address() { return locationAddress(baseLocation()); },
 };
 
 // Promo-Code-Konfiguration
@@ -8030,8 +8103,11 @@ let restaurantOrigin = null;
 async function getRestaurantOrigin() {
   if (restaurantOrigin) return restaurantOrigin;
   try {
+    // Zwischenspeicher ist an den Standort gebunden – zieht der Truck um,
+    // wird nicht weiter von der alten Adresse aus gerechnet.
     const cached = JSON.parse(localStorage.getItem('gnc_resto_origin_v1') || 'null');
-    if (cached && typeof cached.lat === 'number' && typeof cached.lon === 'number') {
+    if (cached && cached.id === baseLocation().id
+        && typeof cached.lat === 'number' && typeof cached.lon === 'number') {
       restaurantOrigin = cached;
       return cached;
     }
@@ -8045,7 +8121,7 @@ async function getRestaurantOrigin() {
     if (res.ok) {
       const data = await res.json();
       if (data && data.length) {
-        restaurantOrigin = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+        restaurantOrigin = { id: baseLocation().id, lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
         try { localStorage.setItem('gnc_resto_origin_v1', JSON.stringify(restaurantOrigin)); } catch (e) {}
         return restaurantOrigin;
       }
@@ -8645,9 +8721,9 @@ function renderCart() {
     const o = lastCompletedOrder || {};
     const isDelivery = (o.mode || checkoutMode) === 'delivery';
     const paidOnline = o.payment === 'sumup';
-    const TRUCK_ADDR = 'Gütersloher Straße 122, 33649 Bielefeld';
+    const TRUCK_ADDR = locationAddress();
     // Direkt zum Google-Unternehmensprofil (mit Bewertungen/Fotos) statt nur zur Adresse
-    const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=Grilln%20Chill&query_place_id=ChIJJ9h4Tk09ukcRAAFxrgGWsSc';
+    const mapsUrl = locationMapsUrl();
 
     // Übersichts-Karte: Bestellnummer, Zahlung, Gesamt
     const card = `
@@ -9967,7 +10043,7 @@ const LEGAL = {
 
       <h4>Foodtruck-Standort</h4>
       <p>
-        Gütersloher Straße 122<br />
+        <span data-loc="street">Gütersloher Straße 122</span><br />
         33649 Bielefeld
       </p>
 
@@ -11638,6 +11714,7 @@ updateOpenStatus();
 setInterval(updateOpenStatus, 60000); // refresh every minute
 initReviews();
 initCookies();
+applyLocation();   // Anzeigestellen aus dem Standort-Datensatz füllen
 handlePaymentReturn();
 // Zurück-Taste aus dem SumUp-Fenster: Seite kommt oft aus dem bfcache ohne Neuladen –
 // dann räumen wir den offenen Versuch ebenfalls sofort still auf.
