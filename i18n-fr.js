@@ -138,6 +138,7 @@ I18N.fr = {
     "checkout.pay_cash": "Paiement à la livraison / au retrait", "checkout.submit_cash": "Passer la commande", "checkout.submit_online": "Payer en ligne maintenant",
     "checkout.hint_cash": "On t'envoie une confirmation par e-mail. Paiement à la livraison/au retrait.", "checkout.hint_online": "Tu seras redirigé en toute sécurité vers SumUp. Paie par carte, Apple Pay ou Google Pay.",
     "co.tab_pickup": "Retrait", "co.tab_delivery": "Livraison", "co.discount": "Réduction", "co.delivery_fee": "Frais de livraison", "co.total_nodelivery": "Total (hors livraison)",
+    "co.need_address": "Saisis d’abord ton adresse de livraison – ce n’est qu’ensuite que les frais de livraison sont fixés.", "co.step1": "Panier", "co.step2": "Options", "co.step3": "Tes informations", "co.step_aria": "Étape {n} sur 3", "co.title_options": "Options", "a11y.back": "Retour", "grp.discard": "Supprimer le groupe", "grp.discard_confirm": "Vraiment supprimer la commande de groupe ? Les commandes déjà envoyées par le groupe seront perdues.",
     "co.min_warn": "Commande minimum pour la livraison : {min} · ajoute encore {rest}", "co.title_details": "Tes coordonnées", "co.back_cart": "← Retour au panier",
     "co.promo_note": "Remarque : le code {code} est valable uniquement en ligne (via ce site) et jusqu'au 20 juillet 2026.",
     "co.name": "Nom *", "co.name_ph": "Ton nom", "co.phone": "Téléphone", "co.phone_ph": "0521 ... (optionnel)", "co.email": "E-mail *", "co.email_ph": "toi@email.com",

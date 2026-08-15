@@ -2028,9 +2028,57 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.9rem;
   background: var(--color-bg-elev);
 }
-.cart-header h3 { font-size: 1.3rem; color: var(--color-cream); }
+.cart-header h3 { font-size: 1.3rem; color: var(--color-cream); line-height: 1.15; }
+/* Titelblock waechst, damit Zurueck links und Schliessen rechts fest sitzen. */
+.cart-head-main { flex: 1; min-width: 0; }
+/* Zurueck sitzt in jedem Schritt an derselben Stelle – nicht mal oben im
+   Inhalt, mal gar nicht. Vorher war es ein Textbutton im scrollenden Bereich. */
+.cart-back {
+  width: 40px; height: 40px;
+  flex: 0 0 auto;
+  margin-right: 0.15rem;
+  margin-left: -0.35rem;
+  border-radius: 50%;
+  background: var(--color-bg-card);
+  color: var(--color-cream);
+  display: flex; align-items: center; justify-content: center;
+}
+.cart-back[hidden] { display: none; }
+.cart-back svg { width: 21px; height: 21px; }
+.cart-back:active { transform: scale(0.9); }
+@media (hover: hover) and (pointer: fine) {
+  .cart-back:hover { background: var(--color-orange); }
+}
+/* Schrittanzeige: beantwortet „wo bin ich, wie viel kommt noch". */
+.cart-steps {
+  display: flex; align-items: center; gap: 0.3rem;
+  margin: 0.3rem 0 0; padding: 0; list-style: none;
+}
+.cart-steps li {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-border);
+  position: relative;
+  transition: background .25s ease;
+}
+.cart-steps li.done { background: rgba(240, 138, 42, 0.45); }
+.cart-steps li.current { background: var(--color-orange); }
+.cart-progress[hidden] { display: none; }
+.cart-step-label {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cart-steps li { transition: none; }
+}
 .cart-close {
   width: 40px; height: 40px;
   border-radius: 50%;
@@ -2192,6 +2240,17 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   letter-spacing: -0.01em;      /* große Zahl braucht etwas engeren Satz */
   font-variant-numeric: tabular-nums;
 }
+/* Schritt 3: der Endbetrag – kraeftiger als die Zwischensumme in Schritt 1,
+   weil hier wirklich bezahlt wird. */
+.cart-foot-sum-total {
+  color: var(--color-cream);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.cart-foot-sum-total strong {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+}
 .mode-q-inline {
   text-align: center;
   color: var(--color-cream-dim);
@@ -2273,6 +2332,10 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   color: var(--color-cream); margin-bottom: 0.18rem;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   min-height: 1.7em;
+  /* Lange Einzelwoerter („Suesskartoffelpommes") wurden mitten im Wort
+     abgeschnitten – jetzt trennen sie sauber auf die zweite Zeile. */
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 .cart-upsell-price { font-size: 0.74rem; color: var(--color-orange-bright); font-weight: 700; }
 .cart-upsell-add {
@@ -2823,6 +2886,14 @@ body.body-scroll-locked .sticky-cart { display: none !important; }
   background: var(--color-orange);
   color: #fff;
 }
+/* Rueckmeldung im Moment des Druckens – nicht erst beim Loslassen. */
+.checkout-tab:active:not(.tab-disabled) { transform: scale(0.97); }
+.payment-option:active { transform: scale(0.985); }
+.tip-btn:active { transform: scale(0.94); }
+.payment-option, .tip-btn { transition: transform .12s ease-out, border-color .15s, background .15s; }
+@media (prefers-reduced-motion: reduce) {
+  .checkout-tab:active, .payment-option:active, .tip-btn:active { transform: none; }
+}
 
 .form-group { margin-bottom: 0.9rem; }
 .form-group label {
@@ -2933,7 +3004,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   cursor: pointer;
   transition: border-color .15s, background .15s, color .15s;
 }
-.tip-btn:hover { border-color: var(--color-orange); }
+@media (hover: hover) and (pointer: fine) {
+  .tip-btn:hover { border-color: var(--color-orange); }
+}
 .tip-btn.active {
   border-color: var(--color-orange);
   background: rgba(232, 90, 36, 0.12);
@@ -2950,16 +3023,77 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   padding: 1.5rem 0.5rem;
 }
 .success-icon {
-  width: 90px; height: 90px;
+  width: 84px; height: 84px;
   border-radius: 50%;
   background: var(--color-success);
   color: var(--color-bg);
   font-size: 3rem;
   display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1.25rem;
   font-weight: 700;
   box-shadow: 0 0 0 12px rgba(109, 190, 69, 0.15);
+  animation: success-pop 520ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
 }
+.success-icon svg { width: 42px; height: 42px; }
+/* Das Zeichen kommt kurz nach dem Kreis – erst landet die Flaeche, dann der
+   Haken. Ein gleichzeitiger Auftritt wirkt flach. */
+.success-icon svg path {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: success-check 340ms ease-out 180ms both;
+}
+@keyframes success-pop {
+  from { transform: scale(0.72); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+@keyframes success-check { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .success-icon { animation: none; }
+  .success-icon svg path { animation: none; stroke-dashoffset: 0; }
+}
+.success-title {
+  color: var(--color-cream);
+  margin-bottom: 0.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;   /* grosse Zeile vertraegt engeren Satz */
+}
+.success-lead {
+  color: var(--color-cream-dim);
+  margin-bottom: 0.9rem;
+  line-height: 1.55;
+}
+/* Die wichtigste Zeile der Seite: wann es so weit ist. */
+.success-when {
+  display: inline-block;
+  color: var(--color-orange-bright);
+  font-weight: 700;
+  line-height: 1.45;
+  background: rgba(240, 138, 42, 0.1);
+  border: 1px solid rgba(240, 138, 42, 0.3);
+  border-radius: var(--radius-full);
+  padding: 0.5rem 1.05rem;
+  margin-bottom: 1.25rem;
+}
+.success-status { margin: 0 0 1.1rem; }
+.success-status a {
+  color: var(--color-orange-bright);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.success-mail {
+  color: var(--color-cream);
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-bottom: 0.6rem;
+}
+.success-fineprint {
+  color: var(--color-cream-dim);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 0.25rem;
+}
+.success-fineprint a { color: var(--color-orange-bright); font-weight: 600; }
 .success-card {
   text-align: left;
   background: var(--color-bg-elev);
@@ -4692,7 +4826,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
         <div style="font-weight:800;font-size:0.95rem;color:var(--color-cream);" data-i18n="grp.entry_title">Team-Bestellung fürs Büro oder die Familie</div>
         <div style="font-size:0.8rem;color:var(--color-cream-dim);line-height:1.5;" data-i18n="grp.entry_sub">Einer teilt den Link, alle wählen selbst – eine Lieferung, eine Rechnung.</div>
       </div>
-      <button type="button" id="groupEntryBtn" onclick="openGroupOverlay()" style="flex:none;background:var(--color-orange-solid);border:none;color:#fff;font-family:inherit;font-size:0.88rem;font-weight:800;padding:0.7rem 1.25rem;border-radius:10px;cursor:pointer;" data-i18n="grp.entry">Gruppenlink erstellen</button>
+      <div style="flex:none;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+        <button type="button" id="groupEntryBtn" onclick="openGroupOverlay()" style="background:var(--color-orange-solid);border:none;color:#fff;font-family:inherit;font-size:0.88rem;font-weight:800;padding:0.7rem 1.25rem;border-radius:10px;cursor:pointer;" data-i18n="grp.entry">Gruppenlink erstellen</button>
+        <button type="button" id="groupDiscardBtn" onclick="discardGroup()" hidden style="background:none;border:1px solid var(--color-border-bright);color:var(--color-cream-dim);font-family:inherit;font-size:0.78rem;font-weight:700;padding:0.55rem 0.9rem;border-radius:10px;cursor:pointer;" data-i18n="grp.discard">Gruppe verwerfen</button>
+      </div>
     </div>
 
     <div style="text-align:center;">
@@ -5405,7 +5542,16 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
 <aside class="cart-drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-label="Warenkorb" data-i18n-aria="nav.cart">
   <div class="cart-header">
-    <h3 id="cartTitle">Dein Warenkorb</h3>
+    <button class="cart-back" id="cartBack" onclick="cartGoBack()" aria-label="Zurück" data-i18n-aria="a11y.back" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="cart-head-main">
+      <h3 id="cartTitle">Dein Warenkorb</h3>
+      <div class="cart-progress" id="cartSteps" hidden>
+        <ol class="cart-steps"></ol>
+        <span class="cart-step-label"></span>
+      </div>
+    </div>
     <button class="cart-close" onclick="closeCart()" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
   </div>
   <div class="cart-body" id="cartBody">
@@ -7371,8 +7517,13 @@ function refreshTipUI() {
     const pctEl = document.getElementById('coTipPct'); if (pctEl) pctEl.textContent = tipPercent;
     const tipEl = document.getElementById('coTip'); if (tipEl) tipEl.textContent = formatPrice(amt);
   }
-  const totalEl = document.getElementById('coTotal');
-  if (totalEl) totalEl.textContent = formatPrice(cartGrandTotal());
+  setCheckoutTotal();
+}
+/* Der Gesamtbetrag steht in der Aufstellung UND fest in der Fussleiste.
+   Beide tragen data-co-total, damit keine der beiden Anzeigen veraltet. */
+function setCheckoutTotal() {
+  const txt = formatPrice(cartGrandTotal());
+  document.querySelectorAll('[data-co-total]').forEach(el => { el.textContent = txt; });
 }
 function formatPrice(n) {
   return n.toFixed(2).replace('.', ',') + ' €';
@@ -7631,7 +7782,7 @@ function updateCheckoutSummary() {
   const minWarn = document.getElementById('coMinWarn');
   const submitBtn = document.getElementById('coSubmit');
   if (!totalEl) return;
-  totalEl.textContent = formatPrice(cartGrandTotal()); // inkl. Trinkgeld – konsistent zu Erst-Render/refreshTipUI
+  setCheckoutTotal(); // inkl. Trinkgeld – konsistent zu Erst-Render/refreshTipUI
   if (feeEl) {
     feeEl.textContent = checkoutMode === 'delivery' && deliveryZone ? formatPrice(deliveryZone.fee) : '–';
   }
@@ -7639,7 +7790,13 @@ function updateCheckoutSummary() {
     const min = cartDeliveryMinOrder();
     const sub = cartSubtotal();
     if (checkoutMode === 'delivery' && deliveryZone && sub < min) {
-      minWarn.innerHTML = `⚠️ ${t('co.min_warn_zone').replace('{zone}', zoneLabel(deliveryZone)).replace('{min}', formatPrice(min)).replace('{rest}', formatPrice(min - sub))}`;
+      minWarn.innerHTML = `${t('co.min_warn_zone').replace('{zone}', zoneLabel(deliveryZone)).replace('{min}', formatPrice(min)).replace('{rest}', formatPrice(min - sub))}`;
+      minWarn.style.display = 'block';
+    } else if (checkoutMode === 'delivery' && !deliveryZone) {
+      // Der Bestellknopf ist hier gesperrt – ohne Adresse steht die
+      // Liefergebuehr nicht fest. Ein grauer Knopf ohne Begruendung
+      // laesst den Kunden raten.
+      minWarn.textContent = t('co.need_address');
       minWarn.style.display = 'block';
     } else {
       minWarn.style.display = 'none';
@@ -8040,6 +8197,37 @@ function editCartItem(key) {
   }
 }
 
+/* Kopfzeile des Bestellfensters: Zurueck-Pfeil und Schrittanzeige.
+   Beides sitzt fest im Kopf, damit es in jedem Schritt an derselben Stelle
+   steht und nicht mit dem Inhalt wegscrollt. */
+const CART_STEP_ORDER = ['cart', 'options', 'details'];
+function setCartChrome(step) {
+  const back = document.getElementById('cartBack');
+  const steps = document.getElementById('cartSteps');
+  if (!back || !steps) return;
+  const idx = CART_STEP_ORDER.indexOf(step);
+  back.hidden = idx <= 0;
+  if (idx < 0) { steps.hidden = true; steps.classList.remove('has-label'); steps.innerHTML = ''; return; }
+  steps.hidden = false;
+  const bars = steps.querySelector('.cart-steps');
+  const label = steps.querySelector('.cart-step-label');
+  bars.setAttribute('aria-label', t('co.step_aria').replace('{n}', idx + 1));
+  bars.innerHTML = CART_STEP_ORDER.map((s, i) => {
+    const cls = i === idx ? 'current' : (i < idx ? 'done' : '');
+    return `<li class="${cls}"${i === idx ? ' aria-current="step"' : ''}></li>`;
+  }).join('');
+  // Der Titel nennt den Schritt bereits – hier steht, wie weit es noch ist.
+  label.textContent = t('co.step_aria').replace('{n}', idx + 1);
+}
+function cartGoBack() {
+  const idx = CART_STEP_ORDER.indexOf(checkoutStep);
+  if (idx <= 0) return;
+  checkoutStep = CART_STEP_ORDER[idx - 1];
+  renderCart();
+  const body = document.getElementById('cartBody');
+  if (body) body.scrollTop = 0;
+}
+
 function renderCart() {
   const body = document.getElementById('cartBody');
   const footer = document.getElementById('cartFooter');
@@ -8052,6 +8240,7 @@ function renderCart() {
   }
 
   if (checkoutStep === 'success') {
+    setCartChrome('success');
     const o = lastCompletedOrder || {};
     const isDelivery = (o.mode || checkoutMode) === 'delivery';
     const paidOnline = o.payment === 'sumup';
@@ -8067,7 +8256,7 @@ function renderCart() {
         ${o.loyaltyDiscount > 0 ? `<div class="success-row"><span class="label">${t('loyalty.line')}</span><span class="value">− ${formatPrice(o.loyaltyDiscount)}</span></div>` : ''}
         ${o.tip > 0 ? `<div class="success-row"><span class="label">${t('co.s_tip')}</span><span class="value">${formatPrice(o.tip)}</span></div>` : ''}
         ${o.total != null ? `<div class="success-row"><span class="label">${t('co.s_total')}</span><span class="value">${formatPrice(o.total)}</span></div>` : ''}
-        ${o.isPreorder && o.scheduledFor ? `<div class="success-row"><span class="label">🕒 ${t('co.preorder_slot')}</span><span class="value">${escHtml(o.scheduledFor)}</span></div>` : ''}
+        ${o.isPreorder && o.scheduledFor ? `<div class="success-row"><span class="label">${t('co.preorder_slot')}</span><span class="value">${escHtml(o.scheduledFor)}</span></div>` : ''}
       </div>`;
 
     // Adressblock: Abholung → Truck-Adresse · Lieferung → Kundenadresse
@@ -8081,7 +8270,7 @@ function renderCart() {
             ${o.name ? `${escHtml(o.name)}<br>` : ''}
             ${escHtml(a.street || '')}<br>
             ${escHtml(a.zip || '')} ${escHtml(a.city || '')}
-            ${o.phone ? `<br>📞 ${escHtml(o.phone)}` : ''}
+            ${o.phone ? `<br>${escHtml(o.phone)}` : ''}
           </div>
         </div>`;
     } else {
@@ -8098,23 +8287,23 @@ function renderCart() {
     title.textContent = t('co.success_title');
     body.innerHTML = `
       <div class="success-screen">
-        <div class="success-icon">✓</div>
-        <h3 style="color: var(--color-cream); margin-bottom: 0.6rem;">${t('co.success_thanks')}</h3>
-        <p style="color: var(--color-cream-dim); margin-bottom: 1rem;">${t('co.success_body')}</p>
-        <p style="color: var(--color-orange-bright); font-weight: 700; margin-bottom: 1.25rem;">
+        <div class="success-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.6 4.6L19 7.7"/></svg>
+        </div>
+        <h3 class="success-title">${t('co.success_thanks')}</h3>
+        <p class="success-lead">${t('co.success_body')}</p>
+        <p class="success-when">
           ${o.isPreorder && o.scheduledFor
-            ? '🕒 ' + t('co.preorder_slot') + ': ' + escHtml(o.scheduledFor)
+            ? t('co.preorder_slot') + ': ' + escHtml(o.scheduledFor)
             : (isDelivery ? t('co.success_delivery') : t('co.success_pickup'))}
         </p>
-        ${o.statusUrl ? `<p style="margin:0 0 1.1rem;"><a href="${o.statusUrl}" style="color:var(--color-orange-bright);font-weight:700;text-decoration:underline;">${t('co.status_link')}</a></p>` : ''}
+        ${o.statusUrl ? `<p class="success-status"><a href="${o.statusUrl}">${t('co.status_link')}</a></p>` : ''}
         ${card}
         ${addr}
-        <p style="color: var(--color-cream); font-weight: 600; font-size: 0.92rem; margin-bottom: 0.7rem;">
-          📬 ${t('co.s_check_mail')}
-        </p>
-        <p style="color: var(--color-cream-dim); font-size: 0.85rem; margin-bottom: 0.25rem;">
+        <p class="success-mail">${t('co.s_check_mail')}</p>
+        <p class="success-fineprint">
           ${t('co.success_spam')}
-          <a href="tel:+4915118540604" style="color: var(--color-orange-bright); font-weight: 600;">+49&nbsp;151&nbsp;18&nbsp;54&nbsp;06&nbsp;04</a>
+          <a href="tel:+4915118540604">+49&nbsp;151&nbsp;18&nbsp;54&nbsp;06&nbsp;04</a>
         </p>
       </div>
     `;
@@ -8129,6 +8318,7 @@ function renderCart() {
 
   if (cartItemCount() === 0) {
     checkoutStep = 'cart';
+    setCartChrome('empty');
     title.textContent = t('cart.title');
     body.innerHTML = `
       <div class="cart-empty">
@@ -8147,7 +8337,8 @@ function renderCart() {
   }
 
   if (checkoutStep === 'cart' || checkoutStep === 'options') {
-    title.textContent = t('cart.title');
+    setCartChrome(checkoutStep);
+    title.textContent = checkoutStep === 'options' ? t('co.title_options') : t('cart.title');
     let itemsHtml = '';
     Object.entries(cart).forEach(([key, entry]) => {
       const item = MENU.find(m => m.id === entry.menuId);
@@ -8262,7 +8453,7 @@ function renderCart() {
       const eligible = sub >= PROMO_MIN_ORDER;
       promoHtml = `
         <div class="promo-applied">
-          <span>${eligible ? '✓ ' + t('promo.applied').replace('{code}', PROMO_CODE) : '⚠️ ' + t('promo.until').replace('{code}', PROMO_CODE).replace('{rest}', formatPrice(PROMO_MIN_ORDER - sub))}</span>
+          <span>${eligible ? '\u2713 ' + t('promo.applied').replace('{code}', PROMO_CODE) : t('promo.until').replace('{code}', PROMO_CODE).replace('{rest}', formatPrice(PROMO_MIN_ORDER - sub))}</span>
           <button onclick="removePromo()">Entfernen</button>
         </div>
       `;
@@ -8350,7 +8541,6 @@ function renderCart() {
 
     // ---- Step 2: Details – Upsell, Adresse, Gutschein, Treue, Summe ----
     body.innerHTML = `
-      <button type="button" class="btn btn-ghost" onclick="checkoutStep='cart'; renderCart();" style="margin:0 0 0.7rem; padding-left:0;">${t('co.back_cart')}</button>
       <div class="checkout-tabs">
         <button class="checkout-tab ${checkoutMode === 'pickup' ? 'active' : ''}" onclick="setMode('pickup')">${t('co.tab_pickup')}</button>
         <button class="checkout-tab ${checkoutMode === 'delivery' ? 'active' : ''}${!os.delivery ? ' tab-disabled' : ''}" onclick="setMode('delivery')"${!os.delivery ? ' aria-disabled="true"' : ''}>${t('co.tab_delivery')}</button>
@@ -8416,7 +8606,7 @@ function renderCart() {
       return;
     }
     footer.innerHTML = `
-      <div class="cart-warn-banner" id="cartMinWarn" style="${belowMin ? '' : 'display:none;'}">${belowMin ? '⚠️ ' + t('co.min_warn').replace('{min}', formatPrice(deliveryMin)).replace('{rest}', formatPrice(deliveryMin - sub)) : ''}</div>
+      <div class="cart-warn-banner" id="cartMinWarn" style="${belowMin ? '' : 'display:none;'}">${belowMin ? t('co.min_warn').replace('{min}', formatPrice(deliveryMin)).replace('{rest}', formatPrice(deliveryMin - sub)) : ''}</div>
 
       ${SHOP_STATUS.paused ? `<div class="cart-warn-banner" style="display:block;border-color:rgba(224,72,72,0.5);background:rgba(224,72,72,0.12);color:#E04848;">${t('shop.paused_cart')}</div>` : ''}
       <button class="btn btn-primary btn-block btn-lg" id="cartCheckoutBtn" onclick="goToCheckout()" ${belowMin || SHOP_STATUS.paused ? 'disabled' : ''}>
@@ -8449,6 +8639,7 @@ function renderCart() {
   }
 
   if (checkoutStep === 'details') {
+    setCartChrome('details');
     title.textContent = t('co.title_details');
     const usageNote = promoApplied ? `
       <div class="checkout-info-banner">
@@ -8463,7 +8654,6 @@ function renderCart() {
           : '');
 
     body.innerHTML = `
-      <button class="btn btn-ghost" onclick="checkoutStep='options'; renderCart();" style="margin-bottom: 0.8rem; padding-left: 0;">${t('co.back_cart')}</button>
       ${usageNote}
       ${orderStatusNote}
       <form id="checkoutForm" onsubmit="submitOrder(event)">
@@ -8593,21 +8783,31 @@ function renderCart() {
             <span>${t('co.tip_label')} (<span id="coTipPct">${tipPercent}</span>&nbsp;%)</span><span id="coTip">${formatPrice(tipAmount())}</span>
           </div>
           <div class="cart-summary-row total">
-            <span>${t('cart.total')}</span><span id="coTotal">${formatPrice(cartGrandTotal())}</span>
+            <span>${t('cart.total')}</span><span id="coTotal" data-co-total>${formatPrice(cartGrandTotal())}</span>
           </div>
         </div>
 
-        <div id="coMinWarn" class="cart-warn-banner" style="display:none;"></div>
-
-        <button type="submit" id="coSubmit" class="btn btn-primary btn-block btn-lg">
-          ${t('checkout.submit_cash')}
-        </button>
-        <p id="coSubmitHint" style="text-align: center; font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.7rem;">
-          ${t('checkout.hint_cash')}
-        </p>
       </form>
     `;
-    footer.innerHTML = '';
+    /* Bestellbutton und Gesamtbetrag standen bisher ganz unten im langen
+       Formular – man musste bis ans Ende scrollen, um den Preis und den
+       Bestellknopf zu sehen. Jetzt stehen sie fest im Fussbereich, genau wie
+       in Schritt 1 und 2. Das form-Attribut haelt die Formularpruefung
+       (Pflichtfelder, AGB-Haken) unveraendert am Leben. */
+    footer.innerHTML = `
+      <div id="coMinWarn" class="cart-warn-banner" style="display:none;"></div>
+      <div class="cart-foot-sum cart-foot-sum-total">
+        <span>${t('cart.total')}</span>
+        <strong data-co-total>${formatPrice(cartGrandTotal())}</strong>
+      </div>
+      <button type="submit" form="checkoutForm" id="coSubmit" class="btn btn-primary btn-block btn-lg">
+        ${t('checkout.submit_cash')}
+      </button>
+      <p id="coSubmitHint" style="text-align: center; font-size: 0.78rem; color: var(--color-text-muted); margin: 0.6rem 0 0;">
+        ${t('checkout.hint_cash')}
+      </p>
+    `;
+    updateCheckoutSummary();
 
     // Gespeicherte Kundendaten wiederherstellen + bei jeder Eingabe sichern,
     // damit nichts verloren geht, wenn man das Bestellfenster schließt oder
@@ -9876,6 +10076,35 @@ function updateGroupEntryBtn() {
   if (groupJoin) b.textContent = t('grp.entry_join').replace('{host}', groupJoin.host || '');
   else if (groupHost) b.textContent = t('grp.entry_host');
   else b.textContent = t('grp.entry');
+  // Ausstieg nur zeigen, solange eine Gruppe laeuft
+  const d = document.getElementById('groupDiscardBtn');
+  if (d) d.hidden = !(groupJoin || groupHost);
+}
+
+/* Gruppe verwerfen – fuer Gastgeber wie Teilnehmer.
+   Beim Teilnehmer muss zusaetzlich das ?g= aus der Adresse, sonst tritt man
+   beim naechsten Laden sofort wieder bei. */
+function discardGroup() {
+  if (!(groupJoin || groupHost)) return;
+  if (!confirm(t('grp.discard_confirm'))) return;
+  if (groupHost) {
+    groupApi({ action: 'close', id: groupHost.id, hostKey: groupHost.hostKey }).catch(() => {});
+    try { localStorage.removeItem(GROUP_HOST_KEY); } catch (e) {}
+    groupHost = null;
+  }
+  if (groupJoin) {
+    groupJoin = null;
+    try {
+      const u = new URL(location.href);
+      u.searchParams.delete('g');
+      history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+    } catch (e) {}
+  }
+  groupOrderNote = '';
+  updateGroupEntryBtn();
+  closeGroupOverlay();
+  renderCart();
+  updateCartUI();
 }
 setTimeout(updateGroupEntryBtn, 400);
 

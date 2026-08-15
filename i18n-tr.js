@@ -138,6 +138,7 @@ I18N.tr = {
     "checkout.pay_cash": "Teslimat / teslim almada öde", "checkout.submit_cash": "Sipariş ver", "checkout.submit_online": "Şimdi online öde",
     "checkout.hint_cash": "Sana e-posta ile onay göndereceğiz. Teslimat/teslim almada ödeme.", "checkout.hint_online": "Güvenli şekilde SumUp'a yönlendirileceksin. Kart, Apple Pay veya Google Pay ile öde.",
     "co.tab_pickup": "Teslim al", "co.tab_delivery": "Teslimat", "co.discount": "İndirim", "co.delivery_fee": "Teslimat ücreti", "co.total_nodelivery": "Toplam (teslimat hariç)",
+    "co.need_address": "Lütfen önce teslimat adresini gir – teslimat ücreti ancak o zaman belli olur.", "co.step1": "Sepet", "co.step2": "Seçenekler", "co.step3": "Bilgileriniz", "co.step_aria": "Adım {n} / 3", "co.title_options": "Seçenekler", "a11y.back": "Geri", "grp.discard": "Grubu sil", "grp.discard_confirm": "Grup siparişi gerçekten silinsin mi? Grubun verdiği siparişler kaybolur.",
     "co.min_warn": "Teslimat için minimum sipariş: {min} · {rest} daha ekle", "co.title_details": "Bilgilerin", "co.back_cart": "← Sepete dön",
     "co.promo_note": "Not: {code} kodu yalnızca online (bu web sitesi üzerinden) kullanılabilir ve 20.07.2026 tarihine kadar geçerlidir.",
     "co.name": "Ad *", "co.name_ph": "Adın", "co.phone": "Telefon", "co.phone_ph": "0521 ... (isteğe bağlı)", "co.email": "E-posta *", "co.email_ph": "sen@email.com",

@@ -138,6 +138,7 @@ I18N.es = {
     "checkout.pay_cash": "Pagar al recibir / recoger", "checkout.submit_cash": "Hacer el pedido", "checkout.submit_online": "Pagar online ahora",
     "checkout.hint_cash": "Te enviamos una confirmación por email. Pagas al recibir o al recoger.", "checkout.hint_online": "Te redirigimos de forma segura a SumUp. Paga con tarjeta, Apple Pay o Google Pay.",
     "co.tab_pickup": "Recogida", "co.tab_delivery": "A domicilio", "co.discount": "Descuento", "co.delivery_fee": "Gastos de envío", "co.total_nodelivery": "Total (sin envío)",
+    "co.need_address": "Introduce primero tu dirección de entrega: solo así podemos calcular los gastos de envío.", "co.step1": "Cesta", "co.step2": "Opciones", "co.step3": "Tus datos", "co.step_aria": "Paso {n} de 3", "co.title_options": "Opciones", "a11y.back": "Atrás", "grp.discard": "Descartar grupo", "grp.discard_confirm": "¿Seguro que quieres descartar el pedido de grupo? Se perderán los pedidos ya enviados por el grupo.",
     "co.min_warn": "Pedido mínimo para entrega: {min} · añade {rest} más", "co.title_details": "Tus datos", "co.back_cart": "← Volver a la cesta",
     "co.promo_note": "Nota: el código {code} solo se puede canjear online (en esta web) y es válido hasta el 20 de julio de 2026.",
     "co.name": "Nombre *", "co.name_ph": "Tu nombre", "co.phone": "Teléfono", "co.phone_ph": "0521 ... (opcional)", "co.email": "Email *", "co.email_ph": "tu@email.com",

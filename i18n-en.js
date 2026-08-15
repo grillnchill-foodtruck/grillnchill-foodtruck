@@ -138,6 +138,7 @@ I18N.en = {
     "checkout.pay_cash": "Pay on delivery / pickup", "checkout.submit_cash": "Place order", "checkout.submit_online": "Pay online now",
     "checkout.hint_cash": "We'll send you a confirmation by email. Payment on delivery/pickup.", "checkout.hint_online": "You'll be securely redirected to SumUp. Pay by card, Apple Pay or Google Pay.",
     "co.tab_pickup": "Pickup", "co.tab_delivery": "Delivery", "co.discount": "Discount", "co.delivery_fee": "Delivery fee", "co.total_nodelivery": "Total (excl. delivery)",
+    "co.need_address": "Please enter your delivery address first – only then can we work out the delivery fee.", "co.step1": "Cart", "co.step2": "Options", "co.step3": "Your details", "co.step_aria": "Step {n} of 3", "co.title_options": "Options", "a11y.back": "Back", "grp.discard": "Discard group", "grp.discard_confirm": "Really discard this group order? Orders already submitted by the group will be lost.",
     "co.min_warn": "Minimum order for delivery: {min} · add {rest} more", "co.title_details": "Your details", "co.back_cart": "← Back to cart",
     "co.promo_note": "Note: Code {code} can only be redeemed online (via this website) and is valid until 20 July 2026.",
     "co.name": "Name *", "co.name_ph": "Your name", "co.phone": "Phone", "co.phone_ph": "0521 ... (optional)", "co.email": "Email *", "co.email_ph": "you@email.com",

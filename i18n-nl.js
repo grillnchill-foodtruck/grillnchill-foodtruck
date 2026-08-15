@@ -138,6 +138,7 @@ I18N.nl = {
     "checkout.pay_cash": "Betalen bij bezorging / afhalen", "checkout.submit_cash": "Bestelling plaatsen", "checkout.submit_online": "Nu online betalen",
     "checkout.hint_cash": "We sturen je een bevestiging per e-mail. Betaling bij bezorging/afhalen.", "checkout.hint_online": "Je wordt veilig doorgestuurd naar SumUp. Betaal met kaart, Apple Pay of Google Pay.",
     "co.tab_pickup": "Afhalen", "co.tab_delivery": "Bezorging", "co.discount": "Korting", "co.delivery_fee": "Bezorgkosten", "co.total_nodelivery": "Totaal (excl. bezorging)",
+    "co.need_address": "Vul eerst je bezorgadres in – pas dan staat de bezorgkosten vast.", "co.step1": "Winkelwagen", "co.step2": "Opties", "co.step3": "Jouw gegevens", "co.step_aria": "Stap {n} van 3", "co.title_options": "Opties", "a11y.back": "Terug", "grp.discard": "Groep verwijderen", "grp.discard_confirm": "Groepsbestelling echt verwijderen? Al geplaatste bestellingen van de groep gaan verloren.",
     "co.min_warn": "Minimale bestelling voor bezorging: {min} · voeg nog {rest} toe", "co.title_details": "Je gegevens", "co.back_cart": "← Terug naar winkelwagen",
     "co.promo_note": "Let op: code {code} is alleen online (via deze website) in te wisselen en geldig tot 20 juli 2026.",
     "co.name": "Naam *", "co.name_ph": "Je naam", "co.phone": "Telefoon", "co.phone_ph": "0521 ... (optioneel)", "co.email": "E-mail *", "co.email_ph": "jij@email.com",
