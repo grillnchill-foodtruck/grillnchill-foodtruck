@@ -899,6 +899,8 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .lang-dd-flag svg, .lang-dd-opt svg { width: 20px; height: 13px; border-radius: 2px; display: block; flex-shrink: 0; }
 .lang-dd-caret { width: 10px; height: 6px; color: var(--color-text-muted); transition: transform .15s; }
 .lang-dd.open .lang-dd-caret { transform: rotate(180deg); }
+/* Im Footer nach oben aufklappen – unten ist kein Platz */
+.lang-dd-up .lang-dd-list { top: auto; bottom: calc(100% + 6px); }
 .lang-dd-list {
   position: absolute; right: 0; top: calc(100% + 6px);
   background: var(--color-bg-card);
@@ -4351,14 +4353,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
       <button type="button" class="icon-btn" id="accountBtn" onclick="openAccountOverlay()" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto" style="background:none;border:1px solid var(--color-border);border-radius:10px;color:var(--color-cream-dim);width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </button>
-      <div class="lang-dd" id="langSwitch">
-        <button type="button" class="lang-dd-btn" id="langDdBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sprache wählen" data-i18n-aria="a11y.lang" onclick="toggleLangDd()">
-          <span class="lang-dd-flag" id="langDdFlag"></span>
-          <span class="lang-dd-code" id="langDdCode">DE</span>
-          <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <ul class="lang-dd-list" id="langDdList" role="listbox" hidden></ul>
-      </div>
       <button class="nav-cart-btn" onclick="openCart()" aria-label="Warenkorb öffnen" data-i18n-aria="a11y.cart_open">
         <span class="nav-cart-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M2.5 3h2l2.4 12.2a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L22 7H6"/></svg></span>
         <span class="nav-cart-text" data-i18n="nav.cart">Warenkorb</span>
@@ -5122,6 +5116,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
         <a href="#" onclick="openModal('datenschutz'); return false;">Datenschutz</a>
         <a href="#" onclick="openModal('agb'); return false;">AGB</a>
       </div>
+      <!-- Sprachwahl: im Footer, klappt nach oben auf -->
+      <div class="lang-dd lang-dd-up" id="langSwitch">
+        <button type="button" class="lang-dd-btn" id="langDdBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sprache wählen" data-i18n-aria="a11y.lang" onclick="toggleLangDd()">
+          <span class="lang-dd-flag" id="langDdFlag"></span>
+          <span class="lang-dd-code" id="langDdCode">DE</span>
+          <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="lang-dd-list" id="langDdList" role="listbox" hidden></ul>
+      </div>
     </div>
   </div>
 </footer>
@@ -5616,7 +5619,7 @@ function accSettingsHtml() {
       : `<p style="margin:0 0 .9rem;font-size:.8rem;color:var(--color-text-muted);">${t('acc.set_push_na')}</p>`;
   return `
   <div style="border-top:1px solid var(--color-border);margin-top:1.3rem;padding-top:1rem;">
-    <h4 style="margin:0 0 .7rem;font-size:.95rem;color:var(--color-cream);">${t('acc.settings')}</h4>
+    <h4 style="margin:0 0 .7rem;font-size:.95rem;color:var(--color-cream);">${t(APP_FORCED ? 'acc.settings_app' : 'acc.settings')}</h4>
     <p style="margin:0 0 .35rem;font-size:.76rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">${t('acc.set_lang')}</p>
     ${langBtns}
     <p style="margin:0 0 .35rem;font-size:.76rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">${t('acc.set_push')}</p>
