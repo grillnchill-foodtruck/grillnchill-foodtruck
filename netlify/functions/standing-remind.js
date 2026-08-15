@@ -17,6 +17,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { naechsterTermin, berlinDatum } = require('./lib/standing');
 
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
@@ -39,10 +40,6 @@ const TAGE = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freita
    aber nur für genau diese Reihe und nur zusammen mit der Kennung. */
 function linkToken(id, secret) {
   return crypto.createHmac('sha256', secret || 'gnc').update('so:' + id).digest('hex').slice(0, 16);
-}
-
-function berlinDatum(d) {
-  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(d);
 }
 
 async function sendeMail(apiKey, sender, senderName, an, betreff, html) {
@@ -140,7 +137,11 @@ exports.handler = async () => {
       const ok = await sendeMail(apiKey, sender, senderName, rec.email,
         `Morgen ${tag}: deine Bestellung liegt bereit`, html);
       if (ok) {
+        // WICHTIG: nextRun auf den FOLGETERMIN setzen. Ohne das bleibt der
+        // Termin auf dem vergangenen Datum stehen, der Vergleich mit "morgen"
+        // trifft nie wieder – die Erinnerung kaeme genau einmal und nie mehr.
         rec.lastRemindedFor = rec.nextRun;
+        rec.nextRun = naechsterTermin(rec.weekday, rec.time, rec.nextRun);
         await s.setJSON(b.key, rec);
         gesendet++;
       }

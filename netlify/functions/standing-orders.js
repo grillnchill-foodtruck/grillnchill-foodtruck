@@ -28,6 +28,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { naechsterTermin } = require('./lib/standing');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -68,24 +69,6 @@ async function authCustomer(email, token) {
 }
 
 const clean = (v, max) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, max);
-
-/* Nächster Termin ab jetzt, in Europe/Berlin. */
-function nextRun(weekday, time, skipUntil) {
-  const jetzt = new Date();
-  const berlin = new Date(jetzt.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
-  const [hh, mm] = String(time || '12:30').split(':').map(Number);
-  for (let i = 0; i < 15; i++) {
-    const d = new Date(berlin);
-    d.setDate(berlin.getDate() + i);
-    d.setHours(hh, mm, 0, 0);
-    if (d.getDay() !== weekday) continue;
-    if (d <= berlin) continue;
-    const iso = d.toISOString();
-    if (skipUntil && iso <= skipUntil) continue;
-    return iso;
-  }
-  return null;
-}
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
@@ -163,7 +146,7 @@ exports.handler = async (event) => {
         createdAt: new Date().toISOString(),
         lastRemindedFor: null,
       };
-      rec.nextRun = nextRun(weekday, time, null);
+      rec.nextRun = naechsterTermin(weekday, time, null);
       await s.setJSON(praefix + id, rec);
       return json(200, { ok: true, order: rec });
     }
@@ -177,11 +160,11 @@ exports.handler = async (event) => {
     if (action === 'delete') { await s.delete(key); return json(200, { ok: true }); }
 
     if (action === 'pause')  rec.paused = true;
-    if (action === 'resume') { rec.paused = false; rec.nextRun = nextRun(rec.weekday, rec.time, rec.skipUntil); }
+    if (action === 'resume') { rec.paused = false; rec.nextRun = naechsterTermin(rec.weekday, rec.time, rec.skipUntil); }
     if (action === 'skipNext') {
       // Diesen einen Termin überspringen – die Reihe läuft danach weiter.
       rec.skipUntil = rec.nextRun;
-      rec.nextRun = nextRun(rec.weekday, rec.time, rec.skipUntil);
+      rec.nextRun = naechsterTermin(rec.weekday, rec.time, rec.skipUntil);
     }
     if (action === 'remind') {
       const an = b.remind === true;

@@ -320,6 +320,15 @@
   .team-row>div:last-child{display:flex;gap:.45rem;flex-wrap:wrap;row-gap:.45rem;flex:1 1 100%;justify-content:flex-start}
   @media (min-width:560px){ .team-row>div:last-child{flex:0 1 auto;justify-content:flex-end} }
   .team-row .btn-ghost{flex:none;white-space:nowrap}
+
+  /* Rechnungszeile. Diese Grundregel fehlte: die Zeilen tragen inline ein
+     align-items und ein gap, beides wirkt aber nur in einem Flex- oder
+     Grid-Container. Ohne display:flex war die Zeile ein blosser Block – der
+     Betrag stand unter der Anschrift statt daneben, und zwar auf JEDER
+     Breite unter 1024px, wo die Desktop-Regel noch nicht greift. */
+  #invList .row{display:flex;align-items:flex-start;gap:.8rem;
+    padding:.55rem 0;border-bottom:1px solid var(--border)}
+  #invList .row:last-child{border-bottom:none}
   .team-row:last-child{border-bottom:none}
   .team-row .tn{font-weight:700}
   .team-row small{color:var(--faint);font-family:var(--mono);font-size:.66rem;display:block}
@@ -867,6 +876,10 @@ const CAT_LABELS = {burger:"Burger",sides:"Beilagen",dips:"Dips",drinks:"Geträn
 const $ = (id) => document.getElementById(id);
 let currentPw = '';
 let currentRole = 'admin';
+/* "Admin oder hoeher". Der Superadmin (Anmeldung mit dem Hauptpasswort) ist
+   ebenfalls Admin – ein reiner Vergleich auf 'admin' haette ausgerechnet dem
+   Inhaber die Admin-Schaltflaechen weggenommen. */
+const istAdmin = () => currentRole === 'admin' || currentRole === 'superadmin';
 let currentName = '';
 let dirty = false;
 let statsLoaded = false;
@@ -1310,7 +1323,7 @@ function renderScanCard(){
     +'<button type="button" class="abtn" id="scanAgain">Neu scannen</button>'
     +'</div>'
     // Guthaben korrigieren – nur für Admins, eingeklappt damit es nicht im Weg steht
-    +(currentRole==='admin'
+    +(istAdmin()
       ? '<details class="scan-adjust"><summary>Guthaben korrigieren</summary>'
         +'<p class="hint" style="margin:.5rem 0 .6rem;">Nur für Korrekturen. Aktuell: '+(c.rewards||0)+' Boni ('
         +((c.rewards||0)*5).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+') · Kartenstand '
@@ -1689,10 +1702,10 @@ function buildOrdActions(r){
     btns.push('<button type="button" class="abtn primary" data-action="complete" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">'+completeLabel+'</button>');
     btns.push('<button type="button" class="abtn" data-action="cancel" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Stornieren</button>');
   }
-  if(currentRole==='admin' && r.status==='completed'){
+  if(istAdmin() && r.status==='completed'){
     btns.push('<button type="button" class="abtn danger" data-action="refund" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Als rückerstattet markieren</button>');
   }
-  if(currentRole==='admin' && (r.status==='pending'||r.status==='abandoned')){
+  if(istAdmin() && (r.status==='pending'||r.status==='abandoned')){
     btns.push('<button type="button" class="abtn danger" data-action="refund" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Rückerstattet</button>');
   }
   return btns.length ? '<div class="ord-actions">'+btns.join('')+'</div>' : '';
@@ -1987,7 +2000,7 @@ function renderPurchases(P){
       if(!r.redeemed) actions.push('<button type="button" class="abtn" data-v-used="'+esc2(r.code)+'">Als eingelöst markieren</button>');
       else actions.push('<button type="button" class="abtn" data-v-unused="'+esc2(r.code)+'">Einlösung zurücknehmen</button>');
     }
-    if(currentRole==='admin' && r.status!=='refunded'){
+    if(istAdmin() && r.status!=='refunded'){
       actions.push('<button type="button" class="abtn danger" data-action="refund" data-ref="'+esc2(r.reference)+'" data-gc="1">Rückerstattet</button>');
     }
     const metaBits=[

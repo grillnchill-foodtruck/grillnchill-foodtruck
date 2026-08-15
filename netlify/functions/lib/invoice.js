@@ -221,33 +221,135 @@ function ymd(deDatum) {
   return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
 }
 
+const r2 = (n) => Math.round((z(n) + Number.EPSILON) * 100) / 100;
+
+/* --------------------------------------------------------------------------
+   Rechenwerk der XRechnung
+   --------------------------------------------------------------------------
+   EN 16931 prüft die Beträge gegeneinander; ein Dokument, dessen Summen nicht
+   aufgehen, wird von der Buchhaltung des Empfängers abgewiesen. Zu erfüllen:
+
+     BR-CO-10  Zeilensumme      = Summe aller Positionen
+     BR-CO-13  Bemessung        = Zeilensumme − Nachlässe + Zuschläge
+     BR-CO-15  Endbetrag        = Bemessung + Steuerbetrag
+     BR-S-08   je Steuersatz    = Summe der Positionen dieses Satzes
+                                  (abzgl. Nachlässe, zzgl. Zuschläge)
+
+   Drei Dinge standen dem im Weg:
+
+   1. Jede Position bekam pauschal 7 %. Ein Menü ist aber beides zugleich –
+      Speise 7 %, Getränk 19 %. Deshalb liefert der Shop je Position den
+      Bruttoanteil je Satz mit (vatSplit); eine Position mit zwei Sätzen wird
+      hier auf ZWEI Zeilen aufgeteilt, denn eine Zeile trägt genau einen Satz.
+
+   2. Rabatt und Liefergebühr steckten nur in der Steueraufstellung, nicht in
+      den Zeilen. Sie erscheinen jetzt als Nachlass bzw. Zuschlag auf
+      Dokumentebene, je Steuersatz getrennt.
+
+   3. Das Trinkgeld war im Endbetrag enthalten, aber in keiner Bemessungs-
+      grundlage – damit ging BR-CO-15 nicht auf. Es steht jetzt als eigener
+      Zuschlag ohne Steuer.
+
+   Der Nachlass wird zum Schluss aus der Differenz abgeleitet statt frei
+   gerundet. So bleibt die Kette auch dann exakt, wenn sich beim Runden der
+   einzelnen Zeilen Cent-Reste ergeben.
+   -------------------------------------------------------------------------- */
+function rechneXml(order) {
+  const saetze = (order.vat || []).map(v => z(v.satz));
+  const zeilen = [];
+  const bruttoJeSatz = {};   // Warenwert je Satz, vor Rabatt
+
+  (order.items || []).forEach((i) => {
+    const gesamt = z(i.total);
+    // Anteile je Satz. Fehlt die Angabe (Altbestand), wird der Betrag im
+    // Verhaeltnis der Steueraufstellung verteilt – nie pauschal auf 7 %.
+    let anteile = i.vatSplit && typeof i.vatSplit === 'object' ? i.vatSplit : null;
+    if (!anteile) {
+      if (saetze.length === 1) anteile = { [saetze[0]]: gesamt };
+      else {
+        const summe = (order.vat || []).reduce((n, v) => n + z(v.brutto), 0);
+        anteile = {};
+        (order.vat || []).forEach(v => {
+          anteile[z(v.satz)] = summe > 0 ? gesamt * (z(v.brutto) / summe) : 0;
+        });
+      }
+    }
+    Object.keys(anteile).forEach(k => {
+      const satz = z(k);
+      const brutto = z(anteile[k]);
+      if (brutto <= 0) return;
+      const netto = r2(brutto / (1 + satz / 100));
+      bruttoJeSatz[satz] = (bruttoJeSatz[satz] || 0) + brutto;
+      // Bei geteilten Positionen sagt der Zusatz, welcher Teil gemeint ist –
+      // sonst stuende derselbe Name zweimal mit verschiedenen Saetzen da.
+      const geteilt = Object.keys(anteile).filter(kk => z(anteile[kk]) > 0).length > 1;
+      zeilen.push({
+        name: geteilt ? `${i.name} (${satz === 19 ? 'Getränkeanteil' : 'Speisenanteil'})` : i.name,
+        qty: z(i.qty) || 1, satz, netto,
+      });
+    });
+  });
+
+  const zeilenSumme = r2(zeilen.reduce((n, p) => n + p.netto, 0));
+  const warenBrutto = Object.values(bruttoJeSatz).reduce((n, b) => n + b, 0);
+  const gebuehr = z(order.deliveryFee);
+  const trinkgeld = z(order.tip);
+
+  // Liefergebuehr als Zuschlag, je Satz im Verhaeltnis der Warenanteile –
+  // dieselbe Verteilung, die der Shop fuer die Steueraufstellung nutzt.
+  const zuschlaege = [];
+  const nachlaesse = [];
+  (order.vat || []).forEach(v => {
+    const satz = z(v.satz);
+    const anteil = warenBrutto > 0 ? (bruttoJeSatz[satz] || 0) / warenBrutto : 0;
+    const zuschlag = gebuehr > 0 ? r2((gebuehr * anteil) / (1 + satz / 100)) : 0;
+    if (zuschlag > 0) zuschlaege.push({ satz, betrag: zuschlag, grund: 'Liefergebühr' });
+
+    // Ableiten statt runden: was uebrig bleibt, ist der Nachlass.
+    const zeilenSatz = r2(zeilen.filter(p => p.satz === satz).reduce((n, p) => n + p.netto, 0));
+    const rest = r2(zeilenSatz + zuschlag - z(v.netto));
+    if (rest > 0) nachlaesse.push({ satz, betrag: rest, grund: 'Rabatt' });
+    else if (rest < 0) zuschlaege.push({ satz, betrag: r2(-rest), grund: 'Rundungsausgleich' });
+  });
+
+  const nachlassSumme = r2(nachlaesse.reduce((n, p) => n + p.betrag, 0));
+  const zuschlagSumme = r2(zuschlaege.reduce((n, p) => n + p.betrag, 0) + trinkgeld);
+  const bemessung = r2(zeilenSumme - nachlassSumme + zuschlagSumme);
+  const steuer = r2((order.vat || []).reduce((n, v) => n + z(v.steuer), 0));
+  const endbetrag = r2(bemessung + steuer);
+
+  // Weicht das vom gespeicherten Gesamtbetrag ab, stimmen die Ausgangsdaten
+  // nicht. Wir melden es, liefern aber die in sich schluessige Rechnung.
+  if (Math.abs(endbetrag - z(order.total)) > 0.02) {
+    console.error('XRechnung: Endbetrag', endbetrag, 'weicht von total', z(order.total),
+                  'ab –', order.invoiceNo);
+  }
+
+  return { zeilen, zeilenSumme, nachlaesse, zuschlaege, nachlassSumme, zuschlagSumme,
+           bemessung, steuer, endbetrag, trinkgeld };
+}
+
 function buildInvoiceXml(order) {
   const a = order.invoiceAddress || {};
-  const netto = (order.vat || []).reduce((n, v) => n + z(v.netto), 0);
-  const steuer = (order.vat || []).reduce((n, v) => n + z(v.steuer), 0);
+  const b = rechneXml(order);
 
-  const positionen = (order.items || []).map((i, idx) => {
-    const einzel = z(i.price) || (z(i.total) / Math.max(1, i.qty));
-    // Getraenke 19 %, alles Uebrige 7 % – dieselbe Zuordnung wie im Shop
-    const satz = (order.vat || []).length === 1 ? z(order.vat[0].satz) : 7;
-    return `    <ram:IncludedSupplyChainTradeLineItem>
+  const positionen = b.zeilen.map((p, idx) => `    <ram:IncludedSupplyChainTradeLineItem>
       <ram:AssociatedDocumentLineDocument><ram:LineID>${idx + 1}</ram:LineID></ram:AssociatedDocumentLineDocument>
-      <ram:SpecifiedTradeProduct><ram:Name>${x(i.name)}</ram:Name></ram:SpecifiedTradeProduct>
+      <ram:SpecifiedTradeProduct><ram:Name>${x(p.name)}</ram:Name></ram:SpecifiedTradeProduct>
       <ram:SpecifiedLineTradeAgreement>
-        <ram:NetPriceProductTradePrice><ram:ChargeAmount>${num(einzel / (1 + satz / 100))}</ram:ChargeAmount></ram:NetPriceProductTradePrice>
+        <ram:NetPriceProductTradePrice><ram:ChargeAmount>${num(p.netto / Math.max(1, p.qty))}</ram:ChargeAmount></ram:NetPriceProductTradePrice>
       </ram:SpecifiedLineTradeAgreement>
-      <ram:SpecifiedLineTradeDelivery><ram:BilledQuantity unitCode="H87">${z(i.qty)}</ram:BilledQuantity></ram:SpecifiedLineTradeDelivery>
+      <ram:SpecifiedLineTradeDelivery><ram:BilledQuantity unitCode="H87">${p.qty}</ram:BilledQuantity></ram:SpecifiedLineTradeDelivery>
       <ram:SpecifiedLineTradeSettlement>
         <ram:ApplicableTradeTax>
           <ram:TypeCode>VAT</ram:TypeCode><ram:CategoryCode>S</ram:CategoryCode>
-          <ram:RateApplicablePercent>${num(satz)}</ram:RateApplicablePercent>
+          <ram:RateApplicablePercent>${num(p.satz)}</ram:RateApplicablePercent>
         </ram:ApplicableTradeTax>
         <ram:SpecifiedTradeSettlementLineMonetarySummation>
-          <ram:LineTotalAmount>${num(z(i.total) / (1 + satz / 100))}</ram:LineTotalAmount>
+          <ram:LineTotalAmount>${num(p.netto)}</ram:LineTotalAmount>
         </ram:SpecifiedTradeSettlementLineMonetarySummation>
       </ram:SpecifiedLineTradeSettlement>
-    </ram:IncludedSupplyChainTradeLineItem>`;
-  }).join('\n');
+    </ram:IncludedSupplyChainTradeLineItem>`).join('\n');
 
   const steuerBloecke = (order.vat || []).map(v => `      <ram:ApplicableTradeTax>
         <ram:CalculatedAmount>${num(v.steuer)}</ram:CalculatedAmount>
@@ -255,7 +357,34 @@ function buildInvoiceXml(order) {
         <ram:BasisAmount>${num(v.netto)}</ram:BasisAmount>
         <ram:CategoryCode>S</ram:CategoryCode>
         <ram:RateApplicablePercent>${num(v.satz)}</ram:RateApplicablePercent>
-      </ram:ApplicableTradeTax>`).join('\n');
+      </ram:ApplicableTradeTax>`).join('\n')
+    // Trinkgeld: freiwillig gezahlt, kein Entgelt fuer eine Leistung – daher
+    // ohne Steuer ausgewiesen, wie im Shop angezeigt. Ob das im Einzelfall so
+    // zu behandeln ist, gehoert vom Steuerberater gegengezeichnet.
+    + (b.trinkgeld > 0 ? `\n      <ram:ApplicableTradeTax>
+        <ram:CalculatedAmount>0.00</ram:CalculatedAmount>
+        <ram:TypeCode>VAT</ram:TypeCode>
+        <ram:ExemptionReason>Freiwilliges Trinkgeld – kein Entgelt für eine Leistung</ram:ExemptionReason>
+        <ram:BasisAmount>${num(b.trinkgeld)}</ram:BasisAmount>
+        <ram:CategoryCode>E</ram:CategoryCode>
+        <ram:RateApplicablePercent>0.00</ram:RateApplicablePercent>
+      </ram:ApplicableTradeTax>` : '');
+
+  const abschlaege = [
+    ...b.nachlaesse.map(p => ({ ...p, zuschlag: false, kat: 'S' })),
+    ...b.zuschlaege.map(p => ({ ...p, zuschlag: true, kat: 'S' })),
+    ...(b.trinkgeld > 0
+      ? [{ satz: 0, betrag: b.trinkgeld, grund: 'Trinkgeld', zuschlag: true, kat: 'E' }] : []),
+  ].map(p => `      <ram:SpecifiedTradeAllowanceCharge>
+        <ram:ChargeIndicator><udt:Indicator>${p.zuschlag}</udt:Indicator></ram:ChargeIndicator>
+        <ram:ActualAmount>${num(p.betrag)}</ram:ActualAmount>
+        <ram:Reason>${x(p.grund)}</ram:Reason>
+        <ram:CategoryTradeTax>
+          <ram:TypeCode>VAT</ram:TypeCode>
+          <ram:CategoryCode>${p.kat}</ram:CategoryCode>
+          <ram:RateApplicablePercent>${num(p.satz)}</ram:RateApplicablePercent>
+        </ram:CategoryTradeTax>
+      </ram:SpecifiedTradeAllowanceCharge>`).join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rsm:CrossIndustryInvoice
@@ -310,12 +439,15 @@ ${positionen}
         <ram:Information>${x(zahlungsText(order))}</ram:Information>
       </ram:SpecifiedTradeSettlementPaymentMeans>
 ${steuerBloecke}
+${abschlaege}
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
-        <ram:LineTotalAmount>${num(netto)}</ram:LineTotalAmount>
-        <ram:TaxBasisTotalAmount>${num(netto)}</ram:TaxBasisTotalAmount>
-        <ram:TaxTotalAmount currencyID="EUR">${num(steuer)}</ram:TaxTotalAmount>
-        <ram:GrandTotalAmount>${num(order.total)}</ram:GrandTotalAmount>
-        <ram:DuePayableAmount>${num(order.total)}</ram:DuePayableAmount>
+        <ram:LineTotalAmount>${num(b.zeilenSumme)}</ram:LineTotalAmount>
+        <ram:ChargeTotalAmount>${num(b.zuschlagSumme)}</ram:ChargeTotalAmount>
+        <ram:AllowanceTotalAmount>${num(b.nachlassSumme)}</ram:AllowanceTotalAmount>
+        <ram:TaxBasisTotalAmount>${num(b.bemessung)}</ram:TaxBasisTotalAmount>
+        <ram:TaxTotalAmount currencyID="EUR">${num(b.steuer)}</ram:TaxTotalAmount>
+        <ram:GrandTotalAmount>${num(b.endbetrag)}</ram:GrandTotalAmount>
+        <ram:DuePayableAmount>${num(b.endbetrag)}</ram:DuePayableAmount>
       </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
     </ram:ApplicableHeaderTradeSettlement>
   </rsm:SupplyChainTradeTransaction>

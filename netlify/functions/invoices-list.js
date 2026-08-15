@@ -77,7 +77,9 @@ exports.handler = async (event) => {
     const alle = [];
     for (const b of blobs) {
       const r = await s.get(b.key, { type: 'json' });
-      if (r && r.invoiceNo) alle.push(await ergaenzeAusBestellung(r, store('orders')));
+      // Reservierte, aber nie ausgefuellte Nummern ueberspringen – sie sind
+      // nur ein Platzhalter aus der Nummernvergabe, keine echte Rechnung.
+      if (r && r.invoiceNo && !r.platzhalter) alle.push(await ergaenzeAusBestellung(r, store('orders')));
     }
 
     // Jahre für den Filter – aus der Nummer GNC-JJJJ-NNNN

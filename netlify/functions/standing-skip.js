@@ -14,6 +14,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { naechsterTermin } = require('./lib/standing');
 
 function store(name) {
   const opts = { name, consistency: 'strong' };
@@ -26,23 +27,6 @@ function store(name) {
 
 function linkToken(id, secret) {
   return crypto.createHmac('sha256', secret || 'gnc').update('so:' + id).digest('hex').slice(0, 16);
-}
-
-function nextRun(weekday, time, skipUntil) {
-  const jetzt = new Date();
-  const berlin = new Date(jetzt.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
-  const [hh, mm] = String(time || '12:30').split(':').map(Number);
-  for (let i = 0; i < 15; i++) {
-    const d = new Date(berlin);
-    d.setDate(berlin.getDate() + i);
-    d.setHours(hh, mm, 0, 0);
-    if (d.getDay() !== weekday) continue;
-    if (d <= berlin) continue;
-    const iso = d.toISOString();
-    if (skipUntil && iso <= skipUntil) continue;
-    return iso;
-  }
-  return null;
 }
 
 const seite = (titel, text) => `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
@@ -86,7 +70,7 @@ exports.handler = async (event) => {
     }
 
     rec.skipUntil = rec.nextRun;
-    rec.nextRun = nextRun(rec.weekday, rec.time, rec.skipUntil);
+    rec.nextRun = naechsterTermin(rec.weekday, rec.time, rec.skipUntil);
     await s.setJSON(treffer.key, rec);
 
     const wann = rec.nextRun

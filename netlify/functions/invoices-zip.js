@@ -67,7 +67,7 @@ exports.handler = async (event) => {
     let liste = [];
     for (const b of blobs) {
       const r = await s.get(b.key, { type: 'json' });
-      if (r && r.invoiceNo) liste.push(await ergaenzeAusBestellung(r, store('orders')));
+      if (r && r.invoiceNo && !r.platzhalter) liste.push(await ergaenzeAusBestellung(r, store('orders')));
     }
     if (p.year) liste = liste.filter(r => String(r.invoiceNo).includes('-' + p.year + '-'));
     liste.sort((a, b) => String(a.invoiceNo).localeCompare(String(b.invoiceNo)));

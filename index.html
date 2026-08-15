@@ -7102,7 +7102,12 @@ async function accDeleteAddress(i) {
 }
 async function accLogout() {
   try { await accountApi('logout'); } catch (e) {}
-  ACCOUNT = null; saveAccount(); updateAccountUI(); renderAccount(); renderCart();
+  ACCOUNT = null;
+  // Auch die geladenen Dauerbestellungen verwerfen. Sonst blitzen sie beim
+  // naechsten Anmelden auf demselben Geraet kurz beim FALSCHEN Kunden auf,
+  // bis die Antwort des Servers sie ersetzt.
+  STANDING = [];
+  saveAccount(); updateAccountUI(); renderAccount(); renderCart();
 }
 /* Adresse nach erfolgreicher Lieferbestellung still ins Konto übernehmen */
 function accMaybeSaveOrderAddress(order) {
@@ -7830,9 +7835,14 @@ function buildVatSummary(cartObj, rabattGesamt, liefergebuehr) {
     // nicht negativ. Die Zeile bleibt trotzdem stehen: eine Rechnung muss
     // die Steuer je Satz ausweisen, auch wenn sie 0,00 € beträgt.
     const bru = Math.max(0, brutto[satz] - rabattGesamt * anteil + liefergebuehr * anteil);
-    const netto = bru / (1 + satz / 100);
-    zeilen.push({ satz, brutto: +bru.toFixed(2), netto: +netto.toFixed(2),
-                  steuer: +(bru - netto).toFixed(2) });
+    // Erst den Bruttobetrag runden, dann Netto und Steuer DARAUS ableiten.
+    // Wurden alle drei einzeln gerundet, ergab Netto + Steuer je nach Betrag
+    // einen Cent mehr als Brutto – auf der Rechnung sichtbar, und die
+    // XRechnung ging damit nicht auf.
+    const bruR = +bru.toFixed(2);
+    const nettoR = +(bruR / (1 + satz / 100)).toFixed(2);
+    zeilen.push({ satz, brutto: bruR, netto: nettoR,
+                  steuer: +(bruR - nettoR).toFixed(2) });
   });
   return zeilen;
 }
@@ -10143,6 +10153,11 @@ async function submitOrder(e) {
       total: unitPrice * entry.qty,
       double: entry.double,
       isMenu: !!entry.isMenu,
+      // Steueranteile dieser Position (brutto, vor Rabatt). Der Server kennt
+      // die Speisekarte nicht und koennte ein Menue sonst nicht in Speise
+      // (7 %) und Getraenk (19 %) zerlegen – die XRechnung braucht aber je
+      // Zeile genau einen Satz.
+      vatSplit: splitVat(entry, unitPrice * entry.qty),
     };
   }).filter(Boolean);
 
@@ -12174,6 +12189,23 @@ async function sendOrderConfirmationEmails(orderData) {
       company: orderData.company || null,
       invoiceAddress: orderData.invoiceAddress || null,
       vat: orderData.vat || null,
+      // Diese vier fehlten. Bei Online-Zahlung fällt das nicht auf, weil dort
+      // die vollständige Bestellung an sumup-checkout geht – bei BAR lief
+      // alles nur über diese Liste, und damit:
+      //   voucherCode    – der Gutschein wurde NIE als eingelöst vermerkt und
+      //                    ließ sich beliebig oft erneut einsetzen; auch die
+      //                    Nutzungsgrenzen und die Empfehlungsprämie liefen
+      //                    ins Leere.
+      //   isTest         – Testbestellungen zählten auf die Stempelkarte und
+      //                    kamen ohne Test-Hinweis beim Inhaber an.
+      //   cartSnapshot   – ohne ihn hat keine Barbestellung Details in der
+      //                    Historie, und es lässt sich keine Dauerbestellung
+      //                    daraus anlegen.
+      //   loyaltyApplied – Kennzeichen, dass eine Prämie eingelöst wurde.
+      voucherCode: orderData.voucherCode || null,
+      isTest: !!orderData.isTest,
+      cartSnapshot: orderData.cartSnapshot || null,
+      loyaltyApplied: !!orderData.loyaltyApplied,
     },
   };
   try {
@@ -12228,6 +12260,9 @@ async function sendOwnerOrderNotification(orderData) {
       company: orderData.company || null,
       invoiceAddress: orderData.invoiceAddress || null,
       vat: orderData.vat || null,
+      // Ohne dieses Kennzeichen kommt eine Testbestellung beim Inhaber wie
+      // ein echter Auftrag an – ohne Betreff-Hinweis und ohne Warnbanner.
+      isTest: !!orderData.isTest,
     },
   };
   try {

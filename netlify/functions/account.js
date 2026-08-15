@@ -83,6 +83,14 @@ async function ensureReferralVoucher(rec, key) {
   } catch (e) {}
 }
 
+function standingStore() {
+  const opts = { name: 'standing', consistency: 'strong' };
+  if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
+    opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
+    opts.token = process.env.NETLIFY_BLOBS_TOKEN;
+  }
+  return getStore(opts);
+}
 function store() {
   const opts = { name: 'customers', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -320,6 +328,15 @@ exports.handler = async (event) => {
 
     if (action === 'delete') {
       // Selbstlöschung: Konto samt Empfehlungs-Index vollständig entfernen
+      // Dauerbestellungen hängen an derselben Kennung und müssen mit weg:
+      // sie enthalten Name, Anschrift und Bestellung, und der Erinnerungs-
+      // Lauf liest diesen Speicher unmittelbar – ohne das hier bekäme ein
+      // gelöschtes Konto weiterhin jede Woche eine Mail.
+      try {
+        const so = standingStore();
+        const { blobs } = await so.list({ prefix: 'so:' + key + ':' });
+        for (const b of blobs) { try { await so.delete(b.key); } catch (e) {} }
+      } catch (e) { console.error('account delete – Dauerbestellungen:', e); }
       try { if (rec.refCode) await s.delete('ref:' + rec.refCode); } catch (e) {}
       try { if (rec.qrToken) await s.delete('qr:' + rec.qrToken); } catch (e) {}
       try { if (rec.refCode) await vouchersStore().delete('c:' + rec.refCode); } catch (e) {}
