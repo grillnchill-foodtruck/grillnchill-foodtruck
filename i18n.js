@@ -148,7 +148,7 @@ const I18N = {
     "co.submit_error": "Da ist leider etwas schiefgelaufen. Bitte versuch es erneut oder ruf uns kurz an.", "co.need_fields": "Bitte füll die markierten Felder noch aus.", "co.need_agb": "Bitte bestätige noch die AGB und die Datenschutzerklärung.", "co.need_address": "Bitte gib zuerst deine Lieferadresse ein – erst dann steht die Liefergebühr fest.", "co.step1": "Warenkorb", "co.step2": "Optionen", "co.step3": "Deine Daten", "co.step_aria": "Schritt {n} von 3", "co.title_options": "Optionen", "a11y.back": "Zurück", "grp.discard": "Gruppe verwerfen", "grp.discard_confirm": "Gruppenbestellung wirklich verwerfen? Bereits abgegebene Bestellungen der Gruppe gehen dabei verloren.",
     "co.min_warn": "Mindestbestellwert für Lieferung: {min} · noch {rest} hinzufügen", "co.title_details": "Deine Daten", "co.back_cart": "← Zurück zum Warenkorb",
     "co.promo_note": "Hinweis: Code {code} ist nur online (über diese Website) einlösbar und gültig bis 20.07.2026.",
-    "co.name": "Name *", "co.name_ph": "Dein Name", "co.phone": "Telefon", "co.phone_ph": "0521 ... (optional)", "co.email": "E-Mail *", "co.email_ph": "dein@email.de",
+    "co.name": "Name *", "co.name_ph": "Dein Name", "co.phone": "Telefon *", "co.phone_ph": "0521 12345678", "co.email": "E-Mail *", "co.email_ph": "dein@email.de",
     "co.email_hint": "Deine Bestellbestätigung und alle Updates schicken wir dir per E-Mail.",
     "co.street": "Straße & Hausnummer *", "co.street_ph": "Musterstraße 12", "co.zip": "PLZ *", "co.city": "Ort *",
     "co.pickup_time": "Abholzeit *", "co.pt_asap": "So schnell wie möglich (ca. 15 Min)", "co.pt_30": "In 30 Minuten", "co.pt_45": "In 45 Minuten", "co.pt_60": "In 1 Stunde", "co.pt_90": "In 1,5 Stunden",

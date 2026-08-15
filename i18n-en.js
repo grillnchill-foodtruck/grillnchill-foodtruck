@@ -141,7 +141,7 @@ I18N.en = {
     "co.submit_error": "Something went wrong. Please try again or give us a quick call.", "co.need_fields": "Please fill in the highlighted fields.", "co.need_agb": "Please accept the terms and the privacy policy.", "co.need_address": "Please enter your delivery address first – only then can we work out the delivery fee.", "co.step1": "Cart", "co.step2": "Options", "co.step3": "Your details", "co.step_aria": "Step {n} of 3", "co.title_options": "Options", "a11y.back": "Back", "grp.discard": "Discard group", "grp.discard_confirm": "Really discard this group order? Orders already submitted by the group will be lost.",
     "co.min_warn": "Minimum order for delivery: {min} · add {rest} more", "co.title_details": "Your details", "co.back_cart": "← Back to cart",
     "co.promo_note": "Note: Code {code} can only be redeemed online (via this website) and is valid until 20 July 2026.",
-    "co.name": "Name *", "co.name_ph": "Your name", "co.phone": "Phone", "co.phone_ph": "0521 ... (optional)", "co.email": "Email *", "co.email_ph": "you@email.com",
+    "co.name": "Name *", "co.name_ph": "Your name", "co.phone": "Phone *", "co.phone_ph": "0521 12345678", "co.email": "Email *", "co.email_ph": "you@email.com",
     "co.email_hint": "We'll send your order confirmation and all updates by email.",
     "co.street": "Street & house number *", "co.street_ph": "Example St 12", "co.zip": "ZIP *", "co.city": "City *",
     "co.pickup_time": "Pickup time *", "co.pt_asap": "As soon as possible (approx. 15 min)", "co.pt_30": "In 30 minutes", "co.pt_45": "In 45 minutes", "co.pt_60": "In 1 hour", "co.pt_90": "In 1.5 hours",

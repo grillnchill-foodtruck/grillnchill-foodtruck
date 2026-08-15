@@ -141,7 +141,7 @@ I18N.pt = {
     "co.submit_error": "Algo correu mal. Tenta de novo ou liga-nos.", "co.need_fields": "Preenche os campos assinalados.", "co.need_agb": "Aceita os termos e a política de privacidade.", "co.need_address": "Introduz primeiro a tua morada de entrega – só assim conseguimos calcular a taxa de entrega.", "co.step1": "Carrinho", "co.step2": "Opções", "co.step3": "Os teus dados", "co.step_aria": "Passo {n} de 3", "co.title_options": "Opções", "a11y.back": "Voltar", "grp.discard": "Descartar grupo", "grp.discard_confirm": "Queres mesmo descartar o pedido de grupo? Os pedidos já enviados pelo grupo serão perdidos.",
     "co.min_warn": "Encomenda mínima para entrega: {min} · adiciona mais {rest}", "co.title_details": "Os teus dados", "co.back_cart": "← Voltar ao carrinho",
     "co.promo_note": "Nota: o código {code} só pode ser usado online (através deste site) e é válido até 20 de julho de 2026.",
-    "co.name": "Nome *", "co.name_ph": "O teu nome", "co.phone": "Telefone", "co.phone_ph": "0521 ... (opcional)", "co.email": "Email *", "co.email_ph": "tu@email.com",
+    "co.name": "Nome *", "co.name_ph": "O teu nome", "co.phone": "Telefone *", "co.phone_ph": "0521 12345678", "co.email": "Email *", "co.email_ph": "tu@email.com",
     "co.email_hint": "Enviamos a confirmação da encomenda e todas as atualizações por email.",
     "co.street": "Rua e número *", "co.street_ph": "Rua Exemplo 12", "co.zip": "Código postal *", "co.city": "Localidade *",
     "co.pickup_time": "Hora de levantamento *", "co.pt_asap": "O mais rápido possível (aprox. 15 min)", "co.pt_30": "Em 30 minutos", "co.pt_45": "Em 45 minutos", "co.pt_60": "Em 1 hora", "co.pt_90": "Em 1,5 horas",

@@ -141,7 +141,7 @@ I18N.es = {
     "co.submit_error": "Algo ha salido mal. Inténtalo de nuevo o llámanos.", "co.need_fields": "Rellena los campos marcados.", "co.need_agb": "Acepta los términos y la política de privacidad.", "co.need_address": "Introduce primero tu dirección de entrega: solo así podemos calcular los gastos de envío.", "co.step1": "Cesta", "co.step2": "Opciones", "co.step3": "Tus datos", "co.step_aria": "Paso {n} de 3", "co.title_options": "Opciones", "a11y.back": "Atrás", "grp.discard": "Descartar grupo", "grp.discard_confirm": "¿Seguro que quieres descartar el pedido de grupo? Se perderán los pedidos ya enviados por el grupo.",
     "co.min_warn": "Pedido mínimo para entrega: {min} · añade {rest} más", "co.title_details": "Tus datos", "co.back_cart": "← Volver a la cesta",
     "co.promo_note": "Nota: el código {code} solo se puede canjear online (en esta web) y es válido hasta el 20 de julio de 2026.",
-    "co.name": "Nombre *", "co.name_ph": "Tu nombre", "co.phone": "Teléfono", "co.phone_ph": "0521 ... (opcional)", "co.email": "Email *", "co.email_ph": "tu@email.com",
+    "co.name": "Nombre *", "co.name_ph": "Tu nombre", "co.phone": "Teléfono *", "co.phone_ph": "0521 12345678", "co.email": "Email *", "co.email_ph": "tu@email.com",
     "co.email_hint": "Te enviamos la confirmación del pedido y todas las novedades por email.",
     "co.street": "Calle y número *", "co.street_ph": "Calle Ejemplo 12", "co.zip": "C.P. *", "co.city": "Ciudad *",
     "co.pickup_time": "Hora de recogida *", "co.pt_asap": "Lo antes posible (aprox. 15 min)", "co.pt_30": "En 30 minutos", "co.pt_45": "En 45 minutos", "co.pt_60": "En 1 hora", "co.pt_90": "En 1,5 horas",

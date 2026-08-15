@@ -141,7 +141,7 @@ I18N.it = {
     "co.submit_error": "Qualcosa è andato storto. Riprova o chiamaci.", "co.need_fields": "Compila i campi evidenziati.", "co.need_agb": "Accetta i termini e l’informativa sulla privacy.", "co.need_address": "Inserisci prima il tuo indirizzo di consegna: solo così possiamo calcolare le spese di consegna.", "co.step1": "Carrello", "co.step2": "Opzioni", "co.step3": "I tuoi dati", "co.step_aria": "Passo {n} di 3", "co.title_options": "Opzioni", "a11y.back": "Indietro", "grp.discard": "Elimina gruppo", "grp.discard_confirm": "Vuoi davvero eliminare l’ordine di gruppo? Gli ordini già inviati dal gruppo andranno persi.",
     "co.min_warn": "Ordine minimo per la consegna: {min} · aggiungi ancora {rest}", "co.title_details": "I tuoi dati", "co.back_cart": "← Torna al carrello",
     "co.promo_note": "Nota: il codice {code} si può usare solo online (su questo sito) ed è valido fino al 20 luglio 2026.",
-    "co.name": "Nome *", "co.name_ph": "Il tuo nome", "co.phone": "Telefono", "co.phone_ph": "0521 ... (facoltativo)", "co.email": "Email *", "co.email_ph": "tu@email.com",
+    "co.name": "Nome *", "co.name_ph": "Il tuo nome", "co.phone": "Telefono *", "co.phone_ph": "0521 12345678", "co.email": "Email *", "co.email_ph": "tu@email.com",
     "co.email_hint": "Ti inviamo la conferma d'ordine e tutti gli aggiornamenti via email.",
     "co.street": "Via e numero civico *", "co.street_ph": "Via Esempio 12", "co.zip": "CAP *", "co.city": "Città *",
     "co.pickup_time": "Orario di ritiro *", "co.pt_asap": "Prima possibile (ca. 15 min)", "co.pt_30": "Tra 30 minuti", "co.pt_45": "Tra 45 minuti", "co.pt_60": "Tra 1 ora", "co.pt_90": "Tra 1 ora e mezza",

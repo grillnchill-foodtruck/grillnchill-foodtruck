@@ -3087,6 +3087,13 @@ body.body-scroll-locked .sticky-cart { display: none !important; }
   border-color: var(--color-orange);
 }
 .form-input::placeholder { color: var(--color-text-muted); }
+/* Erklaerung direkt unter einem Feld. */
+.field-note {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0.35rem 0 0;
+}
 textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
 @media (max-width: 480px) {
@@ -8957,20 +8964,17 @@ function renderCart() {
           <label for="co-name">${t('co.name')}</label>
           <input type="text" id="co-name" class="form-input" required placeholder="${t('co.name_ph')}" autocomplete="name" />
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="co-phone">${t('co.phone')}</label>
-            <input type="tel" id="co-phone" class="form-input" placeholder="${t('co.phone_ph')}" autocomplete="tel" />
-          </div>
-          <div class="form-group">
-            <label for="co-email">${t('co.email')}</label>
-            <input type="email" id="co-email" class="form-input" required placeholder="${t('co.email_ph')}" autocomplete="email" />
-            <p style="font-size:0.72rem;color:var(--color-text-muted);margin:0.35rem 0 0;line-height:1.5;">${t('co.email_note')}</p>
-          </div>
+        <div class="form-group">
+          <label for="co-email">${t('co.email')}</label>
+          <input type="email" id="co-email" class="form-input" required placeholder="${t('co.email_ph')}"
+                 autocomplete="email" inputmode="email"
+                 autocapitalize="off" autocorrect="off" spellcheck="false" />
+          <p class="field-note">${t('co.email_note')}</p>
         </div>
-        <p class="form-hint" style="font-size:0.8rem;color:var(--color-text-muted);margin:-0.3rem 0 0.6rem;">
-          ${t('co.email_hint')}
-        </p>
+        <div class="form-group">
+          <label for="co-phone">${t('co.phone')}</label>
+          <input type="tel" id="co-phone" class="form-input" required placeholder="${t('co.phone_ph')}" autocomplete="tel" inputmode="tel" />
+        </div>
         <div id="phoneUsageInfo" class="phone-usage-info" style="display:none;"></div>
 
         ${checkoutMode === 'delivery' ? `
