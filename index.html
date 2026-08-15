@@ -8260,8 +8260,14 @@ function setCartChrome(step) {
   if (!back || !steps) return;
   const idx = CART_STEP_ORDER.indexOf(step);
   back.hidden = idx <= 0;
-  if (idx < 0) { steps.hidden = true; steps.classList.remove('has-label'); steps.innerHTML = ''; return; }
+  // Nur ausblenden – der Inhalt (Balken + Beschriftung) muss stehen bleiben,
+  // sonst sind sie nach dem ersten Aufbau mit leerem Korb dauerhaft weg.
+  if (idx < 0) { steps.hidden = true; return; }
   steps.hidden = false;
+  // Notnagel: fehlt der Innenaufbau, neu anlegen statt abzustuerzen.
+  if (!steps.querySelector('.cart-steps') || !steps.querySelector('.cart-step-label')) {
+    steps.innerHTML = '<ol class="cart-steps"></ol><span class="cart-step-label"></span>';
+  }
   const bars = steps.querySelector('.cart-steps');
   const label = steps.querySelector('.cart-step-label');
   bars.setAttribute('aria-label', t('co.step_aria').replace('{n}', idx + 1));
