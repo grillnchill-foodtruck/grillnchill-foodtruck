@@ -3838,7 +3838,23 @@ section[id], footer[id] { scroll-margin-top: 84px; }
 .signature-media img { transition: opacity .28s ease, transform .28s ease; }
 .signature-inner.sig-swap .signature-copy > *:not(.sig-dots),
 .signature-inner.sig-swap .signature-media img { opacity: 0; transform: translateY(10px); }
-.sig-dots { display: flex; gap: 0.55rem; margin-top: 1.3rem; }
+.sig-nav { display: flex; align-items: center; gap: 0.85rem; margin-top: 1.3rem; }
+.sig-dots { display: flex; gap: 0.55rem; }
+.sig-arrow {
+  width: 44px; height: 44px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border-bright);
+  background: var(--color-bg-card);
+  color: var(--color-cream-dim);
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s, transform .12s;
+}
+.sig-arrow svg { width: 20px; height: 20px; }
+.sig-arrow:hover { border-color: var(--color-orange); color: var(--color-cream); }
+/* Rückmeldung schon beim Drücken, nicht erst beim Loslassen */
+.sig-arrow:active { transform: scale(0.92); background: var(--color-orange); border-color: var(--color-orange); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .sig-arrow { transition: none; } .sig-arrow:active { transform: none; } }
 .sig-dot {
   width: 30px; height: 4px;
   border-radius: var(--radius-full);
@@ -4452,7 +4468,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
         <button type="button" class="btn btn-primary" id="sigBtn" data-i18n="sig.cta">In den Warenkorb</button>
       </div>
       <p class="signature-note" id="sigNote">100 % Halal · Double Patty inklusive · frisch in ca. 15 Minuten</p>
-      <div class="sig-dots" id="sigDots" role="tablist" aria-label="Best of 3"></div>
+      <div class="sig-nav">
+        <button type="button" class="sig-arrow" id="sigPrev" aria-label="Vorheriges Produkt" data-i18n-aria="sig.prev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <div class="sig-dots" id="sigDots" role="tablist" aria-label="Best of 3"></div>
+        <button type="button" class="sig-arrow" id="sigNext" aria-label="Nächstes Produkt" data-i18n-aria="sig.next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 </section>
@@ -11010,11 +11034,20 @@ window.addEventListener('load', function () {
   }
   window.renderSignatureSlide = function () { renderSignatureSlide(false); };
 
+  // Während des Wechsels gesperrt: ein harter Wisch (oder Dauerfeuer auf den
+  // Pfeil) springt so immer nur EINE Karte weiter, nie mehrere auf einmal.
+  var sigBusy = false;
   function sigGoto(i, manual) {
-    sigIndex = (i + SIG_ITEMS.length) % SIG_ITEMS.length;
+    if (sigBusy) return;
+    var next = (i + SIG_ITEMS.length) % SIG_ITEMS.length;
+    if (next === sigIndex) return;
+    sigIndex = next;
+    sigBusy = true;
+    setTimeout(function () { sigBusy = false; }, reduceMotion ? 60 : 320);
     renderSignatureSlide(true);
     if (manual) { window.hapticTick(8); restartSigTimer(); }
   }
+  function sigStep(dir, manual) { sigGoto(sigIndex + dir, manual); }
   function restartSigTimer() {
     if (sigTimer) clearInterval(sigTimer);
     if (reduceMotion) return;                      // keine Auto-Rotation bei reduzierter Bewegung
@@ -11033,6 +11066,17 @@ window.addEventListener('load', function () {
       if (typeof track === 'function') track('sig_add');
       addToCart(SIG_ITEMS[sigIndex].id, false, e);
     });
+    // Pfeile (Maus, Touch, Tastatur) – immer genau eine Karte pro Klick
+    var prevBtn = document.getElementById('sigPrev');
+    var nextBtn = document.getElementById('sigNext');
+    if (prevBtn) prevBtn.addEventListener('click', function () { sigStep(-1, true); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { sigStep(1, true); });
+    // Pfeiltasten, sobald der Bereich im Fokus ist
+    var section = document.getElementById('signature');
+    if (section) section.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); sigStep(-1, true); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); sigStep(1, true); }
+    });
     // Screenreader-Ansage bei Slide-Wechsel
     var live = document.createElement('div');
     live.className = 'visually-hidden';
@@ -11043,6 +11087,8 @@ window.addEventListener('load', function () {
     var sx = null, sy = null, lockedH = false, dragDx = 0;
     wrap.style.touchAction = 'pan-y';   // Browser: vertikal scrollen ok, horizontal gehört uns
     wrap.addEventListener('touchstart', function (e) {
+      // Tippen auf Pfeile/Punkte/Bestellbutton ist kein Wisch
+      if (e.target.closest('.sig-arrow, .sig-dot, button')) { sx = null; return; }
       sx = e.touches[0].clientX; sy = e.touches[0].clientY;
       lockedH = false; dragDx = 0;
     }, { passive: true });
@@ -11066,10 +11112,29 @@ window.addEventListener('load', function () {
       wrap.classList.remove('sig-dragging');
       wrap.style.transform = '';
       sx = sy = null; lockedH = false; dragDx = 0;
-      if (didLock && Math.abs(dx) > 34) sigGoto(sigIndex + (dx < 0 ? 1 : -1), true);
+      // Genau eine Karte – unabhängig davon, wie weit oder hart gewischt wurde
+      if (didLock && Math.abs(dx) > 34) sigStep(dx < 0 ? 1 : -1, true);
     }
     wrap.addEventListener('touchend', endSigDrag);
     wrap.addEventListener('touchcancel', endSigDrag);
+
+    // Trackpad: seitlich wischen (Zwei-Finger). Eine Wischgeste feuert dutzende
+    // wheel-Events samt Nachlauf – deshalb wird nach dem Auslösen gesperrt, bis
+    // die Geste wirklich zu Ende ist. So bleibt es bei genau einer Karte.
+    var whAcc = 0, whLock = false, whIdle = null;
+    wrap.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.2) return;   // vertikal → normal scrollen
+      e.preventDefault();
+      clearTimeout(whIdle);
+      whIdle = setTimeout(function () { whAcc = 0; whLock = false; }, 180);  // Geste beendet
+      if (whLock) return;
+      whAcc += e.deltaX;
+      if (Math.abs(whAcc) > 45) {
+        sigStep(whAcc > 0 ? 1 : -1, true);
+        whLock = true;
+        whAcc = 0;
+      }
+    }, { passive: false });
     // Pause bei Hover (Desktop) & außerhalb des Viewports
     wrap.addEventListener('mouseenter', function () { sigVisible = false; });
     wrap.addEventListener('mouseleave', function () { sigVisible = true; });
