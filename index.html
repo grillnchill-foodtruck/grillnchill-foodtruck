@@ -3611,6 +3611,15 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 }
 /* Kontaktzeilen mit echtem Symbol statt Emoji – Emoji rendern je Gerät
    unterschiedlich und nehmen die Farbe nicht an. */
+/* Zusatzstoffe unter der Allergen-Legende. */
+.additive-legend {
+  margin: 0.7rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--color-cream-dim);
+}
+.additive-legend strong { color: var(--color-cream); }
+
 .contact-line { display: inline-flex; align-items: center; gap: 0.5rem; }
 .contact-line svg { width: 16px; height: 16px; flex: none; opacity: 0.75; }
 
@@ -3671,6 +3680,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  letter-spacing: 0.015em;   /* kleine Schrift liest sich mit etwas Luft besser */
   background: rgba(232, 90, 36, 0.10);
   border: 1px solid rgba(232, 90, 36, 0.35);
   color: var(--color-cream);
@@ -4257,12 +4267,18 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 }
 /* Zustand steckt in der FORM, nicht nur in der Farbe: brennende Flamme =
    offen, kalter Umriss = geschlossen. Liest sich auf 16 px sofort und
-   funktioniert auch ohne Farbunterscheidung. Ersetzt den generischen
-   Statuspunkt. */
+   funktioniert auch ohne Farbunterscheidung. */
 .status-flame {
   width: 13px; height: 16px;
   flex: none;
   overflow: visible;
+}
+/* Flammen wachsen von unten – deshalb der Ursprung am Fuß. */
+.status-flame .flame-body,
+.status-flame .flame-core {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: fill 260ms ease, stroke 260ms ease, opacity 220ms ease;
 }
 .status-flame .flame-body {
   fill: none;
@@ -4270,24 +4286,66 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   stroke-width: 1.5;
   stroke-linejoin: round;
 }
-.status-flame .flame-core { fill: none; }
+.status-flame .flame-core { fill: none; opacity: 0; }
 
 /* Geöffnet: Flamme brennt */
 .nav-status.open, .open-status:not(.closed) { color: var(--color-cream-dim); }
 .nav-status.open { border-color: rgba(232, 90, 36, 0.45); }
 .nav-status.open .flame-body,
-.open-status:not(.closed) .flame-body {
-  fill: var(--color-orange);
-  stroke: none;
-}
+.open-status:not(.closed) .flame-body { fill: var(--color-orange); stroke: none; }
 .nav-status.open .flame-core,
-.open-status:not(.closed) .flame-core { fill: var(--color-yellow); }
+.open-status:not(.closed) .flame-core { fill: var(--color-yellow); opacity: 1; }
+
 @media (prefers-reduced-motion: no-preference) {
-  .nav-status.open .status-flame,
-  .open-status:not(.closed) .status-flame { animation: flameLive 2.6s ease-in-out infinite; }
-  @keyframes flameLive {
-    0%, 100% { filter: drop-shadow(0 0 3px rgba(232, 90, 36, 0.55)); }
-    50%      { filter: drop-shadow(0 0 7px rgba(255, 160, 60, 0.85)); }
+  /* Leerlauf-Flackern nur mit transform und opacity – das frühere
+     drop-shadow erzwang in der klebenden Kopfleiste dauerhaft ein
+     Neuzeichnen. Die beiden Schichten laufen mit unterschiedlichen,
+     nicht teilerfremden Perioden (2,3 s / 3,1 s); dadurch wiederholt sich
+     das Gesamtbild sichtbar nie und wirkt wie echtes Feuer statt wie ein
+     gleichmäßiges Pulsieren. Amplitude bewusst klein, damit die Flamme
+     nicht mit dem Warenkorb um Aufmerksamkeit ringt. */
+  .nav-status.open .flame-body,
+  .open-status:not(.closed) .flame-body { animation: flameSway 2.3s ease-in-out infinite; }
+  .nav-status.open .flame-core,
+  .open-status:not(.closed) .flame-core { animation: flameCore 3.1s ease-in-out infinite; }
+  @keyframes flameSway {
+    0%, 100% { transform: scaleY(1)    scaleX(1); }
+    50%      { transform: scaleY(1.06) scaleX(0.97); }
+  }
+  @keyframes flameCore {
+    0%, 100% { transform: scaleY(1)    translateY(0);      opacity: 1; }
+    50%      { transform: scaleY(0.88) translateY(0.4px);  opacity: 0.8; }
+  }
+
+  /* Entzünden: der eine Moment, der eine Bewegung verdient. Leichtes
+     Überschwingen, weil Anzünden ein körperlicher Vorgang ist. */
+  .nav-status.status-ignite .flame-body,
+  .open-status.status-ignite .flame-body { animation: igniteBody 460ms cubic-bezier(0.2, 1.35, 0.4, 1) both; }
+  .nav-status.status-ignite .flame-core,
+  .open-status.status-ignite .flame-core { animation: igniteCore 520ms cubic-bezier(0.2, 1.5, 0.4, 1) 60ms both; }
+  @keyframes igniteBody {
+    0%   { transform: scaleY(0.72) scaleX(1.12); }
+    60%  { transform: scaleY(1.14) scaleX(0.94); }
+    100% { transform: none; }
+  }
+  @keyframes igniteCore {
+    0%   { transform: scaleY(0.2); opacity: 0; }
+    55%  { transform: scaleY(1.25); opacity: 1; }
+    100% { transform: none; opacity: 1; }
+  }
+  /* Erlöschen: schneller und ohne Überschwingen – Ausgehen schwingt nicht nach. */
+  .nav-status.status-quench .flame-core,
+  .open-status.status-quench .flame-core { animation: quenchCore 300ms ease-out both; }
+  .nav-status.status-quench .flame-body,
+  .open-status.status-quench .flame-body { animation: quenchBody 340ms ease-out both; }
+  @keyframes quenchCore { 0% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(0.25); opacity: 0; } }
+  @keyframes quenchBody { 0% { transform: scaleY(1); } 55% { transform: scaleY(0.9); } 100% { transform: none; } }
+
+  /* Erster Auftritt: materialisieren statt aufpoppen. */
+  .status-appear { animation: statusAppear 380ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+  @keyframes statusAppear {
+    from { opacity: 0; transform: scale(0.94); }
+    to   { opacity: 1; transform: none; }
   }
 }
 /* Konto-Button: 44 px Zielfläche statt 38 (Daumenmaß), Styles aus dem Markup gelöst */
@@ -5119,13 +5177,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
       <p data-i18n="menu.double_text">Alle Burger können auch mit Double Patty bestellt werden – einfach im Bestellterminal auf der Karte auswählen. Aufpreis: +2,50 €. Beim Kubis Special ist das Double Patty bereits inklusive.</p>
 
       <h4 style="margin-top: 1.2rem;" data-i18n="menu.allergen_title">Allergene &amp; Zusatzstoffe</h4>
-      <ul class="allergen-list">
-        <li><strong>1</strong> <span data-i18n="menu.allergen1">enthält Gluten (Weizen)</span></li>
-        <li><strong>2</strong> <span data-i18n="menu.allergen2">enthält Milch / Laktose (Käse, Sauce)</span></li>
-        <li><strong>3</strong> <span data-i18n="menu.allergen3">enthält Senf (Burgersauce, BBQ-Sauce)</span></li>
-        <li><strong>4</strong> <span data-i18n="menu.allergen4">kann Spuren von Ei enthalten</span></li>
-        <li><strong>5</strong> <span data-i18n="menu.allergen5">kann Spuren von Soja enthalten</span></li>
-      </ul>
+      <ul class="allergen-list" id="allergenLegend"><!-- aus den Produktdaten erzeugt --></ul>
+      <div id="additiveLegend"></div>
       <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.8rem;" data-i18n="menu.allergen_note">
         Hast du eine Allergie, die nicht aufgeführt ist? Gib uns gerne im Notiz-Feld Bescheid – wir tun unser Bestes.
       </p>
@@ -7273,6 +7326,8 @@ function renderMenu(animate = false) {
     grid.appendChild(card);
   });
 
+  buildAllergenLegend();
+
   if (animate) {
     setTimeout(() => {
       grid.querySelectorAll('.reveal').forEach((el, i) => {
@@ -7281,6 +7336,59 @@ function renderMenu(animate = false) {
         setTimeout(() => { el.style.transitionDelay = ''; }, 900);
       });
     }, 50);
+  }
+}
+
+/* Zustandswechsel des Status-Elements. Der Wechsel offen/geschlossen ist der
+   eine Moment, der eine Bewegung verdient – vorher war es ein harter Austausch.
+   Beim allerersten Setzen wird nur materialisiert, nicht gezündet: sonst
+   entzündet sich beim Laden eine Flamme, die längst brennt. */
+function setFlameState(el, offen) {
+  if (!el) return;
+  const bekannt = el.dataset.flameState;
+  const neu = offen ? 'on' : 'off';
+  el.classList.toggle('open', offen);
+  el.classList.toggle('closed', !offen);
+  if (bekannt === neu) return;
+  el.dataset.flameState = neu;
+  el.classList.remove('status-ignite', 'status-quench', 'status-appear');
+  void el.offsetWidth;                     // Neustart der Animation erzwingen
+  const einmalig = bekannt === undefined ? 'status-appear' : (offen ? 'status-ignite' : 'status-quench');
+  el.classList.add(einmalig);
+  // Einmal-Animationen wieder abräumen, damit danach der Leerlauf greift.
+  // animationend feuert je Ebene mehrfach – deshalb aufräumen, sobald die
+  // längste durch ist, und zusätzlich ein Zeitfenster als Netz.
+  clearTimeout(el._flameTimer);
+  el._flameTimer = setTimeout(() => el.classList.remove(einmalig), 640);
+}
+
+/* Legende aus den Produktdaten erzeugen statt fest zu verdrahten.
+   Vorher stand hier eine feste Liste 1–5; nach der Umstellung auf die
+   LMIV-Nummerierung nannte sie Krebstiere, Fische und Erdnüsse, die in
+   keinem Produkt vorkommen, und ließ Milch und Senf weg. Aus den Daten
+   erzeugt kann sie nicht mehr von der Karte abweichen. */
+function buildAllergenLegend() {
+  const liste = document.getElementById('allergenLegend');
+  const zusatzBox = document.getElementById('additiveLegend');
+  if (!liste) return;
+  const sammle = feld => {
+    const menge = new Set();
+    MENU.forEach(m => (m[feld] || '').split(',').map(x => x.trim()).filter(Boolean)
+      .forEach(c => menge.add(c)));
+    return [...menge].sort((a, b) => Number(a) - Number(b));
+  };
+  const allergene = [...new Set([...sammle('allergens'), ...sammle('spuren')])]
+    .sort((a, b) => Number(a) - Number(b));
+  const zusatz = sammle('zusatz');
+
+  liste.innerHTML = allergene.map(c =>
+    `<li><strong>${c}</strong> <span>${t('menu.allergen' + c)}</span></li>`).join('');
+
+  if (zusatzBox) {
+    zusatzBox.innerHTML = zusatz.length
+      ? `<p class="additive-legend"><strong>${t('badge.additives')}:</strong> ${
+          zusatz.map(c => t('menu.zusatz' + c)).join(' · ')}</p>`
+      : '';
   }
 }
 
@@ -11217,14 +11325,14 @@ function updateOpenStatus() {
   const holiday = getNRWHoliday(now);
   if (holiday) {
     elText.textContent = t('status.holiday');
-    el.classList.add('closed');
+    setFlameState(el, false);
     return;
   }
 
   const todayEff = hoursFor(now);
   if (todayEff && minutes >= parseTime(todayEff.open) && minutes < parseTime(todayEff.close)) {
     elText.textContent = t('status.open').replace('{time}', todayEff.close);
-    el.classList.remove('closed');
+    setFlameState(el, true);
   } else {
     // Nächste Öffnung (kann heute später sein, z. B. bei Ausnahme)
     const nx = findNextOpening(now);
@@ -11240,7 +11348,7 @@ function updateOpenStatus() {
           .replace('{time}', nx.open);
       }
     }
-    el.classList.add('closed');
+    setFlameState(el, false);
   }
 }
 
@@ -12009,7 +12117,7 @@ window.addEventListener('load', function () {
         label = (nx && nx.offset === 0) ? t('nav.opens').replace('{time}', nx.open) : t('nav.closed');
       }
       el.hidden = false;
-      el.classList.toggle('open', open);
+      setFlameState(el, open);
       if (txt) txt.textContent = label;
       el.setAttribute('aria-label', label);
     } catch (e) { el.hidden = true; }
