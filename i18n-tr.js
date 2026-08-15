@@ -178,7 +178,7 @@ I18N.tr = {
     "config.edit_title": "Menüyü düzenle", "config.edit_sub": "– seçimini değiştir", "config.save": "Kaydet", "dip.edit_title": "Sosu değiştir", "dip.save": "Kaydet",
     "config.incl": "dahil", "config.add_price": "Menü olarak ekle ·", "config.upsell_full": "<b>{burger}</b> burgerine garnitür, içecek & sos ekle – sadece <b>+{price}</b>.", "config.menu_sub": "+ garnitür + içecek + sos", "config.menu_sub_short": "garnitür, içecek & sos sadece",
     "banner.veggie_title": "Veggie & Vegan", "banner.veggie_text": "Burada gösterilen tüm burgerler veggie olarak da mevcuttur (ek ücretsiz), hepsi aynı zamanda vegandır.", "banner.veggie_note": "Lütfen siparişin not alanına „Veggie\u201c yaz.",
-    "banner.menu_title": "Menü Fırsatları", "banner.menu_text": "Her burgeri menüye dönüştür:", "banner.menu_note": "Garnitür, içecek ve sosu eklerken seçersin.",
+    "banner.menu_title": "Menü Fırsatları", "banner.menu_text": "Her burgeri menüye çevir", "banner.menu_note": "Garnitür, içecek ve sosu eklerken seçersin.",
 };
 
 PRODUCTS_I18N.tr = {

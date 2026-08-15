@@ -178,7 +178,7 @@ I18N.nl = {
     "config.edit_title": "Menu bewerken", "config.edit_sub": "– pas je keuzes aan", "config.save": "Wijzigingen opslaan", "dip.edit_title": "Dip wijzigen", "dip.save": "Opslaan",
     "config.incl": "incl.", "config.add_price": "Als menu toevoegen ·", "config.upsell_full": "Voeg een side, drankje & dip toe aan je <b>{burger}</b> – voor maar <b>+{price}</b>.", "config.menu_sub": "+ side + drankje + dip", "config.menu_sub_short": "side, drankje & dip voor maar",
     "banner.veggie_title": "Veggie & Vegan", "banner.veggie_text": "Alle burgers hier zijn er ook als veggieversie (zonder meerprijs), en allemaal ook vegan.", "banner.veggie_note": "Schrijf „Veggie“ in het opmerkingenveld van je bestelling.",
-    "banner.menu_title": "Menudeals", "banner.menu_text": "Maak van elke burger een menu:", "banner.menu_note": "Side, drankje en dip kies je bij het toevoegen.",
+    "banner.menu_title": "Menudeals", "banner.menu_text": "Maak van elke burger een menu", "banner.menu_note": "Side, drankje en dip kies je bij het toevoegen.",
 };
 
 PRODUCTS_I18N.nl = {

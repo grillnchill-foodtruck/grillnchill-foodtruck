@@ -185,7 +185,7 @@ const I18N = {
     "config.edit_title": "Menü bearbeiten", "config.edit_sub": "– passe deine Auswahl an", "config.save": "Änderungen speichern", "dip.edit_title": "Dip ändern", "dip.save": "Speichern",
     "config.incl": "inkl.", "config.add_price": "Als Menü hinzufügen ·", "config.upsell_full": "Ergänze deinen <b>{burger}</b> um Beilage, Getränk & Dip – für nur <b>+{price}</b>.", "config.menu_sub": "+ Beilage + Getränk + Dip", "config.menu_sub_short": "Beilage, Getränk & Dip für nur",
     "banner.veggie_title": "Veggie & Vegan", "banner.veggie_text": "Alle hier gezeigten Burger gibt es als Veggie-Variante (ohne Aufpreis), alle sind gleichzeitig vegan.", "banner.veggie_note": "Bitte gib „Veggie\u201c im Notiz-Feld der Bestellung an.",
-    "banner.menu_title": "Spar-Menüs", "banner.menu_text": "Mach aus jedem Burger ein Menü:", "banner.menu_note": "Beilage, Getränk und Dip wählst du beim Hinzufügen.",
+    "banner.menu_title": "Spar-Menüs", "banner.menu_text": "Mach aus jedem Burger ein Menü", "banner.menu_note": "Beilage, Getränk und Dip wählst du beim Hinzufügen.",
   },
 
 };

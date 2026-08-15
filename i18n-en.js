@@ -178,7 +178,7 @@ I18N.en = {
     "config.edit_title": "Edit meal", "config.edit_sub": "– adjust your choices", "config.save": "Save changes", "dip.edit_title": "Change dip", "dip.save": "Save",
     "config.incl": "incl.", "config.add_price": "Add as meal ·", "config.upsell_full": "Add a side, drink & dip to your <b>{burger}</b> – for just <b>+{price}</b>.", "config.menu_sub": "+ side + drink + dip", "config.menu_sub_short": "side, drink & dip for just",
     "banner.veggie_title": "Veggie & Vegan", "banner.veggie_text": "All burgers shown here are available as a veggie version (no surcharge), and all are vegan too.", "banner.veggie_note": "Please write \u201eVeggie\u201c in the order notes field.",
-    "banner.menu_title": "Meal Deals", "banner.menu_text": "Turn any burger into a meal:", "banner.menu_note": "You choose side, drink and dip when adding.",
+    "banner.menu_title": "Meal Deals", "banner.menu_text": "Turn any burger into a meal", "banner.menu_note": "You choose side, drink and dip when adding.",
 };
 
 PRODUCTS_I18N.en = {

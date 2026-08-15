@@ -178,7 +178,7 @@ I18N.fr = {
     "config.edit_title": "Modifier le menu", "config.edit_sub": "– ajuste tes choix", "config.save": "Enregistrer les modifications", "dip.edit_title": "Changer de dip", "dip.save": "Enregistrer",
     "config.incl": "incl.", "config.add_price": "Ajouter en menu ·", "config.upsell_full": "Ajoute un accompagnement, une boisson & un dip à ton <b>{burger}</b> – pour seulement <b>+{price}</b>.", "config.menu_sub": "+ accompagnement + boisson + dip", "config.menu_sub_short": "accompagnement, boisson & dip pour seulement",
     "banner.veggie_title": "Veggie & Vegan", "banner.veggie_text": "Tous les burgers affichés ici existent en version veggie (sans supplément), et tous sont aussi vegan.", "banner.veggie_note": "Écris simplement « Veggie » dans le champ remarques de la commande.",
-    "banner.menu_title": "Offres menu", "banner.menu_text": "Transforme n'importe quel burger en menu :", "banner.menu_note": "Tu choisis l'accompagnement, la boisson et le dip au moment de l'ajout.",
+    "banner.menu_title": "Offres menu", "banner.menu_text": "Transforme chaque burger en menu", "banner.menu_note": "Tu choisis l'accompagnement, la boisson et le dip au moment de l'ajout.",
 };
 
 PRODUCTS_I18N.fr = {
