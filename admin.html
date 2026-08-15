@@ -642,9 +642,13 @@
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;">
           <h2 style="margin:0">Protokoll</h2>
-          <button class="btn-ghost" id="logReload">Neu laden</button>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+            <button class="btn-ghost" id="logCsv">CSV</button>
+            <button class="btn-ghost" id="logPdf">PDF</button>
+            <button class="btn-ghost" id="logReload">Neu laden</button>
+          </div>
         </div>
-        <p class="hint" style="margin-bottom:.7rem;">Wer hat wann was umgestellt – Status, Push, Bestellungen, Team. Letzte 14 Tage, Aufbewahrung 30 Tage.</p>
+        <p class="hint" style="margin-bottom:.7rem;">Wer hat wann was umgestellt – Status, Push, Bestellungen, Team. Anzeige: letzte 14 Tage. Export umfasst die vollen 30 Tage Aufbewahrung.</p>
         <div id="auditOut"><p class="empty">Protokoll wird geladen …</p></div>
       </div>
     </section>
@@ -2089,6 +2093,83 @@ async function loadAudit(){
   }catch(e){ $('auditOut').innerHTML='<p class="empty">Protokoll konnte nicht geladen werden.</p>'; }
 }
 $('logReload').addEventListener('click',loadAudit);
+
+/* ---------------- Protokoll-Export (CSV & PDF, volle 30 Tage) ---------------- */
+async function auditFetchAll(){
+  const res=await fetch('/.netlify/functions/audit-log?days=30&password='+encodeURIComponent(currentPw),{cache:'no-store'});
+  if(!res.ok) throw new Error('load_failed');
+  const d=await res.json();
+  return d.entries||[];
+}
+function auditStamp(){
+  const n=new Date();
+  const p=x=>String(x).padStart(2,'0');
+  return n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate());
+}
+$('logCsv').addEventListener('click',async()=>{
+  try{
+    const list=await auditFetchAll();
+    if(!list.length){ toast('Keine Einträge zum Export','err'); return; }
+    const rows=[['Datum','Uhrzeit','Name','Rolle','Bereich','Details']];
+    list.forEach(e=>{
+      const w=ordTime(e.at);
+      rows.push([w.d,w.t,e.name||'',e.role||'',e.action||'',e.detail||'']);
+    });
+    // Semikolon-getrennt + BOM: oeffnet in Excel/Numbers direkt korrekt
+    const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='grillnchill-protokoll-'+auditStamp()+'.csv';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast(list.length+' Einträge exportiert');
+  }catch(e){ toast('Export fehlgeschlagen','err'); }
+});
+$('logPdf').addEventListener('click',async()=>{
+  try{
+    const list=await auditFetchAll();
+    if(!list.length){ toast('Keine Einträge zum Export','err'); return; }
+    const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const rows=list.map(e=>{
+      const w=ordTime(e.at);
+      return '<tr><td class="nw">'+esc(w.d)+' '+esc(w.t)+'</td><td>'+esc(e.name)+'</td><td>'+esc(e.action)+'</td><td>'+esc(e.detail)+'</td></tr>';
+    }).join('');
+    const erstellt=new Date().toLocaleString('de-DE',{dateStyle:'long',timeStyle:'short'});
+    // Druckansicht in einem versteckten iFrame – funktioniert auch auf iOS,
+    // wo window.open() haeufig vom Popup-Schutz geblockt wird.
+    const old=document.getElementById('printFrame');
+    if(old) old.remove();
+    const f=document.createElement('iframe');
+    f.id='printFrame';
+    f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    document.body.appendChild(f);
+    const doc=f.contentWindow.document;
+    doc.open();
+    doc.write('<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Grill\'n Chill · Protokoll</title>'
+      +'<style>'
+      +'@page{size:A4 portrait;margin:14mm 12mm;}'
+      +'*{box-sizing:border-box}'
+      +'body{font:11px/1.5 -apple-system,BlinkMacSystemFont,Arial,sans-serif;color:#111;margin:0;}'
+      +'h1{font-size:17px;margin:0 0 2px;}'
+      +'.meta{color:#666;font-size:10px;margin-bottom:12px;}'
+      +'table{width:100%;border-collapse:collapse;}'
+      +'th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#666;'
+      +'border-bottom:1.5px solid #333;padding:0 6px 5px 0;}'
+      +'td{padding:5px 6px 5px 0;border-bottom:1px solid #e2e2e2;vertical-align:top;}'
+      +'td.nw{white-space:nowrap;color:#555;font-variant-numeric:tabular-nums;}'
+      +'tr{break-inside:avoid;}'
+      +'thead{display:table-header-group;}'   /* Kopfzeile auf jeder Seite */
+      +'</style></head><body>'
+      +'<h1>Grill\'n Chill · Änderungs-Protokoll</h1>'
+      +'<div class="meta">Letzte 30 Tage · '+list.length+' Einträge · Export erstellt am '+esc(erstellt)+' von '+esc(currentName||'Admin')+'</div>'
+      +'<table><thead><tr><th>Zeitpunkt</th><th>Wer</th><th>Bereich</th><th>Details</th></tr></thead><tbody>'
+      +rows+'</tbody></table></body></html>');
+    doc.close();
+    const go=()=>{ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(err){ toast('Drucken nicht möglich','err'); } };
+    if(doc.readyState==='complete') setTimeout(go,120); else f.onload=()=>setTimeout(go,120);
+  }catch(e){ toast('Export fehlgeschlagen','err'); }
+});
 
 /* ---------------- Bestell-Alarm (Push auf dieses Gerät) ---------------- */
 function b64ToU8(base64String){
