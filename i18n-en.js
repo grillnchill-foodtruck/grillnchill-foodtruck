@@ -35,10 +35,7 @@ I18N.en = {
     "menu.veggie_title": "Veggie & Vegan", "menu.veggie_text": "Our Classic, Cheese, Chili-Cheese and White BBQ burgers are also available as their own veggie/vegan version – at no extra charge. You'll find them directly in the menu under \"Veggie/Vegan\". All veggie burgers are vegan too.",
     "menu.double_title": "Double Patty", "menu.double_text": "All burgers can be ordered with a double patty – just select it on the card in the order terminal. Surcharge: +€2.50. The Kubis Special already comes with a double patty.",
     "menu.allergen_title": "Allergens & additives",
-    "menu.allergen1": "contains gluten (wheat)", "menu.allergen2": "contains milk / lactose (cheese, sauce)",
-    "menu.allergen3": "contains mustard (burger sauce, BBQ sauce)", "menu.allergen4": "may contain traces of egg",
-    "menu.allergen5": "may contain traces of soy",
-    "menu.allergen_note": "Have an allergy that isn't listed? Just let us know in the notes field – we'll do our best.",
+    "menu.allergen1": "Cereals containing gluten", "menu.allergen2": "Crustaceans", "menu.allergen3": "Eggs", "menu.allergen4": "Fish", "menu.allergen5": "Peanuts", "menu.allergen6": "Soybeans", "menu.allergen7": "Milk (incl. lactose)", "menu.allergen8": "Tree nuts", "menu.allergen9": "Celery", "menu.allergen10": "Mustard", "menu.allergen11": "Sesame seeds", "menu.allergen12": "Sulphur dioxide and sulphites", "menu.allergen13": "Lupin", "menu.allergen14": "Molluscs", "menu.zusatz1": "with colouring", "menu.zusatz2": "with preservative", "menu.zusatz3": "with antioxidant", "menu.zusatz4": "with flavour enhancer", "menu.zusatz5": "sulphured", "menu.zusatz6": "blackened", "menu.zusatz7": "waxed", "menu.zusatz8": "with phosphate", "menu.zusatz9": "with sweetener", "menu.zusatz10": "contains a source of phenylalanine", "menu.zusatz11": "contains caffeine", "menu.zusatz12": "contains quinine", "menu.traces": "May contain traces of", "badge.additives": "Additives", "badge.traces_short": "Traces", "menu.allergen_note": "Have an allergy that isn't listed? Just let us know in the notes field – we'll do our best.",
 
     "story.eyebrow": "Our story", "story.h2": "Street food with character from Brackwede",
     "story.p1": "Grilln Chill is about honest food: burgers made from fresh ingredients, grilled when you order. Modern street food from Brackwede, no gimmicks.",

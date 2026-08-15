@@ -3187,6 +3187,24 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   background: rgba(232, 90, 36, 0.12);
   color: var(--color-cream);
 }
+/* Grundpreis je Liter: gehört zum Preis, tritt aber zurück. */
+.menu-card-base {
+  display: block;
+  font-family: var(--font-body, inherit);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0;
+  margin-top: 1px;
+}
+/* Spuren und Zusatzstoffe im Aufklapp-Bereich absetzen. */
+.allergen-detail .allergen-trace,
+.allergen-detail .allergen-add {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
 .tip-hint {
   margin: 0.55rem 0 0;
   font-size: 0.78rem;
@@ -5802,32 +5820,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 <!-- ============================================
      COOKIE BANNER
      ============================================ -->
-<div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Cookie-Einstellungen" data-i18n-aria="a11y.cookies">
-  <h4><span data-i18n="cookie.title">🍪 Cookies &amp; Datenschutz</span></h4>
-  <p>
-    <span data-i18n="cookie.text">Wir verwenden Cookies, um unsere Website zu betreiben und dein Erlebnis zu verbessern. Notwendige Cookies sind für den Bestellvorgang erforderlich. Optionale Cookies helfen uns, die Seite zu verbessern.</span>
-    <a href="#" onclick="openModal('datenschutz'); return false;" data-i18n="cookie.more">Mehr in unserer Datenschutzerklärung</a>.
-  </p>
-  <div class="cookie-options">
-    <label class="cookie-option">
-      <input type="checkbox" checked disabled />
-      <span><strong data-i18n="cookie.needed">Notwendig</strong> <span data-i18n="cookie.needed_desc">Bestellvorgang, Warenkorb, Sicherheit</span></span>
-    </label>
-    <label class="cookie-option">
-      <input type="checkbox" id="cookieAnalytics" />
-      <span><strong data-i18n="cookie.stats">Statistik</strong> <span data-i18n="cookie.stats_desc">Anonyme Nutzungsanalyse</span></span>
-    </label>
-    <label class="cookie-option">
-      <input type="checkbox" id="cookieMarketing" />
-      <span><strong data-i18n="cookie.marketing">Marketing</strong> <span data-i18n="cookie.marketing_desc">Personalisierte Inhalte &amp; Karten-Einbettung</span></span>
-    </label>
-  </div>
-  <div class="cookie-actions">
-    <button class="btn btn-ghost" onclick="toggleCookieOptions()" data-i18n="cookie.details">Details</button>
-    <button class="btn btn-secondary" onclick="rejectCookies()" data-i18n="cookie.reject">Nur notwendige</button>
-    <button class="btn btn-primary" onclick="acceptAllCookies()" data-i18n="cookie.accept">Alle akzeptieren</button>
-  </div>
-</div>
+<!-- Cookie-Banner entfernt: Die Seite setzt keine Cookies (kein document.cookie,
+     keine Fremdressourcen, Statistik nur als anonymer Tageszähler ohne Kennung).
+     Der genutzte localStorage dient allein der angeforderten Bestellfunktion
+     (§ 25 Abs. 2 Nr. 2 TDDDG) und ist einwilligungsfrei. Die Einwilligung steuerte
+     nachweislich nichts. Die Karte lädt Google erst nach Klick (Zwei-Klick).
+     WICHTIG: Kommen Google Analytics, Meta Pixel oder eine direkt eingebettete
+     Karte hinzu, wird die Einwilligung wieder Pflicht. -->
 
 <!-- ============================================
      LEGAL MODALS
@@ -5997,37 +5996,37 @@ const TEST_MODE_NO_BACKEND = false;
    ==================================================================== */
 const MENU = [
   // BURGER (mit Fleisch)
-  { id: 'classic',     cat: 'burger', emoji: '🍔', image: 'produktbilder/classic.webp', name: "Classic Burger",       desc: "100% Beef-Patty, Salat, Tomate, Zwiebel, Hausgemachte Burgersauce", price: 8.00, allergens: '1, 3', tag: null },
-  { id: 'cheese',      cat: 'burger', emoji: '🍔', image: 'produktbilder/cheese.webp', name: "Cheeseburger",         desc: "Beef-Patty mit Käse, Salat, Tomate, Zwiebel, Burgersauce", price: 8.50, allergens: '1, 2, 3', tag: { label: 'BELIEBT', class: 'popular' } },
-  { id: 'chilicheese', cat: 'burger', emoji: '🌶️', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger",  desc: "Beef-Patty, Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 2, 3', tag: { label: 'SCHARF', class: 'spicy' } },
-  { id: 'whitebbq',    cat: 'burger', emoji: '🍔', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger",     desc: "Beef-Patty mit Champignons, Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 2, 3', tag: null },
-  { id: 'crispy',      cat: 'burger', emoji: '🍗', image: 'produktbilder/crispy.webp', name: "Crispy Chicken Burger", desc: "Knusprig panierte Hähnchenbrust, Salat, Tomate, Sauce", price: 9.00, allergens: '1, 3, 4', tag: null },
-  { id: 'sucuk',       cat: 'burger', emoji: '🌶️', image: 'produktbilder/sucuk.webp', name: "Sucuk Burger",         desc: "Beef-Patty mit pikanter Sucuk, Käse, Salat, Sauce", price: 9.00, allergens: '1, 2, 3', tag: null },
-  { id: 'kubis',       cat: 'burger', emoji: '👑', image: 'produktbilder/kubis.webp', name: "Kubis Special",         desc: "Smashburger, Double Patty, mit Käse, Special-Topping", price: 11.00, allergens: '1, 2, 3', tag: { label: 'CHEF-EMPFEHLUNG', class: 'new' } },
+  { id: 'classic',     cat: 'burger', emoji: '🍔', image: 'produktbilder/classic.webp', name: "Classic Burger",       desc: "100% Beef-Patty, Salat, Tomate, Zwiebel, Hausgemachte Burgersauce", price: 8.00, allergens: '1, 10', tag: null },
+  { id: 'cheese',      cat: 'burger', emoji: '🍔', image: 'produktbilder/cheese.webp', name: "Cheeseburger",         desc: "Beef-Patty mit Käse, Salat, Tomate, Zwiebel, Burgersauce", price: 8.50, allergens: '1, 7, 10', tag: { label: 'BELIEBT', class: 'popular' } },
+  { id: 'chilicheese', cat: 'burger', emoji: '🌶️', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger",  desc: "Beef-Patty, Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 7, 10', tag: { label: 'SCHARF', class: 'spicy' } },
+  { id: 'whitebbq',    cat: 'burger', emoji: '🍔', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger",     desc: "Beef-Patty mit Champignons, Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 7, 10', tag: null },
+  { id: 'crispy',      cat: 'burger', emoji: '🍗', image: 'produktbilder/crispy.webp', name: "Crispy Chicken Burger", desc: "Knusprig panierte Hähnchenbrust, Salat, Tomate, Sauce", price: 9.00, allergens: '1, 10', spuren: '3', tag: null },
+  { id: 'sucuk',       cat: 'burger', emoji: '🌶️', image: 'produktbilder/sucuk.webp', name: "Sucuk Burger",         desc: "Beef-Patty mit pikanter Sucuk, Käse, Salat, Sauce", price: 9.00, allergens: '1, 7, 10', tag: null },
+  { id: 'kubis',       cat: 'burger', emoji: '👑', image: 'produktbilder/kubis.webp', name: "Kubis Special",         desc: "Smashburger, Double Patty, mit Käse, Special-Topping", price: 11.00, allergens: '1, 7, 10', tag: { label: 'CHEF-EMPFEHLUNG', class: 'new' } },
 
   // VEGGIE / VEGAN BURGER (100% Gemüse-Patty, eigene Produkte)
-  { id: 'classic-veg',     cat: 'burger', emoji: '🌱', image: 'produktbilder/classic.webp', name: "Classic Burger (Veggie/Vegan)",      desc: "100% Gemüse-Patty, Salat, Tomate, Zwiebel, Hausgemachte Burgersauce", price: 8.00, allergens: '1, 3', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-  { id: 'cheese-veg',      cat: 'burger', emoji: '🌱', image: 'produktbilder/cheese.webp', name: "Cheeseburger (Veggie/Vegan)",        desc: "100% Gemüse-Patty mit veganem Käse, Salat, Tomate, Zwiebel, Burgersauce", price: 8.50, allergens: '1, 2, 3', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-  { id: 'chilicheese-veg', cat: 'burger', emoji: '🌱', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger (Veggie/Vegan)", desc: "100% Gemüse-Patty, veganer Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 2, 3', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-  { id: 'whitebbq-veg',    cat: 'burger', emoji: '🌱', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger (Veggie/Vegan)",    desc: "100% Gemüse-Patty mit Champignons, veganer Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 2, 3', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
+  { id: 'classic-veg',     cat: 'burger', emoji: '🌱', image: 'produktbilder/classic.webp', name: "Classic Burger (Veggie/Vegan)",      desc: "100% Gemüse-Patty, Salat, Tomate, Zwiebel, Hausgemachte Burgersauce", price: 8.00, allergens: '1, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
+  { id: 'cheese-veg',      cat: 'burger', emoji: '🌱', image: 'produktbilder/cheese.webp', name: "Cheeseburger (Veggie/Vegan)",        desc: "100% Gemüse-Patty mit veganem Käse, Salat, Tomate, Zwiebel, Burgersauce", price: 8.50, allergens: '1, 7, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
+  { id: 'chilicheese-veg', cat: 'burger', emoji: '🌱', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger (Veggie/Vegan)", desc: "100% Gemüse-Patty, veganer Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 7, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
+  { id: 'whitebbq-veg',    cat: 'burger', emoji: '🌱', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger (Veggie/Vegan)",    desc: "100% Gemüse-Patty mit Champignons, veganer Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 7, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
 
   // SNACKS & BEILAGEN
-  { id: 'nug6',        cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "6er Chicken Nuggets",   desc: "Knusprig paniert, mit Dip nach Wahl", price: 4.00, allergens: '1, 4, 5', includesDip: true, tag: null },
-  { id: 'nug9',        cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "9er Chicken Nuggets",   desc: "Knusprig paniert, mit Dip nach Wahl", price: 5.00, allergens: '1, 4, 5', includesDip: true, tag: { label: 'BELIEBT', class: 'popular' } },
-  { id: 'nug20',       cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "20er Chicken Nuggets",  desc: "Knusprig paniert, mit Dip nach Wahl – perfekt zum Teilen", price: 10.00, allergens: '1, 4, 5', includesDip: true, tag: { label: 'TO SHARE', class: 'new' } },
+  { id: 'nug6',        cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "6er Chicken Nuggets",   desc: "Knusprig paniert, mit Dip nach Wahl", price: 4.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: null },
+  { id: 'nug9',        cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "9er Chicken Nuggets",   desc: "Knusprig paniert, mit Dip nach Wahl", price: 5.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: { label: 'BELIEBT', class: 'popular' } },
+  { id: 'nug20',       cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "20er Chicken Nuggets",  desc: "Knusprig paniert, mit Dip nach Wahl – perfekt zum Teilen", price: 10.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: { label: 'TO SHARE', class: 'new' } },
   { id: 'pommes',      cat: 'sides', emoji: '🍟', image: 'produktbilder/pommes.webp', name: "Pommes",                desc: "Knusprige goldbraune Pommes inkl. 1 Dip", price: 4.00, veggie: true, vegan: true, includesDip: true, tag: { label: 'VEGGIE', class: 'veggie' } },
   { id: 'spommes',     cat: 'sides', emoji: '🍠', image: 'produktbilder/spommes.webp', name: "Süßkartoffelpommes",    desc: "Knusprig frittiert inkl. 1 Dip", price: 5.00, veggie: true, vegan: true, includesDip: true, tag: { label: 'VEGGIE', class: 'veggie' } },
 
   // DIPS
-  { id: 'dip-mayo',    cat: 'dips', emoji: '🥚', name: "Dip: Mayo",              desc: "Cremige Mayonnaise", price: 0.50, tag: null },
+  { id: 'dip-mayo',    cat: 'dips', emoji: '🥚', name: "Dip: Mayo",              desc: "Cremige Mayonnaise", price: 0.50, allergens: '3', tag: null },
   { id: 'dip-ket',     cat: 'dips', emoji: '🍅', name: "Dip: Ketchup",           desc: "Klassischer Tomaten-Ketchup", price: 0.50, tag: null },
   { id: 'dip-mango',   cat: 'dips', emoji: '🥭', name: "Dip: Mango-Curry",       desc: "Fruchtig-würzig", price: 0.50, tag: null },
   { id: 'dip-sweetsour', cat: 'dips', emoji: '🍯', name: "Dip: Süß-Sauer",        desc: "Asia-Style", price: 0.50, tag: null },
 
   // GETRÄNKE
-  { id: 'fritz-kola',  cat: 'drinks', emoji: '🥤', image: 'produktbilder/fritz-kola.webp', name: "Fritz Kola",            desc: "0,33 l Flasche", price: 2.50, tag: null },
-  { id: 'fritz-or',    cat: 'drinks', emoji: '🍊', image: 'produktbilder/fritz-or.webp', name: "Fritz Orange",          desc: "0,33 l Flasche", price: 2.50, tag: null },
-  { id: 'fritz-zero',  cat: 'drinks', emoji: '🥤', image: 'produktbilder/fritz-zero.webp', name: "Fritz Kola Super Zero", desc: "0,33 l Flasche, zuckerfrei", price: 2.50, tag: null },
+  { id: 'fritz-kola',  cat: 'drinks', emoji: '🥤', image: 'produktbilder/fritz-kola.webp', name: "Fritz Kola",            desc: "0,33 l Flasche", price: 2.50, liter: 0.33, zusatz: '11', tag: null },
+  { id: 'fritz-or',    cat: 'drinks', emoji: '🍊', image: 'produktbilder/fritz-or.webp', name: "Fritz Orange",          desc: "0,33 l Flasche", price: 2.50, liter: 0.33, tag: null },
+  { id: 'fritz-zero',  cat: 'drinks', emoji: '🥤', image: 'produktbilder/fritz-zero.webp', name: "Fritz Kola Super Zero", desc: "0,33 l Flasche, zuckerfrei", price: 2.50, liter: 0.33, zusatz: '9, 11', tag: null },
 ];
 
 // Burger die als Veggie / Vegan verfügbar sind (Hinweis auf Produkt-Karten)
@@ -7043,15 +7042,38 @@ function renderMenu(animate = false) {
       return;
     }
 
-    // Badges (Halal/Allergene)
+    // Badges: Halal, Allergene, Zusatzstoffe. Die Kennzeichnung muss im
+    // Fernabsatz vor dem Kauf sichtbar sein (Art. 14 LMIV), Zusatzstoffe
+    // verlangt die ZZulV – deshalb steht beides auf der Karte, nicht erst
+    // im Warenkorb.
+    const codes = f => (item[f] || '').split(',').map(x => x.trim()).filter(Boolean);
+    const aCodes = codes('allergens');   // enthält
+    const sCodes = codes('spuren');      // kann Spuren enthalten
+    const zCodes = codes('zusatz');      // Zusatzstoffe
+    const hatInfo = aCodes.length || sCodes.length || zCodes.length;
+
     let badges = '';
     if (item.cat === 'burger') badges += `<span class="info-badge info-badge-halal">☪ ${t('badge.halal')}</span>`;
-    if (item.allergens) badges += `<button type="button" class="info-badge info-badge-allergens allergen-toggle" onclick="toggleAllergens(this)" aria-expanded="false">${t('badge.allergens')}: ${item.allergens} <span class="allergen-i">ⓘ</span></button>`;
-    let allergenDetail = '';
-    if (item.allergens) {
-      const aCodes = item.allergens.split(',').map(s => s.trim()).filter(Boolean);
-      allergenDetail = `<div class="allergen-detail" hidden>${aCodes.map(c => `<div><strong>${c}</strong> ${t('menu.allergen' + c)}</div>`).join('')}</div>`;
+    if (hatInfo) {
+      const kurz = aCodes.length
+        ? `${t('badge.allergens')}: ${aCodes.join(', ')}`
+        : (zCodes.length ? t('badge.additives') : t('badge.traces_short'));
+      badges += `<button type="button" class="info-badge info-badge-allergens allergen-toggle" onclick="toggleAllergens(this)" aria-expanded="false">${kurz} <span class="allergen-i">ⓘ</span></button>`;
     }
+    let allergenDetail = '';
+    if (hatInfo) {
+      const zeilen = aCodes.map(c => `<div><strong>${c}</strong> ${t('menu.allergen' + c)}</div>`);
+      if (sCodes.length) {
+        zeilen.push(`<div class="allergen-trace">${t('menu.traces')}: ${sCodes.map(c => t('menu.allergen' + c)).join(', ')}</div>`);
+      }
+      if (zCodes.length) {
+        zeilen.push(`<div class="allergen-add"><strong>${t('badge.additives')}:</strong> ${zCodes.map(c => t('menu.zusatz' + c)).join(' · ')}</div>`);
+      }
+      allergenDetail = `<div class="allergen-detail" hidden>${zeilen.join('')}</div>`;
+    }
+    // Grundpreis je Liter – bei Fertigpackungen verlangt ihn die PAngV
+    const grundpreis = item.liter
+      ? `<span class="menu-card-base">${formatPrice(item.price / item.liter)}/l</span>` : '';
 
     const hasDoubleOption = canHaveDouble(item);
     const singleKey = cartKey(item.id, false);
@@ -7101,7 +7123,7 @@ function renderMenu(animate = false) {
       const qty = singleQty;
       actionBlock = `
         <div class="menu-card-footer">
-          <span class="menu-card-price">${formatPrice(item.price)}</span>
+          <span class="menu-card-price">${formatPrice(item.price)}${grundpreis}</span>
           ${qty > 0 ? `
             <div class="qty-control">
               <button onclick="updateQty('${singleKey}', -1)" aria-label="${t('a11y.less')}">−</button>
@@ -7117,7 +7139,7 @@ function renderMenu(animate = false) {
 
     if (soldOut) actionBlock = `
         <div class="menu-card-footer">
-          <span class="menu-card-price">${formatPrice(item.price)}</span>
+          <span class="menu-card-price">${formatPrice(item.price)}${grundpreis}</span>
           <span class="soldout-pill">${t('shop.soldout')}</span>
         </div>`;
 
@@ -9779,39 +9801,11 @@ function toggleZones() {
   }
 }
 
-function initCookies() {  const stored = localStorage.getItem(COOKIE_KEY);
-  if (!stored) {
-    setTimeout(() => {
-      document.getElementById('cookieBanner').classList.add('show');
-    }, 800);
-  } else {
-    applyCookieConsent(JSON.parse(stored));
-  }
-}
-function toggleCookieOptions() {
-  document.getElementById('cookieBanner').classList.toggle('show-options');
-}
-function acceptAllCookies() {
-  saveCookieConsent({ necessary: true, analytics: true, marketing: true });
-}
-function rejectCookies() {
-  saveCookieConsent({ necessary: true, analytics: false, marketing: false });
-}
-function saveCookieConsent(consent) {
-  consent.timestamp = new Date().toISOString();
-  try {
-    localStorage.setItem(COOKIE_KEY, JSON.stringify(consent));
-  } catch(e) {}
-  document.getElementById('cookieBanner').classList.remove('show');
-  applyCookieConsent(consent);
-}
-function applyCookieConsent(consent) {
-  // Hier später echte Tracking-Scripts laden (z.B. Plausible, Matomo)
-  console.log('Cookie-Einstellungen:', consent);
-}
-function resetCookieConsent() {
-  try { localStorage.removeItem(COOKIE_KEY); } catch(e) {}
-  location.reload();
+/* Kein Einwilligungs-Banner mehr – siehe Begründung beim entfernten Markup.
+   Altlast aufräumen: Wer früher eingewilligt hat, hat den Eintrag noch im
+   Browser. Er steuert nichts mehr, also löschen wir ihn einmalig. */
+function initCookies() {
+  try { localStorage.removeItem(COOKIE_KEY); } catch (e) {}
 }
 
 /* ====================================================================
@@ -9864,8 +9858,8 @@ const LEGAL = {
 
       <h4>Haftung für Inhalte</h4>
       <p>
-        Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen
-        Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind
+        Als Diensteanbieter sind wir gemäß § 7 Abs. 1 DDG für eigene Inhalte auf diesen
+        Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind
         wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte
         fremde Informationen zu überwachen.
       </p>
@@ -9917,10 +9911,27 @@ const LEGAL = {
 
       <h4>4. Cookies &amp; lokaler Speicher</h4>
       <p>
-        Wir verwenden technisch notwendige Cookies und Local Storage (Warenkorb,
-        Cookie-Einstellungen).
-        Optionale Statistik- und Marketing-Cookies werden nur nach deiner Einwilligung gesetzt.
-        Rechtsgrundlage: § 25 TTDSG, Art. 6 Abs. 1 lit. a DSGVO.
+        Diese Website setzt <strong>keine Cookies</strong> – weder eigene noch von Dritten.
+        Es sind auch keine fremden Skripte, Schriften oder Zählpixel eingebunden.
+      </p>
+      <p>
+        Wir nutzen ausschließlich den lokalen Speicher deines Browsers (localStorage), und zwar
+        nur für Funktionen, die du selbst angefordert hast: Warenkorb, Sprachwahl, Kundenkonto,
+        Treuestand, Benachrichtigungs-Einstellung und offene Zahlungen. Diese Daten bleiben auf
+        deinem Gerät. Weil sie für den angeforderten Dienst erforderlich sind, ist dafür nach
+        § 25 Abs. 2 Nr. 2 TDDDG keine Einwilligung nötig – deshalb siehst du bei uns auch kein
+        Einwilligungs-Banner.
+      </p>
+      <p>
+        Unsere Besucherstatistik zählt lediglich, wie oft bestimmte Ereignisse pro Tag eintreten
+        (z.&nbsp;B. Seitenaufrufe oder abgeschlossene Bestellungen). Gespeichert wird nur ein
+        Tageszähler; <strong>keine IP-Adressen, keine Kennungen, kein Nutzungsverlauf</strong>.
+        Ein Personenbezug entsteht dabei nicht.
+      </p>
+      <p>
+        Die Karte auf dieser Seite lädt Google erst, wenn du auf „Karte laden" klickst. Erst dann
+        werden Daten an Google übertragen. Rechtsgrundlage ist deine Einwilligung
+        (Art. 6 Abs. 1 lit. a DSGVO).
       </p>
 
       <h4>5. Bestellung &amp; Bestellbestätigung</h4>
@@ -10077,7 +10088,8 @@ const LEGAL = {
       erfolgt die Belastung mit Abschluss des Bezahlvorgangs.</p>
       <h4>§ 3 Preise</h4>
       <p>Alle Preise sind Endpreise inklusive der gesetzlichen Umsatzsteuer. Liefergebühren und
-      ein etwaiges freiwilliges Trinkgeld werden vor Abschluss der Bestellung klar ausgewiesen.</p>
+      ein etwaiges freiwilliges Trinkgeld werden vor Abschluss der Bestellung klar ausgewiesen.
+      Bei Flaschengetränken weisen wir zusätzlich den Grundpreis je Liter aus.</p>
       <h4>§ 4 Lieferung</h4>
       <p>Wir liefern im Umkreis von ca. 13&nbsp;km um den Foodtruck-Standort. Es gelten
       entfernungsabhängige Mindestbestellwerte und Liefergebühren: Zone&nbsp;1 (bis 3&nbsp;km):
@@ -10116,10 +10128,12 @@ const LEGAL = {
       Widerrufsrecht für Verbraucher bleibt unberührt und erlischt mit vollständiger Einlösung.</p>
       <h4>§ 9 Treuebonus</h4>
       <p>Ab 100,00&nbsp;€ kumuliertem Bestellwert über diese Website schenken wir dir 5,00&nbsp;€
-      Rabatt auf eine folgende Bestellung ab 15,00&nbsp;€ Bestellwert. Der Zählerstand wird
-      ausschließlich lokal in deinem Browser gespeichert und ist an Gerät und Browser gebunden;
-      beim Löschen der Browserdaten oder einem Gerätewechsel kann der Stand verfallen – ein Ersatz
-      oder eine Barauszahlung ist ausgeschlossen. Der Treuebonus ist nicht mit Aktionscodes oder
+      Rabatt auf eine folgende Bestellung ab 15,00&nbsp;€ Bestellwert.
+      <strong>Mit Kundenkonto</strong> wird der Zählerstand deiner E-Mail-Adresse zugeordnet und
+      bleibt dir auch bei einem Geräte- oder Browserwechsel erhalten.
+      <strong>Ohne Kundenkonto</strong> wird er nur lokal in deinem Browser gespeichert und ist an
+      Gerät und Browser gebunden; beim Löschen der Browserdaten oder einem Gerätewechsel kann der
+      Stand dann verfallen – ein Ersatz oder eine Barauszahlung ist in diesem Fall ausgeschlossen. Der Treuebonus ist nicht mit Aktionscodes oder
       Gutscheinen kombinierbar.</p>
       <h4>§ 10 Verfügbarkeit &amp; Öffnungszeiten</h4>
       <p>Es gelten die auf der Website angezeigten Öffnungszeiten. Einzelne Produkte können
@@ -10203,9 +10217,9 @@ const LEGAL = {
       Push-Einstellung. Diese Daten bleiben auf deinem Gerät und werden nicht zu Werbezwecken
       ausgewertet. Du kannst sie jederzeit über die Einstellungen deines Browsers löschen –
       dabei gehen Warenkorb und Treuebonus-Stand verloren.</p>
-      <p>Beim Online-Bezahlen über SumUp sowie bei der eingebetteten Google-Maps-Karte können die
-      jeweiligen Anbieter eigene, technisch notwendige Cookies setzen. Details dazu findest du in
-      unserer Datenschutzerklärung.</p>
+      <p>Die Karte laden wir erst, wenn du auf „Karte laden" klickst – vorher wird nichts an Google
+      übertragen. Beim Online-Bezahlen wechselst du auf die Seite von SumUp; dort gelten die
+      Cookies und Datenschutzbestimmungen von SumUp. Details in unserer Datenschutzerklärung.</p>
     `
   }
 };

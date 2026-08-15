@@ -35,10 +35,7 @@ I18N.nl = {
     "menu.veggie_title": "Veggie & Vegan", "menu.veggie_text": "Onze Classic, Cheese, Chili-Cheese en White BBQ burgers zijn er ook als eigen veggie/vegan versie – zonder meerprijs. Je vindt ze direct in het menu onder \"Veggie/Vegan\". Alle veggieburgers zijn ook vegan.",
     "menu.double_title": "Dubbele patty", "menu.double_text": "Alle burgers kun je bestellen met dubbele patty – selecteer het gewoon op de kaart in de bestelterminal. Meerprijs: +€2.50. De Kubis Special komt standaard al met dubbele patty.",
     "menu.allergen_title": "Allergenen & additieven",
-    "menu.allergen1": "bevat gluten (tarwe)", "menu.allergen2": "bevat melk / lactose (kaas, saus)",
-    "menu.allergen3": "bevat mosterd (burgersaus, BBQ-saus)", "menu.allergen4": "kan sporen van ei bevatten",
-    "menu.allergen5": "kan sporen van soja bevatten",
-    "menu.allergen_note": "Heb je een allergie die er niet bij staat? Zet het gewoon in het opmerkingenveld – we doen ons best.",
+    "menu.allergen1": "Glutenbevattende granen", "menu.allergen2": "Schaaldieren", "menu.allergen3": "Eieren", "menu.allergen4": "Vis", "menu.allergen5": "Pinda's", "menu.allergen6": "Soja", "menu.allergen7": "Melk (incl. lactose)", "menu.allergen8": "Noten", "menu.allergen9": "Selderij", "menu.allergen10": "Mosterd", "menu.allergen11": "Sesamzaad", "menu.allergen12": "Zwaveldioxide en sulfiet", "menu.allergen13": "Lupine", "menu.allergen14": "Weekdieren", "menu.zusatz1": "met kleurstof", "menu.zusatz2": "met conserveermiddel", "menu.zusatz3": "met antioxidant", "menu.zusatz4": "met smaakversterker", "menu.zusatz5": "gezwaveld", "menu.zusatz6": "gezwart", "menu.zusatz7": "gewast", "menu.zusatz8": "met fosfaat", "menu.zusatz9": "met zoetstof", "menu.zusatz10": "bevat een bron van fenylalanine", "menu.zusatz11": "bevat cafeïne", "menu.zusatz12": "bevat kinine", "menu.traces": "Kan sporen bevatten van", "badge.additives": "Additieven", "badge.traces_short": "Sporen", "menu.allergen_note": "Heb je een allergie die er niet bij staat? Zet het gewoon in het opmerkingenveld – we doen ons best.",
 
     "story.eyebrow": "Ons verhaal", "story.h2": "Streetfood met karakter uit Brackwede",
     "story.p1": "Bij Grilln Chill draait het om eerlijk eten: burgers van verse ingrediënten, gegrild op het moment dat je bestelt. Modern streetfood uit Brackwede, zonder poespas.",
