@@ -2316,10 +2316,10 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   .cart-item-qty button:active, .cart-item-edit:active,
   .cart-item-remove:active, .mode-fork-btn:active { transform: none; }
 }
-/* Ausstieg aus der Gruppe – zweimal auf der Seite (Menue-Zeile und Overlay),
-   deshalb eine gemeinsame Gestaltung. Vorher war es im Overlay ein
-   unterstrichener Textlink, den man leicht uebersieht. */
-.grp-discard-btn {
+/* Kleiner Nebenknopf. Genutzt fuer Gruppen-Ausstiege und Kontoaktionen –
+   ueberall dort, wo vorher unterstrichene Textlinks standen, die man
+   leicht uebersieht. */
+.mini-btn, .grp-discard-btn {
   display: inline-flex; align-items: center; justify-content: center;
   gap: 0.4rem;
   background: none;
@@ -2334,16 +2334,70 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   min-height: 40px;
   transition: transform .12s ease-out, border-color .15s, color .15s, background .15s;
 }
-.grp-discard-btn svg { width: 15px; height: 15px; flex: none; }
-.grp-discard-btn:active { transform: scale(0.96); }
+.mini-btn svg, .grp-discard-btn svg { width: 15px; height: 15px; flex: none; }
+.mini-btn:active, .grp-discard-btn:active { transform: scale(0.96); }
 @media (hover: hover) and (pointer: fine) {
-  .grp-discard-btn:hover {
+  .mini-btn:hover, .grp-discard-btn:hover {
     border-color: var(--color-error);
     color: var(--color-error);
     background: rgba(224, 72, 72, 0.08);
   }
 }
-@media (prefers-reduced-motion: reduce) { .grp-discard-btn:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .mini-btn:active, .grp-discard-btn:active { transform: none; } }
+/* Konto loeschen ist nicht umkehrbar – das sagt der Knopf schon vor dem Tippen. */
+.mini-btn-danger { border-color: rgba(224, 72, 72, 0.45); color: rgba(255, 176, 176, 0.9); }
+@media (hover: hover) and (pointer: fine) {
+  .mini-btn-danger:hover { border-color: var(--color-error); color: var(--color-error); background: rgba(224,72,72,0.1); }
+}
+.acc-actions { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+
+/* Gespeicherte Adresse: Name, Anschrift und die beiden Aktionen. */
+.acc-adr {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: var(--color-bg-elev);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.5rem;
+}
+.acc-adr-main { flex: 1; min-width: 0; }
+.acc-adr-main b { font-size: 0.82rem; }
+.acc-adr-main span { font-size: 0.78rem; color: var(--color-cream-dim); }
+.acc-adr-act {
+  flex: none;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: 8px;
+  background: none; border: 1px solid transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: transform .12s ease-out, color .15s, border-color .15s;
+}
+.acc-adr-act svg { width: 15px; height: 15px; }
+.acc-adr-act:active { transform: scale(0.9); }
+@media (hover: hover) and (pointer: fine) {
+  .acc-adr-act:hover { color: var(--color-cream); border-color: var(--color-border-bright); }
+  .acc-adr-act.act-del:hover { color: var(--color-error); border-color: rgba(224,72,72,0.5); }
+}
+@media (prefers-reduced-motion: reduce) { .acc-adr-act:active { transform: none; } }
+
+/* Namensvorschlaege beim Anlegen und Umbenennen einer Adresse. */
+.adr-tag-row { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+.adr-tag-row .tag-label { font-size: 0.72rem; color: var(--color-text-muted); font-weight: 600; }
+.adr-tag {
+  background: none;
+  border: 1px dashed var(--color-border-bright);
+  color: var(--color-cream-dim);
+  font-family: inherit; font-size: 0.75rem; font-weight: 700;
+  padding: 0.35rem 0.7rem; border-radius: 999px; cursor: pointer;
+  transition: transform .12s ease-out, border-color .15s, color .15s;
+}
+.adr-tag:active { transform: scale(0.94); }
+@media (hover: hover) and (pointer: fine) {
+  .adr-tag:hover { border-style: solid; border-color: var(--color-orange); color: var(--color-orange-bright); }
+}
+@media (prefers-reduced-motion: reduce) { .adr-tag:active { transform: none; } }
+
 /* Im Overlay steht der Ausstieg allein und mittig unter der Liste. */
 .grp-discard-center { display: flex; justify-content: center; margin-top: 1rem; }
 
@@ -2355,8 +2409,15 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   flex-wrap: wrap;
 }
 @media (max-width: 620px) {
+  /* Eigene volle Zeile – vorher wurde der zweite Knopf abgeschnitten. */
   .grp-entry-actions { flex: 1 1 100%; }
-  .grp-entry-actions > button { flex: 1 1 auto; min-width: 0; }
+  /* Der Hauptweg nimmt die ganze Breite, der Ausstieg sitzt schmal und
+     mittig darunter. Gleich breit haetten beide dasselbe Gewicht gehabt. */
+  .grp-entry-actions > #groupEntryBtn { flex: 1 1 100%; }
+  .grp-entry-actions > #groupDiscardBtn {
+    flex: 0 0 auto;
+    margin-inline: auto;
+  }
 }
 .mode-q-inline {
   text-align: center;
@@ -6183,15 +6244,31 @@ function renderAccProfile(el) {
   const loyLine = (L.rewards > 0)
     ? `<div class="loyalty-reward-hint" style="margin-top:0.4rem;">${t('acc.reward_ready').replace('{n}', L.rewards).replace('{amount}', formatPrice(5))}</div>`
     : `<div class="loyalty-hint" style="margin-top:0.4rem;">${t('loyalty.hint').replace('{n}', formatPrice(Math.max(0, L.goal - L.spent))).replace('{amount}', formatPrice(5))}</div>`;
-  const addr = (p.addresses || []).map((a, i) =>
-    `<div style="display:flex;align-items:center;gap:0.6rem;background:var(--color-bg-elev);border:1px solid var(--color-border);border-radius:10px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
-      <div style="flex:1;min-width:0;"><b style="font-size:0.8rem;">${escG(a.label)}</b><br><span style="font-size:0.78rem;color:var(--color-cream-dim);">${escG(a.street)}, ${escG(a.zip)} ${escG(a.city)}</span></div>
-      <button type="button" onclick="accDeleteAddress(${i})" aria-label="${t('a11y.delete')}" style="background:none;border:none;color:var(--color-text-muted);cursor:pointer;font-size:1rem;">×</button>
-    </div>`).join('');
+  const addr = (p.addresses || []).map((a, i) => {
+    // Wird diese Adresse gerade umbenannt, steht statt der Zeile ein Eingabefeld
+    // mit den beiden Vorschlaegen.
+    if (accEditingAdr === i) {
+      return `<div class="acc-adr" style="display:block;">
+        <div style="font-size:0.78rem;color:var(--color-cream-dim);margin-bottom:0.45rem;">${escG(a.street)}, ${escG(a.zip)} ${escG(a.city)}</div>
+        ${addrTagRow('accAdrRename')}
+        <input type="text" id="accAdrRename" class="form-input" maxlength="24" style="margin:0.5rem 0;" value="${escG(addressLabel(a))}" placeholder="${t('acc.adr_label_ph')}">
+        <div style="display:flex;gap:0.45rem;">
+          <button type="button" class="btn btn-primary btn-sm" style="flex:1;" onclick="accSaveLabel(${i})">${t('acc.adr_save_name')}</button>
+          <button type="button" class="mini-btn" onclick="accCancelRename()">${t('acc.adr_cancel')}</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="acc-adr">
+      <div class="acc-adr-main"><b>${escG(addressLabel(a))}</b><br><span>${escG(a.street)}, ${escG(a.zip)} ${escG(a.city)}</span></div>
+      <button type="button" class="acc-adr-act" onclick="accRenameAddress(${i})" aria-label="${t('acc.adr_rename')}" title="${t('acc.adr_rename')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l4 4"/></svg></button>
+      <button type="button" class="acc-adr-act act-del" onclick="accDeleteAddress(${i})" aria-label="${t('a11y.delete')}" title="${t('a11y.delete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg></button>
+    </div>`;
+  }).join('');
   const addForm = (p.addresses || []).length < 3 ? `
     <details style="margin-top:0.4rem;">
       <summary style="cursor:pointer;font-size:0.8rem;color:var(--color-orange-bright);font-weight:700;">${t('acc.add_address')}</summary>
       <div style="display:grid;gap:0.5rem;margin-top:0.6rem;">
+        ${addrTagRow('accAdrLabel')}
         <input type="text" id="accAdrLabel" class="form-input" maxlength="24" placeholder="${t('acc.adr_label_ph')}">
         <input type="text" id="accAdrStreet" class="form-input" maxlength="80" placeholder="${t('co.street_ph')}">
         <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.5rem;">
@@ -6262,11 +6339,16 @@ function renderAccProfile(el) {
     ${addr || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.4rem;">${t('acc.no_addresses')}</p>`}
     ${addForm}
     <button class="btn btn-primary btn-block" style="margin-top:1rem;" onclick="accSaveProfile()">${t('acc.save')}</button>
-    <p style="text-align:center;margin:0.9rem 0 0;">
-      <a href="#" onclick="accLogout();return false;" style="color:var(--color-text-muted);font-size:0.8rem;">${t('acc.logout')}</a>
-      <span style="color:var(--color-border);margin:0 0.4rem;">·</span>
-      <a href="#" onclick="accDeleteAccount();return false;" style="color:var(--color-text-muted);font-size:0.8rem;">${t('acc.delete')}</a>
-    </p>`;
+    <div class="acc-actions">
+      <button type="button" class="mini-btn" onclick="accLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/></svg>
+        <span>${t('acc.logout')}</span>
+      </button>
+      <button type="button" class="mini-btn mini-btn-danger" onclick="accDeleteAccount()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg>
+        <span>${t('acc.delete')}</span>
+      </button>
+    </div>`;
   renderAccQr();
   renderWalletBtns();
 }
@@ -6401,9 +6483,61 @@ function flashAccMsgOk(msg) {
   el.appendChild(n);
   setTimeout(() => { try { el.removeChild(n); } catch (e) {} }, 2500);
 }
+/* Adressnamen ----------------------------------------------------------------
+   Die beiden Vorschlaege liegen als Schluessel im Konto, damit sie beim
+   Sprachwechsel mitwandern ("Zuhause" wird zu "Home"). Ein frei getippter
+   Name (etwa "Leonie") bleibt genau so stehen, wie er eingegeben wurde. */
+const ADR_TAGS = [
+  { key: 'home', i18n: 'acc.adr_home' },
+  { key: 'work', i18n: 'acc.adr_work' },
+];
+function addressLabel(a) {
+  if (!a) return '';
+  const tag = ADR_TAGS.find(x => x.key === a.labelKey);
+  return tag ? t(tag.i18n) : (a.label || t('acc.adr_default_label'));
+}
+/* Stimmt der eingegebene Name mit einem Vorschlag ueberein, merken wir uns den
+   Schluessel – sonst bliebe der Name beim Sprachwechsel in der alten Sprache. */
+function labelKeyFor(text) {
+  const v = (text || '').trim().toLowerCase();
+  const tag = ADR_TAGS.find(x => t(x.i18n).toLowerCase() === v);
+  return tag ? tag.key : '';
+}
+function addrTagRow(targetId) {
+  return `<div class="adr-tag-row">
+    <span class="tag-label">${t('acc.adr_suggest')}</span>
+    ${ADR_TAGS.map(x => `<button type="button" class="adr-tag" onclick="accPickLabel('${targetId}','${x.key}')">${t(x.i18n)}</button>`).join('')}
+  </div>`;
+}
+function accPickLabel(targetId, key) {
+  const el = document.getElementById(targetId);
+  const tag = ADR_TAGS.find(x => x.key === key);
+  if (!el || !tag) return;
+  el.value = t(tag.i18n);
+  el.focus();
+}
+
+let accEditingAdr = null;   // Index der Adresse, die gerade umbenannt wird
+function accRenameAddress(i) { accEditingAdr = i; renderAccount(); }
+function accCancelRename() { accEditingAdr = null; renderAccount(); }
+async function accSaveLabel(i) {
+  const el = document.getElementById('accAdrRename');
+  const list = [...(ACCOUNT.profile.addresses || [])];
+  if (!el || !list[i]) return;
+  const val = (el.value || '').trim();
+  if (!val) { flashAccMsg(t('acc.adr_name_needed')); return; }
+  list[i] = { ...list[i], label: val, labelKey: labelKeyFor(val) };
+  accEditingAdr = null;
+  const r = await accountApi('save', { addresses: list });
+  if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
+  else { renderAccount(); flashAccMsg(t('acc.error')); }
+}
+
 async function accAddAddress() {
+  const rawLabel = document.getElementById('accAdrLabel').value;
   const a = {
-    label: document.getElementById('accAdrLabel').value,
+    label: rawLabel,
+    labelKey: labelKeyFor(rawLabel),
     street: document.getElementById('accAdrStreet').value,
     zip: document.getElementById('accAdrZip').value,
     city: document.getElementById('accAdrCity').value,
@@ -6417,6 +6551,7 @@ async function accAddAddress() {
 async function accDeleteAddress(i) {
   const list = [...(ACCOUNT.profile.addresses || [])];
   list.splice(i, 1);
+  accEditingAdr = null;   // sonst zeigt der Index auf die falsche Adresse
   const r = await accountApi('save', { addresses: list });
   if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
 }
@@ -8843,7 +8978,7 @@ function renderCart() {
             <label for="co-street">${t('co.street')}</label>
             ${accountLoggedIn() && (ACCOUNT.profile.addresses || []).length ? `
             <div style="display:flex;gap:0.45rem;flex-wrap:wrap;margin:0 0 0.6rem;">
-              ${(ACCOUNT.profile.addresses || []).map((a, i) => `<button type="button" class="promo-quick-chip" onclick="accFillAddress(${i})">${escG(a.label)}</button>`).join('')}
+              ${(ACCOUNT.profile.addresses || []).map((a, i) => `<button type="button" class="promo-quick-chip" onclick="accFillAddress(${i})">${escG(addressLabel(a))}</button>`).join('')}
             </div>` : ''}
             <input type="text" id="co-street" class="form-input" required placeholder="${t('co.street_ph')}" autocomplete="street-address" oninput="onAddressChange()" />
           </div>

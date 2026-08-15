@@ -264,6 +264,10 @@ exports.handler = async (event) => {
       if (Array.isArray(input.addresses)) {
         rec.addresses = input.addresses.slice(0, MAX_ADDRESSES).map(a => ({
           label: clean(a.label, 24) || 'Adresse',
+          // Voreingestellte Namen werden als Schluessel gespeichert, damit sie
+          // in jeder Sprache richtig erscheinen. Frei getippte Namen bleiben
+          // als Text stehen (labelKey ist dann leer).
+          labelKey: (a.labelKey === 'home' || a.labelKey === 'work') ? a.labelKey : '',
           street: clean(a.street, 80),
           zip: clean(a.zip, 10),
           city: clean(a.city, 40),
