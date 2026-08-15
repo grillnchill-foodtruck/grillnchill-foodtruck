@@ -940,6 +940,16 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .acc-lang-btn .lang-dd-caret { margin-left: auto; width: 10px; height: 6px; color: var(--color-text-muted); transition: transform .15s; }
 .acc-lang-btn[aria-expanded="true"] .lang-dd-caret { transform: rotate(180deg); }
 .acc-lang-list { list-style: none; margin: .4rem 0 0; padding: .3rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+.acc-push-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  margin: 0 0 .9rem; padding: .6rem 1rem; min-height: 44px;
+  background: none; border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  color: var(--color-cream); font-family: inherit; font-weight: 600; font-size: .86rem; cursor: pointer;
+  transition: border-color .15s, color .15s, transform .12s;
+}
+.acc-push-btn:hover { border-color: var(--color-orange); }
+.acc-push-btn:active { transform: scale(.97); }
+.acc-push-btn[disabled] { opacity: .6; cursor: default; }
 .nav-burger span {
   display: block; width: 22px; height: 2px;
   background: var(--color-cream); transition: .25s;
@@ -3726,9 +3736,30 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
     50%      { box-shadow: 0 0 12px rgba(255, 122, 61, 1); }
   }
 }
+/* Konto-Button: 44 px Zielfläche statt 38 (Daumenmaß), Styles aus dem Markup gelöst */
+.nav-icon-btn {
+  width: 44px; height: 44px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-cream-dim);
+  cursor: pointer;
+  transition: border-color .15s, color .15s, transform .12s;
+}
+.nav-icon-btn:hover { border-color: var(--color-orange); color: var(--color-cream); }
+.nav-icon-btn:active { transform: scale(0.94); }   /* Rückmeldung beim Drücken, nicht erst beim Loslassen */
+@media (prefers-reduced-motion: reduce) { .nav-icon-btn { transition: none; } .nav-icon-btn:active { transform: none; } }
+
+/* Der Öffnungsstatus behält auch mobil seinen Text – ein Punkt allein sagt
+   nicht, ob offen oder geschlossen ist. Platz dafür ist da, seit die
+   Sprachwahl in die Fußzeile gewandert ist. */
 @media (max-width: 760px) {
-  .nav-status { padding: 0.4rem; border: none; }
-  .nav-status-text { display: none; }  /* mobil: nur der glimmende Punkt */
+  .nav-status { padding: 0.34rem 0.6rem; font-size: 0.68rem; }
+}
+@media (max-width: 400px) {
+  .nav-status { padding: 0.34rem; border: none; }
+  .nav-status-text { display: none; }   /* nur auf sehr schmalen Geräten: Punkt genügt */
 }
 
 /* ---------- Hero-Eingangssequenz (einmalig beim Laden) ---------- */
@@ -4350,7 +4381,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
         <span class="nav-status-dot" aria-hidden="true"></span>
         <span class="nav-status-text" id="navStatusText"></span>
       </span>
-      <button type="button" class="icon-btn" id="accountBtn" onclick="openAccountOverlay()" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto" style="background:none;border:1px solid var(--color-border);border-radius:10px;color:var(--color-cream-dim);width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;">
+      <button type="button" class="nav-icon-btn" id="accountBtn" onclick="openAccountOverlay()" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </button>
       <button class="nav-cart-btn" onclick="openCart()" aria-label="Warenkorb öffnen" data-i18n-aria="a11y.cart_open">
@@ -5588,6 +5619,16 @@ function renderAccount(step) {
   if ((step || 'email') === 'email') el.insertAdjacentHTML('beforeend', accSettingsHtml());
 }
 // App-Einstellungen (Sprache, Benachrichtigungen, Zahlungsarten) – ohne Login nutzbar
+async function accEnablePush(btn) {
+  if (typeof gncEnablePush !== 'function') return;
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '…';
+  const ok = await gncEnablePush();
+  btn.disabled = false;
+  btn.textContent = label;
+  if (ok) renderAccount();            // Abschnitt neu zeichnen → zeigt den Erfolg
+}
 function accLangToggle(btn) {
   const dd = btn.closest('.acc-lang-dd');
   const list = dd && dd.querySelector('.acc-lang-list');
@@ -5609,14 +5650,13 @@ function accSettingsHtml() {
       </button>
       <ul class="acc-lang-list" role="listbox" hidden>${langOpts}</ul>
     </div>`;
-  const pushLi = document.getElementById('pushEnableLi');
-  const pushAvail = !!document.getElementById('pushEnableLink') && pushLi && !pushLi.hidden;
-  const pushDone = (function () { try { return localStorage.getItem('gnc_push_v1') === 'on'; } catch (e) { return false; } })();
-  const pushHtml = pushDone
+  // Direkt hier aktivieren – ohne Umweg über den Footer, damit es auch in der App geht
+  const pushState = typeof gncPushState === 'function' ? gncPushState() : 'unsupported';
+  const pushHtml = pushState === 'on'
     ? `<p style="margin:0 0 .9rem;font-size:.85rem;color:var(--color-success, #6DBE45);">✓ ${t('push.done')}</p>`
-    : pushAvail
-      ? `<button type="button" class="btn-ghost" style="margin:0 0 .9rem;padding:.55rem .9rem;border:1px solid var(--color-border);border-radius:10px;cursor:pointer;background:none;color:var(--color-cream-dim);" onclick="document.getElementById('pushEnableLink').click(); setTimeout(renderAccount, 800);">${t('push.enable')}</button>`
-      : `<p style="margin:0 0 .9rem;font-size:.8rem;color:var(--color-text-muted);">${t('acc.set_push_na')}</p>`;
+    : pushState === 'off'
+      ? `<button type="button" class="acc-push-btn" onclick="accEnablePush(this)">${t('push.enable')}</button>`
+      : `<p style="margin:0 0 .9rem;font-size:.8rem;color:var(--color-text-muted);">${pushState === 'blocked' ? t('push.denied') : t('acc.set_push_na')}</p>`;
   return `
   <div style="border-top:1px solid var(--color-border);margin-top:1.3rem;padding-top:1rem;">
     <h4 style="margin:0 0 .7rem;font-size:.95rem;color:var(--color-cream);">${t(APP_FORCED ? 'acc.settings_app' : 'acc.settings')}</h4>
@@ -11315,40 +11355,51 @@ window.addEventListener('load', function () {
     return arr;
   }
 
+  /* Push-Status & Anmeldung – bewusst unabhängig von einzelnen Bedienelementen,
+     damit Footer, Einstellungen und die installierte App denselben Weg nutzen. */
+  window.gncPushState = function () {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
+    try { if (localStorage.getItem('gnc_push_v1') === 'on') return 'on'; } catch (e) {}
+    if (Notification.permission === 'denied') return 'blocked';
+    return 'off';
+  };
+  window.gncEnablePush = async function () {
+    if (window.gncPushState() === 'unsupported') { showToast(t('push.error')); return false; }
+    try {
+      var keyRes = await fetch('/push-subscribe');           // GET liefert den Public Key
+      var keyData = await keyRes.json();
+      if (!keyData.publicKey) { showToast(t('push.error')); return false; }
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted') { showToast(t('push.denied')); return false; }
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
+      });
+      var res = await fetch('/push-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON() })
+      });
+      if (!res.ok) { showToast(t('push.error')); return false; }
+      localStorage.setItem('gnc_push_v1', 'on');
+      var li = document.getElementById('pushEnableLi');
+      if (li) li.hidden = true;
+      showToast(t('push.done'));
+      if (typeof track === 'function') track('push_enabled');
+      return true;
+    } catch (err) {
+      showToast(t('push.error'));
+      return false;
+    }
+  };
   function initPushUI() {
     var li = document.getElementById('pushEnableLi');
     var link = document.getElementById('pushEnableLink');
     if (!li || !link) return;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
-    if (localStorage.getItem('gnc_push_v1') === 'on' || Notification.permission === 'denied') return;
+    if (window.gncPushState() !== 'off') return;
     li.hidden = false;
-    link.addEventListener('click', async function (e) {
-      e.preventDefault();
-      try {
-        var keyRes = await fetch('/push-subscribe');           // GET liefert den Public Key
-        var keyData = await keyRes.json();
-        if (!keyData.publicKey) { showToast(t('push.error')); return; }
-        var perm = await Notification.requestPermission();
-        if (perm !== 'granted') { showToast(t('push.denied')); return; }
-        var reg = await navigator.serviceWorker.ready;
-        var sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(keyData.publicKey)
-        });
-        var res = await fetch('/push-subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscription: sub.toJSON() })
-        });
-        if (!res.ok) { showToast(t('push.error')); return; }
-        localStorage.setItem('gnc_push_v1', 'on');
-        li.hidden = true;
-        showToast(t('push.done'));
-        track('push_enabled');
-      } catch (err) {
-        showToast(t('push.error'));
-      }
-    });
+    link.addEventListener('click', function (e) { e.preventDefault(); window.gncEnablePush(); });
   }
 
   /* ---------- A11y: Escape schließt den Warenkorb ---------- */
