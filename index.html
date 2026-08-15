@@ -3735,6 +3735,16 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   background: var(--color-bg-elev);
 }
 
+/* Beschriftung ueber dem Feld. Platzhalter allein genuegen nicht – sie
+   verschwinden beim Tippen, und dann weiss man nicht mehr, was drinsteht. */
+.acc-field-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-cream-dim);
+  margin-bottom: 0.35rem;
+}
+
 .contact-line { display: inline-flex; align-items: center; gap: 0.5rem; }
 .contact-line svg { width: 16px; height: 16px; flex: none; opacity: 0.75; }
 
@@ -6601,11 +6611,37 @@ function renderAccProfile(el) {
             : `<div style="font-size:0.68rem;color:var(--color-text-muted);margin-top:0.3rem;">${t('acc.no_details')}</div>`}
         </div>`).join('')}
     </div>` : ''}
+    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.biz_title')}</div>
+    <label class="standing-remind" style="margin:0 0 0.5rem;">
+      <input type="checkbox" id="accBizOn" ${(p.business && p.business.isBusiness) ? 'checked' : ''} onchange="accBizToggle()">
+      <span>${t('acc.biz_optin')}</span>
+    </label>
+    <div id="accBizBox" class="invoice-addr" ${(p.business && p.business.isBusiness) ? '' : 'hidden'}>
+      <div class="invoice-addr-head">${t('co.inv_title')}</div>
+      <div style="display:grid;gap:0.5rem;">
+        <input type="text" id="accBizCompany" class="form-input" maxlength="80" placeholder="${t('co.company_ph')}" value="${escG((p.business||{}).company || '')}">
+        <input type="text" id="accBizStreet" class="form-input" maxlength="80" placeholder="${t('co.street_ph')}" value="${escG((p.business||{}).street || '')}">
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.5rem;">
+          <input type="text" id="accBizZip" class="form-input" maxlength="10" inputmode="numeric" placeholder="33649" value="${escG((p.business||{}).zip || '')}">
+          <input type="text" id="accBizCity" class="form-input" maxlength="40" placeholder="${t('co.city')}" value="${escG((p.business||{}).city || '')}">
+        </div>
+        <button type="button" class="mini-btn" style="justify-self:start;" onclick="accSaveBiz()">${t('acc.save')}</button>
+      </div>
+      <p class="field-note">${t('acc.biz_note')}</p>
+    </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem;">
-      <input type="text" id="accName" class="form-input" maxlength="60" placeholder="${t('co.name_ph')}" value="${escG(p.name || '')}">
-      <input type="tel" id="accPhone" class="form-input" maxlength="30" placeholder="${t('co.phone_ph')}" value="${escG(p.phone || '')}">
+      <div class="form-group" style="margin:0;">
+        <label for="accName">${t('acc.f_name')}</label>
+        <input type="text" id="accName" class="form-input" maxlength="60" placeholder="${t('co.name_ph')}" value="${escG(p.name || '')}">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label for="accPhone">${t('acc.f_phone')}</label>
+        <input type="tel" id="accPhone" class="form-input" maxlength="30" placeholder="${t('co.phone_ph')}" value="${escG(p.phone || '')}">
+      </div>
     </div>
     <div style="margin-bottom:0.9rem;">
+      <label for="accBirthday" class="acc-field-label">${t('acc.f_birthday')}</label>
       <div style="display:flex;gap:0.5rem;align-items:stretch;">
         <input type="text" id="accBirthday" class="form-input" maxlength="6" inputmode="numeric"
                placeholder="${t('acc.birthday_ph')}" value="${escG(p.birthday || '')}" style="flex:1;"
@@ -6636,25 +6672,6 @@ function renderAccProfile(el) {
     ${addr || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.4rem;">${t('acc.no_addresses')}</p>`}
     ${addForm}
     <button class="btn btn-primary btn-block" style="margin-top:1rem;" onclick="accSaveProfile()">${t('acc.save')}</button>
-    <div style="margin:1.2rem 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.biz_title')}</div>
-    <label class="standing-remind" style="margin:0 0 0.5rem;">
-      <input type="checkbox" id="accBizOn" ${(p.business && p.business.isBusiness) ? 'checked' : ''} onchange="accBizToggle()">
-      <span>${t('acc.biz_optin')}</span>
-    </label>
-    <div id="accBizBox" class="invoice-addr" ${(p.business && p.business.isBusiness) ? '' : 'hidden'}>
-      <div class="invoice-addr-head">${t('co.inv_title')}</div>
-      <div style="display:grid;gap:0.5rem;">
-        <input type="text" id="accBizCompany" class="form-input" maxlength="80" placeholder="${t('co.company_ph')}" value="${escG((p.business||{}).company || '')}">
-        <input type="text" id="accBizStreet" class="form-input" maxlength="80" placeholder="${t('co.street_ph')}" value="${escG((p.business||{}).street || '')}">
-        <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.5rem;">
-          <input type="text" id="accBizZip" class="form-input" maxlength="10" inputmode="numeric" placeholder="33649" value="${escG((p.business||{}).zip || '')}">
-          <input type="text" id="accBizCity" class="form-input" maxlength="40" placeholder="${t('co.city')}" value="${escG((p.business||{}).city || '')}">
-        </div>
-        <button type="button" class="mini-btn" style="justify-self:start;" onclick="accSaveBiz()">${t('acc.save')}</button>
-      </div>
-      <p class="field-note">${t('acc.biz_note')}</p>
-    </div>
-
     <div id="standingBox"></div>
     <div class="acc-actions">
       <button type="button" class="mini-btn" onclick="accLogout()">
