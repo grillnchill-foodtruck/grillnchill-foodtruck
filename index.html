@@ -2760,17 +2760,32 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   gap: 0.5rem 0.9rem;
   margin-bottom: 0.9rem;
 }
-.promo-compact .promo-quick-chip { margin: 0; }
-.promo-toggle-link {
-  background: none;
+/* "GRILL5 anwenden" spart echtes Geld – das darf ein gefuellter Knopf sein.
+   Bewusst kleiner als "Weiter zur Kasse" in der Fussleiste, damit er dieser
+   nicht die Schau stiehlt. Vorher war es ein gestrichelter Chip, der eher
+   nach Platzhalter aussah. */
+.promo-apply {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  background: var(--color-orange-solid, var(--color-orange));
   border: none;
-  color: var(--color-text-muted);
-  font-size: 0.82rem;
-  text-decoration: underline;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-full);
+  min-height: 42px;
   cursor: pointer;
-  padding: 0.2rem 0;
+  box-shadow: 0 2px 12px rgba(232, 90, 36, 0.28);
+  transition: transform .12s ease-out, box-shadow .2s ease, filter .15s ease;
 }
-.promo-toggle-link:hover { color: var(--color-cream-dim); }
+.promo-apply svg { width: 16px; height: 16px; flex: none; }
+.promo-apply:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .promo-apply:hover { filter: brightness(1.08); box-shadow: 0 4px 18px rgba(232, 90, 36, 0.4); }
+}
+@media (prefers-reduced-motion: reduce) { .promo-apply:active { transform: none; } }
 .loyalty-card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
@@ -9373,8 +9388,11 @@ function renderCart() {
         // Standard: aufgeräumt – nur Ein-Tipp-Chip + dezenter Link fürs Eingabefeld
         promoHtml = `
           <div class="promo-compact">
-            <button type="button" class="promo-quick-chip" onclick="quickApplyPromo()">${t('promo.quick_chip').replace('{code}', adCode())}</button>
-            <button type="button" class="promo-toggle-link" onclick="togglePromoField()">${t('promo.have_code')}</button>
+            <button type="button" class="promo-apply" onclick="quickApplyPromo()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4.8A2 2 0 0 1 4.8 2.8H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg>
+              <span>${t('promo.quick_chip').replace('{code}', adCode())}</span>
+            </button>
+            <button type="button" class="mini-btn" onclick="togglePromoField()">${t('promo.have_code')}</button>
           </div>
           ${showPromoField ? manualField : ''}
         `;
