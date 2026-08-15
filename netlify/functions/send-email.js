@@ -81,68 +81,133 @@ async function nextInvoiceNo() {
 }
 
 /* Rechnungsblock fuer Firmenkunden. Erscheint nur, wenn eine Firma
-   angegeben wurde – Privatkunden bekommen die Bestaetigung wie bisher. */
+   angegeben wurde – Privatkunden bekommen die Bestaetigung wie bisher.
+
+   Eine Rechnung muss die Positionen und jeden Abzug ZEIGEN, auch wenn am
+   Ende 0,00 EUR stehen (z. B. bei einem Gutschein ueber den vollen Betrag).
+   Vorher wurden nur die Steuerzeilen ausgegeben – bei voller Ermaessigung
+   blieb die Rechnung dadurch leer. */
+function zahlungsText(order) {
+  if (order.payment !== 'sumup') {
+    // Bar oder Karte am Truck entscheidet sich vor Ort; die Website erfaehrt
+    // es nur, wenn es jemand nachtraegt.
+    return order.paidWith ? esc(order.paidWith) : 'Vor Ort (bar oder Karte)';
+  }
+  const c = order.card || {};
+  const marke = c.type ? String(c.type).charAt(0) + String(c.type).slice(1).toLowerCase() : null;
+  if (marke && c.last4) return `Online mit ${esc(marke)} \u2022\u2022\u2022\u2022&nbsp;${esc(c.last4)}`;
+  if (marke) return `Online mit ${esc(marke)}`;
+  return 'Online bezahlt (SumUp)';
+}
+
 function buildInvoiceBlock(order) {
   if (!order.company || !order.invoiceNo) return '';
   const a = order.invoiceAddress || {};
-  const zeilen = (order.vat || []).map(v => `
+  const z = (n) => Number(n) || 0;
+
+  // --- Positionen -------------------------------------------------------
+  const posZeilen = (order.items || []).map(i => `
     <tr>
-      <td style="padding:6px 14px;color:#555;">Netto ${String(v.satz).replace('.', ',')}&nbsp;%</td>
-      <td style="padding:6px 14px;text-align:right;color:#555;">${formatPrice(v.netto)}</td>
+      <td style="padding:7px 14px;border-bottom:1px solid #eee;color:#333;font-size:13px;">
+        ${esc(i.name)}<br><span style="color:#999;font-size:12px;">${i.qty} &times; ${formatPrice(z(i.price) || z(i.total) / Math.max(1, i.qty))}</span>
+      </td>
+      <td style="padding:7px 14px;border-bottom:1px solid #eee;text-align:right;color:#333;font-size:13px;white-space:nowrap;">
+        ${formatPrice(z(i.total))}
+      </td>
+    </tr>`).join('');
+
+  // --- Abzuege ----------------------------------------------------------
+  const abzug = (label, betrag) => `
+    <tr>
+      <td style="padding:6px 14px;color:#3D6B34;font-size:13px;">${label}</td>
+      <td style="padding:6px 14px;text-align:right;color:#3D6B34;font-size:13px;white-space:nowrap;">&minus;&nbsp;${formatPrice(betrag)}</td>
+    </tr>`;
+  let abzuege = '';
+  if (z(order.discount) > 0) {
+    const code = (order.promo && order.promo.code) || order.voucherCode;
+    abzuege += abzug(code ? `Rabatt (Code ${esc(code)})` : 'Rabatt', z(order.discount));
+  }
+  if (z(order.loyaltyDiscount) > 0) abzuege += abzug('Treuebonus', z(order.loyaltyDiscount));
+  if (z(order.deliveryFee) > 0) {
+    abzuege += `
+    <tr>
+      <td style="padding:6px 14px;color:#555;font-size:13px;">Liefergeb\u00fchr</td>
+      <td style="padding:6px 14px;text-align:right;color:#555;font-size:13px;white-space:nowrap;">${formatPrice(z(order.deliveryFee))}</td>
+    </tr>`;
+  }
+
+  // --- Steueraufstellung ------------------------------------------------
+  const vat = Array.isArray(order.vat) ? order.vat : [];
+  const steuerZeilen = vat.map(v => `
+    <tr>
+      <td style="padding:5px 14px;color:#666;font-size:12px;">Netto ${String(v.satz).replace('.', ',')}&nbsp;%</td>
+      <td style="padding:5px 14px;text-align:right;color:#666;font-size:12px;white-space:nowrap;">${formatPrice(z(v.netto))}</td>
     </tr>
     <tr>
-      <td style="padding:6px 14px;color:#555;">zzgl. ${String(v.satz).replace('.', ',')}&nbsp;% USt.</td>
-      <td style="padding:6px 14px;text-align:right;color:#555;">${formatPrice(v.steuer)}</td>
+      <td style="padding:5px 14px;color:#666;font-size:12px;">zzgl. ${String(v.satz).replace('.', ',')}&nbsp;% USt.</td>
+      <td style="padding:5px 14px;text-align:right;color:#666;font-size:12px;white-space:nowrap;">${formatPrice(z(v.steuer))}</td>
     </tr>`).join('');
-  const summeNetto = (order.vat || []).reduce((n, v) => n + v.netto, 0);
-  const summeSteuer = (order.vat || []).reduce((n, v) => n + v.steuer, 0);
+
+  // Trinkgeld ist freiwillig und kein Entgelt fuer eine Leistung – es wird
+  // ausgewiesen, aber ohne Umsatzsteuer.
+  const trinkgeld = z(order.tip) > 0 ? `
+    <tr>
+      <td style="padding:6px 14px;color:#555;font-size:13px;">Trinkgeld (freiwillig, 0&nbsp;% USt.)</td>
+      <td style="padding:6px 14px;text-align:right;color:#555;font-size:13px;white-space:nowrap;">${formatPrice(z(order.tip))}</td>
+    </tr>` : '';
+
+  const gesamt = z(order.total);
+
   return `
   <tr><td style="padding:0 30px 26px;">
     <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ddd;border-radius:8px;">
-      <tr><td style="padding:18px 20px 8px;">
+      <tr><td style="padding:18px 20px 6px;">
         <div style="font-size:18px;font-weight:700;color:#1a1a1a;">Rechnung</div>
-        <div style="font-size:13px;color:#888;margin-top:2px;">
-          Rechnungsnummer ${esc(order.invoiceNo)} &middot; Rechnungsdatum ${esc(order.invoiceDate || '')}
+        <div style="font-size:12px;color:#888;margin-top:3px;line-height:1.6;">
+          Rechnungsnummer ${esc(order.invoiceNo)}<br>
+          Rechnungsdatum ${esc(order.invoiceDate || '')} &middot; Leistungsdatum ${esc(order.serviceDate || order.invoiceDate || '')}
         </div>
       </td></tr>
-      <tr><td style="padding:8px 20px;font-size:13px;line-height:1.6;color:#444;">
+
+      <tr><td style="padding:12px 20px 4px;">
         <table width="100%" cellpadding="0" cellspacing="0"><tr>
-          <td valign="top" style="font-size:13px;line-height:1.6;color:#444;">
-            <strong style="color:#888;font-size:11px;letter-spacing:.06em;">RECHNUNGSEMPF&Auml;NGER</strong><br>
-            ${esc(order.company)}<br>
-            ${a.street ? esc(a.street) + '<br>' : ''}
-            ${esc(a.zip || '')} ${esc(a.city || '')}
+          <td width="50%" valign="top" style="font-size:12.5px;line-height:1.6;color:#444;padding-right:10px;">
+            <div style="color:#999;font-size:10px;letter-spacing:.08em;margin-bottom:3px;">RECHNUNGSEMPF&Auml;NGER</div>
+            <strong>${esc(order.company)}</strong><br>
+            ${a.street ? esc(a.street) + '<br>' : ''}${esc(a.zip || '')} ${esc(a.city || '')}
           </td>
-          <td valign="top" style="font-size:13px;line-height:1.6;color:#444;">
-            <strong style="color:#888;font-size:11px;letter-spacing:.06em;">LEISTENDER</strong><br>
+          <td width="50%" valign="top" style="font-size:12.5px;line-height:1.6;color:#444;">
+            <div style="color:#999;font-size:10px;letter-spacing:.08em;margin-bottom:3px;">LEISTENDER</div>
             Grill&rsquo;n Chill Yildiz und &Ouml;ztas GbR<br>
             Im Teich 9, 49152 Bad Essen<br>
-            USt-IdNr.: DE459954473
+            USt-IdNr. DE459954473
           </td>
         </tr></table>
       </td></tr>
-      <tr><td style="padding:10px 20px 0;font-size:13px;color:#666;">
-        Leistungsdatum: ${esc(order.serviceDate || order.invoiceDate || '')}
-        &middot; Bestellnummer ${esc(order.reference || '')}
-      </td></tr>
-      <tr><td style="padding:12px 6px 4px;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;border-top:1px solid #eee;">
-          ${zeilen}
+
+      <tr><td style="padding:14px 6px 0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #eee;">
+          ${posZeilen}
           <tr>
-            <td style="padding:10px 14px;border-top:1px solid #ddd;color:#1a1a1a;font-weight:700;">Gesamtbetrag brutto</td>
-            <td style="padding:10px 14px;border-top:1px solid #ddd;text-align:right;color:#1a1a1a;font-weight:700;">
-              ${formatPrice(summeNetto + summeSteuer)}
-            </td>
+            <td style="padding:8px 14px;color:#555;font-size:13px;">Zwischensumme</td>
+            <td style="padding:8px 14px;text-align:right;color:#555;font-size:13px;white-space:nowrap;">${formatPrice(z(order.subtotal))}</td>
+          </tr>
+          ${abzuege}
+          ${steuerZeilen ? `<tr><td colspan="2" style="padding:8px 14px 2px;color:#999;font-size:11px;letter-spacing:.06em;border-top:1px solid #eee;">UMSATZSTEUER</td></tr>` : ''}
+          ${steuerZeilen}
+          ${trinkgeld}
+          <tr>
+            <td style="padding:11px 14px;border-top:2px solid #ddd;color:#1a1a1a;font-weight:700;">Gesamtbetrag</td>
+            <td style="padding:11px 14px;border-top:2px solid #ddd;text-align:right;color:#1a1a1a;font-weight:700;white-space:nowrap;">${formatPrice(gesamt)}</td>
           </tr>
         </table>
       </td></tr>
-      ${order.tip > 0 ? `<tr><td style="padding:0 20px 8px;font-size:12px;color:#888;">
-        Zus&auml;tzlich gezahltes freiwilliges Trinkgeld in H&ouml;he von ${formatPrice(order.tip)} ist nicht Bestandteil dieser Rechnung.
-      </td></tr>` : ''}
-      <tr><td style="padding:4px 20px 18px;font-size:12px;color:#888;line-height:1.6;">
-        ${order.payment === 'sumup'
-          ? 'Der Betrag wurde online bezahlt. Diese Rechnung dient als Beleg.'
-          : 'Zahlung bei &Uuml;bergabe. Diese Rechnung dient als Beleg.'}
+
+      <tr><td style="padding:12px 20px 18px;font-size:12px;color:#666;line-height:1.7;border-top:1px solid #eee;">
+        <strong style="color:#444;">Zahlung:</strong> ${zahlungsText(order)}<br>
+        <strong style="color:#444;">Bestellung:</strong> ${esc(order.reference || '')} &middot;
+        ${order.mode === 'delivery' ? 'Lieferung' : 'Abholung'}
+        ${gesamt <= 0 ? '<br><span style="color:#888;">Der Rechnungsbetrag ist durch die ausgewiesenen Abz&uuml;ge vollst&auml;ndig ausgeglichen.</span>' : ''}
       </td></tr>
     </table>
   </td></tr>`;

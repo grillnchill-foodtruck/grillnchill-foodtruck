@@ -103,6 +103,11 @@
 [functions."birthday-daily"]
   schedule = "0 7 * * *"
 
+# Stehende Bestellungen: Erinnerung am Vorabend (17:00 UTC ≈ 19:00 dt. Sommerzeit).
+# Verschickt nur an Kunden, die die Erinnerung ausdrücklich eingeschaltet haben.
+[functions."standing-remind"]
+  schedule = "0 17 * * *"
+
 [[redirects]]
   from   = "/voucher-check"
   to     = "/.netlify/functions/voucher-check"

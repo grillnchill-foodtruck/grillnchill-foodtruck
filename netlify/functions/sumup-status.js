@@ -66,6 +66,17 @@ exports.handler = async (event) => {
       id: data?.id || id,
       status: data?.status || 'UNKNOWN',
       transaction_code: (Array.isArray(data?.transactions) && data.transactions[0] && data.transactions[0].transaction_code) || null,
+      // Zahlungsmittel für die Rechnung: Kartenart und die letzten vier Ziffern
+      card: (() => {
+        const tx = Array.isArray(data?.transactions) ? data.transactions[0] : null;
+        if (!tx) return null;
+        const c = tx.card || {};
+        return {
+          type: c.type || tx.payment_type || null,          // VISA, MASTERCARD, ...
+          last4: c.last_4_digits || c.last4 || null,
+          entry: tx.entry_mode || null,                     // z. B. CUSTOMER_ENTRY
+        };
+      })(),
     });
   } catch (err) {
     return json(502, { error: 'SumUp request failed', detail: err.message });

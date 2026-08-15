@@ -2349,6 +2349,28 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 @media (hover: hover) and (pointer: fine) {
   .mini-btn-danger:hover { border-color: var(--color-error); color: var(--color-error); background: rgba(224,72,72,0.1); }
 }
+/* Stehende Bestellungen im Konto */
+.standing-item {
+  background: var(--color-bg-elev);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  margin-bottom: 0.5rem;
+}
+.standing-item.is-paused { opacity: 0.62; }
+.standing-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+.standing-head b { font-size: 0.86rem; }
+.standing-sum { font-size: 0.86rem; font-weight: 800; color: var(--color-cream); font-variant-numeric: tabular-nums; }
+.standing-meta { font-size: 0.76rem; color: var(--color-text-muted); margin-top: 0.15rem; }
+.standing-remind {
+  display: flex; align-items: center; gap: 0.45rem;
+  margin: 0.55rem 0 0.1rem;
+  font-size: 0.78rem; color: var(--color-cream-dim); cursor: pointer;
+}
+.standing-remind input { accent-color: var(--color-orange); width: 17px; height: 17px; flex: none; }
+.standing-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
+.standing-actions .mini-btn { font-size: 0.74rem; padding: 0.4rem 0.7rem; min-height: 34px; }
+
 .acc-actions { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
 
 /* Gespeicherte Adresse: Name, Anschrift und die beiden Aktionen. */
@@ -3681,6 +3703,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   align-items: center;
   gap: 0.45rem;
   letter-spacing: 0.015em;   /* kleine Schrift liest sich mit etwas Luft besser */
+  line-height: 1.25;
   background: rgba(232, 90, 36, 0.10);
   border: 1px solid rgba(232, 90, 36, 0.35);
   color: var(--color-cream);
@@ -3688,7 +3711,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   border-radius: var(--radius-full);
   font-size: 0.8rem;
   font-weight: 700;
-  margin-bottom: 0.8rem;
+  margin: 0 0 0.85rem;
 }
 .open-status.closed {
   background: var(--color-bg-elev);
@@ -5337,8 +5360,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 
     <div class="location-grid">
       <div class="hours-card reveal">
-        <h3 style="font-size: 1.2rem; margin-bottom: 0.6rem;" data-i18n="location.hours_title">Öffnungszeiten</h3>
         <div id="openStatus" class="open-status"><svg class="status-flame" viewBox="0 0 16 20" aria-hidden="true"><path class="flame-body" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="flame-core" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg><span id="openStatusText" data-i18n="location.loading">Wird geladen…</span></div>
+        <h3 style="font-size: 1.2rem; line-height: 1.35; margin: 0 0 0.9rem;" data-i18n="location.hours_title">Öffnungszeiten</h3>
         <ul class="hours-list" id="hoursList">
           <li data-day="1"><span class="day" data-i18n="location.mon">Montag</span><span class="time">12:00 – 20:30</span></li>
           <li data-day="2"><span class="day" data-i18n="location.tue">Dienstag</span><span class="time">12:00 – 20:30</span></li>
@@ -6511,6 +6534,7 @@ function renderAccProfile(el) {
     ${addr || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.4rem;">${t('acc.no_addresses')}</p>`}
     ${addForm}
     <button class="btn btn-primary btn-block" style="margin-top:1rem;" onclick="accSaveProfile()">${t('acc.save')}</button>
+    <div id="standingBox"></div>
     <div class="acc-actions">
       <button type="button" class="mini-btn" onclick="accLogout()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/></svg>
@@ -6523,6 +6547,8 @@ function renderAccProfile(el) {
     </div>`;
   renderAccQr();
   renderWalletBtns();
+  renderStanding();
+  if (accountLoggedIn()) loadStanding();
 }
 function openQrZoom() {
   const src = document.querySelector('#accQr svg');
@@ -6655,6 +6681,148 @@ function flashAccMsgOk(msg) {
   el.appendChild(n);
   setTimeout(() => { try { el.removeChild(n); } catch (e) {} }, 2500);
 }
+/* Stehende Bestellungen ------------------------------------------------------
+   Es wird bewusst NICHTS automatisch bestellt: ohne hinterlegte
+   Zahlungsermächtigung wäre das weder technisch sauber noch dem Kunden
+   gegenüber fair. Die Reihe erzeugt nur eine Erinnerung mit vorbereitetem
+   Warenkorb – und auch die nur, wenn der Kunde sie ausdrücklich einschaltet. */
+let STANDING = [];
+const WOCHENTAGE = ['so','mo','di','mi','do','fr','sa'];
+
+async function standingApi(action, body) {
+  if (!accountLoggedIn()) return { ok: false, d: {} };
+  const res = await fetch('/.netlify/functions/standing-orders', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, email: ACCOUNT.email, token: ACCOUNT.token, ...(body || {}) }),
+  });
+  return { ok: res.ok, status: res.status, d: await res.json().catch(() => ({})) };
+}
+
+async function loadStanding() {
+  const r = await standingApi('list');
+  STANDING = (r.ok && r.d.orders) || [];
+  renderStanding();
+}
+
+function standingDayLabel(n) { return t('so.day_' + WOCHENTAGE[n]); }
+
+function renderStanding() {
+  const box = document.getElementById('standingBox');
+  if (!box) return;
+  const korbLeer = cartItemCount() === 0;
+  const liste = STANDING.map(o => {
+    const summe = (o.items || []).reduce((n, i) => n + (Number(i.total) || 0), 0);
+    const naechster = o.nextRun
+      ? new Intl.DateTimeFormat(currentLang === 'de' ? 'de-DE' : 'en-GB',
+          { weekday: 'short', day: '2-digit', month: '2-digit' }).format(new Date(o.nextRun))
+      : '–';
+    return `<div class="standing-item${o.paused ? ' is-paused' : ''}">
+      <div class="standing-head">
+        <b>${escG(standingDayLabel(o.weekday))}, ${escG(o.time)}</b>
+        <span class="standing-sum">${formatPrice(summe)}</span>
+      </div>
+      <div class="standing-meta">
+        ${(o.items || []).length} ${t('so.items')} · ${t(o.mode === 'delivery' ? 'co.tab_delivery' : 'co.tab_pickup')}
+        ${o.paused ? ' · ' + t('so.paused') : ' · ' + t('so.next').replace('{when}', naechster)}
+      </div>
+      <label class="standing-remind">
+        <input type="checkbox" ${o.remind ? 'checked' : ''} onchange="standingRemind('${o.id}', this.checked)">
+        <span>${t('so.remind_label')}</span>
+      </label>
+      <div class="standing-actions">
+        <button type="button" class="mini-btn" onclick="standingFill('${o.id}')">${t('so.order_now')}</button>
+        ${o.paused
+          ? `<button type="button" class="mini-btn" onclick="standingSet('${o.id}','resume')">${t('so.resume')}</button>`
+          : `<button type="button" class="mini-btn" onclick="standingSet('${o.id}','pause')">${t('so.pause')}</button>`}
+        <button type="button" class="mini-btn mini-btn-danger" onclick="standingSet('${o.id}','delete')">${t('a11y.delete')}</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  box.innerHTML = `
+    <div style="margin:1.2rem 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('so.title')}</div>
+    <p class="field-note" style="margin:0 0 0.6rem;">${t('so.intro')}</p>
+    ${liste || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.5rem;">${t('so.empty')}</p>`}
+    ${STANDING.length < 3 ? (korbLeer
+        ? `<p class="field-note">${t('so.need_cart')}</p>`
+        : `<details style="margin-top:0.5rem;">
+             <summary style="cursor:pointer;font-size:0.8rem;color:var(--color-orange-bright);font-weight:700;">${t('so.add')}</summary>
+             <div style="display:grid;gap:0.5rem;margin-top:0.6rem;">
+               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                 <select id="soDay" class="form-input">${
+                   [1,2,3,4,5,6,0].map(n => `<option value="${n}">${standingDayLabel(n)}</option>`).join('')}</select>
+                 <input type="time" id="soTime" class="form-input" value="12:30">
+               </div>
+               <label class="standing-remind">
+                 <input type="checkbox" id="soRemind">
+                 <span>${t('so.remind_optin')}</span>
+               </label>
+               <button class="btn btn-primary" type="button" onclick="standingCreate()">${t('so.save')}</button>
+               <p class="field-note">${t('so.from_cart')}</p>
+             </div>
+           </details>`)
+      : ''}`;
+}
+
+async function standingCreate() {
+  const items = Object.entries(cart).map(([key, entry]) => {
+    const item = MENU.find(m => m.id === entry.menuId);
+    if (!item) return null;
+    const p = entryUnitPrice(entry);
+    return { key, menuId: entry.menuId, name: productName(item), qty: entry.qty,
+             total: p * entry.qty, double: !!entry.double, isMenu: !!entry.isMenu,
+             side: entry.side || null, drink: entry.drink || null, dip: entry.dip || null };
+  }).filter(Boolean);
+  if (!items.length) { flashAccMsg(t('so.need_cart')); return; }
+  const r = await standingApi('create', {
+    weekday: Number(document.getElementById('soDay').value),
+    time: document.getElementById('soTime').value || '12:30',
+    mode: checkoutMode,
+    items,
+    // Erinnerung nur, wenn ausdrücklich angehakt
+    remind: !!document.getElementById('soRemind')?.checked,
+  });
+  if (r.ok) { showSavedToast(t('so.saved')); loadStanding(); }
+  else flashAccMsg(r.d && r.d.hint ? r.d.hint : t('acc.error'));
+}
+
+async function standingSet(id, action) {
+  if (action === 'delete' && !confirm(t('so.delete_confirm'))) return;
+  const r = await standingApi(action, { id });
+  if (r.ok) loadStanding();
+}
+async function standingRemind(id, an) {
+  const r = await standingApi('remind', { id, remind: !!an });
+  if (r.ok) { showSavedToast(an ? t('so.remind_on') : t('so.remind_off')); loadStanding(); }
+}
+
+/* Warenkorb aus einer stehenden Bestellung füllen – gleiche Mechanik wie
+   „Nochmal bestellen", nur aus der gespeicherten Reihe. */
+function standingFill(id) {
+  const o = STANDING.find(x => x.id === id);
+  if (!o) return;
+  fillCartFromItems(o.items, o.mode);
+}
+function fillCartFromItems(items, mode) {
+  let dazu = 0;
+  (items || []).forEach(i => {
+    if (!MENU.find(m => m.id === i.menuId)) return;   // Artikel gibt es nicht mehr
+    const key = i.key || cartKey(i.menuId, i.double);
+    const eintrag = { menuId: i.menuId, qty: i.qty, double: !!i.double };
+    if (i.isMenu) { eintrag.isMenu = true; eintrag.side = i.side; eintrag.drink = i.drink; eintrag.dip = i.dip; }
+    else if (i.dip) eintrag.dip = i.dip;
+    if (cart[key]) cart[key].qty += i.qty; else cart[key] = eintrag;
+    dazu += i.qty;
+  });
+  if (!dazu) { flashCartNotice(t('so.items_gone')); return; }
+  if (mode) checkoutMode = mode;
+  saveCart();
+  checkoutStep = 'cart';
+  renderMenu(); renderCart(); updateCartUI();
+  closeAccountOverlay && closeAccountOverlay();
+  openCart();
+}
+
 /* Adressnamen ----------------------------------------------------------------
    Die beiden Vorschlaege liegen als Schluessel im Konto, damit sie beim
    Sprachwechsel mitwandern ("Zuhause" wird zu "Home"). Ein frei getippter
@@ -7442,8 +7610,10 @@ function buildVatSummary(cartObj, rabattGesamt, liefergebuehr) {
   [VAT_FOOD, VAT_DRINK].forEach(satz => {
     if (brutto[satz] <= 0) return;
     const anteil = warenSumme > 0 ? brutto[satz] / warenSumme : 0;
-    const bru = brutto[satz] - rabattGesamt * anteil + liefergebuehr * anteil;
-    if (bru <= 0.004) return;
+    // Nicht unter null – ein Gutschein über den vollen Betrag ergibt 0,
+    // nicht negativ. Die Zeile bleibt trotzdem stehen: eine Rechnung muss
+    // die Steuer je Satz ausweisen, auch wenn sie 0,00 € beträgt.
+    const bru = Math.max(0, brutto[satz] - rabattGesamt * anteil + liefergebuehr * anteil);
     const netto = bru / (1 + satz / 100);
     zeilen.push({ satz, brutto: +bru.toFixed(2), netto: +netto.toFixed(2),
                   steuer: +(bru - netto).toFixed(2) });
@@ -10745,6 +10915,28 @@ async function importGroup() {
       setTimeout(() => { try { openGroupOverlay(); } catch(e) {} }, 700);
     }
   } catch(e) {}
+})();
+
+/* Aus der Erinnerungsmail: ?so=<id>&t=<token> füllt den Warenkorb vor.
+   Bestellt wird dadurch nichts – der Kunde geht danach den normalen Weg. */
+(function initStandingLink() {
+  try {
+    const p = new URLSearchParams(location.search);
+    const id = p.get('so'), tok = p.get('t');
+    if (!id || !tok) return;
+    fetch('/.netlify/functions/standing-orders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'byLink', id, linkToken: tok }),
+    }).then(r => r.json()).then(d => {
+      if (d && d.ok && d.order) {
+        fillCartFromItems(d.order.items, d.order.mode);
+      }
+    }).catch(() => {});
+    // Kennung aus der Adresse nehmen, damit ein Neuladen nicht doppelt füllt
+    const u = new URL(location.href);
+    u.searchParams.delete('so'); u.searchParams.delete('t');
+    history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+  } catch (e) {}
 })();
 
 /* ---- Teilnehmer-Modus (?g=ID) ---- */
