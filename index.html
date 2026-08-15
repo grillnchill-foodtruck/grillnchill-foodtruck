@@ -2262,6 +2262,22 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   margin-left: 0.35rem;
 }
 /* Summe fest im Fußbereich – ohne Scrollen sichtbar */
+/* Warnhinweise im Korb hatten bisher gar keine Gestaltung und liefen als
+   schmuckloser Text mit. Jetzt tragen Farbe und Rahmen die Warnung – das
+   ersetzt auch das frühere Warn-Emoji im Text. */
+.cart-warn-banner {
+  display: none;
+  margin: 0 0 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(224, 72, 72, 0.45);
+  border-left: 3px solid var(--color-error);
+  background: rgba(224, 72, 72, 0.1);
+  color: var(--color-cream);
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
 .cart-foot-sum {
   display: flex; align-items: baseline; justify-content: space-between;
   gap: 1rem;
@@ -3117,18 +3133,38 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   color: var(--color-orange-bright);
   font-weight: 700;
   line-height: 1.45;
-  background: rgba(240, 138, 42, 0.1);
-  border: 1px solid rgba(240, 138, 42, 0.3);
+  /* Reine Information: gefuellte Flaeche ohne Rahmen. Der Rahmen bleibt dem
+     Status-Knopf darunter vorbehalten – sonst sehen Angabe und Bedienelement
+     gleich aus und man haelt die Zeile faelschlich fuer antippbar. */
+  background: rgba(240, 138, 42, 0.12);
   border-radius: var(--radius-full);
   padding: 0.5rem 1.05rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.9rem;
 }
-.success-status { margin: 0 0 1.1rem; }
-.success-status a {
+.success-status { margin: 0 0 1.25rem; }
+/* Kleiner Knopf statt Textlink – die Statusseite ist das Naechste, was man
+   nach der Bestellung tun will, aber nicht wichtiger als die Aktionen unten. */
+.status-btn {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.6rem 1.05rem;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-card);
+  border: 1px solid rgba(240, 138, 42, 0.45);
   color: var(--color-orange-bright);
   font-weight: 700;
-  text-decoration: underline;
+  font-size: 0.88rem;
+  text-decoration: none;
+  min-height: var(--tap);
+  transition: transform .12s ease-out, background .15s, border-color .15s;
 }
+.status-btn svg { width: 16px; height: 16px; flex: none; }
+/* Der zweite Pfeil sagt an, dass sich ein neuer Tab oeffnet. */
+.status-btn .ext { width: 13px; height: 13px; opacity: 0.75; }
+.status-btn:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .status-btn:hover { background: rgba(240, 138, 42, 0.14); border-color: var(--color-orange); }
+}
+@media (prefers-reduced-motion: reduce) { .status-btn:active { transform: none; } }
 .success-mail {
   color: var(--color-cream);
   font-weight: 600;
@@ -4430,6 +4466,12 @@ body:has(#dipOverlay.open) .cart-fab { display: none; }
 #cfunNext { flex: 1; }
 #cfunErr { color: var(--color-error); font-size: .84rem; margin: .8rem 0 0; text-align: center; }
 .form-input.cfun-invalid { border-color: var(--color-error) !important; }
+/* Das AGB-Haekchen ist kein .form-input – braucht seine eigene Markierung. */
+input[type="checkbox"].cfun-invalid {
+  outline: 2px solid var(--color-error);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
 .cfun-chips.cfun-invalid { outline: 1px dashed var(--color-error); outline-offset: 5px; border-radius: 4px; }
 .catering-karte {
   font-size: 0.92rem;
@@ -8368,7 +8410,11 @@ function renderCart() {
             ? t('co.preorder_slot') + ': ' + escHtml(o.scheduledFor)
             : (isDelivery ? t('co.success_delivery') : t('co.success_pickup'))}
         </p>
-        ${o.statusUrl ? `<p class="success-status"><a href="${o.statusUrl}">${t('co.status_link')}</a></p>` : ''}
+        ${o.statusUrl ? `<p class="success-status"><a class="status-btn" href="${o.statusUrl}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.2v5l3.2 1.9"/></svg>
+          <span>${t('co.status_link')}</span>
+          <svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M19 14.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4.5"/></svg>
+        </a></p>` : ''}
         ${card}
         ${addr}
         <p class="success-mail">${t('co.s_check_mail')}</p>
@@ -8727,7 +8773,7 @@ function renderCart() {
     body.innerHTML = `
       ${usageNote}
       ${orderStatusNote}
-      <form id="checkoutForm" onsubmit="submitOrder(event)">
+      <form id="checkoutForm" novalidate onsubmit="submitOrder(event)">
         <div class="form-group">
           <label for="co-name">${t('co.name')}</label>
           <input type="text" id="co-name" class="form-input" required placeholder="${t('co.name_ph')}" autocomplete="name" />
@@ -8866,6 +8912,7 @@ function renderCart() {
        in Schritt 1 und 2. Das form-Attribut haelt die Formularpruefung
        (Pflichtfelder, AGB-Haken) unveraendert am Leben. */
     footer.innerHTML = `
+      <div id="coFormWarn" class="cart-warn-banner" style="display:none;" role="alert"></div>
       <div id="coMinWarn" class="cart-warn-banner" style="display:none;"></div>
       <div class="cart-foot-sum cart-foot-sum-total">
         <span>${t('cart.total')}</span>
@@ -8974,8 +9021,44 @@ function goToCheckout() {
   if (window.animateCartStep) animateCartStep(1);
 }
 
+/* Der Bestellknopf sitzt seit dem Umbau in der festen Fussleiste, waehrend das
+   Formular darueber scrollt. Die eingebaute Pruefung des Browsers zeigt ihre
+   Blase dann ausserhalb des Sichtbereichs oder (iOS Safari) gar nicht – der
+   Knopf fuehlt sich tot an. Deshalb pruefen wir selbst, scrollen zum Feld,
+   markieren es und sagen laut, was fehlt. */
+function validateCheckoutForm() {
+  const form = document.getElementById('checkoutForm');
+  if (!form || form.checkValidity()) return true;
+  const bad = form.querySelector(':invalid');
+  if (!bad) return true;
+  form.querySelectorAll('.cfun-invalid').forEach(el => el.classList.remove('cfun-invalid'));
+  bad.classList.add('cfun-invalid');
+  (bad.closest('.form-group') || bad).scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(function () {
+    try { bad.focus({ preventScroll: true }); } catch (err) { bad.focus(); }
+  }, 280);
+  // Die Meldung steht direkt ueber dem Knopf, den man gerade gedrueckt hat.
+  // flashCartNotice waere an den Anfang des Korbs gewandert – also genau dorthin,
+  // wo man in dem Moment nicht hinsieht.
+  const warn = document.getElementById('coFormWarn');
+  const msg = bad.id === 'co-agb' ? t('co.need_agb') : t('co.need_fields');
+  if (warn) { warn.textContent = msg; warn.style.display = 'block'; }
+  else flashCartNotice(msg);
+  const clear = function () {
+    bad.classList.remove('cfun-invalid');
+    const w = document.getElementById('coFormWarn');
+    if (w && document.getElementById('checkoutForm') &&
+        document.getElementById('checkoutForm').checkValidity()) w.style.display = 'none';
+  };
+  bad.addEventListener('input', clear);
+  bad.addEventListener('change', clear);
+  if (typeof hapticTick === 'function') hapticTick(12);
+  return false;
+}
+
 async function submitOrder(e) {
   e.preventDefault();
+  if (!validateCheckoutForm()) return;
   if (SHOP_STATUS.paused) { flashCartNotice(t('shop.paused_notice')); return; }
   const soldEntry = Object.values(cart).find(en => en && isSoldOut(en.menuId));
   if (soldEntry) { flashCartNotice(t('shop.soldout_cart')); return; }
