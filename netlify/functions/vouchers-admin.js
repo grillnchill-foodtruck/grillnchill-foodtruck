@@ -38,8 +38,10 @@ const { passwortAusSitzung } = require('./lib/admin-sitzung');
 /* Reservierte Codes: die Aktion und der Code für Testbestellungen. Letzterer
    kommt aus TEST_ORDER_CODE – stünde er hier fest, liesse sich nach einer
    Änderung der Variable ein Gutschein mit genau diesem Namen anlegen, der die
-   1-€-Regel überschreibt. Der alte Wert bleibt gesperrt, solange
-   preisberechnung.js ihn als Rückfall akzeptiert. */
+   1-€-Regel überschreibt.
+   TESTGNC1 bleibt gesperrt, obwohl der Code nichts mehr bewirkt: Er stand
+   lange im öffentlichen Seitenquelltext, und ein Gutschein unter genau diesem
+   Namen würde von den falschen Leuten gefunden. */
 const RESERVED = ['WM', 'TESTGNC1',
   String(process.env.TEST_ORDER_CODE || '').trim().toUpperCase()].filter(Boolean);
 

@@ -88,17 +88,29 @@ function store(name) {
    TESTBESTELLUNG
    Der Code lag früher als Klartext in index.html – also im Quelltext jeder
    ausgelieferten Seite und im öffentlichen Repo. Jeder, der ihn dort las,
-   konnte beliebig viel für 1 € bestellen. Er kommt jetzt aus der Netlify-
-   Variable TEST_ORDER_CODE.
+   konnte beliebig viel für 1 € bestellen. Er kommt jetzt ausschliesslich aus
+   der Netlify-Variable TEST_ORDER_CODE.
 
-   Der Rückfall auf den alten Wert steht bewusst hier: Ohne ihn wären
-   Testbestellungen in der Sekunde des Deploys kaputt, in der die Variable
-   noch nicht gesetzt ist. Sobald TEST_ORDER_CODE in Netlify steht, ist der
-   alte Code wertlos.
+   Beim Umstellen stand hier ein Rückfall auf den alten Wert, damit
+   Testbestellungen in der Zeit zwischen Deploy und dem Anlegen der Variable
+   weiterliefen. Die Variable ist gesetzt, der Rückfall ist raus. Er wäre
+   sonst eine Falle: Wer die Variable eines Tages löscht oder umbenennt,
+   hätte den alten, öffentlich bekannten Code stillschweigend wieder scharf.
+
+   Ist die Variable nicht gesetzt, gibt es KEINE Testbestellung mehr – jeder
+   Warenkorb wird dann normal abgerechnet. Das ist die sichere Richtung:
+   schlimmstenfalls zahlt der Inhaber für seine eigene Testbestellung den
+   vollen Preis, statt dass ein Fremder für 1 € einkauft.
 --------------------------------------------------------------------------- */
-const TEST_CODE_RUECKFALL = 'TESTGNC1';
+let fehlenderCodeGemeldet = false;
 function testCode() {
-  return String(process.env.TEST_ORDER_CODE || TEST_CODE_RUECKFALL).trim().toUpperCase();
+  const code = String(process.env.TEST_ORDER_CODE || '').trim().toUpperCase();
+  if (!code && !fehlenderCodeGemeldet) {
+    fehlenderCodeGemeldet = true;
+    console.warn('preisberechnung: TEST_ORDER_CODE ist nicht gesetzt –'
+      + ' Testbestellungen sind deaktiviert, es wird normal abgerechnet.');
+  }
+  return code;
 }
 function istTestCode(eingabe) {
   const soll = testCode();

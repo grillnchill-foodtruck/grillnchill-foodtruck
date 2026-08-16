@@ -261,13 +261,34 @@ async function treuepruefung() {
 --------------------------------------------------------------------------- */
 async function testbestellung() {
   const cart = { a: { menuId: 'kubis', qty: 5, double: false, isMenu: false } };
-  const code = process.env.TEST_ORDER_CODE || 'TESTGNC1';
+  /* Der Code kommt ausschliesslich aus TEST_ORDER_CODE – einen Rueckfall auf
+     einen fest verdrahteten Wert gibt es bewusst nicht mehr. Fuer den Test
+     wird die Variable deshalb hier gesetzt. */
+  const code = 'TESTLAUF-' + 'GNC2026';
+  process.env.TEST_ORDER_CODE = code;
   const p = await preis.betragErmitteln({
     reference: 'GNC-TEST', mode: 'pickup', payment: 'sumup', cartSnapshot: cart,
     subtotal: SK.warenwert(cart), discount: 0, loyaltyDiscount: 0, deliveryFee: 0,
     tip: 0, total: SK.TEST_TOTAL, isTest: true, testCode: code, email: '',
   });
-  return { betrag: p.betrag, test: p.test, ok: p.test === true && Math.abs(p.betrag - 1.0) < 0.005 };
+  const mitCode = { betrag: p.betrag, test: p.test, ok: p.test === true && Math.abs(p.betrag - 1.0) < 0.005 };
+
+  /* Und die Gegenprobe: ohne gesetzte Variable gibt es keine Testbestellung.
+     Frueher stand hier ein Rueckfall auf den alten, oeffentlich bekannten
+     Code – wer die Variable loescht, soll nicht stillschweigend wieder eine
+     1-€-Hintertuer haben. */
+  const gemerkt = process.env.TEST_ORDER_CODE;
+  delete process.env.TEST_ORDER_CODE;
+  const ohne = await preis.betragErmitteln({
+    reference: 'GNC-TEST', mode: 'pickup', payment: 'sumup', cartSnapshot: cart,
+    subtotal: SK.warenwert(cart), discount: 0, loyaltyDiscount: 0, deliveryFee: 0,
+    tip: 0, total: SK.TEST_TOTAL, isTest: true, testCode: 'TESTGNC1', email: '',
+  });
+  process.env.TEST_ORDER_CODE = gemerkt;
+  mitCode.ohneVariable = ohne.betrag;
+  mitCode.ohneOk = ohne.test !== true && Math.abs(ohne.betrag - SK.warenwert(cart)) < 0.005;
+  mitCode.ok = mitCode.ok && mitCode.ohneOk;
+  return mitCode;
 }
 
 /* ---------------------------------------------------------------------------
@@ -337,7 +358,10 @@ async function ausfallsicherheit() {
 
   console.log('\n3) TESTBESTELLUNG mit gültigem Code\n');
   const t = await testbestellung();
-  console.log('   Warenkorb 55,00 € -> belastet ' + t.betrag.toFixed(2) + ' €  ' + (t.ok ? '✅' : '❌'));
+  console.log('   mit gueltigem Code:  Warenkorb 55,00 € -> belastet ' + t.betrag.toFixed(2)
+    + ' €  ' + (Math.abs(t.betrag - 1) < 0.005 ? '✅' : '❌'));
+  console.log('   ohne die Variable:   Warenkorb 55,00 € -> belastet ' + t.ohneVariable.toFixed(2)
+    + ' €  ' + (t.ohneOk ? '✅ keine Hintertuer' : '❌ 1-€-Tuer offen'));
 
   console.log('\n4) AUSFALLSICHERHEIT – nicht rechenbar heißt: nicht anfassen\n');
   const af = await ausfallsicherheit();
