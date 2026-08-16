@@ -330,9 +330,9 @@
      Grid-Container. Ohne display:flex war die Zeile ein blosser Block – der
      Betrag stand unter der Anschrift statt daneben, und zwar auf JEDER
      Breite unter 1024px, wo die Desktop-Regel noch nicht greift. */
-  #invList .row{display:flex;align-items:flex-start;gap:.8rem;
+  #invList .row,#bakList .row{display:flex;align-items:flex-start;gap:.8rem;
     padding:.55rem 0;border-bottom:1px solid var(--border)}
-  #invList .row:last-child{border-bottom:none}
+  #invList .row:last-child,#bakList .row:last-child{border-bottom:none}
 
   /* Mini-Downloads je Rechnung. Bewusst zurueckhaltend: sie stehen in JEDER
      Zeile, ein kraeftiger Button waere hier reine Unruhe. Trotzdem 34px hoch,
@@ -448,7 +448,7 @@
     /* RECHNUNGEN */
     #pane-invoices .card-hd{display:flex;justify-content:space-between;
                             align-items:center;gap:1rem;flex-wrap:wrap}
-    #invList .row{display:grid;grid-template-columns:minmax(0,1fr) 12rem;
+    #invList .row,#bakList .row{display:grid;grid-template-columns:minmax(0,1fr) 12rem;
                   padding:.55rem 0;border-bottom:1px solid var(--border)}
   }
   </style>
@@ -668,6 +668,25 @@
         </p>
         <div id="invSummary" class="muted" style="margin-bottom:.7rem;"></div>
         <div id="invList">Lade …</div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <h2>Datensicherung</h2>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+            <button type="button" class="abtn" onclick="loadBackups()">Aktualisieren</button>
+            <button type="button" class="abtn primary" onclick="backupJetzt(event)">Jetzt sichern &amp; laden</button>
+          </div>
+        </div>
+        <p class="muted" style="margin:0 0 .8rem;font-size:.85rem;">
+          Läuft automatisch jeden Montag um 03:15 Uhr; die letzten acht Stände bleiben erhalten.
+          Enthalten sind Rechnungen, Gutscheine, Kunden, Bestellungen und Team-Zugänge.
+          <strong>Wichtig:</strong> Diese Sicherungen liegen selbst bei Netlify – sie helfen gegen
+          gelöschte Datensätze, nicht gegen den Verlust des Kontos. Lade dir deshalb etwa
+          einmal im Monat ein Archiv herunter und leg es woanders ab.
+          Es enthält personenbezogene Daten – bitte nicht offen speichern.
+        </p>
+        <div id="bakList">Noch nicht geladen.</div>
       </div>
     </section>
 
@@ -1077,10 +1096,10 @@ function showPanel(){
    blieben fuer den Mitarbeiter anklickbar. */
 function resetPanelState(){
   currentRole='admin'; currentName='';
-  ORDERS=[]; INVOICES=[]; VOUCHERS=[]; CATERING=[]; REV_DAYS=[];
+  ORDERS=[]; INVOICES=[]; VOUCHERS=[]; CATERING=[]; REV_DAYS=[]; BACKUPS=[];
   ordersLoaded=false; invoicesLoaded=false; vouchersLoaded=false;
   cateringLoaded=false; teamLoaded=false; statsLoaded=false; revLoaded=false;
-  ['ordersOut','invList','vList','vPurchases','cateringOut','statsOut',
+  ['ordersOut','invList','bakList','vList','vPurchases','cateringOut','statsOut',
    'teamList','auditOut','scanResult'].forEach(id=>{
     const el=$(id); if(el) el.innerHTML='';
   });
@@ -1248,7 +1267,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
     if(tab.dataset.tab==='catering' && !cateringLoaded) loadCatering();
     if(tab.dataset.tab==='team' && !teamLoaded) loadTeam();
     if(tab.dataset.tab==='vouchers' && !vouchersLoaded) loadVouchers();
-    if(tab.dataset.tab==='invoices' && !invoicesLoaded) loadInvoices();
+    if(tab.dataset.tab==='invoices' && !invoicesLoaded){ loadInvoices(); loadBackups(); }
   });
 });
 
@@ -1412,6 +1431,8 @@ document.addEventListener('click',(e)=>{
   if(pdf){ invoicePdf(pdf.dataset.invPdf, pdf); return; }
   const csv=e.target.closest('[data-inv-csv]');
   if(csv){ invoiceCsv(csv.dataset.invCsv); return; }
+  const bak=e.target.closest('[data-bak]');
+  if(bak){ backupLaden(bak.dataset.bak, bak); return; }
 });
 /* ================== Kundenkarten-Scan ================== */
 let scanStream=null, scanRAF=null, scanBusy=false, scanCard=null, scanToken=null, jsqrLoading=false;
@@ -2251,6 +2272,76 @@ async function invoicePdf(nummer, btn){
   }catch(e){ toast('Rechnung konnte nicht erzeugt werden'); }
   finally{ if(btn){ btn.disabled=false; btn.innerHTML=alt; } }
 }
+/* ---------------- Datensicherung ---------------- */
+let BACKUPS=[];
+const bakMb = (b) => (Number(b||0)/1048576).toFixed(2).replace('.',',')+' MB';
+
+async function loadBackups(){
+  $('bakList').innerHTML='<p class="empty">Lade …</p>';
+  try{
+    const r=await fetch('/.netlify/functions/backup-list?password='+encodeURIComponent(invPw()));
+    if(sperreGemeldet(r,'bakList')) return;
+    if(r.status===403){ $('bakList').innerHTML='<p class="empty">Datensicherungen sind nur für Admins zugänglich.</p>'; return; }
+    if(r.status===401){ $('bakList').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; return; }
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    BACKUPS=(await r.json()).staende||[];
+    renderBackups();
+  }catch(e){ $('bakList').innerHTML='<p class="empty">Sicherungen konnten nicht geladen werden.</p>'; }
+}
+
+function renderBackups(){
+  if(!BACKUPS.length){
+    $('bakList').innerHTML='<p class="empty">Noch keine Sicherung vorhanden. Der erste Lauf ist am kommenden Montag – oder jetzt über „Jetzt sichern &amp; laden“.</p>';
+    return;
+  }
+  $('bakList').innerHTML=BACKUPS.map(b=>{
+    const luecken=(b.bericht||[]).filter(x=>!x.ok);
+    const datum=new Date(b.stand).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `<div class="row" style="align-items:flex-start;gap:.8rem;">
+      <div style="flex:1;min-width:0;">
+        <div><strong>${esc2(datum)}</strong> <span class="muted">· ${bakMb(b.bytes)}</span></div>
+        <div class="muted" style="font-size:.82rem;">${(b.eintraege||0).toLocaleString('de-DE')} Einträge aus ${(b.bericht||[]).length} Speichern</div>
+        ${luecken.length?`<div style="font-size:.8rem;color:var(--amber);margin-top:.2rem;">Nicht gelesen: ${esc2(luecken.map(x=>x.speicher).join(', '))}</div>`:''}
+      </div>
+      <div style="text-align:right;white-space:nowrap;">
+        <div class="inv-dls">
+          <button type="button" class="inv-dl" data-bak="${esc2(b.stand)}" title="Diese Sicherung herunterladen">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/>
+            </svg><span>ZIP</span>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* Herunterladen. "jetzt" erzeugt serverseitig einen frischen Stand, ohne ihn
+   abzulegen – nützlich vor einer groesseren Aenderung. */
+async function backupLaden(stand, btn){
+  const alt=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<span>Lädt …</span>'; }
+  try{
+    const r=await fetch('/.netlify/functions/backup-list?password='+encodeURIComponent(invPw())
+            +'&stand='+encodeURIComponent(stand));
+    if(sperreGemeldet(r)) return;
+    if(r.status===403){ toast('Nur für Admins'); return; }
+    if(r.status===404){ toast('Diese Sicherung gibt es nicht mehr'); return; }
+    if(r.status===413){ const d=await r.json().catch(()=>({})); toast(d.hint||'Archiv zu groß für den Download','err'); return; }
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const blob=await r.blob();
+    const echterStand=r.headers.get('X-Backup-Stand')||stand;
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='Grillnchill-Sicherung-'+String(echterStand).slice(0,10)+'.zip';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    toast('Sicherung geladen ('+bakMb(blob.size)+')','ok');
+  }catch(e){ toast('Sicherung konnte nicht geladen werden','err'); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML=alt; } }
+}
+function backupJetzt(ev){ backupLaden('jetzt', ev&&ev.target&&ev.target.closest('button')); }
+
 /* Alle Rechnungen als ZIP mit einzelnen PDFs. Der Server erzeugt die PDFs
    und packt sie; wir laden die Antwort als Blob, damit das Passwort nicht
    in der Adresszeile landet. */

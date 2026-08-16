@@ -116,6 +116,12 @@
 [functions."standing-remind"]
   schedule = "0 17 * * *"
 
+# Datensicherung: wöchentlich, montags 03:15 UTC. Bewusst nachts und an einem
+# Tag, an dem der Truck steht – das Auslesen aller Speicher erzeugt kurz Last.
+# Aufbewahrt werden die letzten 8 Stände, siehe backup-weekly.js.
+[functions."backup-weekly"]
+  schedule = "15 3 * * 1"
+
 [[redirects]]
   from   = "/voucher-check"
   to     = "/.netlify/functions/voucher-check"

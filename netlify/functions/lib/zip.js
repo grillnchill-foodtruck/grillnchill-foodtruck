@@ -3,9 +3,12 @@
  * ----------------------------------------------------------------------------
  * Minimaler ZIP-Schreiber ohne Fremdbibliothek.
  *
- * Die Dateien werden unkomprimiert abgelegt (Methode 0, "stored"). Das ist
- * hier kein Nachteil: PDFs sind bereits komprimiert, ein zweiter Durchgang
- * bringt praktisch nichts und kostet nur Rechenzeit.
+ * Je Datei wird entschieden: PDFs sind bereits komprimiert und werden
+ * unveraendert abgelegt (Methode 0, "stored") – ein zweiter Durchgang bringt
+ * dort nichts und kostet nur Rechenzeit. JSON dagegen schrumpft stark, dafuer
+ * gibt es Methode 8 ("deflate"). Das entscheidet ueber "passt in eine
+ * Function-Antwort" oder nicht: die Datensicherung besteht fast nur aus JSON.
+ * Gewaehlt wird immer das kleinere Ergebnis, nie das groessere.
  *
  * Aufbau je Eintrag: lokaler Kopf + Daten, am Ende das zentrale Verzeichnis
  * und der EOCD-Block. Dateinamen werden als UTF-8 markiert (Flag 0x0800),
@@ -42,7 +45,7 @@ function dosZeit(d) {
 }
 
 /**
- * @param {Array<{name: string, data: Buffer}>} dateien
+ * @param {Array<{name: string, data: Buffer, komprimieren?: boolean}>} dateien
  * @param {Date} [stand] Zeitstempel für alle Einträge
  * @returns {Buffer}
  */
@@ -55,19 +58,30 @@ function buildZip(dateien, stand) {
 
   for (const f of dateien) {
     const name = Buffer.from(f.name, 'utf8');
-    const daten = Buffer.isBuffer(f.data) ? f.data : Buffer.from(f.data);
-    const crc = crc32(daten);
+    const roh = Buffer.isBuffer(f.data) ? f.data : Buffer.from(f.data);
+    const crc = crc32(roh);   // CRC IMMER ueber die unkomprimierten Daten
+
+    // Komprimieren versuchen, aber nur uebernehmen, wenn es wirklich kleiner
+    // wird. Bei bereits komprimierten Daten (PDF, ZIP) waechst deflate sonst.
+    let methode = 0;
+    let daten = roh;
+    if (f.komprimieren !== false && roh.length > 256) {
+      try {
+        const klein = zlib.deflateRawSync(roh, { level: 9 });
+        if (klein.length < roh.length) { daten = klein; methode = 8; }
+      } catch (e) { /* im Zweifel unkomprimiert – eine Sicherung darf nie scheitern */ }
+    }
 
     const kopf = Buffer.alloc(30);
     kopf.writeUInt32LE(0x04034b50, 0);   // Signatur
     kopf.writeUInt16LE(20, 4);           // benötigte Version
     kopf.writeUInt16LE(0x0800, 6);       // Flag: Name ist UTF-8
-    kopf.writeUInt16LE(0, 8);            // Methode 0 = unkomprimiert
+    kopf.writeUInt16LE(methode, 8);      // 0 = unkomprimiert, 8 = deflate
     kopf.writeUInt16LE(zeit, 10);
     kopf.writeUInt16LE(datum, 12);
     kopf.writeUInt32LE(crc, 14);
-    kopf.writeUInt32LE(daten.length, 18);
-    kopf.writeUInt32LE(daten.length, 22);
+    kopf.writeUInt32LE(daten.length, 18); // komprimierte Groesse
+    kopf.writeUInt32LE(roh.length, 22);   // Groesse im Original
     kopf.writeUInt16LE(name.length, 26);
     kopf.writeUInt16LE(0, 28);           // keine Zusatzfelder
     lokal.push(kopf, name, daten);
@@ -77,12 +91,12 @@ function buildZip(dateien, stand) {
     eintrag.writeUInt16LE(20, 4);        // erstellt mit
     eintrag.writeUInt16LE(20, 6);        // benötigt
     eintrag.writeUInt16LE(0x0800, 8);
-    eintrag.writeUInt16LE(0, 10);
+    eintrag.writeUInt16LE(methode, 10);
     eintrag.writeUInt16LE(zeit, 12);
     eintrag.writeUInt16LE(datum, 14);
     eintrag.writeUInt32LE(crc, 16);
     eintrag.writeUInt32LE(daten.length, 20);
-    eintrag.writeUInt32LE(daten.length, 24);
+    eintrag.writeUInt32LE(roh.length, 24);
     eintrag.writeUInt16LE(name.length, 28);
     eintrag.writeUInt16LE(0, 30);        // Zusatzfelder
     eintrag.writeUInt16LE(0, 32);        // Kommentar
