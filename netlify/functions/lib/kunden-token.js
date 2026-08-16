@@ -59,6 +59,20 @@
 const TOKEN_FORM = /^[a-f0-9]{32,128}$/;
 
 /**
+ * Wie lange eine Anmeldung gilt.
+ *
+ * Vorher: unbegrenzt. Wer sich einmal angemeldet hatte, blieb es für immer –
+ * auch auf dem Rechner im Hotel, dem verkauften Handy oder dem Tablet, das
+ * sich jemand geliehen hat. Fünf Tokens pro Konto, keiner davon lief je ab.
+ *
+ * 180 Tage sind bewusst grosszügig: Wer zweimal im Jahr bestellt, merkt
+ * nichts. Wer länger weg war, fordert einen neuen Code an – das dauert die
+ * halbe Minute, die eine Anmeldung ohnehin dauert, und das Konto mit allen
+ * Daten und Stempeln ist unverändert da.
+ */
+const GUELTIG_MS = 180 * 24 * 60 * 60 * 1000;
+
+/**
  * Ist dieser Token für diesen Kundendatensatz gültig?
  *
  * @param {object|null} rec   Kundendatensatz aus dem Store 'customers'
@@ -71,7 +85,16 @@ function tokenGueltig(rec, token) {
   if (!tokens || typeof tokens !== 'object') return false;
   if (typeof token !== 'string' || !TOKEN_FORM.test(token)) return false;
   if (!Object.prototype.hasOwnProperty.call(tokens, token)) return false;
-  return !!tokens[token];
+  const seit = tokens[token];
+  if (!seit) return false;
+
+  /* Abgelaufen? Der Wert ist der Zeitstempel der Anmeldung.
+     Lässt er sich nicht lesen – ein Datensatz aus einer früheren Fassung,
+     ein kaputter Eintrag –, gilt der Token WEITER. Lieber eine Anmeldung zu
+     lang als ein Kunde, der ohne Grund vor der Tür steht. */
+  const t = new Date(seit).getTime();
+  if (!isFinite(t)) return true;
+  return (Date.now() - t) < GUELTIG_MS;
 }
 
-module.exports = { tokenGueltig, TOKEN_FORM };
+module.exports = { tokenGueltig, TOKEN_FORM, GUELTIG_MS };
