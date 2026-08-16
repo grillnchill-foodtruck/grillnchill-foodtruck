@@ -11,6 +11,19 @@
 <meta property="og:description" content="Burger verschenken: Gutschein online kaufen, Code kommt sofort nach Zahlung per E-Mail. 3 Jahre gültig.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://grillnchill-foodtruck.de/gutscheine">
+<!-- Ohne Bild zeigt WhatsApp beim Teilen nur einen grauen Kasten – und genau
+     ueber WhatsApp wird ein Geschenkgutschein verschickt. Bewusst ein Burger
+     statt des Teamfotos: geteilt wird "Burger verschenken". -->
+<meta property="og:image" content="https://grillnchill-foodtruck.de/produktbilder/kubis.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="900">
+<meta property="og:image:alt" content="Kubis Special – Halal Smashburger von Grill'n Chill">
+<meta property="og:site_name" content="Grilln Chill">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Gutschein kaufen – Grill'n Chill Bielefeld">
+<meta name="twitter:description" content="Burger verschenken: Gutschein online kaufen, Code kommt sofort nach Zahlung per E-Mail. 3 Jahre gültig.">
+<meta name="twitter:image" content="https://grillnchill-foodtruck.de/produktbilder/kubis.jpg">
 <link rel="preload" as="font" type="font/woff2" href="/fonts/bowlby-one-latin-400-normal.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-400-normal.woff2" crossorigin>
 <style>
@@ -106,6 +119,46 @@
   /* Fokus-Ringe (A11y) */
   a:focus-visible,button:focus-visible,.btn:focus-visible,.amt:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--orange-b);outline-offset:3px;border-radius:10px}
 </style>
+
+<!-- Strukturierte Daten. Als einzige oeffentliche Seite hatte diese hier
+     keine – Startseite und Catering schon. Damit versteht die Suche (und ein
+     KI-Assistent), dass es hier ein kaufbares Produkt mit Preisspanne gibt,
+     statt nur Fliesstext zu sehen. Preise und Laufzeit muessen zum Text auf
+     der Seite und zu MIN_AMOUNT/MAX_AMOUNT in
+     netlify/functions/giftcard-checkout.js passen. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "Grill'n Chill Geschenkgutschein",
+  "description": "Geschenkgutschein für 100 % Halal Burger und Streetfood bei Grill'n Chill in Bielefeld-Brackwede. Frei wählbarer Betrag, Code kommt sofort nach der Zahlung per E-Mail, 3 Jahre gültig.",
+  "image": "https://grillnchill-foodtruck.de/produktbilder/kubis.jpg",
+  "url": "https://grillnchill-foodtruck.de/gutscheine",
+  "category": "GiftCard",
+  "brand": { "@type": "Brand", "name": "Grill'n Chill" },
+  "offers": {
+    "@type": "AggregateOffer",
+    "priceCurrency": "EUR",
+    "lowPrice": "10",
+    "highPrice": "200",
+    "offerCount": 3,
+    "availability": "https://schema.org/InStock",
+    "url": "https://grillnchill-foodtruck.de/gutscheine",
+    "seller": {
+      "@type": "FoodEstablishment",
+      "name": "Grill'n Chill",
+      "servesCuisine": "Halal Burger",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Gütersloher Straße 122",
+        "postalCode": "33649",
+        "addressLocality": "Bielefeld",
+        "addressCountry": "DE"
+      }
+    }
+  }
+}
+</script>
 </head>
 <body>
 
