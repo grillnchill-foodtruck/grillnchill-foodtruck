@@ -12099,6 +12099,84 @@ function flashCartNotice(msg) {
   body.scrollTop = 0;
 }
 
+/* Zurueck aus dem SumUp-Fenster, ohne bezahlt zu haben.
+
+   Vorher landete der Kunde oben auf der Startseite: Beim Verlassen von SumUp
+   laedt die Seite neu, und alles, was nur im Arbeitsspeicher stand, ist weg –
+   Bestellschritt, Abholung/Lieferung, die erkannte Lieferzone, Trinkgeld,
+   eingeloester Gutschein. Wer schon alles ausgefuellt hatte, fing von vorne an.
+
+   Was der Kunde EINGETIPPT hat (Name, Telefon, Mail, Adresse, Notiz) liegt
+   ohnehin im Speicher und kommt beim Rendern des Formulars von allein zurueck.
+   Der Rest wird hier aus der Bestellung wiederhergestellt, die vor dem Sprung
+   zu SumUp gesichert wurde – sie ist ein vollstaendiger Abzug dieses Moments.
+
+   Besonders wichtig ist die Lieferzone: ohne sie sperrt updateCheckoutSummary()
+   den Bestellknopf ("Adresse fehlt"), und der Kunde saesse wieder fest. Sie
+   wird aus der gespeicherten Liefergebuehr zurueckgeholt – die drei Betraege
+   sind eindeutig, das geht ohne erneutes Geokodieren und damit ohne Wartezeit
+   und ohne Risiko, dass ein fremder Dienst gerade nicht antwortet. Tippt der
+   Kunde die Adresse um, rechnet der normale Adress-Check sie neu aus. */
+function stelleKasseWieder(order) {
+  if (!order || typeof order !== 'object') return;
+  try {
+    checkoutMode = order.mode === 'delivery' ? 'delivery' : 'pickup';
+
+    if (checkoutMode === 'delivery') {
+      const gebuehr = Math.round((Number(order.deliveryFee) || 0) * 100) / 100;
+      deliveryZone = DELIVERY_ZONES.find(z => Math.abs(z.fee - gebuehr) < 0.005) || null;
+      deliveryAddressValid = !!deliveryZone;
+    }
+
+    // Aktionen und Boni so, wie sie im Warenkorb standen
+    promoApplied = !!(order.promo && order.promo.code && order.promo.code === PROMO_CODE);
+    loyaltyApplied = !!order.loyaltyApplied;
+
+    /* Trinkgeld: gespeichert ist der Betrag, gebraucht wird der Prozentsatz.
+       Zurueckgerechnet ueber dieselbe Formel, die ihn erzeugt hat. */
+    tipPercent = 0;
+    const tg = Math.round((Number(order.tip) || 0) * 100) / 100;
+    if (tg > 0) {
+      const basis = (Number(order.subtotal) || 0) - (Number(order.discount) || 0)
+                  - (Number(order.loyaltyDiscount) || 0);
+      const treffer = (SK.TIP_PERCENTS || []).find(p => p > 0
+        && Math.abs(SK.trinkgeldBetrag(basis, p) - tg) < 0.005);
+      if (treffer) tipPercent = treffer;
+    }
+
+    checkoutStep = 'details';
+
+    /* Gutschein: nur der Code war gespeichert, die Konditionen nicht. Der
+       Server muss ihn ohnehin erneut pruefen – ein Gutschein kann zwischen-
+       durch aufgebraucht oder abgelaufen sein. Laeuft im Hintergrund; faellt
+       die Antwort negativ aus, sieht der Kunde schlicht den Preis ohne ihn. */
+    voucherApplied = null;
+    if (order.voucherCode) {
+      fetch('/voucher-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: order.voucherCode, email: order.email || '', mode: checkoutMode }),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (!d || !d.valid || d.kind === 'test') return;
+          voucherApplied = {
+            code: order.voucherCode, kind: d.kind || 'personal', type: d.type || 'fixed',
+            value: d.value || 3, maxDiscount: d.maxDiscount || 0, minOrder: d.minOrder || 0,
+            combinable: !!d.combinable, mode: d.mode || 'any',
+          };
+          if (!voucherApplied.combinable) { promoApplied = false; loyaltyApplied = false; }
+          renderCart(); updateCartUI();
+        })
+        .catch(() => {});
+    }
+  } catch (e) {
+    // Im Zweifel wenigstens den Schritt setzen – lieber Schritt 3 ohne
+    // Feinheiten als der Kunde wieder ganz oben auf der Startseite.
+    checkoutStep = 'details';
+  }
+}
+
 async function handlePaymentReturn() {
   /* ZUERST den Bestellknopf entsperren.
      Vor dem Sprung zu SumUp wird er auf "Erstelle Zahlungsseite ..." gesetzt
@@ -12182,7 +12260,15 @@ async function handlePaymentReturn() {
           body: JSON.stringify({ cancelOnly: true, supersedes: { reference: pending.reference, checkoutId: pending.checkoutId } }),
         }).catch(() => {});
       } catch (e) {}
+      /* Dort weitermachen, wo er war: Schritt 3 von 3 mit allem Ausgefuellten.
+         Vorher kam der Kunde hier oben auf der Startseite heraus und musste
+         die ganze Kasse noch einmal durchlaufen.
+         Bewusst OHNE Hinweistext: Er hat selbst abgebrochen, das muss ihm
+         niemand melden. */
+      const abzug = pending && pending.order;
       raeumeAufWennNochAktuell();
+      stelleKasseWieder(abzug);
+      setTimeout(() => openCart(), 250);
       return;
     }
 
@@ -12210,8 +12296,14 @@ async function handlePaymentReturn() {
     } else {
       // ❌ Nicht bezahlt / abgebrochen: Warenkorb + Daten bleiben erhalten,
       // der Kunde kann erneut eine Zahlungsart wählen. KEINE Bestellung, KEINE Mail.
+      // Hier stand nur checkoutStep = 'details'. Das reichte nicht: Bei einer
+      // Lieferung waren Modus und Zone nach dem Neuladen weg, und der
+      // Bestellknopf blieb mit "Adresse fehlt" gesperrt. Dieselbe
+      // Wiederherstellung wie beim Rueckzieher – hier zusaetzlich mit Hinweis,
+      // weil die Zahlung wirklich fehlgeschlagen ist.
+      const abzug2 = pending && pending.order;
       raeumeAufWennNochAktuell();
-      checkoutStep = 'details';
+      stelleKasseWieder(abzug2);
       setTimeout(() => {
         openCart();
         flashCartNotice(t('co.pay_not_completed'));
