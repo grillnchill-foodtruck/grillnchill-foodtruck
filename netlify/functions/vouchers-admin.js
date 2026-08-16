@@ -34,6 +34,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { codeNormalisieren } = require('./lib/gutschein-code');
 
 /* Reservierte Codes: die Aktion und der Code für Testbestellungen. Letzterer
    kommt aus TEST_ORDER_CODE – stünde er hier fest, liesse sich nach einer
@@ -102,7 +103,7 @@ async function auditLog(who, action, detail) {
    Türkische Buchstaben Ş, Ğ und Ç sind zugelassen; die i-Familie (ı, i, İ)
    bewusst NICHT, weil ihre Großschreibung je nach Locale abweicht und ein
    Code dann nicht mehr zuverlässig gefunden würde. */
-const cleanCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9ÄÖÜŞĞÇ]/g, '').slice(0, 20);
+const cleanCode = codeNormalisieren;
 
 function describe(v) {
   const val = v.type === 'percent' ? v.value + ' %' : v.value.toFixed(2).replace('.', ',') + ' €';

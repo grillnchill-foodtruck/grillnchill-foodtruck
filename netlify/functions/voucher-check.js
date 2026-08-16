@@ -13,6 +13,7 @@
 
 const { getStore } = require('@netlify/blobs');
 const { istTestCode } = require('./lib/preisberechnung');
+const { codeNormalisieren } = require('./lib/gutschein-code');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -69,7 +70,7 @@ exports.handler = async (event) => {
   try {
     const b = JSON.parse(event.body || '{}');
     // Muss zeichengenau zu cleanCode() in vouchers-admin.js passen
-    code = (b.code || '').toString().trim().toUpperCase().replace(/[^A-Z0-9ÄÖÜŞĞÇ]/g, '').slice(0, 20);
+    code = codeNormalisieren(b.code);
     email = (b.email || '').toString().trim().toLowerCase().slice(0, 120);
     mode = (b.mode || '').toString();
   } catch (e) {}

@@ -61,6 +61,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { buildInvoicePdf, buildInvoiceXml } = require('./lib/invoice');
 const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
+const { codeSchluessel } = require('./lib/gutschein-code');
 
 /* Fortlaufende Rechnungsnummer. § 14 Abs. 4 Nr. 4 UStG verlangt eine
    einmalig vergebene, fortlaufende Nummer. Wir zaehlen je Jahr hoch:
@@ -423,7 +424,11 @@ async function afterOrderHooks(order, verified) {
     if (order.voucherCode) {
       try {
         const cs = blobStore('vouchers');
-        const ckey = 'c:' + String(order.voucherCode).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+        // Schluessel ueber die gemeinsame Regel. Stand hier frueher als
+        // eigene Fassung OHNE Umlaute – Codes wie "GRÜN10" wurden dadurch
+        // nie gefunden: Zaehler blieb 0 und maxUses war nicht durchsetzbar.
+        const ckey = codeSchluessel(order.voucherCode);
+        if (!ckey) throw new Error('leerer Gutscheincode');
         const c = await cs.get(ckey, { type: 'json' });
         if (c) {
           // S3: Limits serverseitig DURCHSETZEN. voucher-check.js ist nur beratend und

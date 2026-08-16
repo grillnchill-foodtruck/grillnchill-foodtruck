@@ -53,6 +53,7 @@
  */
 
 const { getStore } = require('@netlify/blobs');
+const { codeNormalisieren } = require('./gutschein-code');
 
 /* Die Speisekarte liegt im Repo-Root und wird von index.html genauso geladen.
    Sollte sie wider Erwarten nicht mitgebündelt sein, darf das den Checkout
@@ -124,7 +125,7 @@ function istTestCode(eingabe) {
    dem Gutschein-Datensatz statt denen, die der Browser mitschickt.
 --------------------------------------------------------------------------- */
 async function gutscheinRabatt(code, warenwert, modus) {
-  const sauber = String(code || '').toUpperCase().replace(/[^A-Z0-9ÄÖÜŞĞÇ]/g, '').slice(0, 20);
+  const sauber = codeNormalisieren(code);
   if (!sauber) return 0;
   const c = await store('vouchers').get('c:' + sauber, { type: 'json' });
   if (!c || c.active === false) return 0;
