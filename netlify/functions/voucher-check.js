@@ -12,6 +12,7 @@
  */
 
 const { getStore } = require('@netlify/blobs');
+const { istTestCode } = require('./lib/preisberechnung');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -73,6 +74,16 @@ exports.handler = async (event) => {
     mode = (b.mode || '').toString();
   } catch (e) {}
   if (code.length < 3) return json(200, { valid: false, reason: 'not_found' });
+
+  /* 🔧 Testbestellung (nur für den Inhaber).
+     Der Code stand früher als Klartext in index.html – also im Quelltext
+     jeder ausgelieferten Seite und im öffentlichen Repo. Wer ihn dort las,
+     konnte jede Bestellung für 1 € aufgeben. Er liegt jetzt ausschliesslich
+     hier, in der Netlify-Variable TEST_ORDER_CODE.
+     Zurück geht nur `kind: 'test'` – nie der Code selbst. */
+  if (istTestCode(code)) {
+    return json(200, { valid: true, kind: 'test', combinable: false, mode: 'any' });
+  }
 
   // ---- 1) Kampagnen-Gutschein (Admin-Tool, Prefix c:) ----
   try {

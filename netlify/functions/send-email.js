@@ -60,6 +60,7 @@ const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { buildInvoicePdf, buildInvoiceXml } = require('./lib/invoice');
+const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
 
 /* Fortlaufende Rechnungsnummer. § 14 Abs. 4 Nr. 4 UStG verlangt eine
    einmalig vergebene, fortlaufende Nummer. Wir zaehlen je Jahr hoch:
@@ -1312,6 +1313,18 @@ exports.handler = async (event) => {
   const order = input.order;
   if (!order || !order.email || !order.reference) {
     return json(400, { error: 'Missing required fields', hint: 'order.email und order.reference sind Pflicht' });
+  }
+
+  /* Betrag serverseitig nachrechnen, BEVOR daraus Ticket, Mail, Archiv,
+     Rechnung und Treuegutschrift entstehen.
+     Notwendig, weil Bar-/EC-Bestellungen gar nicht über sumup-checkout
+     laufen: Für sie ist das hier die einzige Stelle, an der der Preis
+     überhaupt geprüft wird – ein manipulierter Betrag stünde sonst direkt
+     auf dem Ticket, das am Truck abkassiert wird. Bei Online-Zahlungen hat
+     sumup-checkout schon korrigiert; dann findet der zweite Lauf nichts mehr.
+     Bricht nie ab – siehe lib/preisberechnung.js. */
+  if (type === 'order_confirmation' || type === 'owner_notification') {
+    await pruefeUndKorrigiere(order);
   }
 
   try {

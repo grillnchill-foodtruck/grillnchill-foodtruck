@@ -34,7 +34,13 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 
-const RESERVED = ['WM', 'TESTGNC1'];
+/* Reservierte Codes: die Aktion und der Code für Testbestellungen. Letzterer
+   kommt aus TEST_ORDER_CODE – stünde er hier fest, liesse sich nach einer
+   Änderung der Variable ein Gutschein mit genau diesem Namen anlegen, der die
+   1-€-Regel überschreibt. Der alte Wert bleibt gesperrt, solange
+   preisberechnung.js ihn als Rückfall akzeptiert. */
+const RESERVED = ['WM', 'TESTGNC1',
+  String(process.env.TEST_ORDER_CODE || '').trim().toUpperCase()].filter(Boolean);
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

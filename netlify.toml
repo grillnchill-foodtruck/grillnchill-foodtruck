@@ -105,9 +105,13 @@
 
 # Stehende Bestellungen: Erinnerung am Vorabend (17:00 UTC ≈ 19:00 dt. Sommerzeit).
 # Verschickt nur an Kunden, die die Erinnerung ausdrücklich eingeschaltet haben.
-# Das Logo wird für den Rechnungskopf im PDF gebraucht
+# Das Logo wird für den Rechnungskopf im PDF gebraucht.
+# speisekarte.js braucht lib/preisberechnung.js, um den belasteten Betrag aus
+# dem Warenkorb nachzurechnen. Der Bundler zieht sie über das require() ohnehin
+# mit – der Eintrag hier ist die Rückversicherung, damit eine Umstellung des
+# Bundlers die Preisprüfung nicht stillschweigend abschaltet.
 [functions]
-  included_files = ["logo.png"]
+  included_files = ["logo.png", "speisekarte.js"]
 
 [functions."standing-remind"]
   schedule = "0 17 * * *"

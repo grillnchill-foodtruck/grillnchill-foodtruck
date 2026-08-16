@@ -49,6 +49,7 @@ const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 // bezahlte Bestellung auch dann nachverfolgbar ist, wenn der Kunde nach der
 // Zahlung nicht zur Website zurückkehrt (Abgleich: orders-reconcile.js).
 const { getStore } = require('@netlify/blobs');
+const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
 function ordersStore() {
   const opts = { name: 'orders', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -183,10 +184,18 @@ exports.handler = async (event) => {
     return json(400, { error: 'Invalid JSON body' });
   }
 
-  // S2: Der belastete Betrag wird verbindlich aus dem Bestellwert (order.total) abgeleitet.
-  //     Einem separaten, frei manipulierbaren input.amount wird NICHT allein vertraut – sonst
-  //     ließe sich z. B. 1 € für eine 50-€-Bestellung zahlen (Befund S2). Weichen amount und
-  //     order.total voneinander ab, ist der Bestellwert maßgeblich.
+  // Der belastete Betrag wird SERVERSEITIG aus dem Warenkorb nachgerechnet.
+  //
+  // Vorher wurde order.total übernommen (mit input.amount als Gegenprobe).
+  // Beide Zahlen kamen aus dem Browser des Kunden und liessen sich in der
+  // Anfrage frei setzen – eine veränderte Anfrage konnte 1 € für einen
+  // 50-€-Warenkorb zahlen. Die Gegenprobe half nicht, weil sie zwei Werte
+  // derselben, nicht vertrauenswürdigen Seite verglich.
+  //
+  // lib/preisberechnung.js baut den Preis aus cartSnapshot und speisekarte.js
+  // neu auf – derselben Datei, die auch der Browser lädt. Kann sie nicht
+  // sicher rechnen, bleibt es beim gemeldeten Betrag: ein Bestellabbruch ist
+  // teurer als ein Betrugsversuch. Details im Kopf jener Datei.
   const hasOrderTotal = input.order && typeof input.order === 'object'
     && typeof input.order.total === 'number' && isFinite(input.order.total);
   if (!input.amount && !hasOrderTotal) {
@@ -198,6 +207,12 @@ exports.handler = async (event) => {
     if (isNaN(amount) || Math.abs(amount - orderTotal) > 0.01) {
       amount = orderTotal;
     }
+  }
+  if (input.order && typeof input.order === 'object') {
+    // Schreibt den geprüften Betrag in input.order zurück, damit Archiv,
+    // Ticket und Mail dieselbe Zahl zeigen wie die Belastung.
+    const preis = await pruefeUndKorrigiere(input.order);
+    if (preis && preis.sicher) amount = preis.betrag;
   }
   if (isNaN(amount) || amount < 1.0 || amount > 500.0) {
     return json(400, { error: 'Amount out of bounds', hint: 'Betrag muss zwischen 1 und 500 € liegen' });

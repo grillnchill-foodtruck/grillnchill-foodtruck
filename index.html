@@ -6069,6 +6069,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
      JAVASCRIPT
      ============================================ -->
 <script src="i18n.js"></script>
+<!-- Speisekarte & Preisregeln. MUSS vor dem Skript darunter geladen sein.
+     Dieselbe Datei liest auch der Server (netlify/functions/lib/preisberechnung.js),
+     damit die Anzeige im Warenkorb und der belastete Betrag nicht auseinanderlaufen
+     koennen. Preise ausschliesslich dort aendern. -->
+<script src="speisekarte.js"></script>
 <script>
 /* Sicherung gegen "t is not defined": garantiert eine globale t()-Funktion,
    falls i18n.js nicht/zu spaet geladen hat. Ueberschreibt die echte t() nie
@@ -6196,38 +6201,33 @@ const RESTAURANT_LOCATION = {
   get address() { return locationAddress(baseLocation()); },
 };
 
+/* ====================================================================
+   PREISE & AKTIONEN – kommen aus speisekarte.js
+   --------------------------------------------------------------------
+   Die Karte, die Aufpreise, die Rabattstaffel, die Lieferzonen und die
+   Rechenfunktionen standen frueher hier. Sie liegen jetzt in
+   speisekarte.js, weil der Server dieselbe Datei liest: Er rechnet den
+   belasteten Betrag selbst nach, statt dem mitgeschickten order.total zu
+   glauben. Zwei getrennte Preislisten wuerden frueher oder spaeter
+   auseinanderlaufen – dann wuerde der Server jede Bestellung korrigieren,
+   obwohl gar nichts falsch ist. Deshalb: EINE Quelle.
+
+   Preise aendern -> speisekarte.js. Hier nichts eintragen.
+   ==================================================================== */
+const SK = window.SPEISEKARTE;
 // Promo-Code-Konfiguration
-const PROMO_CODE = 'WM';
-// Gestaffelter Rabatt: 10 % ab 20 €, 15 % ab 50 €, 20 % ab 100 € Warenwert.
-const PROMO_TIERS = [
-  { min: 100.00, pct: 20 },
-  { min: 50.00,  pct: 15 },
-  { min: 20.00,  pct: 10 },
-];
-const PROMO_MIN_ORDER = 20.00;    // Einstieg: ab 20 € Bestellwert
-// Aktionszeitraum WM 2026: gültig bis einschließlich 20.07.2026 (ein Tag nach dem Finale am 19.07.2026).
-const PROMO_VALID_UNTIL = new Date(2026, 6, 21, 0, 0, 0); // exklusiv → gilt bis 20.07.2026 23:59 Uhr
-const PROMO_VALID_UNTIL_LABEL = '20.07.2026';
-function promoActive() { return Date.now() < PROMO_VALID_UNTIL.getTime(); }
-// Ab 20.07.2026 bewerben wir im Warenkorb GRILL5 (5 € ab 20 €), davor die WM-Aktion.
-const GRILL5_START = new Date(2026, 6, 20, 0, 0, 0);
-// GRILL5 laeuft ab Start ohne Enddatum weiter. Enddatum hier setzen, falls gewuenscht (z.B. new Date(2026,11,31)).
-const GRILL5_UNTIL = null;
-function grill5Active() { return Date.now() >= GRILL5_START.getTime() && (!GRILL5_UNTIL || Date.now() < GRILL5_UNTIL.getTime()); }
-function adCode() { return Date.now() >= GRILL5_START.getTime() ? 'GRILL5' : (promoActive() ? 'WM' : 'GRILL5'); }
-// Liefert den Rabatt-Prozentsatz für einen Warenwert (0, wenn unter Einstieg).
-function promoTierPercent(subtotal) {
-  for (const tier of PROMO_TIERS) {
-    if (subtotal >= tier.min) return tier.pct;
-  }
-  return 0;
-}
-// Rabattbetrag in € für einen gegebenen Warenwert.
-function promoDiscountFor(subtotal) {
-  const pct = promoTierPercent(subtotal);
-  if (pct === 0) return 0;
-  return Math.round(subtotal * pct) / 100;
-}
+const PROMO_CODE = SK.PROMO_CODE;
+const PROMO_TIERS = SK.PROMO_TIERS;
+const PROMO_MIN_ORDER = SK.PROMO_MIN_ORDER;
+const PROMO_VALID_UNTIL = SK.PROMO_VALID_UNTIL;
+const PROMO_VALID_UNTIL_LABEL = SK.PROMO_VALID_UNTIL_LABEL;
+const promoActive = SK.promoActive;
+const GRILL5_START = SK.GRILL5_START;
+const GRILL5_UNTIL = SK.GRILL5_UNTIL;
+const grill5Active = SK.grill5Active;
+const adCode = SK.adCode;
+const promoTierPercent = SK.promoTierPercent;
+const promoDiscountFor = SK.promoDiscountFor;
 // Persönlicher Gutschein (Retargeting-Mail): fester Betrag, ab Mindestbestellwert
 function voucherDiscount() {
   if (!voucherApplied || testPromoApplied) return 0;
@@ -6246,29 +6246,32 @@ function voucherDiscount() {
   return Math.min(voucherApplied.value || 3, sub);
 }
 
-// 🔧 TEST-CODE (nur für deine eigenen Testbestellungen!):
-// Setzt den GESAMTbetrag auf genau 1,00 € – egal wie groß der Warenkorb ist.
-// Damit kannst du den kompletten Bestell- + SumUp-Bezahlflow mit echtem Geld testen,
-// ohne viel auszugeben. Kein Mindestbestellwert, unbegrenzt nutzbar.
-// ⚠️ Diesen Code NICHT öffentlich kommunizieren – er ist nur für dich gedacht.
-const TEST_CODE = 'TESTGNC1';
-const TEST_TOTAL = 1.00;          // Gesamtbetrag wird hierauf gesetzt
+/* 🔧 TEST-BESTELLUNG (nur für deine eigenen Testbestellungen):
+   Setzt den GESAMTbetrag auf genau 1,00 € – egal wie groß der Warenkorb ist.
+
+   Der Code selbst steht hier NICHT mehr. Er stand frueher als Klartext an
+   dieser Stelle – also im Quelltext jeder ausgelieferten Seite und im
+   oeffentlichen Repo. Wer ihn dort las, konnte jede beliebige Bestellung
+   fuer 1 € aufgeben.
+
+   Jetzt kennt ihn nur der Server (Netlify-Variable TEST_ORDER_CODE). Die
+   Eingabe laeuft ueber dieselbe Pruefung wie ein Gutschein: der eingetippte
+   Code geht an /voucher-check, und nur der Server entscheidet, ob es der
+   Testcode war. Fuer dich aendert sich nichts – du tippst ihn weiter genauso
+   in das Gutscheinfeld. */
+const TEST_TOTAL = SK.TEST_TOTAL;  // Gesamtbetrag wird hierauf gesetzt
 // --- Treue / Stempelkarte (lokal) ---
-const LOYALTY_GOAL_EUR = 100;     // € Gesamtumsatz bis zum Treuebonus (über mehrere Bestellungen)
-const LOYALTY_REWARD = 5.00;      // € Treuebonus
-const LOYALTY_MIN_ORDER = 15.00;  // ab diesem Bestellwert einlösbar
-const LOYALTY_STAMPS = 10;        // Stempel auf der Karte (1 Stempel = 10 € Umsatz)
+const LOYALTY_GOAL_EUR = SK.LOYALTY_GOAL_EUR;
+const LOYALTY_REWARD = SK.LOYALTY_REWARD;
+const LOYALTY_MIN_ORDER = SK.LOYALTY_MIN_ORDER;
+const LOYALTY_STAMPS = SK.LOYALTY_STAMPS;
 const LOYALTY_KEY = 'gnc_loyalty_v2';  // v2: umsatzbasiert (vorher burgerbasiert)
 const LAST_ORDER_KEY = 'gnc_last_order_v1';
 const CUST_ORDERS_KEY = 'gnc_cust_orders_v1';  // Stammkunden-Zähler (lokal, je E-Mail/Telefon)
 
 // Lieferzonen nach Luftlinien-km
-const DELIVERY_ZONES = [
-  { maxKm: 3,  minOrder: 15.00, fee: 2.50, key: 'zone.z1', label: 'Zone 1 – bis 3 km' },
-  { maxKm: 5,  minOrder: 25.00, fee: 3.50, key: 'zone.z2', label: 'Zone 2 – 3 bis 5 km' },
-  { maxKm: 13, minOrder: 50.00, fee: 5.00, key: 'zone.z3', label: 'Zone 3 – 5 bis 13 km' },
-];
-const MAX_DELIVERY_KM = 13;
+const DELIVERY_ZONES = SK.DELIVERY_ZONES;
+const MAX_DELIVERY_KM = SK.MAX_DELIVERY_KM;
 
 // ====================================================================
 //  SUMUP / TEST-MODUS KONFIGURATION
@@ -6287,60 +6290,17 @@ const SUMUP_ENDPOINT = '/.netlify/functions/sumup-checkout';
 const TEST_MODE_NO_BACKEND = false;
 
 /* ====================================================================
-   MENU DATA – Namen, Beschreibungen, Preise hier anpassen
+   KARTE & AUFPREISE – kommen aus speisekarte.js
+   Preise, Namen und Beschreibungen ausschliesslich dort aendern.
    ==================================================================== */
-const MENU = [
-  // BURGER (mit Fleisch)
-  { id: 'classic',     cat: 'burger', emoji: '🍔', image: 'produktbilder/classic.webp', name: "Classic Burger",       desc: "100% Beef-Patty, Salat, Tomate, Zwiebel, Hausgemachte Burgersauce", price: 8.00, allergens: '1, 10', tag: null },
-  { id: 'cheese',      cat: 'burger', emoji: '🍔', image: 'produktbilder/cheese.webp', name: "Cheeseburger",         desc: "Beef-Patty mit Käse, Salat, Tomate, Zwiebel, Burgersauce", price: 8.50, allergens: '1, 7, 10', tag: { label: 'BELIEBT', class: 'popular' } },
-  { id: 'chilicheese', cat: 'burger', emoji: '🌶️', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger",  desc: "Beef-Patty, Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 7, 10', tag: { label: 'SCHARF', class: 'spicy' } },
-  { id: 'whitebbq',    cat: 'burger', emoji: '🍔', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger",     desc: "Beef-Patty mit Champignons, Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 7, 10', tag: null },
-  { id: 'crispy',      cat: 'burger', emoji: '🍗', image: 'produktbilder/crispy.webp', name: "Crispy Chicken Burger", desc: "Knusprig panierte Hähnchenbrust, Salat, Tomate, Sauce", price: 9.00, allergens: '1, 10', spuren: '3', tag: null },
-  { id: 'sucuk',       cat: 'burger', emoji: '🌶️', image: 'produktbilder/sucuk.webp', name: "Sucuk Burger",         desc: "Beef-Patty mit pikanter Sucuk, Käse, Salat, Sauce", price: 9.00, allergens: '1, 7, 10', tag: null },
-  { id: 'kubis',       cat: 'burger', emoji: '👑', image: 'produktbilder/kubis.webp', name: "Kubis Special",         desc: "Smashburger, Double Patty, mit Käse, Special-Topping", price: 11.00, allergens: '1, 7, 10', tag: { label: 'CHEF-EMPFEHLUNG', class: 'new' } },
-
-  // VEGGIE / VEGAN BURGER (100% Gemüse-Patty, eigene Produkte)
-  { id: 'classic-veg',     cat: 'burger', emoji: '🌱', image: 'produktbilder/classic.webp', name: "Classic Burger (Veggie/Vegan)",      desc: "100% Gemüse-Patty, Salat, Tomate, Zwiebel, Hausgemachte Burgersauce", price: 8.00, allergens: '1, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-  { id: 'cheese-veg',      cat: 'burger', emoji: '🌱', image: 'produktbilder/cheese.webp', name: "Cheeseburger (Veggie/Vegan)",        desc: "100% Gemüse-Patty mit veganem Käse, Salat, Tomate, Zwiebel, Burgersauce", price: 8.50, allergens: '1, 7, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-  { id: 'chilicheese-veg', cat: 'burger', emoji: '🌱', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger (Veggie/Vegan)", desc: "100% Gemüse-Patty, veganer Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 7, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-  { id: 'whitebbq-veg',    cat: 'burger', emoji: '🌱', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger (Veggie/Vegan)",    desc: "100% Gemüse-Patty mit Champignons, veganer Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 7, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-
-  // SNACKS & BEILAGEN
-  { id: 'nug6',        cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "6er Chicken Nuggets",   desc: "Knusprig paniert, mit Dip nach Wahl", price: 4.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: null },
-  { id: 'nug9',        cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "9er Chicken Nuggets",   desc: "Knusprig paniert, mit Dip nach Wahl", price: 5.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: { label: 'BELIEBT', class: 'popular' } },
-  { id: 'nug20',       cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "20er Chicken Nuggets",  desc: "Knusprig paniert, mit Dip nach Wahl – perfekt zum Teilen", price: 10.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: { label: 'TO SHARE', class: 'new' } },
-  { id: 'pommes',      cat: 'sides', emoji: '🍟', image: 'produktbilder/pommes.webp', name: "Pommes",                desc: "Knusprige goldbraune Pommes inkl. 1 Dip", price: 4.00, veggie: true, vegan: true, includesDip: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-  { id: 'spommes',     cat: 'sides', emoji: '🍠', image: 'produktbilder/spommes.webp', name: "Süßkartoffelpommes",    desc: "Knusprig frittiert inkl. 1 Dip", price: 5.00, veggie: true, vegan: true, includesDip: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-
-  // DIPS
-  { id: 'dip-mayo',    cat: 'dips', emoji: '🥚', name: "Dip: Mayo",              desc: "Cremige Mayonnaise", price: 0.50, allergens: '3', tag: null },
-  { id: 'dip-ket',     cat: 'dips', emoji: '🍅', name: "Dip: Ketchup",           desc: "Klassischer Tomaten-Ketchup", price: 0.50, tag: null },
-  { id: 'dip-mango',   cat: 'dips', emoji: '🥭', name: "Dip: Mango-Curry",       desc: "Fruchtig-würzig", price: 0.50, tag: null },
-  { id: 'dip-sweetsour', cat: 'dips', emoji: '🍯', name: "Dip: Süß-Sauer",        desc: "Asia-Style", price: 0.50, tag: null },
-
-  // GETRÄNKE
-  { id: 'fritz-kola',  cat: 'drinks', emoji: '🥤', image: 'produktbilder/fritz-kola.webp', name: "Fritz Kola",            desc: "0,33 l Flasche", price: 2.50, liter: 0.33, zusatz: '11', tag: null },
-  { id: 'fritz-or',    cat: 'drinks', emoji: '🍊', image: 'produktbilder/fritz-or.webp', name: "Fritz Orange",          desc: "0,33 l Flasche", price: 2.50, liter: 0.33, tag: null },
-  { id: 'fritz-zero',  cat: 'drinks', emoji: '🥤', image: 'produktbilder/fritz-zero.webp', name: "Fritz Kola Super Zero", desc: "0,33 l Flasche, zuckerfrei", price: 2.50, liter: 0.33, zusatz: '9, 11', tag: null },
-];
-
-// Burger die als Veggie / Vegan verfügbar sind (Hinweis auf Produkt-Karten)
-const VEGGIE_AVAILABLE_IDS = ['classic', 'cheese', 'chilicheese', 'whitebbq'];
-
-// Aufpreis für Double Patty (bei allen Burgern wählbar, außer Kubis Special – ist schon Double)
-const DOUBLE_PATTY_PRICE = 2.50;
-const DOUBLE_PATTY_EXCLUDE_IDS = ['kubis']; // diese Burger haben keinen Toggle (schon Double)
-
-// MENÜ: Jeder Burger kann zum Menü gemacht werden (Burger + Beilage + Getränk + Dip).
-// Der Kunde wählt im Konfigurator Beilage, Getränk und Dip.
-const MENU_SURCHARGE = 5.00;                        // Aufpreis fürs Menü (Beilage + Getränk + Dip)
-const MENU_DRINK_IDS = ['fritz-kola', 'fritz-or', 'fritz-zero'];  // wählbare Getränke
-const MENU_DIP_IDS = ['dip-mayo', 'dip-ket', 'dip-mango', 'dip-sweetsour']; // wählbare Dips
-// Wählbare Beilagen: Pommes inkl., Süßkartoffelpommes gegen Aufpreis
-const MENU_SIDE_OPTIONS = [
-  { id: 'pommes',  label: 'Pommes',             emoji: '🍟', surcharge: 0.00 },
-  { id: 'spommes', label: 'Süßkartoffelpommes', emoji: '🍠', surcharge: 1.00 },
-];
+const MENU = SK.MENU;
+const VEGGIE_AVAILABLE_IDS = SK.VEGGIE_AVAILABLE_IDS;
+const DOUBLE_PATTY_PRICE = SK.DOUBLE_PATTY_PRICE;
+const DOUBLE_PATTY_EXCLUDE_IDS = SK.DOUBLE_PATTY_EXCLUDE_IDS;
+const MENU_SURCHARGE = SK.MENU_SURCHARGE;
+const MENU_DRINK_IDS = SK.MENU_DRINK_IDS;
+const MENU_DIP_IDS = SK.MENU_DIP_IDS;
+const MENU_SIDE_OPTIONS = SK.MENU_SIDE_OPTIONS;
 
 /* ====================================================================
    STATE
@@ -7259,7 +7219,7 @@ function applyLoyaltyReward() {
   if (!loyaltyRewardAvailable()) return;
   loyaltyApplied = true;
   promoApplied = false;      // Treuebonus, Promo & Gutschein schließen sich gegenseitig aus
-  testPromoApplied = false;
+  testPromoApplied = false; testOrderCode = '';
   voucherApplied = null;
   renderCart();
   updateCartUI();
@@ -7392,6 +7352,10 @@ let lastCompletedOrder = null; // Daten der zuletzt erfolgreich abgeschlossenen 
 let promoApplied = false;
 let loyaltyApplied = false;     // Treuebonus auf diese Bestellung angewendet
 let testPromoApplied = false;  // 🔧 Test-Code aktiv (setzt Gesamtbetrag auf 1 €)
+// Der eingetippte Test-Code. Wird beim Absenden mitgeschickt, damit der
+// Server den 1-€-Betrag gegen seine eigene Variable pruefen kann – im
+// Browser steht der Code nirgends mehr fest.
+let testOrderCode = '';
 let voucherApplied = null;     // Persönlicher 3-€-Gutschein aus der Retargeting-Mail: { code, value, minOrder }
 let deliveryDistance = null;  // null = not checked, number = km
 let deliveryZone = null;       // matched zone object
@@ -7868,17 +7832,9 @@ function itemPrice(menuId, isDouble) {
   return item.price + (isDouble ? DOUBLE_PATTY_PRICE : 0);
 }
 // Preis eines Warenkorb-Eintrags (berücksichtigt Double Patty + Menü-Aufpreis + Beilage)
-function entryUnitPrice(entry) {
-  const item = MENU.find(m => m.id === entry.menuId);
-  if (!item) return 0;
-  let p = item.price + (entry.double ? DOUBLE_PATTY_PRICE : 0);
-  if (entry.isMenu) {
-    p += MENU_SURCHARGE;
-    const side = MENU_SIDE_OPTIONS.find(s => s.id === entry.side);
-    if (side) p += side.surcharge;
-  }
-  return p;
-}
+/* Preis einer Warenkorb-Zeile. Die Rechnung selbst steht in speisekarte.js –
+   der Server ruft dieselbe Funktion auf, wenn er den Betrag nachrechnet. */
+const entryUnitPrice = SK.einzelpreis;
 // Beilagen-Helfer
 function sideOption(id) {
   return MENU_SIDE_OPTIONS.find(s => s.id === id) || MENU_SIDE_OPTIONS[0];
@@ -8430,10 +8386,10 @@ function cartQtyForMenuItem(menuId) {
 function cartItemCount() {
   return Object.values(cart).reduce((a, b) => a + (b.qty || 0), 0);
 }
+/* Warenwert des Warenkorbs. Auch das rechnet speisekarte.js – derselbe Code
+   laeuft auf dem Server, damit Anzeige und Belastung nicht auseinandergehen. */
 function cartSubtotal() {
-  return Object.entries(cart).reduce((sum, [key, entry]) => {
-    return sum + entryUnitPrice(entry) * entry.qty;
-  }, 0);
+  return SK.warenwert(cart);
 }
 function promoDiscount() {
   if (!promoApplied || !promoActive()) return 0;
@@ -8837,7 +8793,7 @@ function quickApplyPromo() {
     // WM-Aktion (bis 20.07.2026): Staffel-Rabatt direkt anwenden
     if (!promoActive()) return;
     promoApplied = true;
-    testPromoApplied = false;
+    testPromoApplied = false; testOrderCode = '';
     loyaltyApplied = false;
     renderCart();
     updateCartUI();
@@ -8862,7 +8818,7 @@ function quickApplyPromo() {
           combinable: !!d.combinable,
           mode: d.mode || 'any',
         };
-        testPromoApplied = false;
+        testPromoApplied = false; testOrderCode = '';
         if (!voucherApplied.combinable) { promoApplied = false; loyaltyApplied = false; }
         renderCart();
         updateCartUI();
@@ -8892,18 +8848,15 @@ function applyPromo() {
       return;
     }
     promoApplied = true;
-    testPromoApplied = false;
+    testPromoApplied = false; testOrderCode = '';
     loyaltyApplied = false;
     voucherApplied = null;
     renderCart();
     updateCartUI();
-  } else if (code === TEST_CODE) {
-    // 🔧 Test-Code aktiviert: Gesamtbetrag wird auf 1 € gesetzt
-    testPromoApplied = true;
-    promoApplied = false;
-    voucherApplied = null;
-    renderCart();
-    updateCartUI();
+    // Der Test-Code wird NICHT mehr hier geprueft. Er stand als Klartext im
+    // Quelltext und konnte von jedem gelesen und benutzt werden. Er laeuft
+    // jetzt durch dieselbe Server-Pruefung wie ein Gutschein (Zweig unten,
+    // Antwort kind:'test') – der Browser kennt ihn nicht mehr.
     // Zeichensatz muss zur Server-Regel passen (vouchers-admin.js / voucher-check.js),
     // sonst wird ein Code mit Umlauten hier abgefangen und nie geprueft.
   } else if (/^[A-Z0-9ÄÖÜŞĞÇ]{3,20}$/.test(code)) {
@@ -8923,6 +8876,19 @@ function applyPromo() {
       .then(r => r.json())
       .then(d => {
         input.disabled = false;
+        // 🔧 Testbestellung: nur der Server weiss, welcher Code das ist.
+        // Er meldet kind:'test' zurueck – dann verhaelt sich der Warenkorb
+        // exakt wie frueher beim lokalen Test-Code.
+        if (d && d.valid && d.kind === 'test') {
+          testPromoApplied = true;
+          testOrderCode = code;   // geht beim Absenden mit, der Server prueft ihn erneut
+          promoApplied = false;
+          loyaltyApplied = false;
+          voucherApplied = null;
+          renderCart();
+          updateCartUI();
+          return;
+        }
         if (d && d.valid) {
           voucherApplied = {
             code,
@@ -8934,7 +8900,7 @@ function applyPromo() {
             combinable: !!d.combinable,
             mode: d.mode || 'any',
           };
-          testPromoApplied = false;
+          testPromoApplied = false; testOrderCode = '';
           if (!voucherApplied.combinable) {
             // Nicht kombinierbar: andere Aktionen weichen dem Gutschein
             promoApplied = false;
@@ -8971,7 +8937,7 @@ function promoInputError(input, msg) {
 }
 function removePromo() {
   promoApplied = false;
-  testPromoApplied = false;
+  testPromoApplied = false; testOrderCode = '';
   voucherApplied = null;
   showPromoField = false;
   renderCart();
@@ -10131,10 +10097,15 @@ async function submitOrder(e) {
   const fee = (checkoutMode === 'delivery' && deliveryZone) ? deliveryZone.fee : 0;
   // Trinkgeld nur bei Online-Zahlung, auf Warenwert (sub - disc - loyDisc)
   const tip = (pay === 'sumup' && !testPromoApplied && tipPercent > 0)
-    ? Math.round((sub - disc - loyDisc - vDisc) * tipPercent) / 100
+    ? SK.trinkgeldBetrag(sub - disc - loyDisc - vDisc, tipPercent)
     : 0;
   // 🔧 Test-Modus: Gesamtbetrag fix auf 1 € (überschreibt Rabatt/Liefergebühr-Logik)
-  const total = testPromoApplied ? TEST_TOTAL : (Math.max(0, sub - disc - loyDisc - vDisc + fee) + tip);
+  // Die Summenformel steht in speisekarte.js – der Server rechnet mit genau
+  // derselben Funktion nach, deshalb kann hier nichts abweichen.
+  const total = testPromoApplied ? TEST_TOTAL : SK.gesamtbetrag({
+    warenwert: sub, aktionsRabatt: disc, treueRabatt: loyDisc,
+    gutscheinRabatt: vDisc, liefergebuehr: fee, trinkgeld: tip,
+  });
 
   // Build order summary (used in WhatsApp & SumUp description)
   const items = Object.entries(cart).map(([key, entry]) => {  // (Steuer siehe VAT_* unten)
@@ -10166,7 +10137,7 @@ async function submitOrder(e) {
 
   const orderData = {
     name, phone, email,
-    note: testPromoApplied ? `🔧 TESTBESTELLUNG (Code ${TEST_CODE})` + (note ? ` · ${note}` : '') : note,
+    note: testPromoApplied ? `🔧 TESTBESTELLUNG (Code ${testOrderCode})` + (note ? ` · ${note}` : '') : note,
     mode: checkoutMode,
     payment: pay,
     items,
@@ -10178,6 +10149,10 @@ async function submitOrder(e) {
     tip,
     total,
     isTest: testPromoApplied,
+    // Geht an den Server, damit er den 1-€-Betrag gegen seine eigene
+    // Variable TEST_ORDER_CODE pruefen kann. Ohne gueltigen Code rechnet er
+    // die Bestellung ganz normal aus der Karte.
+    testCode: testPromoApplied ? testOrderCode : null,
     cartSnapshot: { ...cart },
     promo: vDisc > 0 ? { code: voucherApplied.code }
       : (effectivePromo && disc > 0 ? { code: PROMO_CODE, pct: promoTierPercent(sub) } : null),
@@ -10476,7 +10451,7 @@ function resetOrder() {
   tipPercent = 0;
   loyaltyApplied = false;
   promoApplied = false;
-  testPromoApplied = false;
+  testPromoApplied = false; testOrderCode = '';
   lastCompletedOrder = null;
   renderMenu();
   renderCart();
@@ -12207,6 +12182,10 @@ async function sendOrderConfirmationEmails(orderData) {
       //   loyaltyApplied – Kennzeichen, dass eine Prämie eingelöst wurde.
       voucherCode: orderData.voucherCode || null,
       isTest: !!orderData.isTest,
+      // Der Server rechnet den Betrag aus dem Warenkorb nach (Barbestellungen
+      // laufen NUR hierueber, es gibt keinen SumUp-Aufruf). Dafuer braucht er
+      // den Warenkorb und – bei einer Testbestellung – den eingetippten Code.
+      testCode: orderData.testCode || null,
       cartSnapshot: orderData.cartSnapshot || null,
       loyaltyApplied: !!orderData.loyaltyApplied,
     },
@@ -12266,6 +12245,12 @@ async function sendOwnerOrderNotification(orderData) {
       // Ohne dieses Kennzeichen kommt eine Testbestellung beim Inhaber wie
       // ein echter Auftrag an – ohne Betreff-Hinweis und ohne Warnbanner.
       isTest: !!orderData.isTest,
+      // Damit der Server auch auf diesem Weg den Betrag nachrechnen kann und
+      // im Ticket des Inhabers nie ein manipulierter Gesamtpreis steht.
+      testCode: orderData.testCode || null,
+      cartSnapshot: orderData.cartSnapshot || null,
+      voucherCode: orderData.voucherCode || null,
+      loyaltyApplied: !!orderData.loyaltyApplied,
     },
   };
   try {
