@@ -21,6 +21,7 @@ const crypto = require('crypto');
 const webpush = require('web-push');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
+const { passwortAusSitzung } = require('./lib/admin-sitzung');
 
 const STATES = ['confirmed', 'preparing', 'ready_for_pickup', 'on_the_way', 'picked_up', 'delivered'];
 const PUSH_TEXT = {
@@ -168,7 +169,7 @@ exports.handler = async (event) => {
       // das System-Secret der Status-Mails und darf nicht mitgezaehlt werden.
       const gesperrt = await pruefeSperre(event);
       if (gesperrt) return gesperrt;
-      who = await authRole(input.password);
+      who = await authRole(await passwortAusSitzung(input.password));
       await meldeErgebnis(event, !!who);
     }
     if (!who) return json(401, { error: 'unauthorized' });

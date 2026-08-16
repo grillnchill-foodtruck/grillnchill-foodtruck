@@ -65,6 +65,7 @@ function dayKey(offset = 0) {
 // --- Team-Auth: superadmin (ADMIN_PASSWORD) oder Team-Admin (Team-Store) ---
 const _teamCrypto = require('crypto');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
+const { passwortAusSitzung } = require('./lib/admin-sitzung');
 function _teamStore() {
   const opts = { name: 'team', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -115,7 +116,7 @@ exports.handler = async (event) => {
     // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
     const gesperrt = await pruefeSperre(event);
     if (gesperrt) return gesperrt;
-    const erlaubt = await authAdmin(params.password);
+    const erlaubt = await authAdmin(await passwortAusSitzung(params.password));
     await meldeErgebnis(event, erlaubt);
     if (!erlaubt) return json(401, { error: 'unauthorized' });
     const days = Math.min(parseInt(params.days || '7', 10) || 7, 30);

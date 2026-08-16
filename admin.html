@@ -1124,11 +1124,30 @@ async function unlock(){
   currentPw=pw;
   currentRole=who.role; currentName=who.name||'';
   sessionStorage.setItem(PW_KEY,pw);
+  /* "Angemeldet bleiben": Hier lag frueher das Passwort im Klartext im
+     localStorage – dreissig Tage lang, lesbar fuer jeden mit Zugriff aufs
+     Geraet, und es ist der Generalschluessel fuer alles. Gemerkt wird jetzt
+     ein Sitzungs-Token vom Server (netlify/functions/lib/admin-sitzung.js).
+     Klappt das Anlegen nicht, bleibt die Anmeldung fuer diesen Tab trotzdem
+     gueltig – nur das Merken faellt aus. Nie das Passwort ersatzweise
+     ablegen. */
   try{
     if($('pwStay')&&$('pwStay').checked){
-      localStorage.setItem(PW_KEY+'_p', JSON.stringify({pw, exp: Date.now()+30*86400000}));
+      const r=await fetch('/.netlify/functions/team',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({password:pw,action:'sitzung'}),
+      });
+      const d=await r.json().catch(()=>({}));
+      if(d&&d.ok&&d.token){
+        localStorage.setItem(PW_KEY+'_p', JSON.stringify({t:d.token, exp:new Date(d.exp).getTime()}));
+      }else{
+        localStorage.removeItem(PW_KEY+'_p');
+        toast('Angemeldet – "angemeldet bleiben" hat diesmal nicht geklappt.');
+      }
+    }else{
+      localStorage.removeItem(PW_KEY+'_p');
     }
-  }catch(e){}
+  }catch(e){ try{ localStorage.removeItem(PW_KEY+'_p'); }catch(e2){} }
   applyRole();
   showPanel();
   await loadStatus();
@@ -1183,6 +1202,18 @@ function applyRole(){
   if(b) b.textContent = currentName ? ('Angemeldet: '+currentName+(staff?' · Mitarbeiter':(currentRole==='superadmin'?' · Superadmin':' · Admin'))) : "Grill'n Chill · Bielefeld";
 }
 function logout(){
+  /* Die gemerkte Sitzung auch serverseitig entwerten – sonst bliebe ein
+     kopierter Token auf einem anderen Geraet weiter gueltig. Feuern und
+     vergessen: das Abmelden darf daran nie haengen. */
+  try{
+    const g=JSON.parse(localStorage.getItem(PW_KEY+'_p')||'null');
+    if(g&&g.t){
+      fetch('/.netlify/functions/team',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({password:g.t,action:'abmelden'}),
+      }).catch(()=>{});
+    }
+  }catch(e){}
   sessionStorage.removeItem(PW_KEY);
   try{ localStorage.removeItem(PW_KEY+'_p'); }catch(e){}
   showLogin();
@@ -2632,12 +2663,17 @@ $('refreshBtn').addEventListener('click',()=>{
   loadStatus();
 });
 
-// Session fortsetzen: Dauer-Anmeldung (30 Tage) vor Tab-Sitzung
+// Session fortsetzen: Dauer-Anmeldung (30 Tage) vor Tab-Sitzung.
+// Gemerkt ist ein Sitzungs-Token (Feld t), nicht mehr das Passwort. Das alte
+// Format (Feld pw) wird noch gelesen, damit niemand beim ersten Aufruf nach
+// dem Deploy herausfliegt – und sofort verworfen, damit das Passwort nicht
+// laenger im Browser liegt als noetig.
 let saved=sessionStorage.getItem(PW_KEY);
 try{
   if(!saved){
     const p=JSON.parse(localStorage.getItem(PW_KEY+'_p')||'null');
-    if(p&&p.pw&&p.exp>Date.now()) saved=p.pw;
+    if(p&&p.t&&p.exp>Date.now()) saved=p.t;
+    else if(p&&p.pw&&p.exp>Date.now()){ saved=p.pw; localStorage.removeItem(PW_KEY+'_p'); }
     else if(p) localStorage.removeItem(PW_KEY+'_p');
   }
 }catch(e){}

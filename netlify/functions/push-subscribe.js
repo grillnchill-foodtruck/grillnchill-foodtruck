@@ -14,6 +14,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
+const { passwortAusSitzung } = require('./lib/admin-sitzung');
 
 const STORE_NAME = 'push-subs';
 
@@ -84,7 +85,7 @@ exports.handler = async (event) => {
         // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
         const gesperrt = await pruefeSperre(event);
         if (gesperrt) return gesperrt;
-        const who = await authRole(body.password);
+        const who = await authRole(await passwortAusSitzung(body.password));
         await meldeErgebnis(event, !!who);
         if (!who) return json(401, { error: 'unauthorized' });
         await store().setJSON('admin:' + crypto.createHash('sha256').update(sub.endpoint).digest('hex'),

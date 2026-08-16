@@ -33,6 +33,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
+const { passwortAusSitzung } = require('./lib/admin-sitzung');
 
 /* Reservierte Codes: die Aktion und der Code für Testbestellungen. Letzterer
    kommt aus TEST_ORDER_CODE – stünde er hier fest, liesse sich nach einer
@@ -144,7 +145,7 @@ exports.handler = async (event) => {
   // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
   const gesperrt = await pruefeSperre(event);
   if (gesperrt) return gesperrt;
-  const who = await authAdmin(input.password);
+  const who = await authAdmin(await passwortAusSitzung(input.password));
   await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });
 

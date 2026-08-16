@@ -20,6 +20,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { buildInvoicePdf, ergaenzeAusBestellung } = require('./lib/invoice');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
+const { passwortAusSitzung } = require('./lib/admin-sitzung');
 
 function store(name) {
   const opts = { name, consistency: 'strong' };
@@ -53,7 +54,7 @@ exports.handler = async (event) => {
   // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
   const gesperrt = await pruefeSperre(event);
   if (gesperrt) return gesperrt;
-  const who = await authRole(p.password);
+  const who = await authRole(await passwortAusSitzung(p.password));
   await meldeErgebnis(event, !!who);
   if (!who) return { statusCode: 401, body: 'unauthorized' };
   if (who.role !== 'superadmin' && who.role !== 'admin') {

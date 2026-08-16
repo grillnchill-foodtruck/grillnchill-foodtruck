@@ -38,6 +38,7 @@ function store() {
 // --- Team-Auth: admin (ADMIN_PASSWORD) oder staff (Team-Store, siehe team.js) ---
 const _teamCrypto = require('crypto');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
+const { passwortAusSitzung } = require('./lib/admin-sitzung');
 function _teamStore() {
   const opts = { name: 'team', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -70,7 +71,7 @@ exports.handler = async (event) => {
   // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
   const gesperrt = await pruefeSperre(event);
   if (gesperrt) return gesperrt;
-  const who = await authRole(p.password);
+  const who = await authRole(await passwortAusSitzung(p.password));
   await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });
 

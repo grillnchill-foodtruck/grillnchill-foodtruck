@@ -24,6 +24,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
+const { passwortAusSitzung, erstelle, beende, istToken } = require('./lib/admin-sitzung');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -95,13 +96,34 @@ exports.handler = async (event) => {
   // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
   const gesperrt = await pruefeSperre(event);
   if (gesperrt) return gesperrt;
-  const who = await authRole(input.password);
+  const who = await authRole(await passwortAusSitzung(input.password));
   await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });
 
   const action = String(input.action || 'whoami');
 
   if (action === 'whoami') return json(200, { ok: true, role: who.role, name: who.name });
+
+  /* "Angemeldet bleiben" – siehe lib/admin-sitzung.js.
+     Der Browser bekommt einen Sitzungs-Token und legt NUR den ab; das
+     Passwort lag dort früher dreissig Tage im Klartext.
+     Bewusst vor der Admin-Schranke unten: auch Mitarbeiter dürfen
+     angemeldet bleiben, sie kommen damit an nichts, was ihnen nicht
+     ohnehin offensteht. */
+  if (action === 'sitzung') {
+    if (istToken(input.password)) return json(200, { ok: true, schonSitzung: true });
+    const sitzung = await erstelle(input.password, who);
+    return sitzung
+      ? json(200, { ok: true, token: sitzung.token, exp: sitzung.exp })
+      : json(200, { ok: false, hint: 'Sitzung konnte nicht angelegt werden – Anmeldung gilt trotzdem.' });
+  }
+
+  /* Abmelden: Sitzung serverseitig entwerten, damit ein kopierter Token
+     auf einem anderen Geraet sofort wertlos ist. */
+  if (action === 'abmelden') {
+    await beende(input.password);
+    return json(200, { ok: true });
+  }
 
   // Ab hier: Admin oder Superadmin
   const isSuper = who.role === 'superadmin';

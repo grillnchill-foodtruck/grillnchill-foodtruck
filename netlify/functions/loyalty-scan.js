@@ -16,6 +16,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
+const { passwortAusSitzung } = require('./lib/admin-sitzung');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -100,7 +101,7 @@ exports.handler = async (event) => {
   // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
   const gesperrt = await pruefeSperre(event);
   if (gesperrt) return gesperrt;
-  const who = await authRole(input.password);
+  const who = await authRole(await passwortAusSitzung(input.password));
   await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });
 
