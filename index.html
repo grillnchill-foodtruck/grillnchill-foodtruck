@@ -11022,7 +11022,13 @@ async function groupApi(payload) {
 }
 
 function groupLink(id) { return location.origin + '/?g=' + id; }
-function escG(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+/* Maskierung für eingesetzte Werte. Anführungszeichen MÜSSEN mit: escG steht
+   an neun Stellen in einem Attribut (value="${escG(...)}" bei Name, Telefon,
+   Anschrift, Firma, Geburtstag). Ohne sie beendet ein " im Wert das Attribut
+   und alles Folgende wird als Markup gelesen – die CSP fängt das nicht ab,
+   weil sie 'unsafe-inline' erlaubt. Der Server entfernt nur < und >, nicht ".
+   Gleiche Fassung wie esc2 im Admin-Tool. */
+function escG(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 function openGroupOverlay() {
   document.getElementById('groupOverlay').style.display = 'flex';
