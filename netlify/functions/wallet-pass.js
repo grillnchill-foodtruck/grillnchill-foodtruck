@@ -27,6 +27,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { tokenGueltig } = require('./lib/kunden-token');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -137,14 +138,17 @@ exports.handler = async (event) => {
   let input = {};
   try { input = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'invalid_json' }); }
 
-  // Konto-Auth wie in account.js: E-Mail + gültiges Login-Token
+  // Konto-Auth wie in account.js: E-Mail + gültiges Login-Token.
+  // Geprüft wird über lib/kunden-token.js – ein direktes rec.tokens[token]
+  // fand auch geerbte Eigenschaften ("__proto__" & Co.) und gab die
+  // Kundenkarte samt qrToken an jeden heraus, der die Adresse kannte.
   const email = String(input.email || '').trim().toLowerCase().slice(0, 120);
   const token = String(input.token || '').slice(0, 80);
   if (!email || !token) return json(401, { error: 'unauthorized' });
   const s = store();
   const key = 'c:' + sha(email);
   const rec = await s.get(key, { type: 'json' });
-  if (!rec || !rec.tokens || !rec.tokens[token]) return json(401, { error: 'unauthorized' });
+  if (!tokenGueltig(rec, token)) return json(401, { error: 'unauthorized' });
   if (!rec.qrToken) return json(409, { error: 'no_card', hint: 'Konto einmal öffnen, dann existiert die Kundenkarte.' });
 
   if (input.action === 'google') {

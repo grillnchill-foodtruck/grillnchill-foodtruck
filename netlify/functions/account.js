@@ -169,8 +169,13 @@ async function sendCodeMail(email, code) {
   }
 }
 
+/* Anmeldung prüfen – Begründung und Fallstrick siehe lib/kunden-token.js.
+   Kurz: ein Nachschlagen mit rec.tokens[token] findet auch geerbte
+   Eigenschaften ("__proto__", "constructor", …) und liess damit jeden
+   ohne Anmeldung in fremde Konten. */
+const { tokenGueltig } = require('./lib/kunden-token');
 function checkToken(rec, token) {
-  return !!(rec && rec.tokens && token && rec.tokens[token]);
+  return tokenGueltig(rec, token);
 }
 
 exports.handler = async (event) => {

@@ -58,12 +58,19 @@ const emailKey = (e) => 'c:' + crypto.createHash('sha256')
 /* Anmeldung prüfen. WICHTIG: rec.tokens ist ein OBJEKT { token: zeitstempel },
    kein Array – genau wie checkToken() in account.js. Vorher stand hier ein
    .some() auf dem Objekt; das wirft, wurde vom catch geschluckt und endete
-   als 401. Deshalb schlug "Bestellung anlegen" fehl. */
+   als 401. Deshalb schlug "Bestellung anlegen" fehl.
+
+   Danach stand hier ein direktes rec.tokens[token]. Das nahm auch geerbte
+   Eigenschaften an ("__proto__" & Co.) und liess jeden, der eine E-Mail-
+   Adresse kannte, an die stehenden Bestellungen dieses Kontos. Die Prüfung
+   liegt deshalb jetzt in lib/kunden-token.js – dort steht die ganze
+   Begründung. */
+const { tokenGueltig } = require('./lib/kunden-token');
 async function authCustomer(email, token) {
   if (!email || !token) return null;
   try {
     const rec = await store('customers').get(emailKey(email), { type: 'json' });
-    if (!rec || !rec.tokens || !rec.tokens[token]) return null;
+    if (!tokenGueltig(rec, token)) return null;
     return rec;
   } catch (e) { return null; }
 }
