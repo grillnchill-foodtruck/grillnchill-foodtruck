@@ -7151,10 +7151,10 @@ function accShareRef() {
   if (navigator.share) {
     navigator.share({ title: "Grill'n Chill", text, url }).catch(() => {});
   } else {
-    const ok = (async () => {
-      try { await navigator.clipboard.writeText(text + ' ' + url); return true; } catch (e) { return false; }
-    })();
-    ok.then(done => flashAccMsgOk(done ? t('acc.ref_copied') : p.refCode));
+    // Dieselbe Kopierhilfe wie beim Gruppenlink – damit auch hier ein
+    // Rueckfall greift, wenn die Zwischenablage sich verweigert.
+    inZwischenablage(text + ' ' + url)
+      .then(done => flashAccMsgOk(done ? t('acc.ref_copied') : p.refCode));
   }
 }
 function loadMap() {
@@ -11091,7 +11091,7 @@ async function renderGroupHost(preloaded) {
     <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('grp.host_intro').replace('{host}', escG(g.host))}</p>
     <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
       <input type="text" class="form-input" readonly value="${link}" id="grpLinkField" style="font-size:0.8rem;flex:1;">
-      <button class="btn btn-secondary" style="flex:none;padding:0.7rem 1rem;" onclick="copyGroupLink()">${t('grp.copy')}</button>
+      <button class="btn btn-secondary" style="flex:none;padding:0.7rem 1rem;" onclick="copyGroupLink(this)">${t('grp.copy')}</button>
     </div>
     <a href="${wa}" target="_blank" rel="noopener" class="btn btn-primary btn-block" style="text-align:center;text-decoration:none;margin-bottom:1.2rem;">${t('grp.whatsapp')}</a>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.3rem;">
@@ -11110,12 +11110,68 @@ async function renderGroupHost(preloaded) {
     </div>
   `;
 }
-function copyGroupLink() {
+/* Text in die Zwischenablage legen. Meldet zurueck, ob es geklappt hat.
+
+   navigator.clipboard.writeText() gibt ein Promise zurueck. Ein synchrones
+   try/catch faengt dessen Ablehnung NICHT – genau daran scheiterte das
+   Kopieren des Gruppenlinks bisher still: Der Rueckfall lief nie an, und
+   uebrig blieb nur der markierte Text im Feld.
+
+   Der Rueckfall benutzt ein Hilfsfeld ausserhalb des Sichtfelds. Es muss
+   1x1 Pixel gross und im Layout sein statt display:none – sonst laesst iOS
+   den Inhalt nicht auswaehlen, und ohne Auswahl kopiert execCommand nichts. */
+async function inZwischenablage(text) {
+  const wert = String(text == null ? '' : text);
+  if (!wert) return false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(wert);
+      return true;
+    }
+  } catch (e) { /* weiter mit dem Rueckfall */ }
+  let hilfsfeld = null;
+  try {
+    hilfsfeld = document.createElement('textarea');
+    hilfsfeld.value = wert;
+    hilfsfeld.setAttribute('readonly', '');
+    hilfsfeld.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;'
+      + 'padding:0;border:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(hilfsfeld);
+    hilfsfeld.select();
+    hilfsfeld.setSelectionRange(0, wert.length);   // iOS braucht das ausdruecklich
+    return !!document.execCommand('copy');
+  } catch (e) {
+    return false;
+  } finally {
+    if (hilfsfeld && hilfsfeld.parentNode) hilfsfeld.parentNode.removeChild(hilfsfeld);
+  }
+}
+
+/* Gruppenlink kopieren.
+   Vorher wurde der Link im sichtbaren Feld markiert – und weil das Kopieren
+   daneben still fehlschlagen konnte, blieb dem Gastgeber genau das: ein blau
+   markierter Text, den er selbst kopieren musste. Das Feld wird jetzt gar
+   nicht mehr angefasst; der Link geht direkt in die Zwischenablage, und der
+   Knopf sagt kurz Bescheid.
+   Klappt es wirklich nicht (sehr alter Browser, verweigerte Berechtigung),
+   wird der Link als letzte Rettung markiert – dann ist Strg+C einen Griff
+   entfernt statt gar nichts zu passieren. */
+async function copyGroupLink(btn) {
   const f = document.getElementById('grpLinkField');
-  f.select(); f.setSelectionRange(0, 99);
-  try { navigator.clipboard.writeText(f.value); } catch(e) { document.execCommand('copy'); }
-  flashCartNotice ? null : null;
-  f.blur();
+  if (!f) return;
+  const geschafft = await inZwischenablage(f.value);
+  if (geschafft) {
+    if (btn) {
+      const vorher = btn.innerHTML;
+      btn.innerHTML = t('grp.copied');
+      btn.disabled = true;
+      setTimeout(() => { btn.innerHTML = vorher; btn.disabled = false; }, 1600);
+    }
+    return;
+  }
+  f.focus();
+  f.select();
+  f.setSelectionRange(0, f.value.length);
 }
 /* ---- Gastgeber: alles übernehmen & zur Kasse ---- */
 async function importGroup() {
