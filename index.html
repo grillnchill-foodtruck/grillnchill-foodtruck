@@ -9979,6 +9979,11 @@ function resetCheckoutSubmitLabel() {
   btn.disabled = false;
   btn.innerHTML = t(checked && checked.value === 'sumup'
     ? 'checkout.submit_online' : 'checkout.submit_cash');
+  /* Der Knopf ist auch dann gesperrt, wenn bei Lieferung die Adresse fehlt
+     oder der Mindestbestellwert nicht erreicht ist. Diese Sperre gehoert
+     wiederhergestellt – sonst macht das Entsperren hier eine Bestellung
+     klickbar, die gar nicht zulaessig ist. */
+  try { updateCheckoutSummary(); } catch (e) {}
 }
 
 /* Firmenfeld steuert die Rechnungsadresse: ohne Firma keine Rechnung, also
@@ -12039,12 +12044,37 @@ function flashCartNotice(msg) {
 }
 
 async function handlePaymentReturn() {
+  /* ZUERST den Bestellknopf entsperren.
+     Vor dem Sprung zu SumUp wird er auf "Erstelle Zahlungsseite ..." gesetzt
+     und gesperrt. Kommt der Kunde mit der Zurueck-Taste wieder, liefert der
+     Browser die Seite aus dem bfcache – unveraendert, mitsamt gesperrtem
+     Knopf. Diese Funktion hatte drei Ausgaenge, die ohne Zuruecksetzen
+     endeten (Rueckzieher, Netzwerkfehler, gar kein offener Vorgang). In allen
+     drei Faellen sass der Kunde vor einem toten Knopf und kam nicht mehr zur
+     Zahlung.
+     Deshalb hier ganz oben und VOR jedem await: was danach kommt, fragt bei
+     SumUp nach und dauert. */
+  try { resetCheckoutSubmitLabel(); } catch (e) {}
+
   const params = new URLSearchParams(window.location.search);
   let status = params.get('payment');
 
   // Bestellung aus dauerhaftem Speicher laden (übersteht die Weiterleitung)
   let pending = null;
   try { pending = JSON.parse(localStorage.getItem(PENDING_STORE_KEY) || 'null'); } catch(e) {}
+
+  /* Der Kunde kann waehrend der Statusabfrage laengst erneut auf "Bestellen"
+     gedrueckt haben – der Knopf ist ja jetzt wieder frei. Dann steht im
+     Zwischenspeicher bereits der NEUE Vorgang, und ihn zu loeschen wuerde die
+     frische Bestellung um ihren Nachweis bringen. Aufgeraeumt wird nur, was
+     noch derselbe Vorgang ist. */
+  const raeumeAufWennNochAktuell = () => {
+    try {
+      const jetzt = JSON.parse(localStorage.getItem(PENDING_STORE_KEY) || 'null');
+      if (jetzt && pending && jetzt.reference !== pending.reference) return;
+      localStorage.removeItem(PENDING_STORE_KEY);
+    } catch (e) {}
+  };
 
   // Selbstheilung: Auch OHNE SumUp-Rücksprung (?payment=…) offene Zahlungen prüfen.
   // Fall: Kunde hat bezahlt, aber den Tab auf der SumUp-Seite geschlossen – beim
@@ -12096,7 +12126,7 @@ async function handlePaymentReturn() {
           body: JSON.stringify({ cancelOnly: true, supersedes: { reference: pending.reference, checkoutId: pending.checkoutId } }),
         }).catch(() => {});
       } catch (e) {}
-      try { localStorage.removeItem(PENDING_STORE_KEY); } catch (e) {}
+      raeumeAufWennNochAktuell();
       return;
     }
 
@@ -12116,7 +12146,7 @@ async function handlePaymentReturn() {
       sendOrderConfirmationEmails(pending.order);
       commitOrderSuccess(pending.order, pending.cartSnapshot || {});
       lastCompletedOrder = pending.order;
-      try { localStorage.removeItem(PENDING_STORE_KEY); } catch(e) {}
+      raeumeAufWennNochAktuell();
       cart = {}; saveCart();
       checkoutStep = 'success';
       if (typeof celebrateOrderSuccess === 'function') setTimeout(celebrateOrderSuccess, 350);
@@ -12124,7 +12154,7 @@ async function handlePaymentReturn() {
     } else {
       // ❌ Nicht bezahlt / abgebrochen: Warenkorb + Daten bleiben erhalten,
       // der Kunde kann erneut eine Zahlungsart wählen. KEINE Bestellung, KEINE Mail.
-      try { localStorage.removeItem(PENDING_STORE_KEY); } catch(e) {}
+      raeumeAufWennNochAktuell();
       checkoutStep = 'details';
       setTimeout(() => {
         openCart();
@@ -12300,9 +12330,16 @@ initReviews();
 initCookies();
 applyLocation();   // Anzeigestellen aus dem Standort-Datensatz füllen
 handlePaymentReturn();
-// Zurück-Taste aus dem SumUp-Fenster: Seite kommt oft aus dem bfcache ohne Neuladen –
-// dann räumen wir den offenen Versuch ebenfalls sofort still auf.
+/* Zurück-Taste aus dem SumUp-Fenster: Die Seite kommt aus dem bfcache, also
+   ohne Neuladen und ohne dass irgendein Skript neu läuft – der Bestellknopf
+   steht noch auf "Erstelle Zahlungsseite ..." und ist gesperrt.
+
+   Das Entsperren steht bewusst VOR und AUSSERHALB von handlePaymentReturn():
+   jene Funktion fragt bei SumUp nach, das dauert, und sie hat Ausgänge, die
+   früh zurückkehren. Der Knopf darf davon nicht abhängen – sonst kommt der
+   Kunde nach einem Rückzieher nie wieder zur Zahlung. */
 window.addEventListener('pageshow', (e) => {
+  try { resetCheckoutSubmitLabel(); } catch (err) {}
   if (e.persisted) { try { handlePaymentReturn(); } catch (err) {} }
 });
 
