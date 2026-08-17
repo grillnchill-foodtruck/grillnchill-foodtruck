@@ -59,7 +59,7 @@ const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 // --- Retargeting/Gutschein (Netlify Blobs, best effort – stört den Mailfluss nie) ---
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
-const { buildInvoicePdf, buildInvoiceXml } = require('./lib/invoice');
+const { buildInvoicePdf, buildInvoiceXml, trinkgeldImVat } = require('./lib/invoice');
 const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
 const { codeSchluessel } = require('./lib/gutschein-code');
 
@@ -169,11 +169,12 @@ function buildInvoiceBlock(order) {
       <td style="padding:5px 14px;text-align:right;color:#666;font-size:12px;white-space:nowrap;">${formatPrice(z(v.steuer))}</td>
     </tr>`).join('');
 
-  // Trinkgeld ist freiwillig und kein Entgelt fuer eine Leistung – es wird
-  // ausgewiesen, aber ohne Umsatzsteuer.
+  // Trinkgeld: seit 17.08.2026 auf Wunsch des Betreibers mit 19 % versteuert –
+  // die Steuer steckt dann in der 19%-Zeile oben. Aeltere Bestellungen
+  // behalten ihre damalige steuerfreie Ausweisung.
   const trinkgeld = z(order.tip) > 0 ? `
     <tr>
-      <td style="padding:6px 14px;color:#555;font-size:13px;">Trinkgeld (freiwillig, 0&nbsp;% USt.)</td>
+      <td style="padding:6px 14px;color:#555;font-size:13px;">Trinkgeld ${trinkgeldImVat(order) ? '(inkl. 19&nbsp;% USt.)' : '(freiwillig, 0&nbsp;% USt.)'}</td>
       <td style="padding:6px 14px;text-align:right;color:#555;font-size:13px;white-space:nowrap;">${formatPrice(z(order.tip))}</td>
     </tr>` : '';
 

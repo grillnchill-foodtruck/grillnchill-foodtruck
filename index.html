@@ -7792,7 +7792,7 @@ function splitVat(entry, bruttoGesamt) {
 
 /* Steueraufstellung für die ganze Bestellung.
    Rabatte und Liefergebühr werden im Verhältnis der Warenanteile verteilt. */
-function buildVatSummary(cartObj, rabattGesamt, liefergebuehr) {
+function buildVatSummary(cartObj, rabattGesamt, liefergebuehr, trinkgeld) {
   const brutto = { [VAT_FOOD]: 0, [VAT_DRINK]: 0 };
   Object.values(cartObj).forEach(entry => {
     const teil = splitVat(entry, entryUnitPrice(entry) * entry.qty);
@@ -7801,13 +7801,20 @@ function buildVatSummary(cartObj, rabattGesamt, liefergebuehr) {
   });
   const warenSumme = brutto[VAT_FOOD] + brutto[VAT_DRINK];
   const zeilen = [];
+  // Trinkgeld: auf Wunsch des Betreibers (17.08.2026) mit 19 % versteuert,
+  // nicht mehr als steuerfrei ausgewiesen. Es geht BRUTTO in die 19%-Zeile –
+  // der Kunde zahlt denselben Betrag, nur die Aufteilung Netto/Steuer aendert
+  // sich. Rabatte mindern das Trinkgeld nicht (unten laeuft es deshalb an der
+  // anteiligen Rabattverteilung vorbei).
+  const tip = Math.max(0, Number(trinkgeld) || 0);
   [VAT_FOOD, VAT_DRINK].forEach(satz => {
-    if (brutto[satz] <= 0) return;
+    if (brutto[satz] <= 0 && !(satz === VAT_DRINK && tip > 0)) return;
     const anteil = warenSumme > 0 ? brutto[satz] / warenSumme : 0;
     // Nicht unter null – ein Gutschein über den vollen Betrag ergibt 0,
     // nicht negativ. Die Zeile bleibt trotzdem stehen: eine Rechnung muss
     // die Steuer je Satz ausweisen, auch wenn sie 0,00 € beträgt.
-    const bru = Math.max(0, brutto[satz] - rabattGesamt * anteil + liefergebuehr * anteil);
+    const bru = Math.max(0, brutto[satz] - rabattGesamt * anteil + liefergebuehr * anteil)
+              + (satz === VAT_DRINK ? tip : 0);
     // Erst den Bruttobetrag runden, dann Netto und Steuer DARAUS ableiten.
     // Wurden alle drei einzeln gerundet, ergab Netto + Steuer je nach Betrag
     // einen Cent mehr als Brutto – auf der Rechnung sichtbar, und die
@@ -10176,7 +10183,7 @@ async function submitOrder(e) {
       city: (form['co-inv-city'] || {}).value || '',
     } : null,
     vat: (form['co-company'] && form['co-company'].value.trim())
-      ? buildVatSummary(cart, disc + vDisc + loyDisc, fee) : null,
+      ? buildVatSummary(cart, disc + vDisc + loyDisc, fee, tip) : null,
     deliveryAddress: checkoutMode === 'delivery' ? {
       street: form['co-street'].value,
       zip: form['co-zip'].value,

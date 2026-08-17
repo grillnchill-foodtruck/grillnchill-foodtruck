@@ -179,7 +179,11 @@ function buildInvoicePdf(order) {
         summe(`Netto ${satz} %`, eur(v.netto));
         summe(`zzgl. ${satz} % USt.`, eur(v.steuer));
       });
-      if (z(order.tip) > 0) summe('Trinkgeld (freiwillig, 0 % USt.)', eur(order.tip));
+      if (z(order.tip) > 0) {
+        summe(trinkgeldImVat(order)
+          ? 'Trinkgeld (inkl. 19 % USt.)'
+          : 'Trinkgeld (freiwillig, 0 % USt.)', eur(order.tip));
+      }
 
       y += 3;
       doc.moveTo(300, y).lineTo(R, y).strokeColor('#999999').stroke();
@@ -222,6 +226,21 @@ function ymd(deDatum) {
 }
 
 const r2 = (n) => Math.round((z(n) + Number.EPSILON) * 100) / 100;
+
+/* Steckt das Trinkgeld in der Steueraufstellung?
+   Seit dem 17.08.2026 wird es auf Wunsch des Betreibers mit 19 % versteuert
+   und geht im Shop mit in die 19%-Zeile ein. AELTERE Rechnungssaetze tragen
+   es noch steuerfrei ausserhalb der Aufstellung. Beim Neuerzeugen (ZIP,
+   Einzel-PDF) muss eine alte Rechnung ihre DAMALIGE Behandlung behalten –
+   eine einmal gestellte Rechnung wird nicht rueckwirkend umgetaxt.
+   Erkennbar an der Summe: neu = Steuerzeilen decken den Gesamtbetrag ab,
+   alt = es fehlt genau das Trinkgeld. */
+function trinkgeldImVat(order) {
+  const tip = z(order.tip);
+  if (tip <= 0) return false;
+  const vatBrutto = r2((order.vat || []).reduce((n, v) => n + z(v.brutto), 0));
+  return Math.abs(vatBrutto - z(order.total)) < 0.02;
+}
 
 /* --------------------------------------------------------------------------
    Rechenwerk der XRechnung
@@ -294,6 +313,11 @@ function rechneXml(order) {
   const warenBrutto = Object.values(bruttoJeSatz).reduce((n, b) => n + b, 0);
   const gebuehr = z(order.deliveryFee);
   const trinkgeld = z(order.tip);
+  // true: Trinkgeld ist mit 19 % versteuert und steckt in der 19%-Zeile
+  //       -> hier als Netto-Zuschlag zum Satz 19, Steuer kommt aus order.vat.
+  // false (Altbestand): steuerfreier Zuschlag ausserhalb der Aufstellung.
+  const tipVersteuert = trinkgeldImVat(order);
+  const tipNetto = tipVersteuert ? r2(trinkgeld / 1.19) : 0;
 
   // Liefergebuehr als Zuschlag, je Satz im Verhaeltnis der Warenanteile –
   // dieselbe Verteilung, die der Shop fuer die Steueraufstellung nutzt.
@@ -302,8 +326,12 @@ function rechneXml(order) {
   (order.vat || []).forEach(v => {
     const satz = z(v.satz);
     const anteil = warenBrutto > 0 ? (bruttoJeSatz[satz] || 0) / warenBrutto : 0;
-    const zuschlag = gebuehr > 0 ? r2((gebuehr * anteil) / (1 + satz / 100)) : 0;
+    let zuschlag = gebuehr > 0 ? r2((gebuehr * anteil) / (1 + satz / 100)) : 0;
     if (zuschlag > 0) zuschlaege.push({ satz, betrag: zuschlag, grund: 'Liefergebühr' });
+    if (satz === 19 && tipNetto > 0) {
+      zuschlaege.push({ satz: 19, betrag: tipNetto, grund: 'Trinkgeld' });
+      zuschlag = r2(zuschlag + tipNetto);   // fuer die Ableitung des Nachlasses
+    }
 
     // Ableiten statt runden: was uebrig bleibt, ist der Nachlass.
     const zeilenSatz = r2(zeilen.filter(p => p.satz === satz).reduce((n, p) => n + p.netto, 0));
@@ -313,7 +341,10 @@ function rechneXml(order) {
   });
 
   const nachlassSumme = r2(nachlaesse.reduce((n, p) => n + p.betrag, 0));
-  const zuschlagSumme = r2(zuschlaege.reduce((n, p) => n + p.betrag, 0) + trinkgeld);
+  // Beim versteuerten Trinkgeld steckt der Netto-Anteil bereits in den
+  // Zuschlaegen; nur das steuerfreie Trinkgeld des Altbestands kommt oben drauf.
+  const zuschlagSumme = r2(zuschlaege.reduce((n, p) => n + p.betrag, 0)
+                          + (tipVersteuert ? 0 : trinkgeld));
   const bemessung = r2(zeilenSumme - nachlassSumme + zuschlagSumme);
   const steuer = r2((order.vat || []).reduce((n, v) => n + z(v.steuer), 0));
   const endbetrag = r2(bemessung + steuer);
@@ -326,7 +357,7 @@ function rechneXml(order) {
   }
 
   return { zeilen, zeilenSumme, nachlaesse, zuschlaege, nachlassSumme, zuschlagSumme,
-           bemessung, steuer, endbetrag, trinkgeld };
+           bemessung, steuer, endbetrag, trinkgeld, tipVersteuert };
 }
 
 function buildInvoiceXml(order) {
@@ -358,10 +389,10 @@ function buildInvoiceXml(order) {
         <ram:CategoryCode>S</ram:CategoryCode>
         <ram:RateApplicablePercent>${num(v.satz)}</ram:RateApplicablePercent>
       </ram:ApplicableTradeTax>`).join('\n')
-    // Trinkgeld: freiwillig gezahlt, kein Entgelt fuer eine Leistung – daher
-    // ohne Steuer ausgewiesen, wie im Shop angezeigt. Ob das im Einzelfall so
-    // zu behandeln ist, gehoert vom Steuerberater gegengezeichnet.
-    + (b.trinkgeld > 0 ? `\n      <ram:ApplicableTradeTax>
+    // Steuerfreier Trinkgeld-Block NUR fuer den Altbestand (vor 17.08.2026):
+    // neue Rechnungen versteuern das Trinkgeld mit 19 %, es steckt dann in
+    // der 19%-Zeile aus order.vat und im Zuschlag oben.
+    + (b.trinkgeld > 0 && !b.tipVersteuert ? `\n      <ram:ApplicableTradeTax>
         <ram:CalculatedAmount>0.00</ram:CalculatedAmount>
         <ram:TypeCode>VAT</ram:TypeCode>
         <ram:ExemptionReason>Freiwilliges Trinkgeld – kein Entgelt für eine Leistung</ram:ExemptionReason>
@@ -373,7 +404,7 @@ function buildInvoiceXml(order) {
   const abschlaege = [
     ...b.nachlaesse.map(p => ({ ...p, zuschlag: false, kat: 'S' })),
     ...b.zuschlaege.map(p => ({ ...p, zuschlag: true, kat: 'S' })),
-    ...(b.trinkgeld > 0
+    ...(b.trinkgeld > 0 && !b.tipVersteuert
       ? [{ satz: 0, betrag: b.trinkgeld, grund: 'Trinkgeld', zuschlag: true, kat: 'E' }] : []),
   ].map(p => `      <ram:SpecifiedTradeAllowanceCharge>
         <ram:ChargeIndicator><udt:Indicator>${p.zuschlag}</udt:Indicator></ram:ChargeIndicator>
@@ -454,7 +485,7 @@ ${abschlaege}
 </rsm:CrossIndustryInvoice>`;
 }
 
-module.exports = { buildInvoicePdf, buildInvoiceXml, zahlungsText };
+module.exports = { buildInvoicePdf, buildInvoiceXml, zahlungsText, trinkgeldImVat };
 
 /* --------------------------------------------------------------------------
    Nachtragen fehlender Felder aus dem Bestellarchiv
