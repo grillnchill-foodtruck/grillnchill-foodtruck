@@ -40,10 +40,8 @@
      KARTE – Namen, Beschreibungen, Preise hier anpassen
      ================================================================== */
   /* Allergene/Spuren – Stand 16.08.2026, Angaben des Betreibers:
-       - Burgersauce enthaelt SELLERIE (9): Classic und Cheeseburger (auch
-         Veggie-Fassungen). Ob "Sauce"/"scharfe Sauce"/"White-BBQ"/Kubis-
-         Topping ebenfalls die Burgersauce sind, ist offen – dort ist 9
-         bewusst NICHT gesetzt, bitte klaeren statt raten.
+       - Burgersauce enthaelt SELLERIE (9) und ist laut Betreiber in ALLEN
+         Burgern (auch Veggie-Fassungen) – deshalb traegt jeder Burger die 9.
        - Crispy Chicken: EI (3) ist Zutat der Panade, keine blosse Spur.
        - Pommes/Suesskartoffelpommes: geteilte Fritteuse mit den panierten
          Produkten -> "kann Spuren enthalten" von Gluten (1) und Ei (3).
@@ -53,17 +51,17 @@
     // BURGER (mit Fleisch)
     { id: 'classic',     cat: 'burger', emoji: '🍔', image: 'produktbilder/classic.webp', name: "Classic Burger",       desc: "100% Beef-Patty, Salat, Tomate, Zwiebel, Hausgemachte Burgersauce", price: 8.00, allergens: '1, 9, 10', tag: null },
     { id: 'cheese',      cat: 'burger', emoji: '🍔', image: 'produktbilder/cheese.webp', name: "Cheeseburger",         desc: "Beef-Patty mit Käse, Salat, Tomate, Zwiebel, Burgersauce", price: 8.50, allergens: '1, 7, 9, 10', tag: { label: 'BELIEBT', class: 'popular' } },
-    { id: 'chilicheese', cat: 'burger', emoji: '🌶️', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger",  desc: "Beef-Patty, Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 7, 10', tag: { label: 'SCHARF', class: 'spicy' } },
-    { id: 'whitebbq',    cat: 'burger', emoji: '🍔', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger",     desc: "Beef-Patty mit Champignons, Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 7, 10', tag: null },
-    { id: 'crispy',      cat: 'burger', emoji: '🍗', image: 'produktbilder/crispy.webp', name: "Crispy Chicken Burger", desc: "Knusprig panierte Hähnchenbrust, Salat, Tomate, Sauce", price: 9.00, allergens: '1, 3, 10', tag: null },
-    { id: 'sucuk',       cat: 'burger', emoji: '🌶️', image: 'produktbilder/sucuk.webp', name: "Sucuk Burger",         desc: "Beef-Patty mit pikanter Sucuk, Käse, Salat, Sauce", price: 9.00, allergens: '1, 7, 10', tag: null },
-    { id: 'kubis',       cat: 'burger', emoji: '👑', image: 'produktbilder/kubis.webp', name: "Kubis Special",         desc: "Smashburger, Double Patty, mit Käse, Special-Topping", price: 11.00, allergens: '1, 7, 10', tag: { label: 'CHEF-EMPFEHLUNG', class: 'new' } },
+    { id: 'chilicheese', cat: 'burger', emoji: '🌶️', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger",  desc: "Beef-Patty, Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 7, 9, 10', tag: { label: 'SCHARF', class: 'spicy' } },
+    { id: 'whitebbq',    cat: 'burger', emoji: '🍔', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger",     desc: "Beef-Patty mit Champignons, Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 7, 9, 10', tag: null },
+    { id: 'crispy',      cat: 'burger', emoji: '🍗', image: 'produktbilder/crispy.webp', name: "Crispy Chicken Burger", desc: "Knusprig panierte Hähnchenbrust, Salat, Tomate, Sauce", price: 9.00, allergens: '1, 3, 9, 10', tag: null },
+    { id: 'sucuk',       cat: 'burger', emoji: '🌶️', image: 'produktbilder/sucuk.webp', name: "Sucuk Burger",         desc: "Beef-Patty mit pikanter Sucuk, Käse, Salat, Sauce", price: 9.00, allergens: '1, 7, 9, 10', tag: null },
+    { id: 'kubis',       cat: 'burger', emoji: '👑', image: 'produktbilder/kubis.webp', name: "Kubis Special",         desc: "Smashburger, Double Patty, mit Käse, Special-Topping", price: 11.00, allergens: '1, 7, 9, 10', tag: { label: 'CHEF-EMPFEHLUNG', class: 'new' } },
 
     // VEGGIE / VEGAN BURGER (100% Gemüse-Patty, eigene Produkte)
     { id: 'classic-veg',     cat: 'burger', emoji: '🌱', image: 'produktbilder/classic.webp', name: "Classic Burger (Veggie/Vegan)",      desc: "100% Gemüse-Patty, Salat, Tomate, Zwiebel, Hausgemachte Burgersauce", price: 8.00, allergens: '1, 9, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
     { id: 'cheese-veg',      cat: 'burger', emoji: '🌱', image: 'produktbilder/cheese.webp', name: "Cheeseburger (Veggie/Vegan)",        desc: "100% Gemüse-Patty mit veganem Käse, Salat, Tomate, Zwiebel, Burgersauce", price: 8.50, allergens: '1, 7, 9, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-    { id: 'chilicheese-veg', cat: 'burger', emoji: '🌱', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger (Veggie/Vegan)", desc: "100% Gemüse-Patty, veganer Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 7, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
-    { id: 'whitebbq-veg',    cat: 'burger', emoji: '🌱', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger (Veggie/Vegan)",    desc: "100% Gemüse-Patty mit Champignons, veganer Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 7, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
+    { id: 'chilicheese-veg', cat: 'burger', emoji: '🌱', image: 'produktbilder/chilicheese.webp', name: "Chili-Cheese-Burger (Veggie/Vegan)", desc: "100% Gemüse-Patty, veganer Käse, Jalapeños, scharfe Sauce, Salat", price: 9.00, allergens: '1, 7, 9, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
+    { id: 'whitebbq-veg',    cat: 'burger', emoji: '🌱', image: 'produktbilder/whitebbq.webp', name: "White BBQ Burger (Veggie/Vegan)",    desc: "100% Gemüse-Patty mit Champignons, veganer Käse, White-BBQ-Sauce, Salat", price: 9.00, allergens: '1, 7, 9, 10', veggie: true, vegan: true, tag: { label: 'VEGGIE', class: 'veggie' } },
 
     // SNACKS & BEILAGEN
     { id: 'nug6',        cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "6er Chicken Nuggets",   desc: "Knusprig paniert, mit Dip nach Wahl", price: 4.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: null },

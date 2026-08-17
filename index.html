@@ -118,7 +118,7 @@
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "5.0",
-    "reviewCount": "229",
+    "reviewCount": "230",
     "bestRating": "5"
   },
   "openingHoursSpecification": [
@@ -5200,7 +5200,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
       <div class="hero-content">
         <div class="hero-rating">
           <span class="stars" id="heroStars">★★★★★</span>
-          <span><strong id="heroRatingValue" style="color: var(--color-cream);">5.0</strong> · <span id="heroReviewsText" data-i18n="hero.reviews">229 Bewertungen auf Google</span></span>
+          <span><strong id="heroRatingValue" style="color: var(--color-cream);">5.0</strong> · <span id="heroReviewsText" data-i18n="hero.reviews">230 Bewertungen auf Google</span></span>
         </div>
         <h1>
           <span data-i18n="hero.h1a">Halal Burger in Bielefeld</span><br />
@@ -5398,7 +5398,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
           </div>
           <div class="story-stat">
             <div class="story-stat-num" id="storyRatingNum">5,0★</div>
-            <div class="story-stat-label" id="storyRatingLabel" data-i18n="story.stat3">Bei 229 Bewertungen</div>
+            <div class="story-stat-label" id="storyRatingLabel" data-i18n="story.stat3">Bei 230 Bewertungen</div>
           </div>
           <div class="story-stat">
             <div class="story-stat-num">100%</div>
@@ -5424,7 +5424,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   <div class="container">
     <div class="section-header reveal">
       <h2 class="section-title" data-i18n="reviews.title">Was unsere Kunden sagen</h2>
-      <p class="section-subtitle"><span style="color: var(--color-yellow); letter-spacing: 2px;" id="reviewsStars">★★★★★</span> <span data-i18n="reviews.subtitle" id="reviewsSubtitle">5,0 bei 229 Bewertungen auf Google</span></p>
+      <p class="section-subtitle"><span style="color: var(--color-yellow); letter-spacing: 2px;" id="reviewsStars">★★★★★</span> <span data-i18n="reviews.subtitle" id="reviewsSubtitle">5,0 bei 230 Bewertungen auf Google</span></p>
     </div>
     <div class="reviews-carousel reveal">
       <button class="reviews-nav prev" onclick="moveReview(-1)" aria-label="Vorherige Bewertung" data-i18n-aria="a11y.prev_review">‹</button>
@@ -7388,7 +7388,7 @@ function cardVisual(item) {
 // Fallback = aktuelle Werte; werden beim Laden ggf. durch Live-Daten ersetzt.
 // REVIEWS_MIN_TOTAL = manuell gepflegter Mindestwert: Die Places-API hinkt der
 // öffentlichen Maps-Zahl oft einige Tage hinterher – angezeigt wird nie weniger.
-const REVIEWS_MIN_TOTAL = 229;
+const REVIEWS_MIN_TOTAL = 230;
 let GOOGLE_REVIEWS = { rating: 5.0, total: REVIEWS_MIN_TOTAL };
 function updateHeroReviews() {
   const r = GOOGLE_REVIEWS || {};
@@ -7404,13 +7404,13 @@ function updateHeroReviews() {
   const rc = document.getElementById('heroReviewsText');
   if (rc) {
     const tpl = (typeof t === 'function' ? t('hero.reviews') : '') || '{count} Bewertungen auf Google';
-    rc.textContent = tpl.replace('{count}', (r.total != null ? r.total : 229));
+    rc.textContent = tpl.replace('{count}', (r.total != null ? r.total : REVIEWS_MIN_TOTAL));
   }
   // Laufleiste: Bewertung + Anzahl immer live aus denselben Daten (beide Loop-Hälften)
   const tickerTpl = (typeof t === 'function' ? t('ticker.rating') : '') || '{rating} bei {count} Bewertungen';
   const tickerTxt = '\u2605 ' + tickerTpl
     .replace('{rating}', !isNaN(ratingNum) ? ratingNum.toFixed(1).replace('.', sep) : '5' + sep + '0')
-    .replace('{count}', (r.total != null ? r.total : 229));
+    .replace('{count}', (r.total != null ? r.total : REVIEWS_MIN_TOTAL));
   document.querySelectorAll('[data-i18n="ticker.rating"]').forEach(el => { el.textContent = tickerTxt; });
   // Story-Statistik ("Über uns"): Bewertung + Anzahl live aus denselben Daten
   const srn = document.getElementById('storyRatingNum');
@@ -7418,7 +7418,7 @@ function updateHeroReviews() {
   const srl = document.getElementById('storyRatingLabel');
   if (srl) {
     const stpl = (typeof t === 'function' ? t('story.stat3') : '') || 'Bei {count} Bewertungen';
-    srl.textContent = stpl.replace('{count}', (r.total != null ? r.total : 229));
+    srl.textContent = stpl.replace('{count}', (r.total != null ? r.total : REVIEWS_MIN_TOTAL));
   }
   // Reviews-Sektion: Sterne + Untertitel live aus denselben Daten
   const rvStars = document.getElementById('reviewsStars');
@@ -7431,7 +7431,7 @@ function updateHeroReviews() {
     const rtpl = (typeof t === 'function' ? t('reviews.subtitle') : '') || '{rating} bei {count} Bewertungen auf Google';
     rvSub.textContent = rtpl
       .replace('{rating}', !isNaN(ratingNum) ? ratingNum.toFixed(1).replace('.', sep) : '5' + sep + '0')
-      .replace('{count}', (r.total != null ? r.total : 229));
+      .replace('{count}', (r.total != null ? r.total : REVIEWS_MIN_TOTAL));
   }
 }
 async function loadGoogleReviews() {

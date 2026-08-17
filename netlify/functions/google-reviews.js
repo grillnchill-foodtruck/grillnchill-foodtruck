@@ -96,24 +96,32 @@ exports.handler = async (event) => {
   const fresh = cached && (Date.now() - cached.fetchedAt < CACHE_TTL_MS);
 
   // 1) Frischer Cache → direkt ausliefern, kein Google-Aufruf.
+  // "fetchedAt" steht mit in der Antwort: ohne den Zeitstempel liess sich von
+  // aussen nie beurteilen, ob die 24h-Auffrischung wirklich laeuft – genau
+  // diese Frage kam auf. Jetzt beantwortet sie ein einziger Aufruf.
   if (fresh) {
-    return json(200, { rating: cached.rating, total: cached.total, cached: true }, clientCache);
+    return json(200, { rating: cached.rating, total: cached.total, cached: true,
+                       fetchedAt: new Date(cached.fetchedAt).toISOString() }, clientCache);
   }
 
   // 2) Kein Key konfiguriert → letzten bekannten Wert oder null (Seite nutzt Fallback).
   if (!apiKey) {
-    if (cached) return json(200, { rating: cached.rating, total: cached.total, cached: true, stale: true }, clientCache);
+    if (cached) return json(200, { rating: cached.rating, total: cached.total, cached: true, stale: true,
+                                   fetchedAt: new Date(cached.fetchedAt).toISOString() }, clientCache);
     return json(200, { rating: null, total: null, note: 'GOOGLE_PLACES_API_KEY nicht gesetzt' });
   }
 
   // 3) Cache abgelaufen/leer → bei Google nachfragen.
   try {
     const { rating, total } = await fetchFromGoogle(apiKey, placeId);
-    try { await store().setJSON(KEY, { rating, total, fetchedAt: Date.now() }); } catch (e) { /* ignore */ }
-    return json(200, { rating, total, cached: false }, clientCache);
+    const jetzt = Date.now();
+    try { await store().setJSON(KEY, { rating, total, fetchedAt: jetzt }); } catch (e) { /* ignore */ }
+    return json(200, { rating, total, cached: false, fetchedAt: new Date(jetzt).toISOString() }, clientCache);
   } catch (e) {
     // Google-Fehler → falls vorhanden veralteten Cache liefern, sonst null.
-    if (cached) return json(200, { rating: cached.rating, total: cached.total, stale: true }, clientCache);
+    if (cached) return json(200, { rating: cached.rating, total: cached.total, stale: true,
+                                   fetchedAt: new Date(cached.fetchedAt).toISOString(),
+                                   error: String(e.message || e) }, clientCache);
     return json(200, { rating: null, total: null, error: String(e.message || e) });
   }
 };
