@@ -2943,8 +2943,14 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
   /* versteckt leicht abgesenkt – es erscheint aus der Richtung, in die es zurückführt */
   opacity: 0; transform: translateY(12px) scale(0.9); pointer-events: none;
-  transition: opacity .2s ease, transform .25s cubic-bezier(.22,.61,.36,1), border-color .15s;
+  transition: opacity .2s ease, transform .25s cubic-bezier(.22,.61,.36,1), border-color .15s,
+              bottom .25s cubic-bezier(.22,.61,.36,1);
 }
+/* Ganz am Seitenende weicht der Knopf nach oben aus: unten rechts sitzt dort
+   die Sprachwahl im Footer, und der Knopf stand exakt darueber. Gesteuert
+   ueber einen Observer auf #langSwitch – nur solange die Sprachwahl wirklich
+   im Bild ist, sonst bleibt der Knopf an seinem gewohnten Platz. */
+.to-top.ueber-sprachwahl { bottom: calc(4rem + var(--safe-bottom)); }
 .to-top svg { width: 21px; height: 21px; }
 .to-top.show { opacity: 1; transform: none; pointer-events: auto; }
 .to-top:hover { border-color: var(--color-orange); }
@@ -13104,14 +13110,24 @@ window.addEventListener('load', function () {
     // Sichtbar nur, solange der Footer im Bild ist – dort endet die Seite,
     // dort braucht man den Rückweg. Ein IntersectionObserver statt Scroll-Rechnerei.
     var footerEl = document.querySelector('.footer');
+    // Die Sprachwahl sitzt unten rechts im Footer – genau an der Stelle des
+    // Knopfs. Sobald sie ins Bild kommt, weicht der Knopf nach oben aus.
+    var langEl = document.getElementById('langSwitch');
     if (toTop && footerEl && 'IntersectionObserver' in window) {
       new IntersectionObserver(function (entries) {
         toTop.classList.toggle('show', entries[0].isIntersecting);
       }, { rootMargin: '0px 0px -10% 0px' }).observe(footerEl);
+      if (langEl) {
+        new IntersectionObserver(function (entries) {
+          toTop.classList.toggle('ueber-sprachwahl', entries[0].isIntersecting);
+        }).observe(langEl);
+      }
     } else if (toTop && footerEl) {
       // Fallback ohne Observer: Footer-Oberkante gegen Fensterhöhe prüfen
       window.addEventListener('scroll', function () {
         toTop.classList.toggle('show', footerEl.getBoundingClientRect().top < window.innerHeight);
+        if (langEl) toTop.classList.toggle('ueber-sprachwahl',
+          langEl.getBoundingClientRect().top < window.innerHeight);
       }, { passive: true });
     }
     if (toTop) toTop.addEventListener('click', function () {
