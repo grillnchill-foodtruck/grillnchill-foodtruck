@@ -4493,6 +4493,16 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 }
 .nav-icon-btn:hover { border-color: var(--color-orange); color: var(--color-cream); }
 .nav-icon-btn:active { transform: scale(0.94); }   /* Rückmeldung beim Drücken, nicht erst beim Loslassen */
+/* Konto-Knopf: am Desktop das Maennchen, mobil und in der App ein QR-Symbol –
+   dort oeffnet er die kompakte Kundenkarte (Schnellzugriff am Truck). */
+.acc-ico { display: inline-flex; align-items: center; }
+.acc-ico-qr { display: none; }
+@media (max-width: 879px) {
+  .acc-ico-person { display: none; }
+  .acc-ico-qr { display: inline-flex; }
+}
+body.app-forced .acc-ico-person { display: none; }
+body.app-forced .acc-ico-qr { display: inline-flex; }
 @media (prefers-reduced-motion: reduce) { .nav-icon-btn { transition: none; } .nav-icon-btn:active { transform: none; } }
 
 /* Der Öffnungsstatus behält auch mobil seinen Text – ein Punkt allein sagt
@@ -5130,14 +5140,16 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
       <li><a href="#location" data-i18n="nav.location">Standort</a></li>
       <li><a href="#catering" data-i18n="nav.catering">Catering</a></li>
       <li><a href="#faq" data-i18n="nav.faq">FAQ</a></li>
+      <li><a href="#" onclick="openAccountOverlay(); return false;" data-i18n="acc.nav">Mein Konto</a></li>
     </ul>
     <div class="nav-actions">
       <span class="nav-status" id="navStatus" hidden>
         <svg class="status-flame" viewBox="0 0 16 20" aria-hidden="true"><path class="flame-body" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="flame-core" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg>
         <span class="nav-status-text" id="navStatusText"></span>
       </span>
-      <button type="button" class="nav-icon-btn" id="accountBtn" onclick="openAccountOverlay()" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <button type="button" class="nav-icon-btn" id="accountBtn" onclick="openAccountOverlay('kompakt')" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto">
+        <span class="acc-ico acc-ico-person"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+        <span class="acc-ico acc-ico-qr"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M21 14v3"/><path d="M14 21h3"/><path d="M21 21v.01"/></svg></span>
       </button>
       <button class="nav-cart-btn" onclick="openCart()" aria-label="Warenkorb öffnen" data-i18n-aria="a11y.cart_open">
         <span class="nav-cart-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M2.5 3h2l2.4 12.2a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L22 7H6"/></svg></span>
@@ -6380,7 +6392,17 @@ function updateAccountUI() {
   const ov = document.getElementById('accountOverlay');
   if (ov && ov.style.display === 'flex') renderAccount();
 }
-function openAccountOverlay() {
+/* Zwei Ansichten desselben Overlays:
+   'kompakt' – Schnellzugriff hinterm Kopfzeilen-Symbol: Stempelkarte,
+               Kundenkarte, letzte Bestellungen, Freunde werben. Fuer den
+               Moment am Truck. Mobil und in der App traegt der Knopf dafuer
+               ein QR-Symbol.
+   voll      – alle Einstellungen (Firmenkunde, Name, Geburtstag, Adressen,
+               Dauerbestellungen, Konto loeschen). Desktop: Reiter
+               "Mein Konto"; mobil: Menuepunkt; App: Tab "Konto". */
+let accountKompakt = false;
+function openAccountOverlay(modus) {
+  accountKompakt = (modus === 'kompakt');
   document.getElementById('accountOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
   renderAccount();
@@ -6396,11 +6418,13 @@ function renderAccount(step) {
   if (!el) return;
   if (accountLoggedIn() && !step) {
     renderAccProfile(el);
-    el.insertAdjacentHTML('beforeend', accSettingsHtml());
+    if (!accountKompakt) el.insertAdjacentHTML('beforeend', accSettingsHtml());
     return;
   }
   renderAccLogin(el, step || 'email');
-  if ((step || 'email') === 'email') el.insertAdjacentHTML('beforeend', accSettingsHtml());
+  // App-Einstellungen auch hier nur in der vollen Ansicht – der kompakte
+  // Schnellzugriff zeigt vor der Anmeldung nur das Anmeldeformular.
+  if ((step || 'email') === 'email' && !accountKompakt) el.insertAdjacentHTML('beforeend', accSettingsHtml());
 }
 // App-Einstellungen (Sprache, Benachrichtigungen, Zahlungsarten) – ohne Login nutzbar
 async function accEnablePush(btn) {
@@ -6550,6 +6574,7 @@ function renderAccProfile(el) {
         <button class="btn btn-primary" type="button" onclick="accAddAddress()">${t('acc.save_address')}</button>
       </div>
     </details>` : '';
+  const voll = !accountKompakt;
   el.innerHTML = `
     <p style="margin:0 0 0.9rem;font-weight:700;">${t('acc.hello').replace('{name}', escG(p.name || p.email))}</p>
     <div class="loyalty-card" style="margin:0 0 1.1rem;">
@@ -6586,7 +6611,7 @@ function renderAccProfile(el) {
             : `<div style="font-size:0.68rem;color:var(--color-text-muted);margin-top:0.3rem;">${t('acc.no_details')}</div>`}
         </div>`).join('')}
     </div>` : ''}
-    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.biz_title')}</div>
+${voll ? `    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.biz_title')}</div>
     <label class="standing-remind" style="margin:0 0 0.5rem;">
       <input type="checkbox" id="accBizOn" ${(p.business && p.business.isBusiness) ? 'checked' : ''} onchange="accBizToggle()">
       <span>${t('acc.biz_optin')}</span>
@@ -6626,7 +6651,7 @@ function renderAccProfile(el) {
       <p style="font-size:0.7rem;color:var(--color-text-muted);margin:0.35rem 0 0;line-height:1.4;">${
         p.birthdayLocked ? t('acc.birthday_locked')
         : (p.birthday ? t('acc.birthday_once') : t('acc.birthday_hint'))}</p>
-    </div>
+    </div>` : ''}
     ${p.refCode ? `
     <div style="background:var(--color-bg-elev);border:1px solid var(--color-border);border-radius:12px;padding:0.8rem 0.9rem;margin-bottom:0.9rem;">
       <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.25rem;">${t('acc.ref_title')}</div>
@@ -6637,20 +6662,25 @@ function renderAccProfile(el) {
       </div>
       ${p.referrals ? `<p style="font-size:0.72rem;color:var(--color-cream-dim);margin:0.55rem 0 0;">${t('acc.ref_earned').replace('{n}', p.referrals)}</p>` : ''}
     </div>` : ''}
-    <div style="margin-bottom:0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.addresses')}</div>
+${voll ? `    <div style="margin-bottom:0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.addresses')}</div>
     ${addr || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.4rem;">${t('acc.no_addresses')}</p>`}
     ${addForm}
     <button class="btn btn-primary btn-block" style="margin-top:1rem;" onclick="accSaveProfile()">${t('acc.save')}</button>
     <div id="standingBox"></div>
+` : ''}
     <div class="acc-actions">
+      ${voll ? '' : `<button type="button" class="mini-btn" onclick="accountKompakt=false; renderAccount();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>${t('acc.all_settings')}</span>
+      </button>`}
       <button type="button" class="mini-btn" onclick="accLogout()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/></svg>
         <span>${t('acc.logout')}</span>
       </button>
-      <button type="button" class="mini-btn mini-btn-danger" onclick="accDeleteAccount()">
+      ${voll ? `<button type="button" class="mini-btn mini-btn-danger" onclick="accDeleteAccount()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg>
         <span>${t('acc.delete')}</span>
-      </button>
+      </button>` : ''}
     </div>`;
   renderAccQr();
   renderWalletBtns();
