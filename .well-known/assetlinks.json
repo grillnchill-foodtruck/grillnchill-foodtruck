@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "de.grillnchillfoodtruck.app",
+      "sha256_cert_fingerprints": [
+        "29:6F:26:07:B6:5B:06:73:F8:32:C9:1E:3D:69:F4:F5:9A:4B:51:DC:29:48:90:F5:BA:C4:0B:8A:B2:98:B3:D4"
+      ]
+    }
+  }
+]
