@@ -4493,16 +4493,6 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 }
 .nav-icon-btn:hover { border-color: var(--color-orange); color: var(--color-cream); }
 .nav-icon-btn:active { transform: scale(0.94); }   /* Rückmeldung beim Drücken, nicht erst beim Loslassen */
-/* Konto-Knopf: am Desktop das Maennchen, mobil und in der App ein QR-Symbol –
-   dort oeffnet er die kompakte Kundenkarte (Schnellzugriff am Truck). */
-.acc-ico { display: inline-flex; align-items: center; }
-.acc-ico-qr { display: none; }
-@media (max-width: 879px) {
-  .acc-ico-person { display: none; }
-  .acc-ico-qr { display: inline-flex; }
-}
-body.app-forced .acc-ico-person { display: none; }
-body.app-forced .acc-ico-qr { display: inline-flex; }
 @media (prefers-reduced-motion: reduce) { .nav-icon-btn { transition: none; } .nav-icon-btn:active { transform: none; } }
 
 /* Der Öffnungsstatus behält auch mobil seinen Text – ein Punkt allein sagt
@@ -5148,8 +5138,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
         <span class="nav-status-text" id="navStatusText"></span>
       </span>
       <button type="button" class="nav-icon-btn" id="accountBtn" onclick="openAccountOverlay('kompakt')" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto">
-        <span class="acc-ico acc-ico-person"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-        <span class="acc-ico acc-ico-qr"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M21 14v3"/><path d="M14 21h3"/><path d="M21 21v.01"/></svg></span>
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M21 14v3"/><path d="M14 21h3"/><path d="M21 21v.01"/></svg>
       </button>
       <button class="nav-cart-btn" onclick="openCart()" aria-label="Warenkorb öffnen" data-i18n-aria="a11y.cart_open">
         <span class="nav-cart-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M2.5 3h2l2.4 12.2a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L22 7H6"/></svg></span>
