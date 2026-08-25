@@ -118,7 +118,7 @@ I18N.es = {
     "footer.tagline": "Street food con carácter desde Bielefeld Brackwede. Recién hecho a la plancha, servido con calma.",
     "footer.col_menu": "Carta", "footer.menu_speisekarte": "Carta", "footer.menu_order": "Pedir online",
     "footer.menu_catering": "Catering con foodtruck", "footer.menu_franchise": "Hazte partner", "footer.menu_location": "Ubicación y horario",
-    "footer.col_service": "Servicio", "footer.service_terms": "Condiciones", "footer.service_withdrawal": "Derecho de desistimiento", "footer.service_cookies": "Cookies",
+    "footer.col_service": "Servicio", "footer.service_terms": "Condiciones", "footer.service_withdrawal": "Derecho de desistimiento", "footer.service_a11y": "Accesibilidad", "footer.service_cookies": "Cookies",
     "footer.col_contact": "Contacto", "footer.rights": "Todos los derechos reservados",
 
     "cart.title": "Tu cesta", "cart.empty": "Tu cesta está vacía", "cart.empty_hint": "¡Añade algo rico de la carta!",

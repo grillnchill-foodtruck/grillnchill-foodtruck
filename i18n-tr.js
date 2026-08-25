@@ -118,7 +118,7 @@ I18N.tr = {
     "footer.tagline": "Bielefeld Brackwede'den karakterli sokak lezzeti. Taze ızgara, keyifle servis.",
     "footer.col_menu": "Menü", "footer.menu_speisekarte": "Menü", "footer.menu_order": "Online sipariş",
     "footer.menu_catering": "Foodtruck catering", "footer.menu_franchise": "Partner ol", "footer.menu_location": "Konum & saatler",
-    "footer.col_service": "Hizmet", "footer.service_terms": "Şartlar", "footer.service_withdrawal": "Cayma hakkı", "footer.service_cookies": "Çerezler",
+    "footer.col_service": "Hizmet", "footer.service_terms": "Şartlar", "footer.service_withdrawal": "Cayma hakkı", "footer.service_a11y": "Erişilebilirlik", "footer.service_cookies": "Çerezler",
     "footer.col_contact": "İletişim", "footer.rights": "Tüm hakları saklıdır",
 
     "cart.title": "Sepetin", "cart.empty": "Sepetin boş", "cart.empty_hint": "Menüden lezzetli bir şeyler ekle!",

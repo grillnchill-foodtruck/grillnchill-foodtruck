@@ -118,7 +118,7 @@ I18N.en = {
     "footer.tagline": "Street food with character from Bielefeld Brackwede. Freshly grilled, served chilled.",
     "footer.col_menu": "Menu", "footer.menu_speisekarte": "Menu", "footer.menu_order": "Order online",
     "footer.menu_catering": "Foodtruck catering", "footer.menu_franchise": "Become a partner", "footer.menu_location": "Location & hours",
-    "footer.col_service": "Service", "footer.service_terms": "Terms", "footer.service_withdrawal": "Right of withdrawal", "footer.service_cookies": "Cookies",
+    "footer.col_service": "Service", "footer.service_terms": "Terms", "footer.service_withdrawal": "Right of withdrawal", "footer.service_a11y": "Accessibility", "footer.service_cookies": "Cookies",
     "footer.col_contact": "Contact", "footer.rights": "All rights reserved",
 
     "cart.title": "Your cart", "cart.empty": "Your cart is empty", "cart.empty_hint": "Add something tasty from the menu!",

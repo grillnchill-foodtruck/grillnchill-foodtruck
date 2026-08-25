@@ -5930,6 +5930,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
           <li><a href="#" onclick="openModal('agb'); return false;">AGB</a></li>
           <li><a href="#" onclick="openModal('widerruf'); return false;" data-i18n="footer.service_withdrawal">Widerrufsbelehrung</a></li>
           <li><a href="#" onclick="openModal('cookies'); return false;" data-i18n="footer.service_cookies">Cookies</a></li>
+          <li><a href="#" onclick="openModal('barrierefreiheit'); return false;" data-i18n="footer.service_a11y">Barrierefreiheit</a></li>
           <li id="pushEnableLi" hidden><a href="#" id="pushEnableLink" data-i18n="push.enable">Benachrichtigungen aktivieren</a></li>
         </ul>
       </div>
@@ -11256,6 +11257,52 @@ const LEGAL = {
       Google; diese Anbieter können auf ihren eigenen Domains Cookies einsetzen. Beim
       Online-Bezahlen wechselst du auf die Seite von SumUp; dort gelten die
       Cookies und Datenschutzbestimmungen von SumUp. Details in unserer Datenschutzerklärung.</p>
+    `
+  },
+  barrierefreiheit: {
+    title: 'Barrierefreiheit',
+    body: `
+      <p>Wir möchten, dass alle bei uns bestellen können – deshalb bauen wir diese Website
+      und unsere Apps so barrierearm wie möglich. Diese Erklärung ist freiwillig und
+      beschreibt ehrlich, was bereits funktioniert und woran wir noch arbeiten.</p>
+
+      <h4>Das ist bereits umgesetzt</h4>
+      <ul>
+        <li><strong>Tastaturbedienung:</strong> Alle Funktionen sind ohne Maus erreichbar.
+        Ein „Zum Inhalt springen"-Link erscheint beim ersten Tab-Druck, der Tastatur-Fokus
+        ist überall deutlich sichtbar, und Esc schließt geöffnete Dialoge wie den Warenkorb.</li>
+        <li><strong>Screenreader:</strong> Symbol-Knöpfe (z.&nbsp;B. Warenkorb, QR-Code,
+        Sprachwahl) tragen unsichtbare Beschriftungen, Dialoge und Menüs melden ihre Rolle
+        und ihren Zustand.</li>
+        <li><strong>Reduzierte Bewegung:</strong> Ist in deinem System „Bewegung reduzieren"
+        aktiviert, verzichten wir auf Einblend- und Gleit-Animationen und ersetzen sie durch
+        ruhige Übergänge.</li>
+        <li><strong>Dunkle, kontrastreiche Gestaltung:</strong> Die Oberfläche ist durchgehend
+        dunkel mit hellen Schriften gestaltet; wichtige Zustände (z.&nbsp;B. ausverkauft,
+        geöffnet/geschlossen) werden nicht nur über Farbe, sondern auch über Text vermittelt.</li>
+        <li><strong>8 Sprachen:</strong> Die gesamte Bestellstrecke gibt es auf Deutsch,
+        Englisch, Türkisch, Italienisch, Spanisch, Portugiesisch, Französisch und Niederländisch.</li>
+      </ul>
+
+      <h4>Daran arbeiten wir noch</h4>
+      <ul>
+        <li>Ein vollständiger Praxistest des Bestellablaufs mit VoiceOver/Screenreadern
+        steht noch aus.</li>
+        <li>Die Schriftgröße folgt noch nicht der Systemeinstellung von iOS/Android
+        (Dynamic Type); im Browser kannst du die Seite aber frei zoomen.</li>
+        <li>Eine gemessene Kontrastprüfung aller Flächen nach WCAG&nbsp;2.1 AA ist geplant.</li>
+      </ul>
+
+      <h4>Barriere gefunden?</h4>
+      <p>Wenn dich etwas am Bestellen hindert, sag uns bitte Bescheid – wir kümmern uns:<br />
+      E-Mail: info@grillnchill-foodtruck.de · Telefon: +49 151 18 54 06 04.<br />
+      Bestellen geht selbstverständlich auch telefonisch oder direkt am Truck.</p>
+
+      <p style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--color-border); font-size: 0.85rem; color: var(--color-text-muted);">
+        Stand: August 2026 · Als Kleinstunternehmen sind wir vom
+        Barrierefreiheitsstärkungsgesetz (BFSG) ausgenommen – diese Erklärung und die
+        Umsetzung erfolgen freiwillig.
+      </p>
     `
   }
 };

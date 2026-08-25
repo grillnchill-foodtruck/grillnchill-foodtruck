@@ -118,7 +118,7 @@ I18N.fr = {
     "footer.tagline": "Street food avec du caractère, de Bielefeld Brackwede. Grillé frais, servi chill.",
     "footer.col_menu": "Menu", "footer.menu_speisekarte": "Carte", "footer.menu_order": "Commander en ligne",
     "footer.menu_catering": "Traiteur foodtruck", "footer.menu_franchise": "Devenir partenaire", "footer.menu_location": "Adresse & horaires",
-    "footer.col_service": "Service", "footer.service_terms": "CGV", "footer.service_withdrawal": "Droit de rétractation", "footer.service_cookies": "Cookies",
+    "footer.col_service": "Service", "footer.service_terms": "CGV", "footer.service_withdrawal": "Droit de rétractation", "footer.service_a11y": "Accessibilité", "footer.service_cookies": "Cookies",
     "footer.col_contact": "Contact", "footer.rights": "Tous droits réservés",
 
     "cart.title": "Ton panier", "cart.empty": "Ton panier est vide", "cart.empty_hint": "Ajoute un truc bon depuis la carte !",

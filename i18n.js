@@ -125,7 +125,7 @@ const I18N = {
     "footer.tagline": "Streetfood mit Charakter aus Bielefeld Brackwede. Frisch gegrillt, chillig serviert.",
     "footer.col_menu": "Menü", "footer.menu_speisekarte": "Speisekarte", "footer.menu_order": "Online bestellen",
     "footer.menu_catering": "Foodtruck Catering", "footer.menu_franchise": "Partner werden", "footer.menu_location": "Standort & Zeiten",
-    "footer.col_service": "Service", "footer.service_terms": "AGB", "footer.service_withdrawal": "Widerrufsbelehrung", "footer.service_cookies": "Cookies",
+    "footer.col_service": "Service", "footer.service_terms": "AGB", "footer.service_withdrawal": "Widerrufsbelehrung", "footer.service_a11y": "Barrierefreiheit", "footer.service_cookies": "Cookies",
     "footer.col_contact": "Kontakt", "footer.rights": "Alle Rechte vorbehalten",
 
     "cart.title": "Dein Warenkorb", "cart.empty": "Dein Warenkorb ist leer", "cart.empty_hint": "Füge etwas Leckeres aus der Speisekarte hinzu!",

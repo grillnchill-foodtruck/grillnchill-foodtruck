@@ -118,7 +118,7 @@ I18N.nl = {
     "footer.tagline": "Streetfood met karakter uit Bielefeld Brackwede. Vers gegrild, chill geserveerd.",
     "footer.col_menu": "Menu", "footer.menu_speisekarte": "Menukaart", "footer.menu_order": "Online bestellen",
     "footer.menu_catering": "Foodtruck-catering", "footer.menu_franchise": "Word partner", "footer.menu_location": "Locatie & openingstijden",
-    "footer.col_service": "Service", "footer.service_terms": "Algemene voorwaarden", "footer.service_withdrawal": "Herroepingsrecht", "footer.service_cookies": "Cookies",
+    "footer.col_service": "Service", "footer.service_terms": "Algemene voorwaarden", "footer.service_withdrawal": "Herroepingsrecht", "footer.service_a11y": "Toegankelijkheid", "footer.service_cookies": "Cookies",
     "footer.col_contact": "Contact", "footer.rights": "Alle rechten voorbehouden",
 
     "cart.title": "Je winkelwagen", "cart.empty": "Je winkelwagen is leeg", "cart.empty_hint": "Voeg iets lekkers toe uit het menu!",

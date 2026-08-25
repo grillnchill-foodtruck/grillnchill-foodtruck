@@ -118,7 +118,7 @@ I18N.it = {
     "footer.tagline": "Street food con carattere da Bielefeld Brackwede. Grigliato fresco, servito rilassati.",
     "footer.col_menu": "Menù", "footer.menu_speisekarte": "Menù", "footer.menu_order": "Ordina online",
     "footer.menu_catering": "Catering con foodtruck", "footer.menu_franchise": "Diventa partner", "footer.menu_location": "Dove siamo e orari",
-    "footer.col_service": "Servizio", "footer.service_terms": "Termini e condizioni", "footer.service_withdrawal": "Diritto di recesso", "footer.service_cookies": "Cookie",
+    "footer.col_service": "Servizio", "footer.service_terms": "Termini e condizioni", "footer.service_withdrawal": "Diritto di recesso", "footer.service_a11y": "Accessibilità", "footer.service_cookies": "Cookie",
     "footer.col_contact": "Contatti", "footer.rights": "Tutti i diritti riservati",
 
     "cart.title": "Il tuo carrello", "cart.empty": "Il tuo carrello è vuoto", "cart.empty_hint": "Aggiungi qualcosa di buono dal menù!",
