@@ -16,6 +16,7 @@
  */
 
 const webpush = require('web-push');
+const { sendeAnIOS } = require('./lib/fcm');
 const { getStore } = require('@netlify/blobs');
 
 const STORE_NAME = 'push-subs';
@@ -130,8 +131,17 @@ exports.handler = async (event) => {
         else failed++;
       }
     }
-    await auditLog(who, 'Push', '„' + String(body.title || '').slice(0, 60) + '“ an ' + sent + ' Abonnenten gesendet');
-    return json(200, { ok: true, sent, removed, failed, total: blobs.length });
+    // Zusaetzlich an die iOS-App (FCM-Thema "alle") – EIN Knopf fuer alle
+    // Kanaele. Ohne eingerichtetes Dienstkonto bleibt es beim Web-Push.
+    const ios = await sendeAnIOS(
+      (body.title || 'Grilln Chill').toString().slice(0, 80),
+      (body.body || '').toString().slice(0, 200),
+      (body.url || '/').toString().slice(0, 200));
+
+    await auditLog(who, 'Push', '„' + String(body.title || '').slice(0, 60) + '“ an ' + sent + ' Abonnenten gesendet'
+      + (ios.ok ? ' + iOS-App' : ''));
+    return json(200, { ok: true, sent, removed, failed, total: blobs.length,
+                       ios: ios.ok ? 'gesendet' : ios.grund });
   } catch (e) {
     return json(500, { error: 'send_failed', detail: String((e && e.message) || e) });
   }

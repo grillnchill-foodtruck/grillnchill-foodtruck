@@ -3027,6 +3027,44 @@ body:has(#dipOverlay.open) .app-tabbar { display: none; }
 [hidden] { display: none !important; }
 /* ?app=1 / PWA: App-Layout auch außerhalb des Mobil-Breakpoints */
 body.app-forced .app-tabbar { display: flex; }
+
+/* Start-Frage: Push einschalten? (nur App-Modus) */
+.push-optin {
+  position: fixed; left: 0; right: 0;
+  bottom: calc(70px + var(--safe-bottom));
+  z-index: 1200; padding: 0 1rem;
+  pointer-events: none;
+  opacity: 0; transform: translateY(16px);
+  transition: opacity .32s ease, transform .32s cubic-bezier(.2,.9,.3,1.1);
+}
+.push-optin.show { opacity: 1; transform: none; pointer-events: auto; }
+.push-optin-card {
+  max-width: 420px; margin: 0 auto;
+  background: var(--color-charcoal, #1d1d1b);
+  border: 1px solid var(--color-border);
+  border-radius: 16px; padding: 1.1rem 1.15rem 1.05rem;
+  box-shadow: 0 12px 40px rgba(0,0,0,.45);
+  text-align: center;
+}
+.push-optin-icon {
+  width: 44px; height: 44px; margin: 0 auto .6rem;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: rgba(232,119,34,.14);
+  color: var(--color-orange, #E87722);
+}
+.push-optin-icon svg { width: 22px; height: 22px; }
+.push-optin-card h3 { margin: 0 0 .3rem; font-size: 1rem; color: var(--color-cream); }
+.push-optin-card p { margin: 0 0 .85rem; font-size: .84rem; line-height: 1.5; color: var(--color-cream-dim); }
+.push-optin-btns { display: flex; flex-direction: column; gap: .45rem; }
+.push-optin-btns .btn { width: 100%; }
+.push-optin-later {
+  background: none; border: none; cursor: pointer;
+  font-size: .82rem; color: var(--color-text-muted);
+  padding: .45rem; min-height: 44px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .push-optin { transition: opacity .2s ease; transform: none; }
+}
 .sticky-cart:hover { background: var(--color-orange-bright); }
 .sticky-cart:active { transform: translateX(-50%) translateY(2px); }
 /* Während die Bestellmaske offen ist (Body gesperrt): schwebende Leiste ausblenden,
@@ -13534,14 +13572,61 @@ window.addEventListener('load', function () {
   }
 
   /* Push-Status & Anmeldung – bewusst unabhängig von einzelnen Bedienelementen,
-     damit Footer, Einstellungen und die installierte App denselben Weg nutzen. */
+     damit Footer, Einstellungen und die installierte App denselben Weg nutzen.
+     In der iOS-App gibt es keinen Web-Push (WKWebView) – dort läuft alles über
+     die nativen Brücken der App-Hülle: push-permission-request fragt das System,
+     push-subscribe abonniert das Firebase-Thema "alle". Antworten kommen als
+     CustomEvent auf window zurück. */
+  function istIOSPushApp() {
+    try {
+      return !!(window.webkit && window.webkit.messageHandlers
+        && window.webkit.messageHandlers['push-permission-request']
+        && window.webkit.messageHandlers['push-subscribe']);
+    } catch (e) { return false; }
+  }
   window.gncPushState = function () {
+    if (istIOSPushApp()) {
+      try {
+        if (localStorage.getItem('gnc_push_v1') === 'on') return 'on';
+        if (localStorage.getItem('gnc_push_ios') === 'denied') return 'blocked';
+      } catch (e) {}
+      return 'off';
+    }
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
     try { if (localStorage.getItem('gnc_push_v1') === 'on') return 'on'; } catch (e) {}
     if (Notification.permission === 'denied') return 'blocked';
     return 'off';
   };
+  function iosPushAnmelden() {
+    return new Promise(function (resolve) {
+      var fertig = false;
+      function antwort(e) {
+        if (fertig) return;
+        fertig = true;
+        window.removeEventListener('push-permission-request', antwort);
+        if (e && e.detail === 'granted') {
+          try { window.webkit.messageHandlers['push-subscribe'].postMessage(JSON.stringify({ topic: 'alle' })); } catch (err) {}
+          try { localStorage.setItem('gnc_push_v1', 'on'); } catch (err) {}
+          showToast(t('push.done'));
+          if (typeof track === 'function') track('push_enabled');
+          resolve(true);
+        } else {
+          try { localStorage.setItem('gnc_push_ios', 'denied'); } catch (err) {}
+          showToast(t('push.denied'));
+          resolve(false);
+        }
+      }
+      window.addEventListener('push-permission-request', antwort);
+      try { window.webkit.messageHandlers['push-permission-request'].postMessage('{}'); }
+      catch (err) { antwort(null); }
+      // Falls die App-Hülle nicht antwortet, nicht ewig hängen bleiben
+      setTimeout(function () {
+        if (!fertig) { window.removeEventListener('push-permission-request', antwort); resolve(false); }
+      }, 30000);
+    });
+  }
   window.gncEnablePush = async function () {
+    if (istIOSPushApp()) return iosPushAnmelden();
     if (window.gncPushState() === 'unsupported') { showToast(t('push.error')); return false; }
     try {
       var keyRes = await fetch('/push-subscribe');           // GET liefert den Public Key
@@ -13580,6 +13665,55 @@ window.addEventListener('load', function () {
     link.addEventListener('click', function (e) { e.preventDefault(); window.gncEnablePush(); });
   }
 
+  /* ---------- Start-Frage in der App: Push einschalten? ----------
+     Nur in der installierten App (APP_FORCED), nur solange Push weder an noch
+     blockiert ist. "Später" pausiert die Frage 14 Tage; nach einer Antwort des
+     Systems (an oder abgelehnt) kommt sie nie wieder. */
+  function initPushOptIn() {
+    if (!APP_FORCED) return;
+    if (window.gncPushState() !== 'off') return;
+    try {
+      var spaeter = Number(localStorage.getItem('gnc_push_frage') || 0);
+      if (spaeter && Date.now() - spaeter < 14 * 24 * 3600 * 1000) return;
+    } catch (e) { return; }
+    setTimeout(zeigePushFrage, 2500);   // erst ankommen lassen, dann fragen
+  }
+  function zeigePushFrage() {
+    if (document.getElementById('pushOptIn')) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'pushOptIn';
+    wrap.className = 'push-optin';
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-modal', 'false');
+    wrap.setAttribute('aria-labelledby', 'pushOptInTitle');
+    wrap.innerHTML =
+      '<div class="push-optin-card">' +
+        '<div class="push-optin-icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>' +
+        '</div>' +
+        '<h3 id="pushOptInTitle">' + t('push.optin_title') + '</h3>' +
+        '<p>' + t('push.optin_text') + '</p>' +
+        '<div class="push-optin-btns">' +
+          '<button type="button" class="btn btn-primary" id="pushOptInJa">' + t('push.optin_yes') + '</button>' +
+          '<button type="button" class="push-optin-later" id="pushOptInSpaeter">' + t('push.optin_later') + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+    requestAnimationFrame(function () { wrap.classList.add('show'); });
+    function zu() {
+      wrap.classList.remove('show');
+      setTimeout(function () { wrap.remove(); }, 350);
+    }
+    document.getElementById('pushOptInJa').addEventListener('click', function () {
+      zu();
+      window.gncEnablePush();
+    });
+    document.getElementById('pushOptInSpaeter').addEventListener('click', function () {
+      try { localStorage.setItem('gnc_push_frage', String(Date.now())); } catch (e) {}
+      zu();
+    });
+  }
+
   /* ---------- A11y: Escape schließt den Warenkorb ---------- */
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
@@ -13590,6 +13724,7 @@ window.addEventListener('load', function () {
   initNavAutoHide();
   initSheetDrag();
   initPushUI();
+  initPushOptIn();
 
   initSignatureCarousel();
   initCartFab();
