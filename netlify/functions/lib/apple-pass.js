@@ -46,16 +46,8 @@ async function laden() {
     keyCache = Buffer.from(process.env.APPLE_PASS_KEY_B64, 'base64').toString('utf8');
     return true;
   }
-  try {
-    const { getStore } = require('@netlify/blobs');
-    const opts = { name: 'geheim', consistency: 'strong' };
-    if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
-      opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
-      opts.token = process.env.NETLIFY_BLOBS_TOKEN;
-    }
-    const pem = await getStore(opts).get('apple-pass-key');
-    if (pem && pem.includes('PRIVATE KEY')) { keyCache = pem; return true; }
-  } catch (e) { console.error('apple-pass laden:', e.message); }
+  const pem = await require('./geheim').holeGeheim('apple-pass-key');
+  if (pem && pem.includes('PRIVATE KEY')) { keyCache = pem; return true; }
   return false;
 }
 

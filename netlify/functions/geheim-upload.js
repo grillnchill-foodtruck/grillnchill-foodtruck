@@ -19,7 +19,7 @@
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 
-const ERLAUBT = ['apple-pass-key', 'apple-apns-key'];
+const ERLAUBT = ['apple-pass-key', 'apple-apns-key', 'firebase-service-account'];
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

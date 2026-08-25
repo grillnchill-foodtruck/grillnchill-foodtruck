@@ -24,8 +24,15 @@ const crypto = require('crypto');
 const b64u = (x) => Buffer.from(typeof x === 'string' ? x : JSON.stringify(x))
   .toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-function dienstkonto() {
-  const roh = process.env.FIREBASE_SERVICE_ACCOUNT || '';
+/* Dienstkonto: Env hat Vorrang (lokale Tests); im Betrieb liegt die JSON im
+   Blobs-Store "geheim" ('firebase-service-account') - das AWS-4KB-Limit fuer
+   Umgebungsvariablen liess sie dort nicht mehr zu. */
+async function dienstkonto() {
+  let roh = process.env.FIREBASE_SERVICE_ACCOUNT || '';
+  if (!roh) {
+    try { roh = (await require('./geheim').holeGeheim('firebase-service-account')) || ''; }
+    catch (e) { roh = ''; }
+  }
   if (!roh) return null;
   try {
     const sa = JSON.parse(roh);
@@ -68,7 +75,7 @@ async function zugangsToken(sa, holen) {
  *          den Web-Push-Versand nicht mitreißen.
  */
 async function sendeAnIOS(titel, text, url, holen) {
-  const sa = dienstkonto();
+  const sa = await dienstkonto();
   if (!sa) return { ok: false, grund: 'nicht_eingerichtet' };
   try {
     const token = await zugangsToken(sa, holen);

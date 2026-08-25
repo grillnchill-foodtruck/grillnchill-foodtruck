@@ -29,10 +29,8 @@ async function ladeApnsKey() {
     apnsKeyCache = Buffer.from(process.env.APPLE_APNS_KEY_B64, 'base64').toString('utf8');
     return true;
   }
-  try {
-    const pem = await store('geheim').get('apple-apns-key');
-    if (pem && pem.includes('PRIVATE KEY')) { apnsKeyCache = pem; return true; }
-  } catch (e) { console.error('wallet-push laden:', e.message); }
+  const pem = await require('./geheim').holeGeheim('apple-apns-key');
+  if (pem && pem.includes('PRIVATE KEY')) { apnsKeyCache = pem; return true; }
   return false;
 }
 function apnsKonfiguriert() {
