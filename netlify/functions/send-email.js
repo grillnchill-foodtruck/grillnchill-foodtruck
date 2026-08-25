@@ -417,7 +417,13 @@ async function afterOrderHooks(order, verified) {
           };
           cust.orders = [entry, ...(cust.orders || [])].slice(0, 5);
         } catch (e) {}
+        cust.walletStand = Date.now();   // Handy-Wallets: "es gibt was Neues"
         await custS.setJSON(ckey2, cust);
+        // Kundenkarte in Apple/Google Wallet live nachziehen (wirft nie)
+        try {
+          const { aktualisiereWallets } = require('./lib/wallet-sync');
+          await aktualisiereWallets(ckey2.slice(2), cust);
+        } catch (e) {}
       } catch (e) {}
     }
 

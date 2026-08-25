@@ -147,7 +147,12 @@ exports.handler = async (event) => {
       } catch (e) {}
     }
     rec.lastOrderAt = rec.lastOrderAt || new Date().toISOString();
+    rec.walletStand = Date.now();   // Handy-Wallets: "es gibt was Neues"
     await s.setJSON(idx.key, rec);
+    try {
+      const { aktualisiereWallets } = require('./lib/wallet-sync');
+      await aktualisiereWallets(idx.key.slice(2), rec);
+    } catch (e) {}
     await auditLog(who, 'Vor-Ort-Umsatz ' + amount.toFixed(2) + ' € für ' + (rec.email || '?') + (earned ? ' (+' + earned + ' Bonus)' : ''));
     return json(200, { ok: true, earned, card: cardView(rec) });
   }
@@ -201,7 +206,12 @@ exports.handler = async (event) => {
 
     if (!parts.length) return json(400, { error: 'no_change', hint: 'Nichts geändert' });
 
+    rec.walletStand = Date.now();   // Handy-Wallets: "es gibt was Neues"
     await s.setJSON(idx.key, rec);
+    try {
+      const { aktualisiereWallets } = require('./lib/wallet-sync');
+      await aktualisiereWallets(idx.key.slice(2), rec);
+    } catch (e) {}
     await auditLog(who, 'Guthaben korrigiert für ' + (rec.email || '?') + ': ' + parts.join(', ')
       + (input.reason ? ' – Grund: ' + String(input.reason).slice(0, 80) : ''));
     return json(200, { ok: true, card: cardView(rec), changed: parts });
@@ -210,7 +220,12 @@ exports.handler = async (event) => {
   if (input.action === 'redeem') {
     if ((rec.rewards || 0) < 1) return json(409, { error: 'no_rewards', hint: 'Kein Bonus auf der Karte' });
     rec.rewards = rec.rewards - 1;
+    rec.walletStand = Date.now();   // Handy-Wallets: "es gibt was Neues"
     await s.setJSON(idx.key, rec);
+    try {
+      const { aktualisiereWallets } = require('./lib/wallet-sync');
+      await aktualisiereWallets(idx.key.slice(2), rec);
+    } catch (e) {}
     await auditLog(who, '5-€-Bonus eingelöst für ' + (rec.email || '?') + ' (Rest: ' + rec.rewards + ')');
     return json(200, { ok: true, card: cardView(rec) });
   }

@@ -28,6 +28,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { tokenGueltig } = require('./lib/kunden-token');
+const applePass = require('./lib/apple-pass');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -57,8 +58,15 @@ function googleConfigured() {
     && process.env.GOOGLE_WALLET_SA_KEY_B64);
 }
 function appleConfigured() {
-  // Wird true, sobald Zertifikat-Env gesetzt UND der Signier-Zweig unten gefüllt ist.
-  return false;
+  return applePass.konfiguriert();
+}
+function walletStore() {
+  const opts = { name: 'wallet', consistency: 'strong' };
+  if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
+    opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
+    opts.token = process.env.NETLIFY_BLOBS_TOKEN;
+  }
+  return getStore(opts);
 }
 
 function b64url(buf) {
@@ -131,6 +139,33 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
 
   if (event.httpMethod === 'GET') {
+    // Pass-Auslieferung: der "Zu Apple Wallet"-Knopf oeffnet diese URL mit
+    // einem kurzlebigen, signierten Beweis (5 Min) - siehe POST apple unten.
+    const dl = (event.queryStringParameters || {}).apple;
+    if (dl) {
+      if (!appleConfigured()) return json(503, { error: 'not_configured' });
+      const emailHash = applePass.pruefeDownloadToken(dl);
+      if (!emailHash) return json(403, { error: 'link_expired', hint: 'Link abgelaufen – bitte den Knopf im Konto erneut antippen.' });
+      const rec = await store().get('c:' + emailHash, { type: 'json' });
+      if (!rec || !rec.qrToken) return json(404, { error: 'no_card' });
+      try {
+        const pkpass = applePass.bauePass(rec, emailHash);
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/vnd.apple.pkpass',
+            'Content-Disposition': 'attachment; filename="grillnchill-kundenkarte.pkpass"',
+            'Cache-Control': 'no-store',
+            ...CORS,
+          },
+          body: pkpass.toString('base64'),
+          isBase64Encoded: true,
+        };
+      } catch (e) {
+        console.error('apple-pass:', e.message);
+        return json(500, { error: 'sign_failed' });
+      }
+    }
     return json(200, { google: googleConfigured(), apple: appleConfigured() });
   }
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
@@ -162,7 +197,19 @@ exports.handler = async (event) => {
   }
 
   if (input.action === 'apple') {
-    return json(503, { error: 'not_configured', hint: 'Apple Wallet folgt, sobald das Entwickler-Zertifikat hinterlegt ist.' });
+    if (!appleConfigured()) return json(503, { error: 'not_configured', hint: 'Apple Wallet ist noch nicht eingerichtet.' });
+    try {
+      const emailHash = sha(email);
+      // Seriennummer -> Kunde merken: braucht der Aktualisierungs-Dienst
+      // (wallet-api.js), um zu einer Seriennummer den Datensatz zu finden.
+      await walletStore().setJSON('serial:' + applePass.serialFuer(emailHash), { k: emailHash });
+      const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
+      const url = siteUrl + '/wallet-pass?apple=' + applePass.downloadToken(emailHash, Date.now() + 5 * 60 * 1000);
+      return json(200, { ok: true, url });
+    } catch (e) {
+      console.error('apple-pass:', e.message);
+      return json(500, { error: 'sign_failed', hint: 'Signatur fehlgeschlagen – Zertifikat-Variablen prüfen.' });
+    }
   }
 
   return json(400, { error: 'unknown_action' });

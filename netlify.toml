@@ -14,6 +14,17 @@
   to     = "/.netlify/functions/sumup-checkout"
   status = 200
 
+# Apple-Wallet: Pass-Download (Knopf im Konto) + Aktualisierungs-Dienst,
+# den iOS selbst aufruft (Registrierung, Pass-Abruf, Log)
+[[redirects]]
+  from   = "/wallet-pass"
+  to     = "/.netlify/functions/wallet-pass"
+  status = 200
+[[redirects]]
+  from   = "/wallet-api/*"
+  to     = "/.netlify/functions/wallet-api/:splat"
+  status = 200
+
 # Saubere URL für E-Mail-Endpoint:
 [[redirects]]
   from   = "/send-email"
