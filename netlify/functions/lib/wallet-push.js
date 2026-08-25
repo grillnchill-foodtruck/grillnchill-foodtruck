@@ -20,8 +20,23 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 
+/* APNs-Schluessel (.p8): wie der Pass-Schluessel im Blobs-Store "geheim"
+   ('apple-apns-key'), Env APPLE_APNS_KEY_B64 als Vorrang fuer lokale Tests. */
+let apnsKeyCache = null;
+async function ladeApnsKey() {
+  if (apnsKeyCache) return true;
+  if (process.env.APPLE_APNS_KEY_B64) {
+    apnsKeyCache = Buffer.from(process.env.APPLE_APNS_KEY_B64, 'base64').toString('utf8');
+    return true;
+  }
+  try {
+    const pem = await store('geheim').get('apple-apns-key');
+    if (pem && pem.includes('PRIVATE KEY')) { apnsKeyCache = pem; return true; }
+  } catch (e) { console.error('wallet-push laden:', e.message); }
+  return false;
+}
 function apnsKonfiguriert() {
-  return !!(process.env.APPLE_APNS_KEY_B64 && process.env.APPLE_APNS_KEY_ID);
+  return !!process.env.APPLE_APNS_KEY_ID;
 }
 
 const b64u = (x) => Buffer.from(typeof x === 'string' ? x : JSON.stringify(x))
@@ -31,7 +46,7 @@ const b64u = (x) => Buffer.from(typeof x === 'string' ? x : JSON.stringify(x))
 let jwtCache = { wert: null, ablauf: 0 };
 function apnsJwt() {
   if (jwtCache.wert && Date.now() < jwtCache.ablauf) return jwtCache.wert;
-  const key = Buffer.from(process.env.APPLE_APNS_KEY_B64, 'base64').toString('utf8');
+  const key = apnsKeyCache;
   const teamId = process.env.APPLE_TEAM_ID || '99R8K7386U';
   const kopf = b64u({ alg: 'ES256', kid: process.env.APPLE_APNS_KEY_ID });
   const daten = b64u({ iss: teamId, iat: Math.floor(Date.now() / 1000) });
@@ -82,7 +97,7 @@ function store(name) {
  */
 async function stupseWalletAn(emailHash) {
   try {
-    if (!apnsKonfiguriert()) return { ok: false, grund: 'nicht_eingerichtet' };
+    if (!apnsKonfiguriert() || !(await ladeApnsKey())) return { ok: false, grund: 'nicht_eingerichtet' };
     let applePass;
     try { applePass = require('./apple-pass'); } catch (e) { return { ok: false, grund: 'lib' }; }
     if (!applePass.konfiguriert()) return { ok: false, grund: 'nicht_eingerichtet' };

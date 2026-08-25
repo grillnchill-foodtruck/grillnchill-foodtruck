@@ -9,11 +9,17 @@
  * Pass-Zertifikat + Apples WWDR-Zwischenzertifikat). Signiert wird mit
  * node-forge; gepackt mit lib/zip.js (aus der Datensicherung wiederverwendet).
  *
- * Umgebungsvariablen (Netlify):
- *   APPLE_PASS_CERT_B64 – Pass-Zertifikat, PEM, Base64-kodiert
- *   APPLE_PASS_KEY_B64  – privater Schluessel dazu, PEM, Base64-kodiert
+ * Konfiguration: Das Pass-ZERTIFIKAT ist oeffentlich (steckt in jedem
+ * ausgelieferten Pass) und liegt darum im Repo (lib/apple-pass-cert.pem).
+ * Der private SCHLUESSEL ist geheim und liegt im Netlify-Blobs-Store
+ * "geheim" (Schluessel 'apple-pass-key', hochgeladen ueber die Admin-Function
+ * geheim-upload.js) – NICHT als Umgebungsvariable: AWS begrenzt die auf 4 KB
+ * gesamt, und mit allen Diensten zusammen platzte dieses Limit beim Deploy.
+ * APPLE_PASS_KEY_B64 als Env wird, falls doch gesetzt, bevorzugt (lokale
+ * Tests). Klein genug fuer Env bleiben:
  *   APPLE_PASS_TYPE_ID  – z. B. pass.de.grillnchillfoodtruck.kundenkarte
  *   APPLE_TEAM_ID       – Team (Fallback 99R8K7386U)
+ * Vor Nutzung der Signier-/Token-Funktionen einmal `await laden()` rufen.
  *
  * Live-Aktualisierung: pass.json traegt webServiceURL + authenticationToken.
  * Das Token leiten wir je Seriennummer per HMAC aus dem privaten Schluessel
@@ -32,14 +38,43 @@ const BILDER = require('./apple-pass-bilder');
 
 const TEAM_FALLBACK = '99R8K7386U';
 
-function konfiguriert() {
-  if (!process.env.APPLE_PASS_CERT_B64 || !process.env.APPLE_PASS_KEY_B64
-    || !process.env.APPLE_PASS_TYPE_ID) return false;
-  try { require('node-forge'); return true; } catch (e) { return false; }
+/* Privater Schluessel: einmal je Function-Instanz laden, dann aus dem Cache. */
+let keyCache = null;
+async function laden() {
+  if (keyCache) return true;
+  if (process.env.APPLE_PASS_KEY_B64) {
+    keyCache = Buffer.from(process.env.APPLE_PASS_KEY_B64, 'base64').toString('utf8');
+    return true;
+  }
+  try {
+    const { getStore } = require('@netlify/blobs');
+    const opts = { name: 'geheim', consistency: 'strong' };
+    if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
+      opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
+      opts.token = process.env.NETLIFY_BLOBS_TOKEN;
+    }
+    const pem = await getStore(opts).get('apple-pass-key');
+    if (pem && pem.includes('PRIVATE KEY')) { keyCache = pem; return true; }
+  } catch (e) { console.error('apple-pass laden:', e.message); }
+  return false;
 }
 
-const certPem = () => Buffer.from(process.env.APPLE_PASS_CERT_B64, 'base64').toString('utf8');
-const keyPem = () => Buffer.from(process.env.APPLE_PASS_KEY_B64, 'base64').toString('utf8');
+function konfiguriert() {
+  if (!process.env.APPLE_PASS_TYPE_ID) return false;
+  try { certPem(); require('node-forge'); return true; } catch (e) { return false; }
+}
+/* konfiguriert() UND Schluessel wirklich da – fuer den GET-Statusbericht. */
+async function verfuegbar() {
+  return konfiguriert() && (await laden());
+}
+
+const certPem = () => process.env.APPLE_PASS_CERT_B64
+  ? Buffer.from(process.env.APPLE_PASS_CERT_B64, 'base64').toString('utf8')
+  : fs.readFileSync(path.join(__dirname, 'apple-pass-cert.pem'), 'utf8');
+function keyPem() {
+  if (!keyCache) throw new Error('Schluessel nicht geladen – vorher laden() aufrufen');
+  return keyCache;
+}
 const passTypeId = () => process.env.APPLE_PASS_TYPE_ID;
 const teamId = () => process.env.APPLE_TEAM_ID || TEAM_FALLBACK;
 const siteUrl = () => (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
@@ -174,6 +209,6 @@ function bauePass(rec, emailHash) {
 }
 
 module.exports = {
-  konfiguriert, bauePass, serialFuer, authTokenFuer,
+  konfiguriert, verfuegbar, laden, bauePass, serialFuer, authTokenFuer,
   downloadToken, pruefeDownloadToken, passTypeId, teamId,
 };

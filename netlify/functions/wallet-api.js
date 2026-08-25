@@ -53,7 +53,7 @@ function authOk(event, serial) {
 }
 
 exports.handler = async (event) => {
-  if (!applePass.konfiguriert()) return json(503, { error: 'not_configured' });
+  if (!(await applePass.verfuegbar())) return json(503, { error: 'not_configured' });
 
   // Pfad hinter der Function: /v1/…
   const pfad = (event.path || '')

@@ -143,7 +143,7 @@ exports.handler = async (event) => {
     // einem kurzlebigen, signierten Beweis (5 Min) - siehe POST apple unten.
     const dl = (event.queryStringParameters || {}).apple;
     if (dl) {
-      if (!appleConfigured()) return json(503, { error: 'not_configured' });
+      if (!appleConfigured() || !(await applePass.laden())) return json(503, { error: 'not_configured' });
       const emailHash = applePass.pruefeDownloadToken(dl);
       if (!emailHash) return json(403, { error: 'link_expired', hint: 'Link abgelaufen – bitte den Knopf im Konto erneut antippen.' });
       const rec = await store().get('c:' + emailHash, { type: 'json' });
@@ -166,7 +166,7 @@ exports.handler = async (event) => {
         return json(500, { error: 'sign_failed' });
       }
     }
-    return json(200, { google: googleConfigured(), apple: appleConfigured() });
+    return json(200, { google: googleConfigured(), apple: await applePass.verfuegbar() });
   }
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 
@@ -197,7 +197,7 @@ exports.handler = async (event) => {
   }
 
   if (input.action === 'apple') {
-    if (!appleConfigured()) return json(503, { error: 'not_configured', hint: 'Apple Wallet ist noch nicht eingerichtet.' });
+    if (!(await applePass.verfuegbar())) return json(503, { error: 'not_configured', hint: 'Apple Wallet ist noch nicht eingerichtet.' });
     try {
       const emailHash = sha(email);
       // Seriennummer -> Kunde merken: braucht der Aktualisierungs-Dienst
