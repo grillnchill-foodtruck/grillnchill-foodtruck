@@ -24,12 +24,19 @@ const ANBIETER = {
   apple: {
     jwks: 'https://appleid.apple.com/auth/keys',
     iss: ['https://appleid.apple.com'],
-    aud: () => 'de.grillnchillfoodtruck.app',
+    // Zwei gueltige Empfaenger: die Bundle-ID (native iOS-App) und die
+    // Services-ID (Apple-Anmeldung im Web, sobald eingerichtet).
+    auds: () => ['de.grillnchillfoodtruck.app',
+                 process.env.APPLE_LOGIN_SERVICES_ID || ''].filter(Boolean),
   },
   google: {
     jwks: 'https://www.googleapis.com/oauth2/v3/certs',
     iss: ['https://accounts.google.com', 'accounts.google.com'],
-    aud: () => process.env.GOOGLE_LOGIN_CLIENT_ID || '',
+    // Die Client-ID ist oeffentlich (steht ohnehin in jeder Seite, die den
+    // Knopf zeigt) – der feste Rueckfallwert erspart den Pflegeschritt in
+    // den Netlify-Umgebungsvariablen. Die Variable gewinnt, falls gesetzt.
+    auds: () => [process.env.GOOGLE_LOGIN_CLIENT_ID
+                 || '604408648959-of546qnulm6el5cni4ueudpmdvd27466.apps.googleusercontent.com'],
   },
 };
 
@@ -56,8 +63,8 @@ const b64url = (s) => Buffer.from(String(s).replace(/-/g, '+').replace(/_/g, '/'
 async function pruefeIdToken(anbieter, token, holen) {
   const def = ANBIETER[anbieter];
   if (!def) throw new Error('unbekannter Anbieter');
-  const erwarteteAud = def.aud();
-  if (!erwarteteAud) throw new Error('Anbieter nicht konfiguriert (Client-ID fehlt)');
+  const erlaubteAuds = def.auds();
+  if (!erlaubteAuds.length) throw new Error('Anbieter nicht konfiguriert (Client-ID fehlt)');
 
   const teile = String(token || '').split('.');
   if (teile.length !== 3) throw new Error('kein JWT');
@@ -78,7 +85,7 @@ async function pruefeIdToken(anbieter, token, holen) {
   // Aussteller, Empfänger, Ablauf
   if (!def.iss.includes(daten.iss)) throw new Error('falscher Aussteller');
   const aud = Array.isArray(daten.aud) ? daten.aud : [daten.aud];
-  if (!aud.includes(erwarteteAud)) throw new Error('falscher Empfänger');
+  if (!aud.some((a) => erlaubteAuds.includes(a))) throw new Error('falscher Empfänger');
   if (!daten.exp || Date.now() / 1000 > daten.exp + 60) throw new Error('Token abgelaufen');
 
   const email = String(daten.email || '').trim().toLowerCase();

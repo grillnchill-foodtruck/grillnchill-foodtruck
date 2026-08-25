@@ -6493,7 +6493,11 @@ function renderAccLogin(el, step) {
    Der Server prueft den Ausweis kryptographisch (social-login.js) und stellt
    denselben Anmelde-Token aus wie der E-Mail-Code – gleiche Adresse heisst
    gleiches Konto samt Stempelkarte. */
-const GOOGLE_LOGIN_CLIENT_ID = 'NOCH-NICHT-EINGERICHTET'; // OAuth-Client-ID aus der Google-Konsole eintragen
+const GOOGLE_LOGIN_CLIENT_ID = '604408648959-of546qnulm6el5cni4ueudpmdvd27466.apps.googleusercontent.com';
+/* Apple-Anmeldung IM WEB braucht eine "Services ID" aus dem Apple-Developer-
+   Konto (einmalig anlegen, dann hier eintragen). Bis dahin zeigt das Web nur
+   Google + E-Mail-Code; die iOS-App hat ihren nativen Apple-Weg unabhaengig davon. */
+const APPLE_WEB_SERVICES_ID = 'NOCH-NICHT-EINGERICHTET';
 
 function istIOSApp() {
   try { return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers['apple-login']); }
@@ -6502,17 +6506,19 @@ function istIOSApp() {
 function socialButtonsHtml() {
   const apple = istIOSApp();
   const google = !apple && GOOGLE_LOGIN_CLIENT_ID.indexOf('.apps.googleusercontent.com') > 0;
+  // Apple im Web haengt nur an der Services-ID – unabhaengig vom Google-Knopf
   if (!apple && !google) return '';
   const trenner = `<div style="display:flex;align-items:center;gap:0.7rem;margin:1rem 0 0.9rem;color:var(--color-text-muted);font-size:0.75rem;">
       <span style="flex:1;height:1px;background:var(--color-border);"></span>${t('acc.login_or')}<span style="flex:1;height:1px;background:var(--color-border);"></span>
     </div>`;
-  if (apple) {
-    return trenner + `<button type="button" onclick="startAppleLogin()" style="display:flex;align-items:center;justify-content:center;gap:0.55rem;width:100%;padding:0.85rem;border-radius:12px;border:none;background:#fff;color:#000;font:inherit;font-weight:700;font-size:0.95rem;cursor:pointer;">
+  const appleKnopf = (klick) => `<button type="button" onclick="${klick}" style="display:flex;align-items:center;justify-content:center;gap:0.55rem;width:100%;padding:0.85rem;border-radius:12px;border:none;background:#fff;color:#000;font:inherit;font-weight:700;font-size:0.95rem;cursor:pointer;">
         <svg width="17" height="20" viewBox="0 0 17 20" fill="currentColor" aria-hidden="true"><path d="M14.13 10.62c.02 3.06 2.68 4.08 2.71 4.09-.02.07-.42 1.45-1.4 2.87-.84 1.23-1.72 2.45-3.1 2.48-1.36.02-1.79-.8-3.34-.8-1.55 0-2.03.78-3.31.83-1.33.05-2.35-1.33-3.2-2.55C.75 15.03-.55 10.47 1.23 7.42c.88-1.51 2.46-2.47 4.17-2.5 1.31-.02 2.54.88 3.34.88.8 0 2.3-1.09 3.87-.93.66.03 2.51.27 3.7 2-.1.06-2.21 1.29-2.18 3.85M11.58 3.2c.71-.85 1.18-2.04 1.05-3.2-1.02.04-2.24.68-2.97 1.53-.65.75-1.23 1.96-1.07 3.11 1.13.09 2.29-.58 2.99-1.44"/></svg>
         ${t('acc.login_apple')}
       </button>`;
-  }
-  return trenner + `<div id="googleLoginBtn" style="display:flex;justify-content:center;min-height:44px;"></div>`;
+  if (apple) return trenner + appleKnopf('startAppleLogin()');
+  const appleWeb = APPLE_WEB_SERVICES_ID.indexOf('.') > 0
+    ? appleKnopf('startAppleLoginWeb()') + '<div style="height:0.6rem;"></div>' : '';
+  return trenner + appleWeb + `<div id="googleLoginBtn" style="display:flex;justify-content:center;min-height:44px;"></div>`;
 }
 function initSocialButtons() {
   const ziel = document.getElementById('googleLoginBtn');
@@ -6524,6 +6530,10 @@ function initSocialButtons() {
         callback: (antwort) => { if (antwort && antwort.credential) socialLoginFinish('google', antwort.credential, ''); },
       });
       google.accounts.id.renderButton(ziel, { theme: 'filled_black', size: 'large', shape: 'pill', width: 280 });
+      // One Tap nur an dieser sinnvollen Stelle (Anmeldeformular offen),
+      // nie beim blossen Betreten der Seite. Google drosselt von selbst,
+      // wenn jemand die Einblendung wegklickt.
+      try { google.accounts.id.prompt(); } catch (e) {}
     } catch (e) { /* dann bleibt der E-Mail-Weg */ }
   };
   if (window.google && google.accounts && google.accounts.id) { bereit(); return; }
@@ -6538,12 +6548,53 @@ function initSocialButtons() {
 function startAppleLogin() {
   try { window.webkit.messageHandlers['apple-login'].postMessage('start'); } catch (e) {}
 }
+/* Apple-Anmeldung im WEB: Apples eigenes Skript, Popup-Ablauf. Liefert den
+   signierten Ausweis direkt an die Seite; geprueft wird er wie immer nur auf
+   dem Server. */
+function startAppleLoginWeb() {
+  const los = () => {
+    try {
+      AppleID.auth.init({
+        clientId: APPLE_WEB_SERVICES_ID,
+        scope: 'name email',
+        redirectURI: location.origin + '/',
+        usePopup: true,
+      });
+      AppleID.auth.signIn().then((antwort) => {
+        const token = antwort && antwort.authorization && antwort.authorization.id_token;
+        const n = antwort && antwort.user && antwort.user.name;
+        const name = n ? [n.firstName, n.lastName].filter(Boolean).join(' ') : '';
+        if (token) socialLoginFinish('apple', token, name);
+      }).catch(() => { /* abgebrochen – kein Fehlerlaerm */ });
+    } catch (e) { flashAccMsg(t('acc.error')); }
+  };
+  if (window.AppleID && AppleID.auth) { los(); return; }
+  if (!document.getElementById('appleIdScript')) {
+    const sc = document.createElement('script');
+    sc.id = 'appleIdScript';
+    sc.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/de_DE/appleid.auth.js';
+    sc.onload = los;
+    document.head.appendChild(sc);
+  } else { setTimeout(los, 400); }
+}
 /* Antwort der iOS-App (native Apple-Anmeldung) */
 window.addEventListener('apple-login-result', (ev) => {
   const d = ev && ev.detail;
   if (d && d.token) socialLoginFinish('apple', d.token, d.name || '');
   else if (d && d.fehler && d.fehler !== 'abgebrochen') flashAccMsg(t('acc.error'));
 });
+/* Konto-Angebot NACH der Bestellung: die Adresse ist aus dem Checkout schon
+   bekannt – ein Tipper schickt den Code und oeffnet direkt die Eingabe.
+   Meldet der Server "too_soon", wurde gerade eben schon einer geschickt –
+   dann genuegt die Eingabe des vorhandenen Codes, kein Fehlerlaerm. */
+async function accClaimStamps(email) {
+  accLoginEmail = String(email || '').trim().toLowerCase();
+  openAccountOverlay('kompakt');
+  const r = await accountApi('request_code', { email: accLoginEmail });
+  if (r.ok || r.status === 429) renderAccount('code');
+  else flashAccMsg(t('acc.error'));
+}
+
 async function socialLoginFinish(anbieter, idToken, name) {
   let localLoyalty = null;
   try {
@@ -9391,6 +9442,12 @@ function renderCart() {
           <svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M19 14.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4.5"/></svg>
         </a></p>` : ''}
         ${card}
+        ${(!accountLoggedIn() && o.email) ? `
+        <div style="background:var(--color-bg-elev);border:1px solid var(--color-orange);border-radius:14px;padding:0.95rem 1rem;margin:0.9rem 0;text-align:center;">
+          <div style="font-weight:800;font-size:0.95rem;margin-bottom:0.55rem;">${t('acc.claim_title')}</div>
+          <button type="button" class="btn btn-primary btn-block" style="white-space:normal;word-break:break-all;line-height:1.35;" onclick="accClaimStamps('${escG(o.email)}')">${t('acc.claim_btn').replace('{email}', escG(o.email))}</button>
+          <button type="button" class="mini-btn" style="margin-top:0.55rem;" onclick="openAccountOverlay('kompakt')">${t('acc.claim_alt')}</button>
+        </div>` : ''}
         ${addr}
         <p class="success-mail">${t('co.s_check_mail')}</p>
         <p class="success-fineprint">
