@@ -26,8 +26,10 @@ const ANBIETER = {
     iss: ['https://appleid.apple.com'],
     // Zwei gueltige Empfaenger: die Bundle-ID (native iOS-App) und die
     // Services-ID (Apple-Anmeldung im Web, sobald eingerichtet).
+    // Services-ID ist wie die Client-ID oeffentlich – fester Rueckfallwert,
+    // die Umgebungsvariable gewinnt, falls gesetzt.
     auds: () => ['de.grillnchillfoodtruck.app',
-                 process.env.APPLE_LOGIN_SERVICES_ID || ''].filter(Boolean),
+                 process.env.APPLE_LOGIN_SERVICES_ID || 'de.grillnchillfoodtruck.web'].filter(Boolean),
   },
   google: {
     jwks: 'https://www.googleapis.com/oauth2/v3/certs',
