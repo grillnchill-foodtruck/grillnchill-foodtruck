@@ -2379,6 +2379,17 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .standing-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
 .standing-actions .mini-btn { font-size: 0.74rem; padding: 0.4rem 0.7rem; min-height: 34px; }
 
+.login-weg { position: relative; }
+/* "Zuletzt genutzt": kleiner Hinweis-Chip auf dem Anmeldeweg vom letzten Mal.
+   Sitzt halb ueber der Oberkante des Knopfs, CI-Orange, bewusst klein. */
+.last-login-chip {
+  position: absolute; top: -9px; right: 14px; z-index: 2;
+  background: var(--color-orange); color: #fff;
+  font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 0.18rem 0.55rem; border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+
 .acc-actions { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
 
 /* Gespeicherte Adresse: Name, Anschrift und die beiden Aktionen. */
@@ -6478,7 +6489,9 @@ function renderAccLogin(el, step) {
   el.innerHTML = `
     <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('acc.intro')}</p>
     <input type="email" id="accEmail" class="form-input" autocomplete="email" placeholder="${t('co.email_ph')}" value="${escG(accLoginEmail)}" style="width:100%;">
-    <button class="btn btn-primary btn-block" style="margin-top:0.9rem;" onclick="accRequestCode()">${t('acc.send_code')}</button>
+    <div class="login-weg" style="margin-top:0.9rem;">${loginChip('email')}
+      <button class="btn btn-primary btn-block" onclick="accRequestCode()">${t('acc.send_code')}</button>
+    </div>
     ${socialButtonsHtml()}
     <p style="color:var(--color-text-muted);font-size:0.75rem;margin:0.9rem 0 0;line-height:1.5;">${t('acc.privacy_hint')}</p>`;
   initSocialButtons();
@@ -6494,6 +6507,16 @@ function renderAccLogin(el, step) {
    denselben Anmelde-Token aus wie der E-Mail-Code – gleiche Adresse heisst
    gleiches Konto samt Stempelkarte. */
 const GOOGLE_LOGIN_CLIENT_ID = '604408648959-of546qnulm6el5cni4ueudpmdvd27466.apps.googleusercontent.com';
+/* "Zuletzt genutzt"-Badge: gemerkt wird auf dem GERAET (localStorage), nicht
+   auf dem Server – das Badge muss VOR der Anmeldung auf dem richtigen Knopf
+   sitzen, und da weiss der Server noch nicht, wer vor ihm steht. */
+const LAST_LOGIN_KEY = 'gnc_last_login';
+function merkeLoginWeg(weg) { try { localStorage.setItem(LAST_LOGIN_KEY, weg); } catch (e) {} }
+function letzterLoginWeg() { try { return localStorage.getItem(LAST_LOGIN_KEY) || ''; } catch (e) { return ''; } }
+function loginChip(weg) {
+  return letzterLoginWeg() === weg
+    ? `<span class="last-login-chip">${t('acc.last_used')}</span>` : '';
+}
 /* Apple-Anmeldung IM WEB braucht eine "Services ID" aus dem Apple-Developer-
    Konto (einmalig anlegen, dann hier eintragen). Bis dahin zeigt das Web nur
    Google + E-Mail-Code; die iOS-App hat ihren nativen Apple-Weg unabhaengig davon. */
@@ -6511,14 +6534,14 @@ function socialButtonsHtml() {
   const trenner = `<div style="display:flex;align-items:center;gap:0.7rem;margin:1rem 0 0.9rem;color:var(--color-text-muted);font-size:0.75rem;">
       <span style="flex:1;height:1px;background:var(--color-border);"></span>${t('acc.login_or')}<span style="flex:1;height:1px;background:var(--color-border);"></span>
     </div>`;
-  const appleKnopf = (klick) => `<button type="button" onclick="${klick}" style="display:flex;align-items:center;justify-content:center;gap:0.55rem;width:100%;padding:0.85rem;border-radius:12px;border:none;background:#fff;color:#000;font:inherit;font-weight:700;font-size:0.95rem;cursor:pointer;">
+  const appleKnopf = (klick) => `<div class="login-weg">${loginChip('apple')}<button type="button" onclick="${klick}" style="display:flex;align-items:center;justify-content:center;gap:0.55rem;width:100%;padding:0.85rem;border-radius:12px;border:none;background:#fff;color:#000;font:inherit;font-weight:700;font-size:0.95rem;cursor:pointer;">
         <svg width="17" height="20" viewBox="0 0 17 20" fill="currentColor" aria-hidden="true"><path d="M14.13 10.62c.02 3.06 2.68 4.08 2.71 4.09-.02.07-.42 1.45-1.4 2.87-.84 1.23-1.72 2.45-3.1 2.48-1.36.02-1.79-.8-3.34-.8-1.55 0-2.03.78-3.31.83-1.33.05-2.35-1.33-3.2-2.55C.75 15.03-.55 10.47 1.23 7.42c.88-1.51 2.46-2.47 4.17-2.5 1.31-.02 2.54.88 3.34.88.8 0 2.3-1.09 3.87-.93.66.03 2.51.27 3.7 2-.1.06-2.21 1.29-2.18 3.85M11.58 3.2c.71-.85 1.18-2.04 1.05-3.2-1.02.04-2.24.68-2.97 1.53-.65.75-1.23 1.96-1.07 3.11 1.13.09 2.29-.58 2.99-1.44"/></svg>
         ${t('acc.login_apple')}
-      </button>`;
+      </button></div>`;
   if (apple) return trenner + appleKnopf('startAppleLogin()');
   const appleWeb = APPLE_WEB_SERVICES_ID.indexOf('.') > 0
     ? appleKnopf('startAppleLoginWeb()') + '<div style="height:0.6rem;"></div>' : '';
-  return trenner + appleWeb + `<div id="googleLoginBtn" style="display:flex;justify-content:center;min-height:44px;"></div>`;
+  return trenner + appleWeb + `<div class="login-weg">${loginChip('google')}<div id="googleLoginBtn" style="display:flex;justify-content:center;min-height:44px;"></div></div>`;
 }
 function initSocialButtons() {
   const ziel = document.getElementById('googleLoginBtn');
@@ -6609,6 +6632,7 @@ async function socialLoginFinish(anbieter, idToken, name) {
     const d = await res.json().catch(() => ({}));
     if (!res.ok || !d.token) { flashAccMsg(t('acc.error')); return; }
     ACCOUNT = { email: d.email, token: d.token, profile: {} };
+    merkeLoginWeg(anbieter);
     saveAccount();
     try { localStorage.removeItem(LOYALTY_KEY); } catch (e) {}
     await refreshAccount();          // Profil holen (legt auch den QR-Token an)
@@ -6638,6 +6662,7 @@ async function accVerify() {
   const r = await accountApi('verify', { email: accLoginEmail, code, localLoyalty });
   if (r.ok) {
     ACCOUNT = { email: accLoginEmail, token: r.d.token, profile: r.d.profile };
+    merkeLoginWeg('email');
     saveAccount();
     try { localStorage.removeItem(LOYALTY_KEY); } catch (e) {}
     updateAccountUI();
