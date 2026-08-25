@@ -6479,7 +6479,92 @@ function renderAccLogin(el, step) {
     <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('acc.intro')}</p>
     <input type="email" id="accEmail" class="form-input" autocomplete="email" placeholder="${t('co.email_ph')}" value="${escG(accLoginEmail)}" style="width:100%;">
     <button class="btn btn-primary btn-block" style="margin-top:0.9rem;" onclick="accRequestCode()">${t('acc.send_code')}</button>
+    ${socialButtonsHtml()}
     <p style="color:var(--color-text-muted);font-size:0.75rem;margin:0.9rem 0 0;line-height:1.5;">${t('acc.privacy_hint')}</p>`;
+  initSocialButtons();
+}
+
+/* ==== Anmeldung mit Apple (iOS-App) und Google (Web + Android-App) =========
+   Je Umgebung genau EIN Anbieter-Knopf:
+     iOS-App     -> "Mit Apple anmelden" (native Bruecke der App; Apple-Regel
+                    4.8 waere sonst verletzt, sobald ein Fremd-Login da ist)
+     sonst       -> "Mit Google anmelden" (offizieller GIS-Knopf; erscheint
+                    erst, wenn die Client-ID eingerichtet ist)
+   Der Server prueft den Ausweis kryptographisch (social-login.js) und stellt
+   denselben Anmelde-Token aus wie der E-Mail-Code – gleiche Adresse heisst
+   gleiches Konto samt Stempelkarte. */
+const GOOGLE_LOGIN_CLIENT_ID = 'NOCH-NICHT-EINGERICHTET'; // OAuth-Client-ID aus der Google-Konsole eintragen
+
+function istIOSApp() {
+  try { return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers['apple-login']); }
+  catch (e) { return false; }
+}
+function socialButtonsHtml() {
+  const apple = istIOSApp();
+  const google = !apple && GOOGLE_LOGIN_CLIENT_ID.indexOf('.apps.googleusercontent.com') > 0;
+  if (!apple && !google) return '';
+  const trenner = `<div style="display:flex;align-items:center;gap:0.7rem;margin:1rem 0 0.9rem;color:var(--color-text-muted);font-size:0.75rem;">
+      <span style="flex:1;height:1px;background:var(--color-border);"></span>${t('acc.login_or')}<span style="flex:1;height:1px;background:var(--color-border);"></span>
+    </div>`;
+  if (apple) {
+    return trenner + `<button type="button" onclick="startAppleLogin()" style="display:flex;align-items:center;justify-content:center;gap:0.55rem;width:100%;padding:0.85rem;border-radius:12px;border:none;background:#fff;color:#000;font:inherit;font-weight:700;font-size:0.95rem;cursor:pointer;">
+        <svg width="17" height="20" viewBox="0 0 17 20" fill="currentColor" aria-hidden="true"><path d="M14.13 10.62c.02 3.06 2.68 4.08 2.71 4.09-.02.07-.42 1.45-1.4 2.87-.84 1.23-1.72 2.45-3.1 2.48-1.36.02-1.79-.8-3.34-.8-1.55 0-2.03.78-3.31.83-1.33.05-2.35-1.33-3.2-2.55C.75 15.03-.55 10.47 1.23 7.42c.88-1.51 2.46-2.47 4.17-2.5 1.31-.02 2.54.88 3.34.88.8 0 2.3-1.09 3.87-.93.66.03 2.51.27 3.7 2-.1.06-2.21 1.29-2.18 3.85M11.58 3.2c.71-.85 1.18-2.04 1.05-3.2-1.02.04-2.24.68-2.97 1.53-.65.75-1.23 1.96-1.07 3.11 1.13.09 2.29-.58 2.99-1.44"/></svg>
+        ${t('acc.login_apple')}
+      </button>`;
+  }
+  return trenner + `<div id="googleLoginBtn" style="display:flex;justify-content:center;min-height:44px;"></div>`;
+}
+function initSocialButtons() {
+  const ziel = document.getElementById('googleLoginBtn');
+  if (!ziel) return;
+  const bereit = () => {
+    try {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_LOGIN_CLIENT_ID,
+        callback: (antwort) => { if (antwort && antwort.credential) socialLoginFinish('google', antwort.credential, ''); },
+      });
+      google.accounts.id.renderButton(ziel, { theme: 'filled_black', size: 'large', shape: 'pill', width: 280 });
+    } catch (e) { /* dann bleibt der E-Mail-Weg */ }
+  };
+  if (window.google && google.accounts && google.accounts.id) { bereit(); return; }
+  // Skript erst laden, wenn das Formular wirklich offen ist
+  if (!document.getElementById('gisScript')) {
+    const sc = document.createElement('script');
+    sc.id = 'gisScript'; sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true;
+    sc.onload = bereit;
+    document.head.appendChild(sc);
+  } else { setTimeout(bereit, 400); }
+}
+function startAppleLogin() {
+  try { window.webkit.messageHandlers['apple-login'].postMessage('start'); } catch (e) {}
+}
+/* Antwort der iOS-App (native Apple-Anmeldung) */
+window.addEventListener('apple-login-result', (ev) => {
+  const d = ev && ev.detail;
+  if (d && d.token) socialLoginFinish('apple', d.token, d.name || '');
+  else if (d && d.fehler && d.fehler !== 'abgebrochen') flashAccMsg(t('acc.error'));
+});
+async function socialLoginFinish(anbieter, idToken, name) {
+  let localLoyalty = null;
+  try {
+    const raw = JSON.parse(localStorage.getItem(LOYALTY_KEY) || 'null');
+    if (raw) localLoyalty = { spent: Number(raw.spent) || 0, rewards: raw.rewardAvailable ? 1 : 0 };
+  } catch (e) {}
+  try {
+    const res = await fetch('/.netlify/functions/social-login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anbieter, idToken, name, localLoyalty }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d.token) { flashAccMsg(t('acc.error')); return; }
+    ACCOUNT = { email: d.email, token: d.token, profile: {} };
+    saveAccount();
+    try { localStorage.removeItem(LOYALTY_KEY); } catch (e) {}
+    await refreshAccount();          // Profil holen (legt auch den QR-Token an)
+    updateAccountUI();
+    renderAccount();
+    renderCart();
+  } catch (e) { flashAccMsg(t('acc.error')); }
 }
 async function accRequestCode() {
   const inp = document.getElementById('accEmail');
