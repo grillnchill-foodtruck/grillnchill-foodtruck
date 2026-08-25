@@ -11225,6 +11225,12 @@ function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
   document.body.style.overflow = '';
 }
+/* Direktlinks auf die Rechtstexte (z. B. /#datenschutz für App-Store-Angaben
+   und Datenschutz-Formulare) – öffnet das passende Fenster beim Laden. */
+(function () {
+  var key = (location.hash || '').replace('#', '');
+  if (LEGAL[key]) setTimeout(function () { openModal(key); }, 300);
+})();
 
 /* ====================================================================
    CATERING FORM → E-Mail (Brevo)
