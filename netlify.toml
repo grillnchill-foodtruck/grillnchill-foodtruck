@@ -122,7 +122,11 @@
 # mit – der Eintrag hier ist die Rückversicherung, damit eine Umstellung des
 # Bundlers die Preisprüfung nicht stillschweigend abschaltet.
 [functions]
-  included_files = ["logo.png", "speisekarte.js"]
+  # Die .pem-Dateien braucht die Apple-Wallet-Signatur - der Bundler packt
+  # von sich aus nur JavaScript ein.
+  included_files = ["logo.png", "speisekarte.js",
+                    "netlify/functions/lib/apple-pass-cert.pem",
+                    "netlify/functions/lib/apple-wwdr-g4.pem"]
 
 [functions."standing-remind"]
   schedule = "0 17 * * *"
