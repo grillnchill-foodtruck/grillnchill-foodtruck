@@ -10901,7 +10901,10 @@ const LEGAL = {
       <h4>4. Cookies &amp; lokaler Speicher</h4>
       <p>
         Diese Website setzt <strong>keine Cookies</strong> – weder eigene noch von Dritten.
-        Es sind auch keine fremden Skripte, Schriften oder Zählpixel eingebunden.
+        Fremde Skripte laden wir nur in zwei Fällen und erst auf deine Aktion hin: die
+        Google-Karte nach Klick auf „Karte laden" (siehe Abschnitt 9) und die Anmelde-Skripte
+        von Apple bzw. Google, wenn du den Anmeldebereich öffnest (siehe Abschnitt 8b).
+        Zählpixel oder Werbe-Tracker gibt es nicht.
       </p>
       <p>
         Wir nutzen ausschließlich den lokalen Speicher deines Browsers (localStorage), und zwar
@@ -10967,8 +10970,11 @@ const LEGAL = {
         Zur Berechnung der Lieferzone und -gebühr ermitteln wir die ungefähre Entfernung
         zwischen unserem Standort und deiner Lieferadresse. Dazu wird deine eingegebene Adresse
         an Nominatim (Anbieter: OpenStreetMap Foundation, St John's Innovation Centre, Cambridge,
-        Großbritannien) übermittelt und in Koordinaten umgewandelt. Wir speichern diese Daten
-        nicht. Mehr unter <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org/wiki/Privacy_Policy</a>.
+        Großbritannien) übermittelt und in Koordinaten umgewandelt. Tippst du im Bestellvorgang
+        auf „Standort verwenden", fragt dein Gerät einmalig deine Position ab (nur mit deiner
+        Zustimmung im System-Dialog) und wir übersetzen die Koordinaten über Nominatim in eine
+        Adresse, um das Formular vorauszufüllen (Art. 6 Abs. 1 lit. a DSGVO). Wir speichern
+        weder Koordinaten noch Standortverläufe. Mehr unter <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org/wiki/Privacy_Policy</a>.
       </p>
 
       <h4>8a. Kundenkonto (optional)</h4>
@@ -10988,7 +10994,33 @@ const LEGAL = {
         zählen erfolgreiche Empfehlungen. Du kannst dein Konto jederzeit selbst im
         Konto-Bereich („Konto löschen") oder formlos per E-Mail an
         info@grillnchill-foodtruck.de löschen; damit werden alle Kontodaten einschließlich
-        Bestellhistorie, Geburtstag und Empfehlungs-Code entfernt.</p>
+        Bestellhistorie, Geburtstag und Empfehlungs-Code entfernt.
+        Zum Schutz vor automatisierten Anmeldeversuchen zählen wir Fehlversuche je Absender;
+        die IP-Adresse wird dabei ausschließlich als nicht umkehrbarer, gekürzter Hash-Wert
+        für maximal 15 Minuten gespeichert (Art. 6 Abs. 1 lit. f DSGVO – Missbrauchsschutz).
+        Zur Ausfallsicherheit erstellen wir wöchentlich verschlüsselt übertragene
+        Sicherungskopien unserer Bestell- und Kontodaten; alte Stände werden automatisch
+        gelöscht, sodass gelöschte Daten spätestens nach 8 Wochen auch aus den Sicherungen
+        verschwinden (Art. 6 Abs. 1 lit. f DSGVO – Datensicherheit).</p>
+
+      <h4>8b. Anmeldung mit Apple oder Google (optional)</h4>
+      <p>
+        Alternativ zum E-Mail-Code kannst du dich mit deinem Apple- oder Google-Konto anmelden
+        („Sign in with Apple" – Apple Distribution International Ltd., Hollyhill Industrial
+        Estate, Cork, Irland; „Über Google anmelden" – Google Ireland Limited, Gordon House,
+        Barrow Street, Dublin 4, Irland). Öffnest du den Anmeldebereich, wird dafür das
+        jeweilige Anmelde-Skript des Anbieters geladen; dabei kann der Anbieter deine
+        IP-Adresse verarbeiten und eigene Cookies auf seiner Domain einsetzen. Bei der
+        Anmeldung erhalten wir vom Anbieter ausschließlich deine bestätigte E-Mail-Adresse
+        und – sofern freigegeben – deinen Namen; wir erhalten kein Passwort und keinen
+        Zugriff auf dein Apple- oder Google-Konto. Die E-Mail-Adresse verwenden wir, um dein
+        Kundenkonto anzulegen bzw. dich deinem bestehenden Konto zuzuordnen (Art. 6 Abs. 1
+        lit. b DSGVO). Bei Apple kannst du „E-Mail verbergen" nutzen; Bestell- und
+        Kontomails erreichen dich dann über Apples Weiterleitungsadresse. Mehr in den
+        Datenschutzhinweisen von
+        <a href="https://www.apple.com/legal/privacy/de-ww/" target="_blank" rel="noopener">Apple</a> und
+        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google</a>.
+      </p>
       <h4>9. Google Maps &amp; Schriftarten</h4>
       <p>
         Wir binden eine Karte von Google Maps ein (Google Ireland Limited, Gordon House,
@@ -11033,6 +11065,17 @@ const LEGAL = {
         Rechtsgrundlage ist deine Einwilligung (Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;a DSGVO). Du
         kannst Benachrichtigungen jederzeit in den Browser-Einstellungen deaktivieren; das Abo
         wird bei Zustellfehlern automatisch gelöscht.
+      </p>
+      <p>
+        In unserer iPhone-App werden Benachrichtigungen – nach deiner Zustimmung im
+        System-Dialog – über den Apple-Push-Dienst (Apple Inc.) und Firebase Cloud Messaging
+        (Google Ireland Limited) zugestellt. Dabei erzeugt dein Gerät eine zufällige
+        Geräte-Kennung (Push-Token), die bei Apple bzw. Google verarbeitet wird; wir selbst
+        speichern diese Kennung nicht und versenden an alle Abonnenten gemeinsam, ohne
+        Personenbezug. Abschalten kannst du die Mitteilungen jederzeit in den
+        iOS-Einstellungen der App. Rechtsgrundlage ist deine Einwilligung
+        (Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;a DSGVO); zur Übermittlung in die USA siehe
+        die Hinweise zum Data Privacy Framework in Abschnitt 3.
       </p>
       <h4>14. Bestandskundenwerbung (E-Mail)</h4>
       <p>
@@ -11154,7 +11197,9 @@ const LEGAL = {
       (§&nbsp;36 VSBG).</p>
       <h4>§ 15 Kundenkonto</h4>
       <p>Das Kundenkonto ist freiwillig und kostenlos. Die Anmeldung erfolgt passwortlos
-      über einen einmaligen Code an die angegebene E-Mail-Adresse. Im Konto werden Name,
+      über einen einmaligen Code an die angegebene E-Mail-Adresse oder wahlweise über
+      „Sign in with Apple" bzw. „Über Google anmelden"; maßgeblich ist stets die
+      bestätigte E-Mail-Adresse. Im Konto werden Name,
       Telefonnummer und bis zu drei Lieferadressen gespeichert sowie der Stand des
       Treueprogramms angezeigt; der Treue-Fortschritt wird der E-Mail-Adresse der
       jeweiligen Bestellung zugeordnet. Im Konto werden zudem die letzten fünf Bestellungen
@@ -11207,7 +11252,9 @@ const LEGAL = {
       ausgewertet. Du kannst sie jederzeit über die Einstellungen deines Browsers löschen –
       dabei gehen Warenkorb und Treuebonus-Stand verloren.</p>
       <p>Die Karte laden wir erst, wenn du auf „Karte laden" klickst – vorher wird nichts an Google
-      übertragen. Beim Online-Bezahlen wechselst du auf die Seite von SumUp; dort gelten die
+      übertragen. Öffnest du den Anmeldebereich, laden wir die Anmelde-Skripte von Apple bzw.
+      Google; diese Anbieter können auf ihren eigenen Domains Cookies einsetzen. Beim
+      Online-Bezahlen wechselst du auf die Seite von SumUp; dort gelten die
       Cookies und Datenschutzbestimmungen von SumUp. Details in unserer Datenschutzerklärung.</p>
     `
   }
