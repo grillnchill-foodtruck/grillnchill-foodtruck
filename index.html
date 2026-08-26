@@ -10071,6 +10071,28 @@ function renderCart() {
       if (_savedCust && _savedCust[key]) el.value = _savedCust[key];
       el.addEventListener('input', saveCustomerData);
     });
+    // Angemeldete Kunden: Kontaktdaten aus dem Konto vorbelegen – wichtig vor
+    // allem in der App, deren Speicher vom Browser getrennt ist (dort greift
+    // die localStorage-Wiederherstellung von frueheren Bestellungen nicht).
+    // Lokal Gespeichertes/Eingetipptes gewinnt immer.
+    if (accountLoggedIn()) {
+      const p = ACCOUNT.profile;
+      const setzK = (id, v) => { const el = document.getElementById(id); if (el && !el.value && v) el.value = v; };
+      setzK('co-name', p.name);
+      setzK('co-email', ACCOUNT.email);
+      setzK('co-phone', p.phone);
+      const adr = (Array.isArray(p.addresses) && p.addresses[0]) || null;
+      if (checkoutMode === 'delivery' && adr) {
+        setzK('co-street', adr.street);
+        setzK('co-zip', adr.zip);
+        setzK('co-city', adr.city);
+        const st = document.getElementById('co-street'), zp = document.getElementById('co-zip');
+        if (st && zp && st.value && zp.value) {
+          checkDeliveryAddress(st.value, zp.value, (document.getElementById('co-city') || {}).value || 'Bielefeld');
+        }
+      }
+    }
+
     // Firmenkunden mit hinterlegten Daten: Kasse vorbelegen, damit niemand
     // dieselbe Anschrift bei jeder Bestellung neu tippt. Bereits Eingetipptes
     // wird nicht ueberschrieben.
