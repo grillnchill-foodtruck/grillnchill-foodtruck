@@ -6905,9 +6905,17 @@ async function renderWalletBtns() {
   try {
     const r = await fetch('/.netlify/functions/wallet-pass');
     const d = await r.json();
+    // Nur das Wallet der jeweiligen Plattform anbieten: iPhone/iPad (und die
+    // iOS-App) haben Apple Wallet, Android-Geraete (und die Play-Store-App)
+    // Google Wallet. Desktop und alles Unklare bekommt weiterhin beide.
+    // (iPadOS-Safari tarnt sich als Mac - der Touch-Test entlarvt es.)
+    const ua = navigator.userAgent;
+    const istIOS = istIOSApp() || /iPhone|iPad|iPod/.test(ua)
+      || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const istAndroid = !istIOS && /Android/.test(ua);
     const btns = [];
-    if (d.google) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'google\')">' + t('acc.wallet_google') + '</button>');
-    if (d.apple) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'apple\')">' + t('acc.wallet_apple') + '</button>');
+    if (d.google && !istIOS) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'google\')">' + t('acc.wallet_google') + '</button>');
+    if (d.apple && !istAndroid) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'apple\')">' + t('acc.wallet_apple') + '</button>');
     if (btns.length) { row.innerHTML = btns.join(''); row.style.display = 'flex'; }
   } catch (e) {}
 }
@@ -10480,6 +10488,9 @@ async function submitOrder(e) {
             body: JSON.stringify({
               amount: amountToCharge,
               description: buildOrderDescription(orderData),
+              // In der App: Rueckkehr-URL soll den App-Modus behalten (app=1),
+              // sonst landet der Kunde nach dem Bezahlen auf der Browser-Ansicht
+              appMode: (typeof APP_FORCED !== 'undefined' && APP_FORCED) ? 1 : 0,
               // Alten, nicht bezahlten Versuch serverseitig stornieren (kein Phantom im Admin)
               supersedes: (function(){
                 try {

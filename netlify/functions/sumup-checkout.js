@@ -235,7 +235,8 @@ exports.handler = async (event) => {
     // return_url = Server-Callback von SumUp (Realtime-Statusmeldung → Webhook),
     // redirect_url = Browser-Rückkehr des Kunden nach der Zahlung.
     return_url:   `${returnUrl}/.netlify/functions/sumup-webhook`,
-    redirect_url: `${returnUrl}/index.html?payment=return&ref=${encodeURIComponent(reference)}`,
+    redirect_url: `${returnUrl}/index.html?payment=return&ref=${encodeURIComponent(reference)}`
+      + (input.appMode ? '&app=1' : ''),   // App-Ansicht nach der Rueckkehr behalten
     hosted_checkout: { enabled: true },
   };
 
