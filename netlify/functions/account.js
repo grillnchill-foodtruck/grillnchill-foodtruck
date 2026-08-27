@@ -120,6 +120,7 @@ function publicProfile(rec) {
     birthdayLocked: !!(rec.birthday && Number(rec.birthdayChanges || 0) >= BIRTHDAY_MAX_CHANGES),
     birthdayChangesLeft: rec.birthday
       ? Math.max(0, BIRTHDAY_MAX_CHANGES - Number(rec.birthdayChanges || 0)) : BIRTHDAY_MAX_CHANGES,
+    deliveryNote: rec.deliveryNote || '',
     refCode: rec.refCode || '',
     qrToken: rec.qrToken || '',
     ...custLevel(rec),
@@ -314,6 +315,11 @@ exports.handler = async (event) => {
           zip: clean(b.zip, 10),
           city: clean(b.city, 40),
         };
+      }
+      if (input.deliveryNote !== undefined) {
+        // Lieferanweisungen (z. B. Klingel, Etage): werden in der Kasse bei
+        // Lieferbestellungen automatisch ins Notizfeld uebernommen.
+        rec.deliveryNote = clean(input.deliveryNote, 200);
       }
       if (Array.isArray(input.addresses)) {
         rec.addresses = input.addresses.slice(0, MAX_ADDRESSES).map(a => ({

@@ -6854,6 +6854,9 @@ ${voll ? `    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">
 ${voll ? `    <div style="margin-bottom:0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.addresses')}</div>
     ${addr || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.4rem;">${t('acc.no_addresses')}</p>`}
     ${addForm}
+    <div style="margin:1rem 0 0.25rem;font-weight:700;font-size:0.85rem;">${t('acc.dnote_title')}</div>
+    <p style="font-size:0.72rem;color:var(--color-text-muted);margin:0 0 0.4rem;line-height:1.45;">${t('acc.dnote_hint')}</p>
+    <textarea id="accDeliveryNote" class="form-input" rows="2" maxlength="200" placeholder="${t('acc.dnote_ph')}" style="width:100%;resize:vertical;">${escG(p.deliveryNote || '')}</textarea>
     <button class="btn btn-primary btn-block" style="margin-top:1rem;" onclick="accSaveProfile()">${t('acc.save')}</button>
     <div id="standingBox"></div>
 ` : ''}
@@ -7003,6 +7006,7 @@ async function accSaveProfile() {
     name: document.getElementById('accName').value,
     phone: document.getElementById('accPhone').value,
     birthday: (document.getElementById('accBirthday') || { value: undefined }).value,
+    deliveryNote: (document.getElementById('accDeliveryNote') || { value: undefined }).value,
   });
   if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
   else flashAccMsg(t('acc.error'));
@@ -10081,6 +10085,9 @@ function renderCart() {
       setzK('co-name', p.name);
       setzK('co-email', ACCOUNT.email);
       setzK('co-phone', p.phone);
+      // Lieferanweisungen aus dem Konto -> Notizfeld (nur bei Lieferung;
+      // eine bereits gemerkte/eingetippte Notiz wird nicht ueberschrieben)
+      if (checkoutMode === 'delivery' && p.deliveryNote) setzK('co-note', p.deliveryNote);
       const adr = (Array.isArray(p.addresses) && p.addresses[0]) || null;
       if (checkoutMode === 'delivery' && adr) {
         setzK('co-street', adr.street);
