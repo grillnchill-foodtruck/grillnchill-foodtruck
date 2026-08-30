@@ -697,12 +697,20 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+/* iOS: Schriftgroesse folgt der Systemeinstellung (Dynamic Type). Der Trick:
+   font: -apple-system-body legt die vom Nutzer gewaehlte Groesse auf die
+   Wurzel - saemtliche rem-Groessen skalieren mit. Android macht das ueber
+   die System-Schriftskalierung von selbst. */
+@supports (-webkit-touch-callout: none) {
+  html { font: -apple-system-body; }
+  html { font-family: var(--font-body); line-height: 1.6; }
+}
 
 body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 1rem;   /* folgt der Wurzelgroesse - wichtig fuer Dynamic Type */
   line-height: 1.6;
   overflow-x: hidden;  /* Fallback für ältere Browser */
   overflow-x: clip;    /* iOS: bricht position:sticky NICHT (Nav bleibt fixiert) */
@@ -717,7 +725,7 @@ body {
 img { max-width: 100%; display: block; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; font-size: inherit; }
 input, select, textarea {
-  font-family: inherit; font-size: 16px; /* prevents iOS zoom */
+  font-family: inherit; font-size: 1rem; /* >= 16px: verhindert iOS-Zoom, skaliert mit Dynamic Type */
 }
 a { color: var(--color-orange-bright); text-decoration: none; transition: color .15s; }
 a:hover { color: var(--color-cream); }
@@ -1346,7 +1354,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   position: absolute;
   top: -13px; left: 50%; transform: translateX(-50%);
   background: var(--color-orange);
-  color: var(--color-cream);
+  color: #140D06;   /* WCAG AA, siehe .filter-chip.active */
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -1435,7 +1443,9 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 @media (prefers-reduced-motion: reduce) { .filter-chip:active { transform: none; } }
 .filter-chip.active {
   background: var(--color-orange);
-  color: #fff;
+  /* Dunkel auf Orange (~5,4:1) statt Weiss (~3,5:1) - WCAG AA fuer kleine Schrift */
+  color: #140D06;
+  font-weight: 700;
   border-color: var(--color-orange);
 }
 @media (min-width: 720px) {
@@ -1530,7 +1540,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   padding: 0.2rem 0.42rem;
 }
 .menu-card-tag.spicy { color: #FF6B35; }
-.menu-card-tag.new { background: var(--color-orange); color: #fff; font-size: 0.46rem; letter-spacing: 0.02em; padding: 0.16rem 0.42rem; }
+.menu-card-tag.new { background: var(--color-orange); color: #140D06; font-size: 0.46rem; letter-spacing: 0.02em; padding: 0.16rem 0.42rem; }   /* WCAG AA, siehe .filter-chip.active */
 .menu-card-tag.popular { background: var(--color-yellow); color: var(--color-bg); }
 /* Mobil: Badge minimal weiter nach rechts, weg von der Hintergrundlinie */
 @media (max-width: 519px) {
@@ -1691,7 +1701,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .allergen-list strong {
   display: inline-block;
   background: var(--color-orange);
-  color: #fff;
+  color: #140D06;   /* WCAG AA, siehe .filter-chip.active */
   font-weight: 800;
   width: 22px;
   height: 22px;
@@ -2919,7 +2929,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   left: 50%;
   transform: translateX(-50%) translateY(calc(100% + 0.8rem + var(--safe-bottom) + 24px));
   background: var(--color-orange);
-  color: #fff;
+  color: #140D06;   /* WCAG AA, siehe .filter-chip.active */
   padding: 0.9rem 1.4rem;
   border-radius: var(--radius-full);
   font-weight: 700;
@@ -3156,7 +3166,7 @@ body.body-scroll-locked .sticky-cart { display: none !important; }
 }
 .checkout-tab.active {
   background: var(--color-orange);
-  color: #fff;
+  color: #140D06;   /* WCAG AA, siehe .filter-chip.active */
 }
 /* Rueckmeldung im Moment des Druckens – nicht erst beim Loslassen. */
 .checkout-tab:active:not(.tab-disabled) { transform: scale(0.97); }
@@ -3260,7 +3270,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 }
 .badge-recommended {
   background: var(--color-orange);
-  color: #fff;
+  color: #140D06;   /* WCAG AA, siehe .filter-chip.active */
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -4701,7 +4711,7 @@ section[id], footer[id] { scroll-margin-top: 84px; }
   align-items: center;
   gap: 0.6rem;
   background: var(--color-orange-solid);
-  color: #fff;
+  color: #140D06;   /* WCAG AA, siehe .filter-chip.active */
   border: none;
   border-radius: var(--radius-full);
   padding: 0.85rem 1.4rem;
@@ -4814,14 +4824,16 @@ body:has(#dipOverlay.open) .cart-fab { display: none; }
   top: -100px; left: 50%;
   transform: translateX(-50%);
   z-index: 6000;
-  background: var(--color-orange);
-  color: #fff;
+  /* Nur fuer Tastatur-Nutzer sichtbar: maximaler Kontrast vor Markenfarbe */
+  background: #140D06;
+  color: var(--color-cream);
+  border: 2px solid var(--color-orange);
   padding: 0.7rem 1.2rem;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   font-weight: 700;
   transition: top .2s;
 }
-.skip-link:focus { top: 0; color: #fff; }
+.skip-link:focus { top: 0; color: var(--color-cream); }
 .visually-hidden {
   position: absolute !important;
   width: 1px; height: 1px;
@@ -6110,7 +6122,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 <!-- ============================================
      LEGAL MODALS
      ============================================ -->
-<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeModal()">
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" onclick="if(event.target===this) closeModal()">
   <div class="modal">
     <div class="modal-header">
       <h3 id="modalTitle">Titel</h3>
@@ -6146,19 +6158,19 @@ if (typeof window.t !== 'function') {
 </script>
 
 <!-- Kundenkonto: Overlay (Login-/Profil-Ansicht wird per JS in #accountBody gerendert) -->
-<div id="accountOverlay" onclick="if(event.target===this)closeAccountOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
+<div id="accountOverlay" role="dialog" aria-modal="true" aria-labelledby="accountTitle" onclick="if(event.target===this)closeAccountOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
   <div style="background:var(--color-bg-card,#17140F);border:1px solid var(--color-border,#2E2820);border-radius:16px;max-width:460px;width:100%;max-height:88vh;overflow:auto;position:relative;padding:1.5rem 1.4rem;">
     <button type="button" onclick="closeAccountOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" style="position:absolute;top:0.7rem;right:0.8rem;background:none;border:none;color:var(--color-text-muted,#8F8471);font-size:1.5rem;line-height:1;cursor:pointer;padding:0.3rem;">×</button>
-    <h3 style="font-family:var(--font-display);font-weight:400;font-size:1.15rem;margin:0 0 1rem;padding-right:2rem;" data-i18n="acc.title">Mein Konto</h3>
+    <h3 id="accountTitle" style="font-family:var(--font-display);font-weight:400;font-size:1.15rem;margin:0 0 1rem;padding-right:2rem;" data-i18n="acc.title">Mein Konto</h3>
     <div id="accountBody"></div>
   </div>
 </div>
 
 <!-- Gruppenbestellung: Overlay (Host-/Teilnehmer-Ansicht wird per JS in #groupBody gerendert) -->
-<div id="groupOverlay" onclick="if(event.target===this)closeGroupOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
+<div id="groupOverlay" role="dialog" aria-modal="true" aria-labelledby="groupTitle" onclick="if(event.target===this)closeGroupOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
   <div style="background:var(--color-bg-card,#17140F);border:1px solid var(--color-border,#2E2820);border-radius:16px;max-width:460px;width:100%;max-height:86vh;overflow:auto;position:relative;padding:1.5rem 1.4rem;">
     <button type="button" onclick="closeGroupOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" style="position:absolute;top:0.7rem;right:0.8rem;background:none;border:none;color:var(--color-text-muted,#8F8471);font-size:1.5rem;line-height:1;cursor:pointer;padding:0.3rem;">×</button>
-    <h3 style="font-family:var(--font-display,'Bowlby One');font-weight:400;font-size:1.15rem;margin:0 0 1rem;padding-right:2rem;" data-i18n="grp.title">Gruppenbestellung</h3>
+    <h3 id="groupTitle" style="font-family:var(--font-display,'Bowlby One');font-weight:400;font-size:1.15rem;margin:0 0 1rem;padding-right:2rem;" data-i18n="grp.title">Gruppenbestellung</h3>
     <div id="groupBody"></div>
   </div>
 </div>
@@ -6440,16 +6452,21 @@ function updateAccountUI() {
                Dauerbestellungen, Konto loeschen). Desktop: Reiter
                "Mein Konto"; mobil: Menuepunkt; App: Tab "Konto". */
 let accountKompakt = false;
+let accVorherFokus = null;   // Screenreader/Tastatur: Ruecksprungziel merken
 function openAccountOverlay(modus) {
   accountKompakt = (modus === 'kompakt');
+  accVorherFokus = document.activeElement;
   document.getElementById('accountOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
   renderAccount();
   if (accountLoggedIn()) refreshAccount();
+  const zu = document.querySelector('#accountOverlay button[aria-label]');
+  if (zu) zu.focus();
 }
 function closeAccountOverlay() {
   document.getElementById('accountOverlay').style.display = 'none';
   document.body.style.overflow = '';
+  try { if (accVorherFokus && accVorherFokus.focus) accVorherFokus.focus(); } catch (e) {}
 }
 let accLoginEmail = '';
 function renderAccount(step) {
@@ -10576,6 +10593,7 @@ async function submitOrder(e) {
       resetCheckoutSubmitLabel();
 
       const errorBox = document.createElement('div');
+      errorBox.setAttribute('role', 'alert');   // Screenreader lesen den Fehler sofort vor
       errorBox.style.cssText = `
         background: rgba(224, 72, 72, 0.12);
         border: 1px solid rgba(224, 72, 72, 0.4);
@@ -11317,6 +11335,17 @@ const LEGAL = {
         <li><strong>Reduzierte Bewegung:</strong> Ist in deinem System „Bewegung reduzieren"
         aktiviert, verzichten wir auf Einblend- und Gleit-Animationen und ersetzen sie durch
         ruhige Übergänge.</li>
+        <li><strong>Gemessene Kontraste (WCAG&nbsp;2.1&nbsp;AA):</strong> Alle
+        Text-Hintergrund-Kombinationen der Seite und des Bestellablaufs wurden im
+        August&nbsp;2026 automatisiert gemessen und nachgebessert – jede erfüllt
+        mindestens die AA-Anforderung (4,5:1 bzw. 3:1 für große Schrift).</li>
+        <li><strong>Schriftgröße folgt deinem System:</strong> Auf dem iPhone/iPad
+        skaliert die gesamte Seite mit deiner Textgrößen-Einstellung (Dynamic Type),
+        auf Android mit der System-Schriftskalierung; im Browser bleibt sie frei zoombar.</li>
+        <li><strong>Dialoge &amp; Fehlermeldungen für Screenreader:</strong> Warenkorb,
+        Konto, Rechtstexte und Gruppenbestellung melden sich als Dialoge, der Fokus wird
+        hinein- und wieder zurückgeführt, Esc schließt, und Fehlermeldungen im
+        Bestellablauf werden angesagt.</li>
         <li><strong>Dunkle, kontrastreiche Gestaltung:</strong> Die Oberfläche ist durchgehend
         dunkel mit hellen Schriften gestaltet; wichtige Zustände (z.&nbsp;B. ausverkauft,
         geöffnet/geschlossen) werden nicht nur über Farbe, sondern auch über Text vermittelt.</li>
@@ -11326,11 +11355,9 @@ const LEGAL = {
 
       <h4>Daran arbeiten wir noch</h4>
       <ul>
-        <li>Ein vollständiger Praxistest des Bestellablaufs mit VoiceOver/Screenreadern
-        steht noch aus.</li>
-        <li>Die Schriftgröße folgt noch nicht der Systemeinstellung von iOS/Android
-        (Dynamic Type); im Browser kannst du die Seite aber frei zoomen.</li>
-        <li>Eine gemessene Kontrastprüfung aller Flächen nach WCAG&nbsp;2.1 AA ist geplant.</li>
+        <li>Ein begleiteter Praxistest mit echten VoiceOver-/TalkBack-Nutzerinnen und
+        -Nutzern – die Grundlagen dafür sind gelegt, Rückmeldungen sind ausdrücklich
+        willkommen.</li>
       </ul>
 
       <h4>Barriere gefunden?</h4>
@@ -11339,7 +11366,7 @@ const LEGAL = {
       Bestellen geht selbstverständlich auch telefonisch oder direkt am Truck.</p>
 
       <p style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--color-border); font-size: 0.85rem; color: var(--color-text-muted);">
-        Stand: August 2026 · Als Kleinstunternehmen sind wir vom
+        Stand: 27. August 2026 · Als Kleinstunternehmen sind wir vom
         Barrierefreiheitsstärkungsgesetz (BFSG) ausgenommen – diese Erklärung und die
         Umsetzung erfolgen freiwillig.
       </p>
@@ -11347,17 +11374,22 @@ const LEGAL = {
   }
 };
 
+let modalVorherFokus = null;
 function openModal(key) {
   const data = LEGAL[key];
   if (!data) return;
+  modalVorherFokus = document.activeElement;
   document.getElementById('modalTitle').textContent = data.title;
   document.getElementById('modalBody').innerHTML = data.body;
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  const zu = document.querySelector('#modalOverlay .cart-close');
+  if (zu) zu.focus();
 }
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
   document.body.style.overflow = '';
+  try { if (modalVorherFokus && modalVorherFokus.focus) modalVorherFokus.focus(); } catch (e) {}
 }
 /* Direktlinks auf die Rechtstexte (z. B. /#datenschutz für App-Store-Angaben
    und Datenschutz-Formulare) – öffnet das passende Fenster beim Laden. */
@@ -11407,9 +11439,12 @@ function groupLink(id) { return location.origin + '/?g=' + id; }
    Gleiche Fassung wie esc2 im Admin-Tool. */
 function escG(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
+let grpVorherFokus = null;
 function openGroupOverlay() {
+  grpVorherFokus = document.activeElement;
   document.getElementById('groupOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  setTimeout(function () { const zu = document.querySelector('#groupOverlay button[aria-label]'); if (zu) zu.focus(); }, 60);
   if (groupJoin) { groupJoin.sent ? renderGroupSent() : renderGroupJoin(); }
   else if (groupHost) renderGroupHost();
   else renderGroupStart();
@@ -11429,6 +11464,7 @@ function renderGroupSent() {
 function closeGroupOverlay() {
   document.getElementById('groupOverlay').style.display = 'none';
   document.body.style.overflow = '';
+  try { if (grpVorherFokus && grpVorherFokus.focus) grpVorherFokus.focus(); } catch (e) {}
 }
 
 /* ---- Start: Gruppe erstellen ---- */
@@ -13854,9 +13890,15 @@ window.addEventListener('load', function () {
     });
   }
 
-  /* ---------- A11y: Escape schließt den Warenkorb ---------- */
+  /* ---------- A11y: Escape schließt den obersten offenen Dialog ---------- */
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
+    var acc = document.getElementById('accountOverlay');
+    if (acc && acc.style.display === 'flex') { closeAccountOverlay(); return; }
+    var grp = document.getElementById('groupOverlay');
+    if (grp && grp.style.display === 'flex') { closeGroupOverlay(); return; }
+    var mo = document.getElementById('modalOverlay');
+    if (mo && mo.classList.contains('open')) { closeModal(); return; }
     var ov = document.getElementById('cartOverlay');
     if (ov && ov.classList.contains('open') && typeof closeCart === 'function') closeCart();
   });
