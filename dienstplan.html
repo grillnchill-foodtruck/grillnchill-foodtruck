@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dienstplan · Grill'n Chill</title>
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<style>
+  /* CI wie das Admin-Tool - eine Handschrift fuer alles Interne. */
+  @font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+  :root{
+    --bg:#0C0B09; --card:#17140F; --card2:#1D1913; --border:#2E2820; --border-hi:#4A3E30;
+    --cream:#F5E9D0; --dim:#A2957D; --faint:#8B7E68;
+    --ember:#E85A24; --ember-hi:#FF7A3D; --dunkel:#140D06;
+    --live:#6DBE45; --amber:#FFB020; --red:#E04848;
+    --r-sm:10px; --r-md:14px; --r-lg:18px;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html{-webkit-text-size-adjust:100%}
+  /* iOS: Schriftgroesse folgt der Systemeinstellung (Dynamic Type) */
+  @supports (-webkit-touch-callout: none){
+    html{font:-apple-system-body}
+    html{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  }
+  body{
+    margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg);color:var(--cream);line-height:1.5;font-size:1rem;
+    padding-bottom:calc(env(safe-area-inset-bottom) + 30px);
+  }
+  .display{font-family:'Bowlby One',cursive;font-weight:400;letter-spacing:.01em}
+  .wrap{max-width:560px;margin:0 auto;padding:0 1rem}
+  button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  button:active{transform:scale(.97)}
+  input,select{font-family:inherit;font-size:1rem}
+  :focus-visible{outline:3px solid var(--ember-hi);outline-offset:2px;border-radius:4px}
+
+  /* Kopf */
+  header{position:sticky;top:0;z-index:50;background:rgba(12,11,9,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);padding:.7rem 0 .65rem}
+  .kopf{display:flex;align-items:center;gap:.7rem}
+  .kopf img{width:34px;height:34px;border-radius:50%}
+  .kopf h1{font-size:1.05rem;margin:0;flex:1}
+  .kopf a{color:var(--dim);font-size:.78rem;text-decoration:none;border:1px solid var(--border);
+    border-radius:999px;padding:.35rem .7rem;min-height:32px;display:inline-flex;align-items:center}
+
+  /* Wochen-Navigation */
+  .wnav{display:flex;align-items:center;gap:.5rem;margin:.85rem 0 .3rem}
+  .wnav button{background:var(--card);border:1px solid var(--border);color:var(--cream);
+    border-radius:var(--r-sm);min-width:46px;min-height:46px;font-size:1.15rem}
+  .wnav .wtitel{flex:1;text-align:center}
+  .wnav .wtitel b{display:block;font-size:.95rem}
+  .wnav .wtitel span{font-size:.74rem;color:var(--dim)}
+  .heute-btn{background:none;border:none;color:var(--ember-hi);font-size:.78rem;font-weight:700;
+    margin:0 auto .5rem;display:block;min-height:38px}
+
+  /* Tages-Karten */
+  .tag{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);
+    padding:.75rem .85rem;margin-bottom:.65rem}
+  .tag.heute{border-color:var(--ember);box-shadow:0 0 0 1px var(--ember)}
+  .tag.ruhetag{opacity:.62}
+  .tag-kopf{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.45rem}
+  .tag-kopf b{font-size:.92rem}
+  .tag-kopf span{font-size:.74rem;color:var(--dim)}
+  .tag-kopf .frei{margin-left:auto;font-size:.72rem;color:var(--faint)}
+  .schicht{display:flex;align-items:center;gap:.6rem;background:var(--card2);
+    border:1px solid var(--border);border-radius:var(--r-sm);padding:.5rem .6rem;margin:.4rem 0}
+  .schicht .punkt{width:14px;height:14px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.4)}
+  .schicht .wer{flex:1;min-width:0}
+  .schicht .wer b{font-size:.9rem;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .schicht .wer span{font-size:.72rem;color:var(--dim)}
+  .schicht .zeit{font-size:.86rem;font-variant-numeric:tabular-nums;color:var(--cream)}
+  .schicht .weg{background:none;border:none;color:var(--faint);font-size:1.25rem;line-height:1;
+    min-width:42px;min-height:42px;margin:-.4rem -.5rem -.4rem 0}
+  .plus{width:100%;background:none;border:1px dashed var(--border-hi);color:var(--dim);
+    border-radius:var(--r-sm);padding:.55rem;font-size:.85rem;min-height:44px;margin-top:.15rem}
+  .plus:hover{color:var(--ember-hi);border-color:var(--ember)}
+
+  /* Summen + Aktionen */
+  .summen{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);
+    padding:.8rem .9rem;margin:1rem 0 .7rem}
+  .summen h2{font-size:.8rem;margin:0 0 .5rem;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+  .summen .zeile{display:flex;align-items:center;gap:.55rem;padding:.22rem 0;font-size:.9rem}
+  .summen .zeile .punkt{width:11px;height:11px;border-radius:50%}
+  .summen .zeile b{margin-left:auto;font-variant-numeric:tabular-nums}
+  .aktionen{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.4rem}
+  .aktionen button{border-radius:var(--r-sm);padding:.7rem .5rem;font-size:.85rem;font-weight:700;min-height:48px}
+  .a-hell{background:var(--ember);border:none;color:var(--dunkel)}
+  .a-rand{background:var(--card);border:1px solid var(--border-hi);color:var(--cream)}
+  .a-breit{grid-column:1 / -1}
+
+  /* Anmeldung */
+  .login{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);
+    padding:1.4rem 1.2rem;margin-top:2.2rem;text-align:center}
+  .login input[type=password]{width:100%;background:var(--bg);border:1px solid var(--border-hi);
+    color:var(--cream);border-radius:var(--r-sm);padding:.8rem .9rem;margin:.9rem 0 .6rem}
+  .login label{font-size:.82rem;color:var(--dim);display:flex;align-items:center;gap:.45rem;justify-content:center;margin-bottom:.9rem}
+  .login button{width:100%;background:var(--ember);border:none;color:var(--dunkel);font-weight:800;
+    border-radius:999px;padding:.85rem;font-size:1rem}
+  .login .fehler{color:var(--red);font-size:.82rem;min-height:1.2em;margin:.4rem 0 0}
+
+  /* Bottom-Sheet (Schicht anlegen / Team verwalten) */
+  .sheet-hg{position:fixed;inset:0;background:rgba(6,5,4,.7);z-index:100;display:none}
+  .sheet-hg.offen{display:block}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:101;background:var(--card);
+    border-top:1px solid var(--border-hi);border-radius:18px 18px 0 0;
+    padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom));max-height:86vh;overflow:auto;
+    transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.9,.3,1)}
+  .sheet.offen{transform:none}
+  @media (prefers-reduced-motion: reduce){ .sheet{transition:none} }
+  .sheet h2{font-size:1rem;margin:.1rem 0 .8rem}
+  .sheet .griff{width:44px;height:4px;border-radius:2px;background:var(--border-hi);margin:0 auto .7rem}
+  .chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem}
+  .chips button{border-radius:999px;border:1px solid var(--border-hi);background:var(--card2);
+    color:var(--cream);padding:.55rem .9rem;font-size:.9rem;min-height:44px;display:inline-flex;align-items:center;gap:.45rem}
+  .chips button .punkt{width:11px;height:11px;border-radius:50%}
+  .chips button.aktiv{background:var(--ember);border-color:var(--ember);color:var(--dunkel);font-weight:700}
+  .chips button.aktiv .punkt{border:1px solid rgba(0,0,0,.35)}
+  .zeiten{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.7rem}
+  .zeiten label{font-size:.72rem;color:var(--dim);display:block;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em}
+  .zeiten input{width:100%;background:var(--bg);border:1px solid var(--border-hi);color:var(--cream);
+    border-radius:var(--r-sm);padding:.6rem .5rem;min-height:48px;text-align:center;font-variant-numeric:tabular-nums}
+  .presets{display:flex;flex-wrap:wrap;gap:.45rem;margin-bottom:1rem}
+  .presets button{border-radius:999px;border:1px solid var(--border);background:var(--card2);
+    color:var(--dim);padding:.4rem .7rem;font-size:.78rem;min-height:38px}
+  .sheet input[type=text]{width:100%;background:var(--bg);border:1px solid var(--border-hi);color:var(--cream);
+    border-radius:var(--r-sm);padding:.65rem .8rem;margin-bottom:1rem}
+  .sheet .ok{width:100%;background:var(--ember);border:none;color:var(--dunkel);font-weight:800;
+    border-radius:999px;padding:.85rem;font-size:1rem;min-height:50px}
+  .sheet .zu{width:100%;background:none;border:none;color:var(--faint);padding:.7rem;font-size:.85rem;min-height:44px}
+
+  /* Team-Verwaltung */
+  .mzeile{display:flex;align-items:center;gap:.6rem;margin-bottom:.55rem}
+  .mzeile input[type=color]{width:44px;height:44px;border:none;background:none;padding:0;border-radius:8px}
+  .mzeile input[type=text]{flex:1;margin:0}
+  .mzeile .weg{background:none;border:none;color:var(--faint);font-size:1.3rem;min-width:44px;min-height:44px}
+
+  .toast{position:fixed;left:50%;bottom:calc(1.4rem + env(safe-area-inset-bottom));transform:translateX(-50%);
+    background:#1E2A1A;border:1px solid var(--live);color:#9FE07A;border-radius:999px;
+    padding:.55rem 1.1rem;font-size:.85rem;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none}
+  .toast.an{opacity:1}
+  .leer{color:var(--faint);font-size:.8rem;text-align:center;padding:.3rem 0}
+  .hinweis-lesen{background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);
+    color:var(--dim);font-size:.78rem;padding:.5rem .8rem;margin:.6rem 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap kopf">
+    <img src="/logo.png" alt="">
+    <h1 class="display">Dienstplan</h1>
+    <a href="/admin">Admin-Tool</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- Anmeldung (gleiche Sitzung wie das Admin-Tool) -->
+  <section id="login" class="login" hidden>
+    <div class="display" style="font-size:1.2rem;">Anmelden</div>
+    <p style="color:var(--dim);font-size:.85rem;margin:.4rem 0 0;">Admin-Passwort zum Planen – Team-Passwort zum Ansehen.</p>
+    <input type="password" id="pw" autocomplete="current-password" placeholder="Passwort">
+    <label><input type="checkbox" id="pwStay" checked> Angemeldet bleiben</label>
+    <button onclick="anmelden()">Anmelden</button>
+    <p class="fehler" id="loginFehler" role="alert"></p>
+  </section>
+
+  <section id="plan" hidden>
+    <div class="wnav">
+      <button onclick="wocheWechseln(-1)" aria-label="Vorherige Woche">‹</button>
+      <div class="wtitel"><b id="wTitel"></b><span id="wDatum"></span></div>
+      <button onclick="wocheWechseln(1)" aria-label="Nächste Woche">›</button>
+    </div>
+    <button class="heute-btn" id="heuteBtn" onclick="zuHeute()" hidden>Zur aktuellen Woche</button>
+    <p class="hinweis-lesen" id="nurLesen" hidden>Du siehst den Plan – ändern kann ihn nur der Chef. 🔒</p>
+
+    <div id="tage"></div>
+
+    <div class="summen" id="summen" hidden>
+      <h2>Stunden diese Woche</h2>
+      <div id="summenListe"></div>
+    </div>
+
+    <div class="aktionen" id="aktionen" hidden>
+      <button class="a-rand" onclick="vorwocheUebernehmen()">↺ Vorwoche übernehmen</button>
+      <button class="a-rand" onclick="teamSheetOeffnen()">👥 Team verwalten</button>
+      <button class="a-hell a-breit" onclick="planTeilen()">Plan teilen (WhatsApp)</button>
+    </div>
+  </section>
+</main>
+
+<!-- Schicht anlegen -->
+<div class="sheet-hg" id="schichtHg" onclick="schichtSheetZu()"></div>
+<div class="sheet" id="schichtSheet" role="dialog" aria-modal="true" aria-labelledby="schichtTitel">
+  <div class="griff" aria-hidden="true"></div>
+  <h2 id="schichtTitel">Schicht hinzufügen</h2>
+  <div class="chips" id="mitarbeiterChips"></div>
+  <div class="zeiten">
+    <div><label for="von">Von</label><input type="time" id="von" value="12:00" step="900"></div>
+    <div><label for="bis">Bis</label><input type="time" id="bis" value="20:30" step="900"></div>
+  </div>
+  <div class="presets">
+    <button onclick="preset('11:30','20:30')">Ganzer Tag</button>
+    <button onclick="preset('11:30','16:00')">Früh</button>
+    <button onclick="preset('16:00','20:30')">Spät</button>
+    <button onclick="preset('17:00','21:00')">Abend</button>
+  </div>
+  <input type="text" id="notiz" maxlength="80" placeholder="Notiz (optional, z. B. Lieferfahrer)">
+  <button class="ok" onclick="schichtSpeichern()">Eintragen</button>
+  <button class="zu" onclick="schichtSheetZu()">Abbrechen</button>
+</div>
+
+<!-- Team verwalten -->
+<div class="sheet-hg" id="teamHg" onclick="teamSheetZu()"></div>
+<div class="sheet" id="teamSheet" role="dialog" aria-modal="true" aria-labelledby="teamTitel">
+  <div class="griff" aria-hidden="true"></div>
+  <h2 id="teamTitel">Team verwalten</h2>
+  <div id="teamListe"></div>
+  <button class="plus" onclick="mitarbeiterHinzufuegen()" style="margin-bottom:1rem;">+ Person hinzufügen</button>
+  <button class="ok" onclick="teamSpeichern()">Speichern</button>
+  <button class="zu" onclick="teamSheetZu()">Abbrechen</button>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============================================================
+   Dienstplan – bewusst klein: eine Woche ist ein Objekt, jede
+   Aenderung speichert die ganze Woche. Kein lokaler Zwischenstand,
+   der Server ist die Wahrheit (mehrere Geraete moeglich).
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const PW_KEY = 'gnc_admin_pw';   // gleiche Sitzung wie das Admin-Tool
+const TAGE_NAMEN = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+
+let personal = [];
+let schichten = {};              // { 'JJJJ-MM-TT': [{pid,von,bis,notiz}] }
+let istAdmin = false;
+let montag = wochenMontag(new Date());
+let sheetTag = null;             // Tag, fuer den gerade eine Schicht angelegt wird
+let sheetPid = null;
+let sheetVorherFokus = null;
+
+function wochenMontag(d) {
+  const x = new Date(d); x.setHours(12,0,0,0);
+  const tag = (x.getDay() + 6) % 7;        // Mo=0 … So=6
+  x.setDate(x.getDate() - tag);
+  return x;
+}
+const iso = (d) => d.toISOString().slice(0,10);
+const datumKurz = (d) => d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
+
+/* ---------- Anmeldung: Sitzungs-Token oder Passwort wie im Admin ---------- */
+function gespeicherteAnmeldung() {
+  try {
+    const s = sessionStorage.getItem(PW_KEY);
+    if (s) return s;
+    const p = JSON.parse(localStorage.getItem(PW_KEY + '_p') || 'null');
+    if (p && p.t && (!p.exp || Date.now() < p.exp)) return p.t;
+  } catch (e) {}
+  return null;
+}
+let anmeldung = gespeicherteAnmeldung();
+
+async function api(action, extra) {
+  const r = await fetch('/.netlify/functions/dienstplan', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: anmeldung, action, ...(extra || {}) }),
+  });
+  return { status: r.status, d: await r.json().catch(() => ({})) };
+}
+
+async function anmelden() {
+  const pw = $('pw').value;
+  if (!pw) return;
+  anmeldung = pw;
+  const { status, d } = await api('lesen', { woche: iso(montag) });
+  if (status === 429) { $('loginFehler').textContent = d.hint || 'Zu viele Versuche – bitte kurz warten.'; return; }
+  if (!d.ok) { $('loginFehler').textContent = 'Passwort falsch.'; anmeldung = null; return; }
+  sessionStorage.setItem(PW_KEY, pw);
+  // "Angemeldet bleiben" ueber die vorhandene Team-Sitzung (Token statt Passwort)
+  if ($('pwStay').checked) {
+    try {
+      const r = await fetch('/.netlify/functions/team', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw, action: 'sitzung' }),
+      });
+      const t = await r.json().catch(() => ({}));
+      if (t && t.ok && t.token) localStorage.setItem(PW_KEY + '_p', JSON.stringify({ t: t.token, exp: new Date(t.exp).getTime() }));
+    } catch (e) {}
+  }
+  zeigePlan(d);
+}
+
+/* ---------- Laden & Rendern ---------- */
+async function laden() {
+  if (!anmeldung) { $('login').hidden = false; $('plan').hidden = true; return; }
+  const { d } = await api('lesen', { woche: iso(montag) });
+  if (!d.ok) { anmeldung = null; try { sessionStorage.removeItem(PW_KEY); } catch(e) {} $('login').hidden = false; $('plan').hidden = true; return; }
+  zeigePlan(d);
+}
+function zeigePlan(d) {
+  personal = d.personal || [];
+  schichten = d.schichten || {};
+  istAdmin = d.rolle === 'admin';
+  $('login').hidden = true;
+  $('plan').hidden = false;
+  $('nurLesen').hidden = istAdmin;
+  $('aktionen').hidden = !istAdmin;
+  render();
+}
+const person = (pid) => personal.find(p => p.id === pid) || { name: '?', farbe: '#555' };
+
+function render() {
+  // Wochen-Titel
+  const ende = new Date(montag); ende.setDate(ende.getDate() + 6);
+  const heuteMontag = iso(wochenMontag(new Date())) === iso(montag);
+  $('wTitel').textContent = heuteMontag ? 'Diese Woche' : 'KW ' + kalenderwoche(montag);
+  $('wDatum').textContent = datumKurz(montag) + ' – ' + datumKurz(ende) + ende.getFullYear();
+  $('heuteBtn').hidden = heuteMontag;
+
+  // Tages-Karten
+  const heute = iso(new Date(Date.now() - 0));
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(montag); d.setDate(d.getDate() + i);
+    const tag = iso(d);
+    const liste = (schichten[tag] || []).slice().sort((a,b) => a.von.localeCompare(b.von));
+    const ruhetag = i === 6;   // Sonntag
+    html += '<div class="tag' + (tag === heute ? ' heute' : '') + (ruhetag && !liste.length ? ' ruhetag' : '') + '">'
+      + '<div class="tag-kopf"><b>' + TAGE_NAMEN[i] + '</b><span>' + datumKurz(d) + '</span>'
+      + (ruhetag ? '<span class="frei">Ruhetag</span>' : '') + '</div>';
+    if (!liste.length && !istAdmin) html += '<p class="leer">' + (ruhetag ? '–' : 'Noch niemand eingeteilt') + '</p>';
+    for (const s of liste) {
+      const p = person(s.pid);
+      const idx = (schichten[tag] || []).indexOf(s);
+      html += '<div class="schicht"><span class="punkt" style="background:' + p.farbe + '"></span>'
+        + '<span class="wer"><b>' + esc(p.name) + '</b>' + (s.notiz ? '<span>' + esc(s.notiz) + '</span>' : '') + '</span>'
+        + '<span class="zeit">' + s.von + '–' + s.bis + '</span>'
+        + (istAdmin ? '<button class="weg" aria-label="Schicht von ' + esc(p.name) + ' entfernen" onclick="schichtWeg(\'' + tag + '\',' + idx + ')">×</button>' : '')
+        + '</div>';
+    }
+    if (istAdmin) html += '<button class="plus" onclick="schichtSheetOeffnen(\'' + tag + '\')">+ Schicht</button>';
+    html += '</div>';
+  }
+  $('tage').innerHTML = html;
+
+  // Wochen-Summen je Person
+  const stunden = {};
+  for (const liste of Object.values(schichten)) for (const s of liste) {
+    stunden[s.pid] = (stunden[s.pid] || 0) + dauer(s.von, s.bis);
+  }
+  const eintraege = Object.entries(stunden).filter(([,h]) => h > 0);
+  $('summen').hidden = !eintraege.length;
+  $('summenListe').innerHTML = eintraege
+    .sort((a,b) => b[1] - a[1])
+    .map(([pid,h]) => { const p = person(pid); return '<div class="zeile"><span class="punkt" style="background:' + p.farbe + '"></span>' + esc(p.name) + '<b>' + stundenText(h) + '</b></div>'; })
+    .join('');
+}
+function dauer(von, bis) {
+  const [vh,vm] = von.split(':').map(Number), [bh,bm] = bis.split(':').map(Number);
+  return Math.max(0, (bh*60+bm) - (vh*60+vm)) / 60;
+}
+const stundenText = (h) => (Math.round(h*4)/4).toLocaleString('de-DE') + ' Std';
+function kalenderwoche(d) {
+  const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const tag = x.getUTCDay() || 7; x.setUTCDate(x.getUTCDate() + 4 - tag);
+  const start = new Date(Date.UTC(x.getUTCFullYear(),0,1));
+  return Math.ceil((((x - start) / 86400000) + 1) / 7);
+}
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- Wochen-Navigation ---------- */
+function wocheWechseln(richtung) { montag.setDate(montag.getDate() + richtung * 7); laden(); }
+function zuHeute() { montag = wochenMontag(new Date()); laden(); }
+
+/* ---------- Schicht anlegen / entfernen ---------- */
+function schichtSheetOeffnen(tag) {
+  if (!personal.length) { teamSheetOeffnen(); toast('Leg zuerst dein Team an 👇'); return; }
+  sheetTag = tag; sheetPid = personal[0].id;
+  sheetVorherFokus = document.activeElement;
+  $('mitarbeiterChips').innerHTML = personal.map(p =>
+    '<button type="button" class="' + (p.id===sheetPid?'aktiv':'') + '" data-pid="' + p.id + '" onclick="chipWahl(this)">'
+    + '<span class="punkt" style="background:' + p.farbe + '"></span>' + esc(p.name) + '</button>').join('');
+  const idx = TAGE_NAMEN[((new Date(tag+'T12:00:00').getDay())+6)%7];
+  $('schichtTitel').textContent = 'Schicht am ' + idx;
+  $('notiz').value = '';
+  $('schichtHg').classList.add('offen'); $('schichtSheet').classList.add('offen');
+  const erster = $('mitarbeiterChips').querySelector('button'); if (erster) erster.focus();
+}
+function chipWahl(btn) {
+  sheetPid = btn.dataset.pid;
+  $('mitarbeiterChips').querySelectorAll('button').forEach(b => b.classList.toggle('aktiv', b === btn));
+}
+function preset(v,b) { $('von').value = v; $('bis').value = b; }
+function schichtSheetZu() {
+  $('schichtHg').classList.remove('offen'); $('schichtSheet').classList.remove('offen');
+  try { if (sheetVorherFokus) sheetVorherFokus.focus(); } catch(e) {}
+}
+async function schichtSpeichern() {
+  if (!sheetTag || !sheetPid) return;
+  const von = $('von').value || '12:00', bis = $('bis').value || '20:30';
+  if (dauer(von,bis) <= 0) { toast('„Bis" muss nach „Von" liegen'); return; }
+  (schichten[sheetTag] = schichten[sheetTag] || []).push({ pid: sheetPid, von, bis, notiz: $('notiz').value.trim() });
+  schichtSheetZu();
+  render();
+  await speichern();
+}
+async function schichtWeg(tag, idx) {
+  (schichten[tag] || []).splice(idx, 1);
+  if (schichten[tag] && !schichten[tag].length) delete schichten[tag];
+  render();
+  await speichern();
+}
+async function speichern() {
+  const { d } = await api('speichern', { woche: iso(montag), schichten });
+  toast(d.ok ? 'Gespeichert ✓' : 'Speichern fehlgeschlagen!');
+  if (!d.ok) laden();   // Serverstand zurueckholen statt stiller Abweichung
+}
+
+/* ---------- Vorwoche uebernehmen ---------- */
+async function vorwocheUebernehmen() {
+  const belegt = Object.keys(schichten).length;
+  if (belegt && !confirm('Diese Woche hat schon Einträge – mit der Vorwoche überschreiben?')) return;
+  const vor = new Date(montag); vor.setDate(vor.getDate() - 7);
+  const { d } = await api('lesen', { woche: iso(vor) });
+  if (!d.ok || !Object.keys(d.schichten || {}).length) { toast('Die Vorwoche ist leer.'); return; }
+  // Tage der Vorwoche auf diese Woche verschieben (gleicher Wochentag)
+  schichten = {};
+  for (const [tag, liste] of Object.entries(d.schichten)) {
+    const alt = new Date(tag + 'T12:00:00'); alt.setDate(alt.getDate() + 7);
+    schichten[iso(alt)] = liste;
+  }
+  render();
+  await speichern();
+}
+
+/* ---------- Teilen (WhatsApp) ---------- */
+function planTeilen() {
+  const ende = new Date(montag); ende.setDate(ende.getDate() + 6);
+  let text = '📋 Dienstplan ' + datumKurz(montag) + '–' + datumKurz(ende) + '. (Grill\'n Chill)\n';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(montag); d.setDate(d.getDate() + i);
+    const liste = (schichten[iso(d)] || []).slice().sort((a,b) => a.von.localeCompare(b.von));
+    if (!liste.length) continue;
+    text += '\n' + TAGE_NAMEN[i] + ' ' + datumKurz(d) + ':\n';
+    for (const s of liste) text += '  • ' + person(s.pid).name + ' ' + s.von + '–' + s.bis + (s.notiz ? ' (' + s.notiz + ')' : '') + '\n';
+  }
+  if (text.indexOf('•') < 0) { toast('Noch keine Schichten geplant.'); return; }
+  if (navigator.share) { navigator.share({ text }).catch(() => {}); }
+  else window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+}
+
+/* ---------- Team verwalten ---------- */
+const FARBEN = ['#E85A24','#FFB020','#6DBE45','#4FA3D1','#B87BD4','#E05C8A','#8B7E68','#D4C25A'];
+let teamVorherFokus = null;
+function teamSheetOeffnen() {
+  teamVorherFokus = document.activeElement;
+  $('teamListe').innerHTML = '';
+  (personal.length ? personal : []).forEach(p => teamZeile(p));
+  $('teamHg').classList.add('offen'); $('teamSheet').classList.add('offen');
+  const erster = $('teamListe').querySelector('input[type=text]'); if (erster) erster.focus();
+}
+function teamZeile(p) {
+  const div = document.createElement('div');
+  div.className = 'mzeile';
+  div.innerHTML = '<input type="color" value="' + (p.farbe || FARBEN[$('teamListe').children.length % FARBEN.length]) + '" aria-label="Farbe">'
+    + '<input type="text" maxlength="40" placeholder="Name" aria-label="Name">'
+    + '<button class="weg" aria-label="Person entfernen" onclick="this.parentElement.remove()">×</button>';
+  div.querySelector('input[type=text]').value = p.name || '';
+  div.dataset.pid = p.id || '';
+  $('teamListe').appendChild(div);
+}
+function mitarbeiterHinzufuegen() { teamZeile({}); const felder = $('teamListe').querySelectorAll('input[type=text]'); felder[felder.length-1].focus(); }
+function teamSheetZu() {
+  $('teamHg').classList.remove('offen'); $('teamSheet').classList.remove('offen');
+  try { if (teamVorherFokus) teamVorherFokus.focus(); } catch(e) {}
+}
+async function teamSpeichern() {
+  const neu = [...$('teamListe').children].map(z => ({
+    id: z.dataset.pid || undefined,
+    name: z.querySelector('input[type=text]').value.trim(),
+    farbe: z.querySelector('input[type=color]').value,
+  })).filter(p => p.name);
+  const { d } = await api('personal', { personal: neu });
+  if (d.ok) { personal = d.personal; teamSheetZu(); render(); toast('Team gespeichert ✓'); }
+  else toast('Speichern fehlgeschlagen!');
+}
+
+/* ---------- Kleinkram ---------- */
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('an');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('an'), 2400);
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if ($('schichtSheet').classList.contains('offen')) schichtSheetZu();
+  else if ($('teamSheet').classList.contains('offen')) teamSheetZu();
+});
+
+laden();
+</script>
+</body>
+</html>
