@@ -118,7 +118,7 @@
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "5.0",
-    "reviewCount": "230",
+    "reviewCount": "242",
     "bestRating": "5"
   },
   "openingHoursSpecification": [
@@ -5262,7 +5262,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
       <div class="hero-content">
         <div class="hero-rating">
           <span class="stars" id="heroStars">★★★★★</span>
-          <span><strong id="heroRatingValue" style="color: var(--color-cream);">5.0</strong> · <span id="heroReviewsText" data-i18n="hero.reviews">230 Bewertungen auf Google</span></span>
+          <span><strong id="heroRatingValue" style="color: var(--color-cream);">5.0</strong> · <span id="heroReviewsText" data-i18n="hero.reviews">242 Bewertungen auf Google</span></span>
         </div>
         <h1>
           <span data-i18n="hero.h1a">Halal Burger in Bielefeld</span><br />
@@ -5460,7 +5460,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
           </div>
           <div class="story-stat">
             <div class="story-stat-num" id="storyRatingNum">5,0★</div>
-            <div class="story-stat-label" id="storyRatingLabel" data-i18n="story.stat3">Bei 230 Bewertungen</div>
+            <div class="story-stat-label" id="storyRatingLabel" data-i18n="story.stat3">Bei 242 Bewertungen</div>
           </div>
           <div class="story-stat">
             <div class="story-stat-num">100%</div>
@@ -5486,7 +5486,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   <div class="container">
     <div class="section-header reveal">
       <h2 class="section-title" data-i18n="reviews.title">Was unsere Kunden sagen</h2>
-      <p class="section-subtitle"><span style="color: var(--color-yellow); letter-spacing: 2px;" id="reviewsStars">★★★★★</span> <span data-i18n="reviews.subtitle" id="reviewsSubtitle">5,0 bei 230 Bewertungen auf Google</span></p>
+      <p class="section-subtitle"><span style="color: var(--color-yellow); letter-spacing: 2px;" id="reviewsStars">★★★★★</span> <span data-i18n="reviews.subtitle" id="reviewsSubtitle">5,0 bei 242 Bewertungen auf Google</span></p>
     </div>
     <div class="reviews-carousel reveal">
       <button class="reviews-nav prev" onclick="moveReview(-1)" aria-label="Vorherige Bewertung" data-i18n-aria="a11y.prev_review">‹</button>
@@ -7636,7 +7636,7 @@ function cardVisual(item) {
 // Fallback = aktuelle Werte; werden beim Laden ggf. durch Live-Daten ersetzt.
 // REVIEWS_MIN_TOTAL = manuell gepflegter Mindestwert: Die Places-API hinkt der
 // öffentlichen Maps-Zahl oft einige Tage hinterher – angezeigt wird nie weniger.
-const REVIEWS_MIN_TOTAL = 230;
+const REVIEWS_MIN_TOTAL = 242;
 let GOOGLE_REVIEWS = { rating: 5.0, total: REVIEWS_MIN_TOTAL };
 function updateHeroReviews() {
   const r = GOOGLE_REVIEWS || {};
