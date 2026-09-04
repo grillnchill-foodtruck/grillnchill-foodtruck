@@ -10,15 +10,24 @@
  * ----------------------------------------------------------------------------
  */
 
+const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 
-function store() {
-  const opts = { name: 'customers', consistency: 'strong' };
+function store(name) {
+  const opts = { name: name || 'customers', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
     opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
     opts.token = process.env.NETLIFY_BLOBS_TOKEN;
   }
   return getStore(opts);
+}
+
+// Gleiches Token-Schema wie retarget-daily/-optout: der Abmelde-Link aus der
+// Geburtstagsmail landet auf demselben Opt-out ("keine Angebots-Mails mehr").
+function unsubToken(email) {
+  return crypto.createHash('sha256')
+    .update('optout:' + email.toLowerCase() + ':' + (process.env.ADMIN_PASSWORD || ''))
+    .digest('hex').slice(0, 24);
 }
 
 function berlinToday() {
@@ -51,6 +60,10 @@ async function sendBirthdayMail(email, name) {
       </div>
       <p style="margin:0;color:#999;font-size:12px;">Dein Bonus liegt in deinem Konto bereit und verfällt nicht. Feier schön!</p>
     </div>
+    <div style="padding:14px 26px;background:#f5f2ec;color:#999;font-size:11px;line-height:1.6;">
+      Du bekommst diese Mail einmal im Jahr, weil du in deinem Grill'n-Chill-Konto deinen Geburtstag hinterlegt hast.
+      <a href="${siteUrl}/retarget-optout?e=${Buffer.from(email.toLowerCase().trim()).toString('base64url')}&t=${unsubToken(email)}" style="color:#999;">Keine Angebots-Mails mehr erhalten</a>
+    </div>
   </div>`;
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -67,8 +80,9 @@ async function sendBirthdayMail(email, name) {
 
 exports.handler = async () => {
   const s = store();
+  const rt = store('retarget'); // Opt-out-Liste (geteilt mit den Gutschein-Mails)
   const { ddmm, year } = berlinToday();
-  let checked = 0, gifted = 0, mails = 0, errors = 0;
+  let checked = 0, gifted = 0, mails = 0, skippedOptout = 0, errors = 0;
   try {
     const { blobs } = await s.list({ prefix: 'c:' });
     for (const b of blobs) {
@@ -81,11 +95,18 @@ exports.handler = async () => {
         rec.lastBirthdayGiftYear = year;
         await s.setJSON(b.key, rec);
         gifted++;
-        try { if (rec.email && (await sendBirthdayMail(rec.email, rec.name))) mails++; } catch (e) { errors++; }
+        // Abgemeldet? Dann gibt es den Bonus trotzdem, nur keine Mail.
+        try {
+          if (rec.email) {
+            const emailHash = crypto.createHash('sha256').update(rec.email.toLowerCase().trim()).digest('hex');
+            if (await rt.get('opt:' + emailHash, { type: 'json' })) { skippedOptout++; continue; }
+            if (await sendBirthdayMail(rec.email, rec.name)) mails++;
+          }
+        } catch (e) { errors++; }
       } catch (e) { errors++; }
     }
   } catch (e) {
     return { statusCode: 500, body: JSON.stringify({ error: String(e.message || e) }) };
   }
-  return { statusCode: 200, body: JSON.stringify({ ok: true, today: ddmm, checked, gifted, mails, errors }) };
+  return { statusCode: 200, body: JSON.stringify({ ok: true, today: ddmm, checked, gifted, mails, skippedOptout, errors }) };
 };
