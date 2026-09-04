@@ -178,6 +178,12 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Store-Badges (App Store / Google Play): ändern sich nie
+[[headers]]
+  for = "/badges/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
 # Produktbilder: 7 Tage Browser-Cache (SW hält sie zusätzlich frisch)
 [[headers]]
   for = "/produktbilder/*"

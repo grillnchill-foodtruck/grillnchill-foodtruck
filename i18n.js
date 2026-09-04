@@ -233,6 +233,7 @@ function applyTranslations() {
   if (typeof updateNavStatus === 'function') updateNavStatus();
   if (typeof renderSignatureSlide === 'function') renderSignatureSlide();
   if (typeof updateCartFab === 'function') updateCartFab();
+  if (typeof updateStoreBadges === 'function') updateStoreBadges(); // Footer-Badges in Sprachfassung
 }
 
 /* ---- Lazy-Load der Sprachpakete – DE ist immer sofort da ---- */
