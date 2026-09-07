@@ -7731,7 +7731,10 @@ async function loadShopStatus() {
     if (!res.ok) return;
     const s = await res.json();
     SHOP_STATUS = {
-      paused: !!s.paused,
+      // Lieferung UND Abholung aus = faktisch pausiert → gleiche Anzeige wie Pause
+      paused: !!s.paused || (!!s.deliveryOff && !!s.pickupOff),
+      deliveryOff: !!s.deliveryOff,
+      pickupOff: !!s.pickupOff,
       pauseMessage: s.pauseMessage || '',
       soldOut: Array.isArray(s.soldOut) ? s.soldOut : [],
       waitTime: Math.max(0, parseInt(s.waitTime, 10) || 0),
@@ -7758,6 +7761,13 @@ function applyShopStatus() {
   const drawer = document.getElementById('cartDrawer');
   if (drawer && drawer.classList.contains('open')) renderCart();
 }
+// Hinweis, wenn Kubi im Admin nur EINE Bestellart abgeschaltet hat (beide aus = Pause)
+function modeOffText() {
+  if (SHOP_STATUS.paused) return '';
+  if (SHOP_STATUS.deliveryOff) return t('shop.delivery_off');
+  if (SHOP_STATUS.pickupOff) return t('shop.pickup_off');
+  return '';
+}
 function pausedBannerEl() {
   const div = document.createElement('div');
   div.id = 'menuPausedBanner';
@@ -7778,11 +7788,21 @@ function renderMenu(animate = false) {
   const grid = document.getElementById('menuGrid');
   grid.innerHTML = '';
   if (SHOP_STATUS.paused) grid.appendChild(pausedBannerEl());
-  else if (SHOP_STATUS.waitTime > 0) {
-    const w = document.createElement('div');
-    w.style.cssText = 'grid-column:1/-1;background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.35);color:#FFB020;border-radius:var(--radius-sm);padding:0.6rem 0.9rem;font-size:0.83rem;font-weight:600;';
-    w.textContent = t('shop.wait').replace('{min}', SHOP_STATUS.waitTime);
-    grid.appendChild(w);
+  else {
+    if (SHOP_STATUS.waitTime > 0) {
+      const w = document.createElement('div');
+      w.style.cssText = 'grid-column:1/-1;background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.35);color:#FFB020;border-radius:var(--radius-sm);padding:0.6rem 0.9rem;font-size:0.83rem;font-weight:600;';
+      w.textContent = t('shop.wait').replace('{min}', SHOP_STATUS.waitTime);
+      grid.appendChild(w);
+    }
+    const mo = modeOffText();
+    if (mo) {
+      const m = document.createElement('div');
+      m.id = 'menuModeOffNote';
+      m.style.cssText = 'grid-column:1/-1;background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.35);color:#FFB020;border-radius:var(--radius-sm);padding:0.6rem 0.9rem;font-size:0.83rem;font-weight:600;';
+      m.textContent = mo;
+      grid.appendChild(m);
+    }
   }
   const items = MENU.filter(m => {
     if (activeCategory === 'all') return true;
@@ -9496,6 +9516,8 @@ function renderCart() {
   const os = getOrderingState();
   if (!os.delivery && checkoutMode === 'delivery') {
     checkoutMode = 'pickup'; // Lieferung an diesem Tag nicht möglich → auf Abholung
+  } else if (!os.pickup && checkoutMode === 'pickup' && os.delivery) {
+    checkoutMode = 'delivery'; // Abholung heute abgeschaltet → auf Lieferung
   }
 
   if (checkoutStep === 'success') {
@@ -9784,10 +9806,13 @@ function renderCart() {
     const stepBanner = os.mode === 'preorder'
       ? `<div class="checkout-info-banner">${t('co.preorder_banner').replace('{when}', formatPreorderWhen(os.next, checkoutMode))}</div>`
       : (!os.delivery
-          ? `<div class="checkout-info-banner">${t('co.delivery_cutoff')}</div>`
-          : (os.deliveryPreorder && (checkoutStep === 'cart' || checkoutMode === 'delivery')
-              ? `<div class="checkout-info-banner">${t('co.delivery_from').replace(/\{time\}/g, os.deliveryFromStr)}</div>`
-              : ''));
+          // Von Kubi abgeschaltet? Dann nicht den Cutoff-Text zeigen, der wäre irreführend.
+          ? `<div class="checkout-info-banner">${SHOP_STATUS.deliveryOff ? escHtml(t('shop.delivery_off')) : t('co.delivery_cutoff')}</div>`
+          : (SHOP_STATUS.pickupOff
+              ? `<div class="checkout-info-banner">${escHtml(t('shop.pickup_off'))}</div>`
+              : (os.deliveryPreorder && (checkoutStep === 'cart' || checkoutMode === 'delivery')
+                  ? `<div class="checkout-info-banner">${t('co.delivery_from').replace(/\{time\}/g, os.deliveryFromStr)}</div>`
+                  : '')));
 
     // ---- Step 1: Warenkorb – Artikel + Abhol-/Liefer-Wahl (aufgeräumt) ----
     if (checkoutStep === 'cart') {
@@ -9804,7 +9829,7 @@ function renderCart() {
         </div>
         <div class="mode-q-inline">${t('cart.how')}</div>
         <div class="mode-fork">
-          <button type="button" class="mode-fork-btn" onclick="chooseMode('pickup')">${t('co.tab_pickup')}</button>
+          <button type="button" class="mode-fork-btn${!os.pickup ? ' disabled' : ''}" onclick="chooseMode('pickup')"${!os.pickup ? ' disabled aria-disabled="true"' : ''}>${t('co.tab_pickup')}</button>
           <button type="button" class="mode-fork-btn${!os.delivery ? ' disabled' : ''}" onclick="chooseMode('delivery')"${!os.delivery ? ' disabled aria-disabled="true"' : ''}>${t('co.tab_delivery')}</button>
         </div>
       `;
@@ -9814,7 +9839,7 @@ function renderCart() {
     // ---- Step 2: Details – Upsell, Adresse, Gutschein, Treue, Summe ----
     body.innerHTML = `
       <div class="checkout-tabs">
-        <button class="checkout-tab ${checkoutMode === 'pickup' ? 'active' : ''}" onclick="setMode('pickup')">${t('co.tab_pickup')}</button>
+        <button class="checkout-tab ${checkoutMode === 'pickup' ? 'active' : ''}${!os.pickup ? ' tab-disabled' : ''}" onclick="setMode('pickup')"${!os.pickup ? ' aria-disabled="true"' : ''}>${t('co.tab_pickup')}</button>
         <button class="checkout-tab ${checkoutMode === 'delivery' ? 'active' : ''}${!os.delivery ? ' tab-disabled' : ''}" onclick="setMode('delivery')"${!os.delivery ? ' aria-disabled="true"' : ''}>${t('co.tab_delivery')}</button>
       </div>
       ${stepBanner}
@@ -10209,10 +10234,9 @@ function onAddressChange() {
 }
 
 function setMode(mode) {
-  if (mode === 'delivery') {
-    const os = getOrderingState();
-    if (!os.delivery) return; // Lieferung an diesem Tag nicht möglich
-  }
+  const os = getOrderingState();
+  if (mode === 'delivery' && !os.delivery) return; // Lieferung an diesem Tag nicht möglich
+  if (mode === 'pickup' && !os.pickup) return;     // Abholung heute abgeschaltet
   checkoutMode = mode;
   renderCart();
   updateCartUI();
@@ -10220,10 +10244,9 @@ function setMode(mode) {
 
 // Abhol-/Liefer-Wahl im Warenkorb → wechselt in den separaten Detail-Step.
 function chooseMode(mode) {
-  if (mode === 'delivery') {
-    const os = getOrderingState();
-    if (!os.delivery) return; // Lieferung an diesem Tag nicht möglich
-  }
+  const os = getOrderingState();
+  if (mode === 'delivery' && !os.delivery) return; // Lieferung an diesem Tag nicht möglich
+  if (mode === 'pickup' && !os.pickup) return;     // Abholung heute abgeschaltet
   checkoutMode = mode;
   checkoutStep = 'options';
   renderCart();
@@ -12304,7 +12327,17 @@ function findNextOpening(now) {
 
 // Aktueller Bestellstatus. PICKUP bis 15 Min, LIEFERUNG bis 60 Min vor Ladenschluss.
 // Geschlossen / Sonntag / Feiertag / nach Cutoff → Vorbestellung für die nächste Öffnung.
+// Obendrauf die Tagesschalter aus dem Admin (Lieferung/Abholung aus, bis Mitternacht –
+// gelten bewusst auch für Vorbestellungen, damit „aus" wirklich aus heißt).
 function getOrderingState(now) {
+  const os = getOrderingStateRaw(now);
+  if (typeof SHOP_STATUS !== 'undefined') {
+    if (SHOP_STATUS.deliveryOff) { os.delivery = false; os.deliveryPreorder = false; }
+    if (SHOP_STATUS.pickupOff) os.pickup = false;
+  }
+  return os;
+}
+function getOrderingStateRaw(now) {
   now = now || new Date();
   const day = now.getDay();
   const nowMin = now.getHours() * 60 + now.getMinutes();

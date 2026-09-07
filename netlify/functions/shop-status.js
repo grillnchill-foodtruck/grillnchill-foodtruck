@@ -8,9 +8,10 @@
  *   POST /shop-status            → schreiben, nur mit korrektem Passwort
  *        Body: { password, paused, pauseMessage, soldOut: [ ...ids ] }
  *
- * TAGES-BINDUNG: "Pausiert" und "Ausverkauft" gelten nur für den Tag, an dem
- * sie gesetzt wurden (Zeitzone Europe/Berlin). Ab Mitternacht setzt sich beides
- * automatisch zurück – niemand kann vergessen, den Haken zu entfernen.
+ * TAGES-BINDUNG: "Pausiert", "Lieferung/Abholung aus", "Wartezeit" und
+ * "Ausverkauft" gelten nur für den Tag, an dem sie gesetzt wurden (Zeitzone
+ * Europe/Berlin). Ab Mitternacht setzt sich alles automatisch zurück – niemand
+ * kann vergessen, den Haken zu entfernen.
  * Das "Special der Woche" bleibt bewusst bestehen (wochenweise gedacht).
  *
  * Benötigte Environment Variable in Netlify:
@@ -30,6 +31,8 @@ const KEY = 'status';
 
 const DEFAULT_STATUS = {
   paused: false,
+  deliveryOff: false,    // Lieferung heute abgeschaltet (Abholung geht weiter)
+  pickupOff: false,      // Abholung heute abgeschaltet (Lieferung geht weiter)
   waitTime: 0,           // Live-Wartezeit in Minuten (0 = keine Anzeige)
   pauseMessage: '',
   soldOut: [],
@@ -74,6 +77,8 @@ async function readStatus() {
     if (!data || typeof data !== 'object') return { ...DEFAULT_STATUS };
     const status = {
       paused: !!data.paused,
+      deliveryOff: !!data.deliveryOff,
+      pickupOff: !!data.pickupOff,
       pauseMessage: typeof data.pauseMessage === 'string' ? data.pauseMessage : '',
       soldOut: Array.isArray(data.soldOut) ? data.soldOut.map(String) : [],
       waitTime: Math.max(0, Math.min(120, parseInt(data.waitTime, 10) || 0)),
@@ -86,8 +91,11 @@ async function readStatus() {
 
     // AUTO-RESET um Mitternacht: Pause + Ausverkauft gelten nur am Setz-Tag.
     const today = berlinDay();
-    if (status.dayKey && status.dayKey !== today && (status.paused || status.soldOut.length || status.waitTime)) {
+    if (status.dayKey && status.dayKey !== today
+        && (status.paused || status.deliveryOff || status.pickupOff || status.soldOut.length || status.waitTime)) {
       status.paused = false;
+      status.deliveryOff = false;
+      status.pickupOff = false;
       status.waitTime = 0;
       status.pauseMessage = '';
       status.soldOut = [];
@@ -190,6 +198,8 @@ exports.handler = async (event) => {
 
     const newStatus = {
       paused: !!body.paused,
+      deliveryOff: !!body.deliveryOff,
+      pickupOff: !!body.pickupOff,
       waitTime: Math.max(0, Math.min(120, parseInt(body.waitTime, 10) || 0)),
       pauseMessage: String(body.pauseMessage || '').slice(0, 200),
       soldOut: Array.isArray(body.soldOut)
@@ -210,6 +220,8 @@ exports.handler = async (event) => {
 
     await auditLog(who, 'Status',
       'Pause: ' + (newStatus.paused ? 'AN' + (newStatus.pauseMessage ? ' („' + newStatus.pauseMessage.slice(0, 60) + '")' : '') : 'aus')
+      + ' · Lieferung: ' + (newStatus.deliveryOff ? 'AUS' : 'an')
+      + ' · Abholung: ' + (newStatus.pickupOff ? 'AUS' : 'an')
       + ' · Ausverkauft: ' + newStatus.soldOut.length
       + ' · Special: ' + (newStatus.special ? newStatus.special.id : '–')
       + ' · Wartezeit: ' + (newStatus.waitTime ? '~' + newStatus.waitTime + ' Min' : 'aus'));

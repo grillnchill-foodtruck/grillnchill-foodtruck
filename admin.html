@@ -178,6 +178,8 @@
   /* ================= PAUSE ================= */
   .pause-card{transition:border-color .25s,box-shadow .25s}
   .pause-card.on{border-color:rgba(255,176,32,.55);box-shadow:0 0 26px rgba(255,176,32,.09)}
+  .mode-card{transition:border-color .25s,box-shadow .25s}
+  .mode-card.on{border-color:rgba(255,176,32,.55);box-shadow:0 0 26px rgba(255,176,32,.09)}
   .switch-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
   .switch{position:relative;width:58px;height:33px;flex:none}
   .switch input{opacity:0;width:0;height:0;position:absolute}
@@ -545,6 +547,34 @@
           <label for="pauseMsg">Hinweis für Kunden (optional)</label>
           <textarea id="pauseMsg" maxlength="200" placeholder="z. B. Heute geschlossen – morgen wieder ab 17 Uhr!"></textarea>
         </div>
+      </div>
+
+      <div class="sec"><h3>Bestellarten heute</h3></div>
+      <div class="card mode-card" id="modeCard">
+        <div class="switch-row">
+          <div>
+            <h2 style="font-size:1rem;">Lieferung</h2>
+            <p class="hint">Aus = Kunden können heute nur abholen.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="deliveryToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="switch-row" style="margin-top:1rem;">
+          <div>
+            <h2 style="font-size:1rem;">Abholung</h2>
+            <p class="hint">Aus = Kunden können sich heute nur beliefern lassen.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="pickupToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p class="hint" id="modeBothOff" style="display:none;margin-top:.9rem;color:var(--amber);font-weight:600;">
+          Beides aus = keine Online-Bestellungen möglich (wirkt wie „Pausieren").
+        </p>
+        <p class="hint" style="margin:.9rem 0 0;color:var(--faint);font-size:.75rem;">Gilt bis Mitternacht – auch für Vorbestellungen. Danach automatisch wieder beides an.</p>
       </div>
 
       <div class="sec"><h3>Live-Wartezeit</h3></div>
@@ -1027,6 +1057,9 @@ async function loadStatus(){
     $('pausedToggle').checked=!!s.paused;
     $('pauseCard').classList.toggle('on', !!s.paused);
     $('pauseMsg').value=s.pauseMessage||'';
+    $('deliveryToggle').checked=!s.deliveryOff;
+    $('pickupToggle').checked=!s.pickupOff;
+    updateModeCard();
     $('specialSelect').value=(s.special&&s.special.id)||'';
     $('specialNote').value=(s.special&&s.special.note)||'';
     const wt=parseInt(s.waitTime,10)||0;
@@ -1052,6 +1085,8 @@ async function save(){
     password: currentPw,
     paused: $('pausedToggle').checked,
     pauseMessage: $('pauseMsg').value.trim(),
+    deliveryOff: !$('deliveryToggle').checked,
+    pickupOff: !$('pickupToggle').checked,
     soldOut: collectSoldOut(),
     waitTime: (()=>{ const c=document.querySelector('#waitChips .chip[aria-pressed="true"]'); return c?parseInt(c.dataset.wait,10)||0:0; })(),
     special: $('specialSelect').value
@@ -1282,6 +1317,12 @@ $('pausedToggle').addEventListener('change',()=>{
   $('pauseCard').classList.toggle('on', $('pausedToggle').checked);
   setDirty(true);
 });
+function updateModeCard(){
+  const d=$('deliveryToggle').checked, p=$('pickupToggle').checked;
+  $('modeCard').classList.toggle('on', !d || !p);
+  $('modeBothOff').style.display = (!d && !p) ? '' : 'none';
+}
+['deliveryToggle','pickupToggle'].forEach(id=>$(id).addEventListener('change',()=>{ updateModeCard(); setDirty(true); }));
 window.addEventListener('beforeunload',(e)=>{
   if(dirty){ e.preventDefault(); e.returnValue=''; }
 });
