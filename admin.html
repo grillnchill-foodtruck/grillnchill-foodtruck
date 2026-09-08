@@ -228,6 +228,7 @@
   .tpl:active{transform:scale(.95)}
   .stat-chips{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.85rem}
   .schip{font-family:var(--mono);font-size:.72rem;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:.35rem .6rem}
+  .schip.warn{border-color:rgba(255,176,32,.55);color:var(--amber)}
   .schip b{color:var(--cream);font-weight:700}
 
   /* ================= ZAHLEN ================= */
@@ -1377,12 +1378,17 @@ async function sendPush(){
     if(sperreGemeldet(res)) return;
     if(res.status===401){ toast('Falsches Passwort','err'); return; }
     if(!res.ok){ toast((d.error||'Senden fehlgeschlagen')+(d.detail?(' – '+d.detail):''),'err'); return; }
-    toast('Gesendet an '+d.sent+' Abonnenten','ok');
+    // iOS-App (Firebase-Thema): 'gesendet', 'nicht_eingerichtet' oder ein Fehlertext
+    const iosOk = d.ios==='gesendet';
+    const iosTxt = iosOk ? 'iOS-App: gesendet'
+      : (d.ios==='nicht_eingerichtet' ? 'iOS-App: nicht eingerichtet' : 'iOS-App: Fehler – '+(d.ios||'keine Antwort'));
+    toast('Gesendet an '+d.sent+' Web-Abonnenten · '+iosTxt, iosOk?'ok':'err');
     $('pushMeta').innerHTML =
       '<span class="schip">Abonnenten <b>'+d.total+'</b></span>'+
       '<span class="schip">Zugestellt <b>'+d.sent+'</b></span>'+
       '<span class="schip">Fehlgeschlagen <b>'+d.failed+'</b></span>'+
-      '<span class="schip">Bereinigt <b>'+d.removed+'</b></span>';
+      '<span class="schip">Bereinigt <b>'+d.removed+'</b></span>'+
+      '<span class="schip'+(iosOk?'':' warn')+'">'+iosTxt.replace('iOS-App: ','iOS-App <b>')+'</b></span>';
   }catch(e){ toast('Netzwerkfehler','err'); }
   finally{ btn.disabled=false; btn.textContent='An alle senden'; }
 }
