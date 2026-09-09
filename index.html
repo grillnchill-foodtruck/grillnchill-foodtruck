@@ -13901,7 +13901,7 @@ window.addEventListener('load', function () {
       var res = await fetch('/push-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: sub.toJSON() })
+        body: JSON.stringify({ subscription: sub.toJSON(), app: (typeof APP_FORCED !== 'undefined' && !!APP_FORCED) })
       });
       if (!res.ok) { showToast(t('push.error')); return false; }
       localStorage.setItem('gnc_push_v1', 'on');

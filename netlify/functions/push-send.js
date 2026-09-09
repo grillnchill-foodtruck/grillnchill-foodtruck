@@ -109,6 +109,9 @@ exports.handler = async (event) => {
   if (!pub || !priv) return json(500, { error: 'vapid_not_configured' });
   webpush.setVapidDetails(subject, pub, priv);
 
+  // Empfaenger: 'alle' (Standard), 'app' (iOS-App + Android-App), 'web' (nur Browser)
+  const ziel = ['alle', 'app', 'web'].includes(body.ziel) ? body.ziel : 'alle';
+
   const payload = JSON.stringify({
     title: (body.title || 'Grilln Chill').toString().slice(0, 80),
     body: (body.body || '').toString().slice(0, 200),
@@ -118,10 +121,12 @@ exports.handler = async (event) => {
   try {
     const s = store();
     const { blobs } = await s.list({ prefix: 'sub:' });
-    let sent = 0, removed = 0, failed = 0;
+    let sent = 0, removed = 0, failed = 0, uebersprungen = 0;
     for (const b of blobs) {
       const sub = await s.get(b.key, { type: 'json' });
       if (!sub) continue;
+      const istApp = !!sub.app;
+      if ((ziel === 'app' && !istApp) || (ziel === 'web' && istApp)) { uebersprungen++; continue; }
       try {
         await webpush.sendNotification(sub, payload, { TTL: 3600 });
         sent++;
@@ -133,14 +138,17 @@ exports.handler = async (event) => {
     }
     // Zusaetzlich an die iOS-App (FCM-Thema "alle") – EIN Knopf fuer alle
     // Kanaele. Ohne eingerichtetes Dienstkonto bleibt es beim Web-Push.
-    const ios = await sendeAnIOS(
-      (body.title || 'Grilln Chill').toString().slice(0, 80),
-      (body.body || '').toString().slice(0, 200),
-      (body.url || '/').toString().slice(0, 200));
+    const ios = ziel === 'web'
+      ? { ok: false, grund: 'übersprungen (nur Browser)' }
+      : await sendeAnIOS(
+          (body.title || 'Grilln Chill').toString().slice(0, 80),
+          (body.body || '').toString().slice(0, 200),
+          (body.url || '/').toString().slice(0, 200));
 
-    await auditLog(who, 'Push', '„' + String(body.title || '').slice(0, 60) + '“ an ' + sent + ' Abonnenten gesendet'
+    const zielText = { alle: 'alle', app: 'nur App', web: 'nur Browser' }[ziel];
+    await auditLog(who, 'Push', '„' + String(body.title || '').slice(0, 60) + '“ (' + zielText + ') an ' + sent + ' Abonnenten gesendet'
       + (ios.ok ? ' + iOS-App' : ''));
-    return json(200, { ok: true, sent, removed, failed, total: blobs.length,
+    return json(200, { ok: true, ziel, sent, removed, failed, uebersprungen, total: blobs.length,
                        ios: ios.ok ? 'gesendet' : ios.grund });
   } catch (e) {
     return json(500, { error: 'send_failed', detail: String((e && e.message) || e) });

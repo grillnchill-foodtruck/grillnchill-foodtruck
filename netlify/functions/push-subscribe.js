@@ -92,7 +92,8 @@ exports.handler = async (event) => {
           { ...sub, name: who.name, addedAt: new Date().toISOString() });
         return json(200, { ok: true, channel: 'admin' });
       }
-      await store().setJSON(keyFor(sub.endpoint), { ...sub, addedAt: new Date().toISOString() });
+      // app: Abo aus der installierten App (Android-App/PWA) – erlaubt gezielten Versand
+      await store().setJSON(keyFor(sub.endpoint), { ...sub, app: !!body.app, addedAt: new Date().toISOString() });
       return json(200, { ok: true });
     }
     if (event.httpMethod === 'DELETE') {

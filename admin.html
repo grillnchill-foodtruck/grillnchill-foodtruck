@@ -671,6 +671,15 @@
           <button class="tpl" type="button" data-t="Regenwetter? Wir liefern!" data-b="Bleib trocken – wir bringen dir frische Burger bis an die Tür. Jetzt online bestellen.">Regentag</button>
         </div>
         <div class="field">
+          <label>Empfänger</label>
+          <div class="chip-grid" id="pushZiel">
+            <button type="button" class="chip" data-ziel="alle" aria-pressed="true">Alle</button>
+            <button type="button" class="chip" data-ziel="app" aria-pressed="false">Nur App</button>
+            <button type="button" class="chip" data-ziel="web" aria-pressed="false">Nur Browser</button>
+          </div>
+          <p class="hint" style="margin-top:.5rem;">„App" = iPhone- und Android-App. „Browser" = Website-Abonnenten am Handy oder Desktop.</p>
+        </div>
+        <div class="field">
           <label for="pushTitle">Titel</label>
           <input type="text" id="pushTitle" maxlength="80" placeholder="Der Grill ist heiß">
           <div class="counter"><span id="cntTitle">0</span>/80</div>
@@ -1349,6 +1358,13 @@ document.querySelectorAll('.tpl').forEach(b=>b.addEventListener('click',()=>{
 }));
 
 let pushArmed=false, pushArmTimer=null;
+function pushZiel(){ const c=document.querySelector('#pushZiel .chip[aria-pressed="true"]'); return c?c.dataset.ziel:'alle'; }
+function pushBtnLabel(){ return {alle:'An alle senden', app:'Nur an App-Nutzer senden', web:'Nur an Browser-Nutzer senden'}[pushZiel()]; }
+document.addEventListener('click',(e)=>{
+  const z=e.target.closest('#pushZiel .chip'); if(!z) return;
+  document.querySelectorAll('#pushZiel .chip').forEach(c=>c.setAttribute('aria-pressed', c===z?'true':'false'));
+  pushArmed=false; clearTimeout(pushArmTimer); $('pushSendBtn').classList.remove('confirm'); $('pushSendBtn').textContent=pushBtnLabel();
+});
 async function sendPush(){
   const btn=$('pushSendBtn');
   const title=$('pushTitle').value.trim();
@@ -1359,10 +1375,10 @@ async function sendPush(){
   if(!pushArmed){
     pushArmed=true;
     btn.classList.add('confirm');
-    btn.textContent='Wirklich an alle? Erneut tippen';
+    btn.textContent={alle:'Wirklich an alle? Erneut tippen', app:'Wirklich an alle App-Nutzer? Erneut tippen', web:'Wirklich an alle Browser-Nutzer? Erneut tippen'}[pushZiel()];
     clearTimeout(pushArmTimer);
     pushArmTimer=setTimeout(()=>{
-      pushArmed=false; btn.classList.remove('confirm'); btn.textContent='An alle senden';
+      pushArmed=false; btn.classList.remove('confirm'); btn.textContent=pushBtnLabel();
     },3500);
     return;
   }
@@ -1372,7 +1388,7 @@ async function sendPush(){
   try{
     const res=await fetch('/push-send',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({password:currentPw,title,body,url:'/'})
+      body:JSON.stringify({password:currentPw,title,body,url:'/',ziel:pushZiel()})
     });
     const d=await res.json().catch(()=>({}));
     if(sperreGemeldet(res)) return;
@@ -1380,16 +1396,19 @@ async function sendPush(){
     if(!res.ok){ toast((d.error||'Senden fehlgeschlagen')+(d.detail?(' – '+d.detail):''),'err'); return; }
     // iOS-App (Firebase-Thema): 'gesendet', 'nicht_eingerichtet' oder ein Fehlertext
     const iosOk = d.ios==='gesendet';
+    const iosSkip = /^übersprungen/.test(d.ios||'');
     const iosTxt = 'iOS-App: ' + (iosOk ? 'gesendet' : (d.ios || 'keine Antwort'));
-    toast('Gesendet an '+d.sent+' Web-Abonnenten · '+iosTxt, iosOk?'ok':'err');
+    const webTxt = 'Gesendet an '+d.sent+(d.ziel==='app'?' Android-App-Abos':d.ziel==='web'?' Browser-Abos':' Browser-/Android-Abos');
+    toast(webTxt+' · '+iosTxt, (iosOk||iosSkip)?'ok':'err');
     $('pushMeta').innerHTML =
       '<span class="schip">Abonnenten <b>'+d.total+'</b></span>'+
       '<span class="schip">Zugestellt <b>'+d.sent+'</b></span>'+
       '<span class="schip">Fehlgeschlagen <b>'+d.failed+'</b></span>'+
       '<span class="schip">Bereinigt <b>'+d.removed+'</b></span>'+
-      '<span class="schip'+(iosOk?'':' warn')+'">'+iosTxt.replace('iOS-App: ','iOS-App <b>')+'</b></span>';
+      (d.uebersprungen?'<span class="schip">Nicht im Ziel <b>'+d.uebersprungen+'</b></span>':'')+
+      '<span class="schip'+((iosOk||iosSkip)?'':' warn')+'">'+iosTxt.replace('iOS-App: ','iOS-App <b>')+'</b></span>';
   }catch(e){ toast('Netzwerkfehler','err'); }
-  finally{ btn.disabled=false; btn.textContent='An alle senden'; }
+  finally{ btn.disabled=false; btn.textContent=pushBtnLabel(); }
 }
 $('pushSendBtn').addEventListener('click',sendPush);
 
