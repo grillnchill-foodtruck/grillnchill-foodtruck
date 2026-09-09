@@ -23,12 +23,15 @@ async function holeGeheim(name) {
       opts.token = process.env.NETLIFY_BLOBS_TOKEN;
     }
     const wert = await getStore(opts).get(name);
-    cache[name] = wert || null;
+    // Nur Treffer merken: ein "nicht gefunden" darf nicht fuer die Lebens-
+    // dauer der Instanz kleben bleiben (z. B. wenn der Wert gerade erst
+    // hochgeladen wurde).
+    if (wert) cache[name] = wert;
+    return wert || null;
   } catch (e) {
     console.error('geheim:', name, e.message);
-    cache[name] = null;
+    return null;
   }
-  return cache[name];
 }
 
 module.exports = { holeGeheim };
