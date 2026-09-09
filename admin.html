@@ -1380,8 +1380,7 @@ async function sendPush(){
     if(!res.ok){ toast((d.error||'Senden fehlgeschlagen')+(d.detail?(' – '+d.detail):''),'err'); return; }
     // iOS-App (Firebase-Thema): 'gesendet', 'nicht_eingerichtet' oder ein Fehlertext
     const iosOk = d.ios==='gesendet';
-    const iosTxt = iosOk ? 'iOS-App: gesendet'
-      : (d.ios==='nicht_eingerichtet' ? 'iOS-App: nicht eingerichtet' : 'iOS-App: Fehler – '+(d.ios||'keine Antwort'));
+    const iosTxt = 'iOS-App: ' + (iosOk ? 'gesendet' : (d.ios || 'keine Antwort'));
     toast('Gesendet an '+d.sent+' Web-Abonnenten · '+iosTxt, iosOk?'ok':'err');
     $('pushMeta').innerHTML =
       '<span class="schip">Abonnenten <b>'+d.total+'</b></span>'+

@@ -28,16 +28,26 @@ const b64u = (x) => Buffer.from(typeof x === 'string' ? x : JSON.stringify(x))
    Blobs-Store "geheim" ('firebase-service-account') - das AWS-4KB-Limit fuer
    Umgebungsvariablen liess sie dort nicht mehr zu. */
 async function dienstkonto() {
+  const d = await dienstkontoMitDiagnose();
+  return d.sa;
+}
+
+/* Wie dienstkonto(), liefert aber zusaetzlich einen Befund fuer das Admin-
+   Tool - nur Herkunft, Kategorie und Zeichenzahl, nie Inhalt. */
+async function dienstkontoMitDiagnose() {
   let roh = process.env.FIREBASE_SERVICE_ACCOUNT || '';
+  let quelle = roh ? 'env' : 'blobs';
   if (!roh) {
     try { roh = (await require('./geheim').holeGeheim('firebase-service-account')) || ''; }
     catch (e) { roh = ''; }
   }
-  if (!roh) return null;
-  try {
-    const sa = JSON.parse(roh);
-    return (sa.client_email && sa.private_key && sa.project_id) ? sa : null;
-  } catch (e) { return null; }
+  if (!roh) return { sa: null, befund: 'kein Eintrag (weder Env noch Blobs-Store geheim)' };
+  let sa;
+  try { sa = JSON.parse(roh); }
+  catch (e) { return { sa: null, befund: quelle + ': kein gueltiges JSON (' + roh.length + ' Zeichen)' }; }
+  const fehlt = ['client_email', 'private_key', 'project_id'].filter((k) => !sa[k]);
+  if (fehlt.length) return { sa: null, befund: quelle + ': Felder fehlen: ' + fehlt.join(', ') };
+  return { sa, befund: quelle + ': ok' };
 }
 
 /* Zugangs-Token zwischen Aufrufen behalten – die Function lebt weiter. */
@@ -75,8 +85,8 @@ async function zugangsToken(sa, holen) {
  *          den Web-Push-Versand nicht mitreißen.
  */
 async function sendeAnIOS(titel, text, url, holen) {
-  const sa = await dienstkonto();
-  if (!sa) return { ok: false, grund: 'nicht_eingerichtet' };
+  const { sa, befund } = await dienstkontoMitDiagnose();
+  if (!sa) return { ok: false, grund: 'nicht eingerichtet – ' + befund };
   try {
     const token = await zugangsToken(sa, holen);
     const antwort = await (holen || fetch)(
@@ -103,4 +113,4 @@ async function sendeAnIOS(titel, text, url, holen) {
   }
 }
 
-module.exports = { sendeAnIOS, dienstkonto };
+module.exports = { sendeAnIOS, dienstkonto, dienstkontoMitDiagnose };

@@ -24,7 +24,7 @@ const pruefe = (n, ok, d) => { if (!ok) fehler++; console.log('  ' + (ok ? gruen
   // 1) Ohne Einrichtung: leiser Ausstieg
   delete process.env.FIREBASE_SERVICE_ACCOUNT;
   let r = await sendeAnIOS('Titel', 'Text', '/');
-  pruefe('ohne Dienstkonto: leiser Ausstieg', r.ok === false && r.grund === 'nicht_eingerichtet');
+  pruefe('ohne Dienstkonto: leiser Ausstieg', r.ok === false && String(r.grund).startsWith('nicht eingerichtet'));
 
   // 2) Mit erzeugtem Dienstkonto: JWT + Tausch + Versand
   const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
