@@ -66,13 +66,14 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 
-  let code = '', email = '', mode = '';
+  let code = '', email = '', mode = '', imApp = false;
   try {
     const b = JSON.parse(event.body || '{}');
     // Muss zeichengenau zu cleanCode() in vouchers-admin.js passen
     code = codeNormalisieren(b.code);
     email = (b.email || '').toString().trim().toLowerCase().slice(0, 120);
     mode = (b.mode || '').toString();
+    imApp = !!b.app;   // Seite laeuft in der installierten App (iOS/Android/PWA)
   } catch (e) {}
   if (code.length < 3) return json(200, { valid: false, reason: 'not_found' });
 
@@ -93,6 +94,8 @@ exports.handler = async (event) => {
     const c = await vs0.get('c:' + code, { type: 'json' });
     if (c) {
       if (!c.active) return json(200, { valid: false, reason: 'not_found' });
+      // Nur-App-Gutschein im Browser: klar sagen, wo er gilt
+      if (c.appOnly && !imApp) return json(200, { valid: false, reason: 'app_only' });
       // Empfehlungs-Gutschein: nur für die Erstbestellung, kein Selbst-Werben
       if (c.referral && email) {
         const h0 = require('crypto').createHash('sha256').update(email).digest('hex');
@@ -137,6 +140,7 @@ exports.handler = async (event) => {
         minOrder: c.minOrder || 0,
         combinable: !!c.combinable,
         mode: c.mode || 'any',
+        appOnly: !!c.appOnly,
         oncePerCustomer: !!c.oncePerCustomer,
         maxPerCustomer: c.maxPerCustomer > 0 ? c.maxPerCustomer : (c.oncePerCustomer ? 1 : 0),
         validUntil: c.validUntil || null,

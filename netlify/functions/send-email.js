@@ -444,6 +444,9 @@ async function afterOrderHooks(order, verified) {
             ? require('crypto').createHash('sha256').update(String(order.email).trim().toLowerCase()).digest('hex')
             : null;
           const overGlobal = c.maxUses > 0 && (c.uses || 0) >= c.maxUses;
+          // Nur-App-Code ausserhalb der App: der Preis wurde bereits ohne Rabatt
+          // nachgerechnet - hier nur nicht als Einloesung zaehlen.
+          const falscherKanal = !!c.appOnly && !order.app;
           let overPerCust = false;
           if (h && (c.maxPerCustomer > 0 || c.oncePerCustomer)) {
             const prev = c.usedBy && c.usedBy[h];
@@ -466,6 +469,8 @@ async function afterOrderHooks(order, verified) {
                 });
               }
             } catch (e3) {}
+          } else if (falscherKanal) {
+            // nichts zaehlen
           } else if (overPerCust) {
             // Dieser Kunde hat sein Limit überschritten: nicht erneut zählen, Code bleibt für andere aktiv.
             c.lastPerCustAbuseAt = new Date().toISOString();

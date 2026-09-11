@@ -785,6 +785,10 @@
             <option value="delivery">Nur Lieferung</option>
           </select>
         </div>
+        <div class="switch-row" style="margin-bottom:1rem;">
+          <div><h2 style="font-size:.9rem;">Nur in der App</h2><p class="hint">Gilt nur in der iPhone-/Android-App. Im Browser: „Dieser Code gilt nur in der App".</p></div>
+          <label class="switch"><input type="checkbox" id="vAppOnly"><span class="slider"></span></label>
+        </div>
         <div class="field">
           <label for="vPerCust">Einlösungen pro Kunde <span style="color:var(--faint);font-weight:400;">(0 = unbegrenzt)</span></label>
           <input type="number" id="vPerCust" min="0" max="50" step="1" value="1" placeholder="1">
@@ -2140,6 +2144,7 @@ const V_FILTERS=[
   {key:'all',    label:'Alle',             test:v=>true},
   {key:'action', label:'Aktionsgutscheine',test:v=>!v.referral},
   {key:'account',label:'Kontogutscheine',  test:v=>!!v.referral},
+  {key:'app',    label:'Nur App',          test:v=>!!v.appOnly},
 ];
 document.addEventListener('click',(e)=>{
   const c=e.target.closest('[data-vfilter]');
@@ -2176,6 +2181,7 @@ function renderVouchers(){
       +'<div class="badges">'
       +'<span class="'+stCls+'">'+stLabel+'</span>'
       +(v.mode==='pickup'?'<span class="bdg">Nur Abholung</span>':v.mode==='delivery'?'<span class="bdg delivery">Nur Lieferung</span>':'')
+      +(v.appOnly?'<span class="bdg online">Nur App</span>':'')
       +((v.maxPerCustomer>0||v.oncePerCustomer)?'<span class="bdg">max '+(v.maxPerCustomer>0?v.maxPerCustomer:1)+'× pro Kunde</span>':'')
       +(v.combinable?'<span class="bdg pre">Kombinierbar</span>':'')
       +(v.giftcard?'<span class="bdg online">Geschenk-Gutschein</span>':'')
@@ -2569,13 +2575,14 @@ $('vCreateBtn').addEventListener('click',async()=>{
     oncePerCustomer:(parseInt($('vPerCust').value,10)||0)===1,
     combinable:$('vComb').checked,
     mode:$('vMode').value,
+    appOnly:$('vAppOnly').checked,
     note:$('vNote').value.trim(),
   }});
   btn.disabled=false; btn.textContent='Gutschein anlegen';
   if(r.ok){
     toast('Gutschein '+code+' angelegt','ok');
     ['vCode','vValue','vMax','vMin','vUses','vFrom','vTo','vNote'].forEach(id=>$(id).value='');
-    $('vPerCust').value='1';
+    $('vPerCust').value='1'; $('vAppOnly').checked=false;
     loadVouchers();
   } else {
     toast(r.d.hint||r.d.error||'Anlegen fehlgeschlagen','err');

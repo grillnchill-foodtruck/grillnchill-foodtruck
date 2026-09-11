@@ -24,6 +24,7 @@
  *   oncePerCustomer 1× pro Kunde (per E-Mail, als Hash gespeichert)
  *   combinable      mit Aktionscode/Treuebonus kombinierbar
  *   mode            'any' | 'pickup' | 'delivery'
+ *   appOnly         nur in der installierten App einlösbar (iOS/Android/PWA)
  *   active          Schalter, ohne Löschen deaktivierbar
  *   note            interne Notiz (Zweck/Kampagne)
  *   uses/usedBy     Zähler + (bei oncePerCustomer) E-Mail-Hashes
@@ -107,7 +108,7 @@ const cleanCode = codeNormalisieren;
 
 function describe(v) {
   const val = v.type === 'percent' ? v.value + ' %' : v.value.toFixed(2).replace('.', ',') + ' €';
-  return v.code + ' (' + val + (v.minOrder ? ', ab ' + v.minOrder + ' €' : '') + ')';
+  return v.code + ' (' + val + (v.minOrder ? ', ab ' + v.minOrder + ' €' : '') + (v.appOnly ? ', nur App' : '') + ')';
 }
 
 
@@ -257,6 +258,7 @@ exports.handler = async (event) => {
         maxPerCustomer: Math.min(50, Math.max(0, parseInt(inV.maxPerCustomer, 10) || 0)),
         combinable: !!inV.combinable,
         mode: ['pickup', 'delivery'].includes(inV.mode) ? inV.mode : 'any',
+        appOnly: !!inV.appOnly,
         active: true,
         note: String(inV.note || '').slice(0, 120),
         createdAt: new Date().toISOString(),

@@ -9111,7 +9111,7 @@ function quickApplyPromo() {
   fetch('/voucher-check', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, mode: checkoutMode }),
+    body: JSON.stringify({ code, mode: checkoutMode, app: istInApp() }),
   })
     .then(r => r.json())
     .then(d => {
@@ -9132,6 +9132,8 @@ function quickApplyPromo() {
         updateCartUI();
       } else if (d && d.reason === 'not_started') {
         flashCartNotice(t('promo.voucher_not_started'));
+      } else if (d && d.reason === 'app_only') {
+        flashCartNotice(t('promo.voucher_app_only'));
       } else if (d && d.reason === 'customer_limit') {
         flashCartNotice(t('promo.voucher_customer_limit').replace('{max}', d.max || 3));
       } else {
@@ -9179,7 +9181,7 @@ function applyPromo() {
     fetch('/voucher-check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, mode: checkoutMode }),
+      body: JSON.stringify({ code, mode: checkoutMode, app: istInApp() }),
     })
       .then(r => r.json())
       .then(d => {
@@ -9226,6 +9228,7 @@ function applyPromo() {
             : reason === 'ref_self' ? t('promo.ref_self')
             : reason === 'ref_not_first' ? t('promo.ref_not_first')
             : reason === 'not_started' ? t('promo.voucher_not_started')
+            : reason === 'app_only' ? t('promo.voucher_app_only')
             : t('promo.invalid'));
         }
       })
@@ -10412,7 +10415,7 @@ async function submitOrder(e) {
       const vres = await fetch('/voucher-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: voucherApplied.code, email, mode: checkoutMode }),
+        body: JSON.stringify({ code: voucherApplied.code, email, mode: checkoutMode, app: istInApp() }),
       });
       const vd = await vres.json().catch(() => null);
       if (!vd || !vd.valid) {
@@ -10425,6 +10428,7 @@ async function submitOrder(e) {
           : reason === 'already_used_by_you' ? t('promo.voucher_used_you')
           : reason === 'limit_reached' ? t('promo.voucher_limit')
           : reason === 'expired' ? t('promo.voucher_expired')
+          : reason === 'app_only' ? t('promo.voucher_app_only')
           : t('promo.voucher_removed'));
         return; // Kunde sieht den neuen Gesamtpreis und bestätigt erneut
       }
@@ -10504,6 +10508,8 @@ async function submitOrder(e) {
     promo: vDisc > 0 ? { code: voucherApplied.code }
       : (effectivePromo && disc > 0 ? { code: PROMO_CODE, pct: promoTierPercent(sub) } : null),
     voucherCode: vDisc > 0 ? voucherApplied.code : null,
+    // Bestellung kam aus der installierten App (fuer Nur-App-Gutscheine)
+    app: istInApp(),
     // Firmenkunden bekommen eine Rechnung – ohne Firma bleibt alles wie bisher
     company: (form['co-company'] && form['co-company'].value.trim()) || null,
     invoiceAddress: (form['co-company'] && form['co-company'].value.trim()) ? {
@@ -12406,6 +12412,8 @@ function formatPreorderWhen(next, mode) {
 const APP_FORCED = /[?&](app=1|source=pwa)/.test(location.search)
   || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
 if (APP_FORCED) document.body.classList.add('app-forced');
+// Fuer Gutschein-Pruefung/Bestellung: laeuft die Seite in der installierten App?
+function istInApp() { return !!APP_FORCED; }
 
 /* ---- Store-Badges im Footer: Grafik und Alt-Text folgen der Website-Sprache.
    Die Texte sind Apples/Googles feste Badge-Wortlaute, keine freie Uebersetzung. ---- */
@@ -12657,7 +12665,7 @@ function stelleKasseWieder(order) {
       fetch('/voucher-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: order.voucherCode, email: order.email || '', mode: checkoutMode }),
+        body: JSON.stringify({ code: order.voucherCode, email: order.email || '', mode: checkoutMode, app: istInApp() }),
       })
         .then(r => r.json())
         .then(d => {
@@ -12861,6 +12869,7 @@ async function sendOrderConfirmationEmails(orderData) {
       //                    daraus anlegen.
       //   loyaltyApplied – Kennzeichen, dass eine Prämie eingelöst wurde.
       voucherCode: orderData.voucherCode || null,
+      app: !!orderData.app,
       isTest: !!orderData.isTest,
       // Der Server rechnet den Betrag aus dem Warenkorb nach (Barbestellungen
       // laufen NUR hierueber, es gibt keinen SumUp-Aufruf). Dafuer braucht er
@@ -12930,6 +12939,7 @@ async function sendOwnerOrderNotification(orderData) {
       testCode: orderData.testCode || null,
       cartSnapshot: orderData.cartSnapshot || null,
       voucherCode: orderData.voucherCode || null,
+      app: !!orderData.app,
       loyaltyApplied: !!orderData.loyaltyApplied,
     },
   };

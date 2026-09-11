@@ -124,7 +124,7 @@ function istTestCode(eingabe) {
    Spiegelt voucherDiscount() aus index.html, aber mit den Konditionen aus
    dem Gutschein-Datensatz statt denen, die der Browser mitschickt.
 --------------------------------------------------------------------------- */
-async function gutscheinRabatt(code, warenwert, modus) {
+async function gutscheinRabatt(code, warenwert, modus, imApp) {
   const sauber = codeNormalisieren(code);
   if (!sauber) return 0;
   const c = await store('vouchers').get('c:' + sauber, { type: 'json' });
@@ -132,6 +132,8 @@ async function gutscheinRabatt(code, warenwert, modus) {
 
   // Modus-Bindung (nur Abholung / nur Lieferung)
   if (c.mode && c.mode !== 'any' && modus !== c.mode) return 0;
+  // Kanal-Bindung (nur in der installierten App)
+  if (c.appOnly && !imApp) return 0;
 
   if (c.type === 'percent') {
     if (warenwert < (c.minOrder || 0)) return 0;
@@ -243,7 +245,7 @@ async function betragErmitteln(order) {
   const gutscheinCode = order.voucherCode || (order.promo && order.promo.code);
   if (gutscheinCode && String(gutscheinCode).toUpperCase() !== SK.PROMO_CODE) {
     try {
-      gutschein = await gutscheinRabatt(gutscheinCode, warenwert, modus);
+      gutschein = await gutscheinRabatt(gutscheinCode, warenwert, modus, !!order.app);
     } catch (e) {
       // Gutschein-Speicher nicht erreichbar: den angezeigten Abzug stehen
       // lassen, aber auf den Warenwert begrenzen. Lieber ein Gutschein zu
