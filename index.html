@@ -1466,6 +1466,9 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 }
 @media (min-width: 520px) {
   .menu-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Titel reservieren zwei Zeilen: Beschreibungen und Preise einer Reihe
+     stehen dann auf gleicher Hoehe, auch wenn ein Name umbricht. */
+  .menu-card-title { min-height: 2.2em; }
 }
 @media (min-width: 880px) {
   .menu-grid { grid-template-columns: repeat(3, 1fr); gap: 1.3rem; }
