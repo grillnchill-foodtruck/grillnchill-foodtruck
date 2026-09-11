@@ -2643,7 +2643,20 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   padding-top: 0.65rem;
   margin-top: 0.4rem;
   letter-spacing: 0;
+  align-items: baseline;
+  gap: 0.75rem;
 }
+/* "Gesamt (ohne Lieferung)" brach bei 1.5rem um und riss den Betrag in zwei Zeilen */
+.cart-summary-row.total > :first-child { font-size: 1rem; line-height: 1.2; }
+.cart-summary-row.total > :last-child { white-space: nowrap; }
+/* Firmenfelder erst auf Wunsch (kaum ein Gast braucht sie) */
+.co-firma-toggle {
+  display: inline-flex; align-items: center; min-height: 44px;
+  background: none; border: none; padding: 0; margin: -0.4rem 0 0.9rem;
+  color: var(--color-orange-bright); font-family: inherit; font-size: 0.88rem; font-weight: 700;
+  cursor: pointer; text-align: left;
+}
+.co-firma-toggle:hover { color: var(--color-cream); }
 .cart-savings-banner {
   background: rgba(109, 190, 69, 0.08);
   border: 1px solid rgba(109, 190, 69, 0.22);
@@ -10011,6 +10024,8 @@ function renderCart() {
           <input type="tel" id="co-phone" class="form-input" required placeholder="${t('co.phone_ph')}" autocomplete="tel" inputmode="tel" />
         </div>
 
+        <button type="button" id="coFirmaToggle" class="co-firma-toggle" onclick="toggleFirma()"${coFirmaOffen ? ' hidden' : ''}>+ ${t('co.company_toggle')}</button>
+        <div id="coFirmaWrap"${coFirmaOffen ? '' : ' hidden'}>
         <div class="form-group">
           <label for="co-company">${t('co.company')}</label>
           <input type="text" id="co-company" class="form-input" placeholder="${t('co.company_ph')}"
@@ -10035,6 +10050,7 @@ function renderCart() {
             </div>
           </div>
           <p class="field-note">${t('co.inv_note')}</p>
+        </div>
         </div>
         <div id="phoneUsageInfo" class="phone-usage-info" style="display:none;"></div>
 
@@ -10221,6 +10237,7 @@ function renderCart() {
       setz('co-inv-zip', bz.zip);
       setz('co-inv-city', bz.city);
     }
+    syncFirmaSichtbarkeit();
 
     // Stand schon eine Firma drin, muss die Rechnungsadresse wieder sichtbar
     // und zur Pflicht werden – sonst waere sie zwar gefuellt, aber verborgen.
@@ -10312,6 +10329,24 @@ function goToCheckout() {
    Blase dann ausserhalb des Sichtbereichs oder (iOS Safari) gar nicht – der
    Knopf fuehlt sich tot an. Deshalb pruefen wir selbst, scrollen zum Feld,
    markieren es und sagen laut, was fehlt. */
+/* Firmenfelder im Daten-Schritt: eingeklappt, bis jemand sie braucht - oder
+   schon eine Firma drinsteht (Firmenkonto, wiederhergestellte Eingabe). */
+let coFirmaOffen = false;
+function syncFirmaSichtbarkeit() {
+  const inp = document.getElementById('co-company');
+  const wrap = document.getElementById('coFirmaWrap');
+  const tg = document.getElementById('coFirmaToggle');
+  if (!wrap || !tg) return;
+  if (inp && inp.value.trim()) coFirmaOffen = true;
+  wrap.hidden = !coFirmaOffen;
+  tg.hidden = coFirmaOffen;
+}
+function toggleFirma() {
+  coFirmaOffen = true;
+  syncFirmaSichtbarkeit();
+  const i = document.getElementById('co-company');
+  if (i) { try { i.focus(); } catch (e) {} }
+}
 /* Ein Feld als fehlerhaft markieren: rot (Klasse) + aria-invalid (Screenreader).
    Die Markierung verschwindet, sobald der Kunde das Feld aendert. */
 function markeFeldFehler(el) {
@@ -10394,6 +10429,9 @@ function onCompanyChange() {
   if (!box) return;
   const an = firma.length > 0;
   box.hidden = !an;
+  // Firma sofort merken - sonst ist sie beim Wechsel Abholen/Liefern oder
+  // beim Zurueckgehen weg (die anderen Felder speichern bei jeder Eingabe).
+  if (typeof saveCustomerData === 'function') saveCustomerData();
   ['co-inv-street', 'co-inv-zip', 'co-inv-city'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
