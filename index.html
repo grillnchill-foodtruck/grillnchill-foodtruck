@@ -2903,12 +2903,13 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 }
 .promo-input-wrap input {
   flex: 1;
+  min-height: 44px;
   padding: 0.7rem 0.9rem;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   color: var(--color-cream);
-  font-size: 0.92rem;
+  font-size: 1rem; /* >= 16px: kein Auto-Zoom auf iOS */
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-weight: 600;
@@ -3214,6 +3215,8 @@ body.body-scroll-locked .sticky-cart { display: none !important; }
   transition: border-color .15s;
   min-height: var(--tap);
 }
+/* Fehlerzustand: sichtbar UND fuer Screenreader (aria-invalid) */
+.form-input[aria-invalid="true"], .cfun-invalid { border-color: var(--color-error) !important; }
 .form-input:focus {
   outline: none;
   border-color: var(--color-orange);
@@ -5824,7 +5827,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
             <button type="button" id="cfunBack" class="btn btn-ghost" hidden data-i18n="catering.fun_back">Zurück</button>
             <button type="button" id="cfunNext" class="btn btn-primary" data-i18n="catering.fun_next">Weiter</button>
           </div>
-          <p id="cfHint" style="text-align: center; font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.7rem;" data-i18n="catering.f_hint">
+          <p id="cfHint" aria-live="polite" style="text-align: center; font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.7rem;" data-i18n="catering.f_hint">
             Wir melden uns schnellstmöglich bei dir zurück.
           </p>
         </form>
@@ -6595,8 +6598,8 @@ function accSettingsHtml() {
 function renderAccLogin(el, step) {
   if (step === 'code') {
     el.innerHTML = `
-      <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('acc.code_sent').replace('{email}', escG(accLoginEmail))}</p>
-      <input type="text" id="accCode" class="form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="width:100%;text-align:center;font-size:1.5rem;letter-spacing:0.4em;font-family:ui-monospace,Menlo,monospace;">
+      <p id="accCodeHint" style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('acc.code_sent').replace('{email}', escG(accLoginEmail))}</p>
+      <input type="text" id="accCode" class="form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-labelledby="accCodeHint" placeholder="000000" style="width:100%;text-align:center;font-size:1.5rem;letter-spacing:0.4em;font-family:ui-monospace,Menlo,monospace;">
       <button class="btn btn-primary btn-block" style="margin-top:0.9rem;" onclick="accVerify()">${t('acc.login_btn')}</button>
       <p style="text-align:center;margin:0.8rem 0 0;font-size:0.78rem;"><a href="#" onclick="renderAccount('email');return false;" style="color:var(--color-text-muted);">${t('acc.back')}</a></p>`;
     setTimeout(() => { const c = document.getElementById('accCode'); if (c) c.focus(); }, 80);
@@ -6604,7 +6607,7 @@ function renderAccLogin(el, step) {
   }
   el.innerHTML = `
     <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('acc.intro')}</p>
-    <input type="email" id="accEmail" class="form-input" autocomplete="email" placeholder="${t('co.email_ph')}" value="${escG(accLoginEmail)}" style="width:100%;">
+    <input type="email" id="accEmail" class="form-input" autocomplete="email" aria-label="${t('co.email').replace(' *', '')}" placeholder="${t('co.email_ph')}" value="${escG(accLoginEmail)}" style="width:100%;">
     <div class="login-weg" style="margin-top:0.9rem;">${loginChip('email')}
       <button class="btn btn-primary btn-block" onclick="accRequestCode()">${t('acc.send_code')}</button>
     </div>
@@ -9272,10 +9275,12 @@ function applyPromo() {
 }
 function promoInputError(input, msg) {
   input.style.borderColor = 'var(--color-error)';
+  input.setAttribute('aria-invalid', 'true');
   input.value = '';
   input.placeholder = msg;
   setTimeout(() => {
     input.style.borderColor = '';
+    input.removeAttribute('aria-invalid');
     input.placeholder = t('promo.placeholder_short');
   }, 2200);
 }
@@ -9787,7 +9792,7 @@ function renderCart() {
     } else {
       const manualField = `
         <div class="promo-input-wrap">
-          <input type="text" id="promoInput" placeholder="${t('promo.placeholder')}" autocomplete="off" />
+          <input type="text" id="promoInput" placeholder="${t('promo.placeholder')}" aria-label="${t('promo.placeholder_short')}" autocomplete="off" />
           <button class="btn btn-secondary btn-sm" onclick="applyPromo()" style="min-height: auto; padding: 0.7rem 1rem;">${t('promo.redeem')}</button>
         </div>`;
       if (adCode()) {
@@ -10307,13 +10312,27 @@ function goToCheckout() {
    Blase dann ausserhalb des Sichtbereichs oder (iOS Safari) gar nicht – der
    Knopf fuehlt sich tot an. Deshalb pruefen wir selbst, scrollen zum Feld,
    markieren es und sagen laut, was fehlt. */
+/* Ein Feld als fehlerhaft markieren: rot (Klasse) + aria-invalid (Screenreader).
+   Die Markierung verschwindet, sobald der Kunde das Feld aendert. */
+function markeFeldFehler(el) {
+  if (!el) return;
+  el.classList.add('cfun-invalid');
+  el.setAttribute('aria-invalid', 'true');
+  const weg = function () {
+    el.classList.remove('cfun-invalid');
+    el.removeAttribute('aria-invalid');
+    el.removeEventListener('input', weg); el.removeEventListener('change', weg);
+  };
+  el.addEventListener('input', weg); el.addEventListener('change', weg);
+}
 function validateCheckoutForm() {
   const form = document.getElementById('checkoutForm');
   if (!form || form.checkValidity()) return true;
   const bad = form.querySelector(':invalid');
   if (!bad) return true;
-  form.querySelectorAll('.cfun-invalid').forEach(el => el.classList.remove('cfun-invalid'));
+  form.querySelectorAll('.cfun-invalid').forEach(el => { el.classList.remove('cfun-invalid'); el.removeAttribute('aria-invalid'); });
   bad.classList.add('cfun-invalid');
+  bad.setAttribute('aria-invalid', 'true');
   (bad.closest('.form-group') || bad).scrollIntoView({ behavior: 'smooth', block: 'center' });
   setTimeout(function () {
     try { bad.focus({ preventScroll: true }); } catch (err) { bad.focus(); }
@@ -10327,6 +10346,7 @@ function validateCheckoutForm() {
   else flashCartNotice(msg);
   const clear = function () {
     bad.classList.remove('cfun-invalid');
+    bad.removeAttribute('aria-invalid');
     const w = document.getElementById('coFormWarn');
     if (w && document.getElementById('checkoutForm') &&
         document.getElementById('checkoutForm').checkValidity()) w.style.display = 'none';
@@ -11560,7 +11580,7 @@ function closeGroupOverlay() {
 function renderGroupStart() {
   document.getElementById('groupBody').innerHTML = `
     <p style="color:var(--color-cream-dim);font-size:0.9rem;margin:0 0 1rem;">${t('grp.intro')}</p>
-    <label style="display:block;font-weight:600;font-size:0.86rem;margin-bottom:0.4rem;">${t('grp.host_label')}</label>
+    <label for="grpHostName" style="display:block;font-weight:600;font-size:0.86rem;margin-bottom:0.4rem;">${t('grp.host_label')}</label>
     <input type="text" id="grpHostName" class="form-input" maxlength="40" placeholder="${t('grp.host_ph')}" style="margin-bottom:1rem;">
     <button class="btn btn-primary btn-block" onclick="createGroup()">${t('grp.create')}</button>
   `;
@@ -11962,6 +11982,11 @@ document.getElementById('cateringForm').addEventListener('submit', async (e) => 
       hint.textContent = 'Bitte fülle alle Pflichtfelder (*) aus und stimme dem Datenschutz zu.';
       hint.style.color = 'var(--color-error)';
     }
+    // Fehlende Felder des sichtbaren Schritts markieren und das erste fokussieren
+    const leer = ['cf-name', 'cf-email', 'cf-phone'].map(id => form[id]).filter(f => f && !String(f.value || '').trim());
+    if (form['cf-consent'] && !form['cf-consent'].checked) leer.push(form['cf-consent']);
+    leer.forEach(markeFeldFehler);
+    if (leer[0]) { try { leer[0].focus(); } catch (e) {} }
     return;
   }
 
@@ -12636,6 +12661,7 @@ function flashCartNotice(msg) {
   if (!body) return;
   const note = document.createElement('div');
   note.className = 'cart-warn-banner';
+  note.setAttribute('role', 'alert');
   note.style.cssText = 'display:block; margin-bottom:1rem;';
   note.textContent = msg;
   body.insertBefore(note, body.firstChild);
