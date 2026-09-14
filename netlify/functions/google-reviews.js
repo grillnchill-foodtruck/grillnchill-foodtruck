@@ -8,7 +8,7 @@
  *
  * lang = de|en|tr|it|es|pt|fr|nl – Google übersetzt die Rezensionstexte selbst in
  * die gewünschte Sprache. Je Sprache eigener Cache-Eintrag (data:<lang>).
- * Rezensionen ohne Text oder unter 4 Sternen werden nicht ausgeliefert; Namen
+ * Rezensionen ohne Text oder unter 5 Sternen werden nicht ausgeliefert; Namen
  * werden auf „Vorname N." gekürzt (wie die fest hinterlegten Zitate).
  *
  * Die Google Places API wird höchstens ~1×/24h aufgerufen; das Ergebnis wird
@@ -32,6 +32,7 @@ const STORE_NAME = 'google-reviews';
 const KEY_PREFIX = 'data:';
 const LANGS = ['de', 'en', 'tr', 'it', 'es', 'pt', 'fr', 'nl'];
 const MAX_TEXT = 400; // laengere Rezensionen werden am Wortende gekuerzt
+const MIN_STARS = 5;  // Karussell zeigt nur 5-Sterne-Rezensionen (Schnitt ist 5,0; Google-Link darunter zeigt alle)
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 Stunden
 const DEFAULT_PLACE_ID = 'ChIJJ9h4Tk09ukcRAAFxrgGWsSc';
 
@@ -83,7 +84,7 @@ function kuerzeText(text) {
 function mapReview(r) {
   const stars = Math.round(Number(r && r.rating) || 0);
   const text = ((r.text && r.text.text) || (r.originalText && r.originalText.text) || '').replace(/\s+/g, ' ').trim();
-  if (stars < 4 || !text) return null;
+  if (stars < MIN_STARS || !text) return null;
   return {
     name: kurzName(r.authorAttribution && r.authorAttribution.displayName),
     stars,
