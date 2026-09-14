@@ -3625,31 +3625,62 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 }
 .reviews-track {
   flex: 1;
-  overflow: hidden;
-  position: relative;
+  min-width: 0;
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;   /* Wischen am Ende zieht nicht die ganze Seite */
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
   min-height: 240px;
+  border-radius: var(--radius-lg);
 }
+.reviews-track::-webkit-scrollbar { display: none; }
 .review-card {
-  position: absolute;
-  inset: 0;
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;         /* ein Wisch = eine Karte */
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 2rem 2rem 1.6rem;
+  padding: 1.8rem 2rem 1.6rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  opacity: 0;
-  transform: translateX(30px);
-  transition: opacity .5s ease, transform .5s ease;
-  pointer-events: none;
 }
-.review-card.active {
-  opacity: 1;
-  transform: translateX(0);
-  pointer-events: auto;
-  position: relative;
+.review-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  margin-bottom: 1rem;
+}
+.review-top .review-stars { margin-bottom: 0; }
+.review-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+.review-new {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-bg);
+  background: var(--color-yellow);
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+@media (max-width: 640px) {
+  .reviews-nav { display: none; }   /* auf dem Handy wird gewischt, Punkte bleiben als Ziel */
+  .reviews-carousel { gap: 0; }
+  .review-card { padding: 1.5rem 1.2rem 1.3rem; }
 }
 .review-stars {
   color: var(--color-yellow);
@@ -3661,14 +3692,15 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   color: var(--color-cream-dim);
   font-size: 1rem;
   line-height: 1.6;
-  margin-bottom: 1.3rem;
+  margin: auto 0;               /* freier Raum verteilt sich ober- und unterhalb des Zitats */
+  padding-bottom: 1.3rem;
   font-style: italic;
 }
 .review-author {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  margin-top: auto;
+  margin-top: 0;                /* sitzt durch den Auto-Rand des Textes immer unten */
 }
 .review-avatar {
   width: 42px; height: 42px;
@@ -7764,16 +7796,20 @@ function updateHeroReviews() {
       .replace('{count}', (r.total != null ? r.total : REVIEWS_MIN_TOTAL));
   }
 }
-async function loadGoogleReviews() {
+async function loadGoogleReviews(lang) {
+  lang = lang || (typeof currentLang !== 'undefined' ? currentLang : 'de');
   try {
-    const res = await fetch('/google-reviews', { cache: 'no-store' });
-    if (!res.ok) return;
+    const res = await fetch('/google-reviews?lang=' + encodeURIComponent(lang), { cache: 'no-store' });
+    if (!res.ok) { LIVE_REVIEWS[lang] = LIVE_REVIEWS[lang] || []; return; }
     const d = await res.json();
     if (d && d.rating != null && d.total != null) {
       GOOGLE_REVIEWS = { rating: d.rating, total: Math.max(parseInt(d.total, 10) || 0, REVIEWS_MIN_TOTAL) };
       updateHeroReviews();
     }
-  } catch (e) { /* Fallback bleibt */ }
+    // Live-Rezensionen fuer diese Sprache merken; leeres Array = „geladen, nichts da" (kein Dauer-Retry)
+    LIVE_REVIEWS[lang] = (d && Array.isArray(d.reviews)) ? d.reviews.filter(r => r && r.text && r.name) : [];
+    if (LIVE_REVIEWS[lang].length && lang === currentLang && typeof renderReviews === 'function') renderReviews();
+  } catch (e) { LIVE_REVIEWS[lang] = LIVE_REVIEWS[lang] || []; /* Fallback bleibt */ }
 }
 
 let SHOP_STATUS = { paused: false, pauseMessage: '', soldOut: [] };
@@ -12121,122 +12157,174 @@ initTurnstile();
    KUNDENREZENSIONEN – Karussell mit Übersetzung
    ==================================================================== */
 // Echte Google-Rezensionen. Text je Sprache (de = Original, en/tr = übersetzt).
+// Kuratierte Google-Zitate (Sicherheitsnetz, falls der Live-Abruf nichts liefert).
+// date = Veroeffentlichung laut Google (naeherungsweise), steuert „Neu"-Marke + Monatsangabe.
 const REVIEWS = [
   {
-    name: 'Nanacan29', stars: 5,
-    de: "Wirklich sehr lecker. So wie es sein sollte. Jetzt muss ich nicht mehr weit fahren um einen leckeren Burger zu essen. Der Herr ist auch sehr nett. Einfach ein Burger mit Liebe gemacht.",
-    en: "Really delicious. Just the way it should be. Now I don't have to drive far for a tasty burger anymore. The owner is also very kind. Simply a burger made with love.",
-    tr: "Gerçekten çok lezzetli. Tam olması gerektiği gibi. Artık lezzetli bir burger için uzağa gitmeme gerek yok. Sahibi de çok nazik. Sevgiyle yapılmış bir burger.",
-    it: "Davvero buonissimo. Proprio come dovrebbe essere. Ora non devo più andare lontano per mangiare un buon burger. Il signore è anche molto gentile. Semplicemente un burger fatto con amore.",
-    es: "Realmente muy rico. Tal como debe ser. Ya no tengo que ir lejos para comer una buena hamburguesa. El dueño es además muy amable. Simplemente una hamburguesa hecha con cariño.",
-    pt: "Mesmo muito bom. Tal como deve ser. Agora já não preciso de ir longe para comer um bom hambúrguer. O senhor também é muito simpático. Simplesmente um hambúrguer feito com amor.",
-    fr: "Vraiment très bon. Exactement comme il faut. Je n'ai plus besoin d'aller loin pour manger un bon burger. Le patron est aussi très gentil. Tout simplement un burger fait avec amour.",
-    nl: "Echt heel lekker. Precies zoals het hoort. Nu hoef ik niet meer ver te rijden voor een lekkere burger. De eigenaar is ook heel vriendelijk. Gewoon een burger met liefde gemaakt."
+    name: 'Heike S.', stars: 5, date: '2026-09-09',
+    de: "Herzlich, zuvorkommend und SOOOOO LECKER",
+    en: "Warm, attentive and SOOOOO DELICIOUS",
+    tr: "Sıcak, ilgili ve ÇOOOOK LEZZETLİ",
+    it: "Cordiali, premurosi e BUONISSIMOOOO",
+    es: "Cercanos, atentos y RIQUÍÍÍSIMO",
+    pt: "Acolhedores, atenciosos e MUUUUITO BOM",
+    fr: "Chaleureux, prévenants et TROOOOP BON",
+    nl: "Hartelijk, attent en ZOOOOO LEKKER"
   },
   {
-    name: 'Nicole S.', stars: 5,
-    de: "Bilder können nicht rüber bringen, wie lecker das ist… Preis-Leistungsverhältnis top! Schmeckt nach Qualität und der Besitzer ist mega nett.",
-    en: "Pictures can't convey how delicious it is… Great value for money! Tastes like quality and the owner is super nice.",
-    tr: "Fotoğraflar ne kadar lezzetli olduğunu anlatamaz… Fiyat-performans harika! Kalite gibi tat veriyor ve sahibi çok kibar.",
-    it: "Le foto non rendono quanto sia buono… Rapporto qualità-prezzo al top! Sa di qualità e il proprietario è gentilissimo.",
-    es: "Las fotos no reflejan lo rico que está… ¡Relación calidad-precio de diez! Sabe a calidad y el dueño es majísimo.",
-    pt: "As fotos não mostram como é bom… Relação qualidade-preço excelente! Sabe a qualidade e o dono é muito simpático.",
-    fr: "Les photos ne rendent pas à quel point c'est bon… Rapport qualité-prix au top ! Ça a le goût de la qualité et le patron est super sympa.",
-    nl: "Foto's kunnen niet overbrengen hoe lekker het is… Prijs-kwaliteitverhouding top! Je proeft de kwaliteit en de eigenaar is supervriendelijk."
+    name: 'Toni M.', stars: 5, date: '2026-09-08',
+    de: "Sehr frische und leckere Burger und Pommes, werde auf jeden Fall wiederkommen",
+    en: "Very fresh and tasty burgers and fries, I'll definitely be back",
+    tr: "Çok taze ve lezzetli burgerler ve patates kızartması, kesinlikle tekrar geleceğim",
+    it: "Burger e patatine freschissimi e buonissimi, tornerò sicuramente",
+    es: "Hamburguesas y patatas muy frescas y ricas, volveré seguro",
+    pt: "Hambúrgueres e batatas fritas muito frescos e saborosos, vou voltar de certeza",
+    fr: "Burgers et frites très frais et délicieux, je reviendrai à coup sûr",
+    nl: "Heel verse en lekkere burgers en friet, ik kom zeker terug"
   },
   {
-    name: 'Berra K.', stars: 5,
-    de: "Das Essen war unglaublich lecker und hat meine Erwartungen komplett übertroffen. Die Mitarbeiter waren super sympathisch, gut drauf und haben direkt für eine angenehme Stimmung gesorgt. Definitiv ein Laden, den man weiterempfehlen kann.",
-    en: "The food was incredibly delicious and completely exceeded my expectations. The staff were super friendly, in good spirits and immediately created a pleasant atmosphere. Definitely a place to recommend.",
-    tr: "Yemek inanılmaz lezzetliydi ve beklentilerimi tamamen aştı. Çalışanlar son derece sempatik, neşeliydi ve hemen hoş bir ortam oluşturdular. Kesinlikle tavsiye edilecek bir yer.",
-    it: "Il cibo era incredibilmente buono e ha superato completamente le mie aspettative. Lo staff era simpaticissimo, di buon umore e ha creato subito un'atmosfera piacevole. Sicuramente un posto da consigliare.",
-    es: "La comida estaba increíblemente rica y superó por completo mis expectativas. El personal fue supersimpático, de buen humor, y creó enseguida un ambiente agradable. Sin duda un sitio para recomendar.",
-    pt: "A comida estava incrivelmente boa e superou por completo as minhas expectativas. A equipa foi super simpática, bem-disposta e criou logo um ambiente agradável. Sem dúvida um sítio a recomendar.",
-    fr: "La nourriture était incroyablement bonne et a complètement dépassé mes attentes. L'équipe était super sympa, de bonne humeur, et a tout de suite créé une ambiance agréable. Une adresse à recommander, sans hésiter.",
-    nl: "Het eten was ongelooflijk lekker en overtrof al mijn verwachtingen. Het personeel was supersympathiek, goedgehumeurd en zorgde meteen voor een fijne sfeer. Zeker een zaak om aan te raden."
+    name: 'Burak T.', stars: 5, date: '2026-08-31',
+    de: "Einfach der beste Burger. Geschmacklich überragend, alles frisch zubereitet und das Fleisch schön saftig.",
+    en: "Simply the best burger. Outstanding flavour, everything freshly prepared and the meat nice and juicy.",
+    tr: "Kısaca en iyi burger. Lezzet olarak muhteşem, her şey taze hazırlanmış ve et güzelce sulu.",
+    it: "Semplicemente il burger migliore. Un sapore eccezionale, tutto preparato al momento e la carne bella succosa.",
+    es: "Simplemente la mejor hamburguesa. Un sabor excepcional, todo recién hecho y la carne bien jugosa.",
+    pt: "Simplesmente o melhor hambúrguer. Sabor excecional, tudo preparado na hora e a carne bem suculenta.",
+    fr: "Tout simplement le meilleur burger. Un goût exceptionnel, tout est préparé minute et la viande bien juteuse.",
+    nl: "Gewoon de beste burger. Qua smaak geweldig, alles vers bereid en het vlees lekker sappig."
   },
   {
-    name: 'Erdem B.', stars: 5,
-    de: "Sehr sympathischer Chef. Sehr nett, Service echt Top. Und der Geschmack ist einfach unbeschreiblich. Die Besten Burger in Umgebung.",
-    en: "Very likeable boss. Very nice, service really top. And the taste is simply indescribable. The best burgers in the area.",
-    tr: "Çok sempatik bir patron. Çok nazik, servis gerçekten harika. Ve tadı tarif edilemez. Çevredeki en iyi burgerler.",
-    it: "Titolare molto simpatico. Gentilissimo, servizio davvero al top. E il sapore è semplicemente indescrivibile. I migliori burger della zona.",
-    es: "Un jefe muy simpático. Muy amable, servicio realmente top. Y el sabor es simplemente indescriptible. Las mejores hamburguesas de la zona.",
-    pt: "Dono muito simpático. Muito atencioso, serviço mesmo de topo. E o sabor é simplesmente indescritível. Os melhores hambúrgueres da zona.",
-    fr: "Patron très sympathique. Très gentil, service vraiment top. Et le goût est tout simplement indescriptible. Les meilleurs burgers du coin.",
-    nl: "Heel sympathieke baas. Heel vriendelijk, service echt top. En de smaak is gewoon onbeschrijfelijk. De beste burgers in de omgeving."
+    name: 'Max M.', stars: 5, date: '2026-08-31',
+    de: "Das ist aktuell wirklich der beste Burger in Bielefeld. Preis/Leistung ist super und der Besitzer ist mega sympathisch!",
+    en: "This really is the best burger in Bielefeld right now. Great value for money and the owner is super likeable!",
+    tr: "Şu anda gerçekten Bielefeld'in en iyi burgeri. Fiyat-performans süper ve sahibi çok sempatik!",
+    it: "Al momento è davvero il miglior burger di Bielefeld. Rapporto qualità-prezzo super e il proprietario è simpaticissimo!",
+    es: "Ahora mismo es de verdad la mejor hamburguesa de Bielefeld. La relación calidad-precio es genial y el dueño es majísimo.",
+    pt: "Neste momento é mesmo o melhor hambúrguer de Bielefeld. Relação qualidade-preço excelente e o dono é super simpático!",
+    fr: "C'est vraiment le meilleur burger de Bielefeld en ce moment. Rapport qualité-prix au top et le patron est hyper sympa !",
+    nl: "Dit is op dit moment echt de beste burger van Bielefeld. Prijs-kwaliteit is super en de eigenaar is enorm sympathiek!"
   },
   {
-    name: 'Friederike T.', stars: 5,
-    de: "Einer mit der Besten Burger wenn es auch mal schnell gehen muss. Trotz Foodtruck, mega lecker und ordentlich zusammengestellt. Personal richtig lieb und immer für ein Gespräch zu haben mit Humor. Preis-Leistung ist mehr als gerechtfertigt. Komme immer wieder gerne.",
-    en: "One of the best burgers when things need to be quick. Despite being a food truck, mega tasty and properly put together. Staff really lovely and always up for a chat with humour. Value for money more than justified. I always love coming back.",
-    tr: "Hızlı olması gerektiğinde en iyi burgerlerden biri. Foodtruck olmasına rağmen çok lezzetli ve düzgün hazırlanmış. Personel gerçekten çok sevecen ve her zaman esprili bir sohbete açık. Fiyat-performans fazlasıyla hak edilmiş. Her zaman memnuniyetle tekrar geliyorum.",
-    it: "Uno dei burger migliori quando deve andare veloce. Nonostante sia un foodtruck, buonissimo e preparato con cura. Personale davvero gentile, sempre pronto a scambiare due parole con umorismo. Il rapporto qualità-prezzo è più che giustificato. Torno sempre volentieri.",
-    es: "Una de las mejores hamburguesas cuando tiene que ser rápido. Aunque sea un foodtruck, riquísima y bien montada. El personal es un encanto y siempre está para charlar con humor. La relación calidad-precio está más que justificada. Siempre vuelvo encantada.",
-    pt: "Um dos melhores hambúrgueres quando tem de ser rápido. Apesar de ser um foodtruck, muito saboroso e bem montado. O pessoal é muito querido e está sempre pronto para uma conversa com humor. A relação qualidade-preço é mais do que justificada. Volto sempre com gosto.",
-    fr: "Un des meilleurs burgers quand ça doit aller vite. Même si c'est un foodtruck, méga bon et bien assemblé. Le personnel est adorable et toujours partant pour discuter avec humour. Le rapport qualité-prix est plus que justifié. J'y retourne toujours avec plaisir.",
-    nl: "Een van de beste burgers als het snel moet gaan. Ondanks dat het een foodtruck is, mega lekker en netjes opgebouwd. Personeel echt lief en altijd in voor een praatje met humor. Prijs-kwaliteit is meer dan terecht. Ik kom altijd graag terug."
+    name: 'Katja F.', stars: 5, date: '2026-08-24',
+    de: "Der Smash Burger und die Süßkartoffelpommes waren super lecker. Ein Erfrischungstuch wäre noch toll gewesen. Schöne Grüße aus Schlangen",
+    en: "The smash burger and the sweet potato fries were super tasty. A refreshing wipe would have been a nice touch. Greetings from Schlangen",
+    tr: "Smash burger ve tatlı patates kızartması süper lezzetliydi. Bir ıslak mendil de olsaydı harika olurdu. Schlangen'den selamlar",
+    it: "Lo smash burger e le patatine di patata dolce erano buonissimi. Una salviettina rinfrescante sarebbe stata il tocco in più. Saluti da Schlangen",
+    es: "La smash burger y las patatas de boniato estaban riquísimas. Una toallita refrescante habría sido el detalle perfecto. Saludos desde Schlangen",
+    pt: "O smash burger e as batatas-doces fritas estavam deliciosos. Um toalhete refrescante teria sido um bom toque. Cumprimentos de Schlangen",
+    fr: "Le smash burger et les frites de patate douce étaient super bons. Une lingette rafraîchissante aurait été la touche en plus. Salutations de Schlangen",
+    nl: "De smash burger en de zoete-aardappelfriet waren superlekker. Een verfrissingsdoekje was nog een mooie toevoeging geweest. Groeten uit Schlangen"
   },
   {
-    name: 'Ubeyd C.', stars: 5,
-    de: "Sehr leckere mit Liebe gemachte Burger und der Service und das Personal sehr freundlich. Wird nicht das erste und letzte Mal das ich da essen werde.",
-    en: "Very tasty burgers made with love, and the service and staff are very friendly. This won't be the first or last time I eat here.",
-    tr: "Sevgiyle yapılmış çok lezzetli burgerler, servis ve personel çok güler yüzlü. Burada ilk ve son yiyişim olmayacak.",
-    it: "Burger buonissimi fatti con amore, e il servizio e il personale sono molto cordiali. Non sarà né la prima né l'ultima volta che mangio qui.",
-    es: "Hamburguesas muy ricas hechas con cariño, y el servicio y el personal son muy amables. No será ni la primera ni la última vez que como aquí.",
-    pt: "Hambúrgueres muito bons feitos com amor, e o serviço e o pessoal são muito simpáticos. Não será nem a primeira nem a última vez que como aqui.",
-    fr: "Des burgers délicieux faits avec amour, et le service et le personnel sont très sympas. Ce ne sera ni la première ni la dernière fois que je mange ici.",
-    nl: "Heel lekkere burgers met liefde gemaakt, en de service en het personeel zijn heel vriendelijk. Het zal niet de eerste en laatste keer zijn dat ik hier eet."
+    name: 'Helmut N.', stars: 5, date: '2026-08-24',
+    de: "An dem Stand gab es den besten Burger. Ich hatte den Cheeseburger, der war so frisch und geschmacklich abgestimmt, das hatte ich noch nie, vor allem das Brot, Traum!",
+    en: "This stand had the best burger. I had the cheeseburger, it was so fresh and perfectly balanced, I'd never had anything like it, especially the bun, a dream!",
+    tr: "Bu tezgâhta en iyi burger vardı. Cheeseburger yedim, o kadar taze ve lezzet dengesi o kadar iyiydi ki daha önce hiç böylesini yememiştim, özellikle ekmeği, rüya gibi!",
+    it: "In questo chiosco c'era il burger migliore. Ho preso il cheeseburger, era così fresco e ben bilanciato nei sapori, mai provato niente del genere, soprattutto il pane, un sogno!",
+    es: "En este puesto estaba la mejor hamburguesa. Pedí la cheeseburger, estaba tan fresca y tan equilibrada de sabor como nunca había probado, sobre todo el pan, ¡un sueño!",
+    pt: "Nesta banca havia o melhor hambúrguer. Comi o cheeseburger, estava tão fresco e tão equilibrado no sabor como nunca tinha provado, sobretudo o pão, um sonho!",
+    fr: "Ce stand avait le meilleur burger. J'ai pris le cheeseburger, il était si frais et si équilibré en goût, je n'avais jamais mangé ça, surtout le pain, un rêve !",
+    nl: "Bij deze kraam was de beste burger. Ik had de cheeseburger, die was zo vers en qua smaak zo goed op elkaar afgestemd, dat had ik nog nooit gehad, vooral het brood, een droom!"
   },
   {
-    name: 'Christian K.', stars: 5,
-    de: "Burger waren super lecker, saftig und nicht trocken. Frische Zutaten und ein sauberer Arbeitsplatz. Die Jungs auch super nett und sympathisch. Alles zu einem super fairen Preis! Hat mehr als überzeugt!",
-    en: "Burgers were super tasty, juicy and not dry. Fresh ingredients and a clean workspace. The guys are super nice and likeable too. All at a super fair price! More than convincing!",
-    tr: "Burgerler çok lezzetli, sulu ve kuru değildi. Taze malzemeler ve temiz bir çalışma alanı. Çocuklar da çok nazik ve sempatik. Hepsi çok uygun bir fiyata! Beni fazlasıyla ikna etti!",
-    it: "I burger erano buonissimi, succosi e per niente secchi. Ingredienti freschi e postazione di lavoro pulita. I ragazzi sono anche super gentili e simpatici. Tutto a un prezzo davvero onesto! Più che convincente!",
-    es: "Las hamburguesas estaban riquísimas, jugosas y nada secas. Ingredientes frescos y un puesto de trabajo limpio. Los chicos, además, supermajos y simpáticos. ¡Todo a un precio muy justo! ¡Más que convincente!",
-    pt: "Os hambúrgueres estavam muito saborosos, suculentos e nada secos. Ingredientes frescos e um espaço de trabalho limpo. Os rapazes também são super simpáticos. Tudo a um preço muito justo! Mais do que convincente!",
-    fr: "Les burgers étaient super bons, juteux et pas secs du tout. Des ingrédients frais et un plan de travail propre. Les gars sont en plus super gentils et sympas. Le tout à un prix très correct ! Plus que convaincant !",
-    nl: "De burgers waren superlekker, sappig en niet droog. Verse ingrediënten en een schone werkplek. De jongens zijn ook supervriendelijk en sympathiek. Alles voor een heel eerlijke prijs! Meer dan overtuigend!"
+    name: 'Emircan D.', stars: 5, date: '2026-08-14',
+    de: "Super Laden. Sehr gastfreundlich und die Burger waren super. Für den Preis esse ich da gerne öfter",
+    en: "Great place. Very welcoming and the burgers were superb. For that price I'm happy to eat there more often",
+    tr: "Süper bir yer. Çok misafirperver ve burgerler süperdi. Bu fiyata orada seve seve daha sık yerim",
+    it: "Locale fantastico. Molto ospitali e i burger erano super. Per questo prezzo ci mangio volentieri più spesso",
+    es: "Un sitio genial. Muy hospitalarios y las hamburguesas estaban buenísimas. Por ese precio, con gusto vuelvo más a menudo",
+    pt: "Sítio fantástico. Muito hospitaleiros e os hambúrgueres estavam ótimos. Por este preço, como lá com gosto mais vezes",
+    fr: "Super adresse. Très accueillants et les burgers étaient excellents. Pour ce prix, j'y mange volontiers plus souvent",
+    nl: "Super zaak. Heel gastvrij en de burgers waren super. Voor die prijs eet ik daar graag vaker"
   },
   {
-    name: 'DAFR', stars: 5,
-    de: "Sehr leckerer Burger vorallem wenn man bedenkt das man den Burger hier auf die Hand kriegt und auch einfach mal mit einem Einkauf verbinden kann. Inhaber ist auch sehr freundlich und zuvorkommend.",
-    en: "Very tasty burger, especially considering you get it to go and can easily combine it with some shopping. The owner is also very friendly and welcoming.",
-    tr: "Çok lezzetli bir burger, özellikle de elinize alıp gidebileceğinizi ve kolayca bir alışverişle birleştirebileceğinizi düşününce. Sahibi de çok güler yüzlü ve nazik.",
-    it: "Burger molto buono, soprattutto se si considera che qui lo prendi al volo e puoi facilmente combinarlo con la spesa. Il proprietario è anche molto cordiale e disponibile.",
-    es: "Hamburguesa muy rica, sobre todo teniendo en cuenta que aquí te la llevas en la mano y la puedes combinar fácilmente con la compra. El dueño es además muy amable y atento.",
-    pt: "Hambúrguer muito bom, sobretudo tendo em conta que aqui o levas na mão e podes facilmente combinar com as compras. O dono também é muito simpático e prestável.",
-    fr: "Un très bon burger, surtout quand on pense qu'on le prend sur le pouce et qu'on peut facilement combiner ça avec ses courses. Le propriétaire est aussi très aimable et prévenant.",
-    nl: "Heel lekkere burger, zeker als je bedenkt dat je hem hier meteen mee kunt nemen en makkelijk met boodschappen kunt combineren. De eigenaar is ook heel vriendelijk en attent."
+    name: 'Lennard W.', stars: 5, date: '2026-08-14',
+    de: "War heute vor Ort. Hab mich mit den Besitzern kurz unterhalten. Sie waren super freundlich und es war ein lustiges Gespräch. War nur für 'ne Portion Pommes da, aber die Burger auf dem Grill sahen überragend aus. Nächstes Mal werden die auf jeden Fall getestet 👌🏻",
+    en: "Stopped by today. Had a quick chat with the owners, they were super friendly and it was a fun conversation. I only came for a portion of fries, but the burgers on the grill looked outstanding. Next time they'll definitely get tested 👌🏻",
+    tr: "Bugün oradaydım. Sahipleriyle kısa bir sohbet ettim. Çok samimiydiler ve keyifli bir sohbetti. Sadece bir porsiyon patates için gelmiştim ama ızgaradaki burgerler muhteşem görünüyordu. Bir dahaki sefere kesinlikle denenecek 👌🏻",
+    it: "Sono passato oggi. Ho scambiato due parole con i proprietari, super gentili e una chiacchierata divertente. Ero lì solo per una porzione di patatine, ma i burger sulla griglia sembravano eccezionali. La prossima volta li provo di sicuro 👌🏻",
+    es: "Pasé hoy por allí. Charlé un rato con los dueños, fueron muy simpáticos y fue una conversación divertida. Solo fui a por una ración de patatas, pero las hamburguesas en la parrilla tenían una pinta espectacular. La próxima vez las pruebo seguro 👌🏻",
+    pt: "Passei lá hoje. Troquei umas palavras com os donos, foram super simpáticos e foi uma conversa divertida. Só fui buscar uma dose de batatas, mas os hambúrgueres no grelhador tinham um aspeto fantástico. Da próxima vez vão ser testados de certeza 👌🏻",
+    fr: "Passé aujourd'hui. J'ai discuté un moment avec les patrons, super sympas et une conversation drôle. J'étais juste venu pour une portion de frites, mais les burgers sur le grill avaient l'air exceptionnels. La prochaine fois, je les teste à coup sûr 👌🏻",
+    nl: "Vandaag langs geweest. Even met de eigenaren gepraat, ze waren superaardig en het was een leuk gesprek. Kwam alleen voor een portie friet, maar de burgers op de grill zagen er geweldig uit. Volgende keer worden die zeker getest 👌🏻"
+  },
+  {
+    name: 'Michael N.', stars: 5, date: '2026-05-14',
+    de: "Habe ich mir heute mal vor dem Kaufland Bielefeld gegönnt. Bester Burger ever … geschmacklich eine 11 von 10 😃. Super freundliches Personal … gern wieder. Sehr zu empfehlen",
+    en: "Treated myself today outside Kaufland Bielefeld. Best burger ever … flavour-wise an 11 out of 10 😃. Super friendly staff … happy to come back. Highly recommended",
+    tr: "Bugün Kaufland Bielefeld'in önünde kendime bir tane ısmarladım. Gelmiş geçmiş en iyi burger … lezzet olarak 10 üzerinden 11 😃. Çok güler yüzlü personel … yine gelirim. Kesinlikle tavsiye ederim",
+    it: "Oggi me lo sono concesso davanti al Kaufland di Bielefeld. Il miglior burger di sempre … come sapore un 11 su 10 😃. Personale super gentile … ci torno volentieri. Consigliatissimo",
+    es: "Hoy me he dado un capricho delante del Kaufland de Bielefeld. La mejor hamburguesa de mi vida … de sabor un 11 sobre 10 😃. Personal muy amable … repetiré con gusto. Muy recomendable",
+    pt: "Hoje dei-me ao luxo em frente ao Kaufland de Bielefeld. O melhor hambúrguer de sempre … em sabor, um 11 em 10 😃. Pessoal super simpático … volto com todo o gosto. Muito recomendável",
+    fr: "Je me suis fait plaisir aujourd'hui devant le Kaufland de Bielefeld. Meilleur burger de ma vie … côté goût, un 11 sur 10 😃. Personnel super sympa … avec plaisir la prochaine fois. À recommander vivement",
+    nl: "Vandaag getrakteerd voor de Kaufland in Bielefeld. Beste burger ooit … qua smaak een 11 van 10 😃. Superaardig personeel … graag weer. Echt een aanrader"
   },
 ];
 
 let currentReview = 0;
 let reviewTimer = null;
+let reviewAutoStopped = false;   // sobald jemand selbst gewischt hat, laeuft nichts mehr von allein
+let LIVE_REVIEWS = {};           // je Sprache: Rezensionen direkt von Google (serverseitig 24h gecached)
+const LIVE_REVIEWS_LOADING = {};
+const REVIEW_NEW_DAYS = 30;      // so lange traegt eine Rezension die „Neu"-Marke
+const REVIEWS_MAX_CARDS = 10;
 
 function reviewText(r) {
   return r[currentLang] || (currentLang !== 'tr' && r.en) || r.de; // Neue Sprachen (it/es/pt/fr) fallen auf EN zurück
+}
+function reviewReducedMotion() {
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+function reviewDateLabel(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const loc = (typeof LANG_LOCALES !== 'undefined' && LANG_LOCALES[currentLang]) || 'de-DE';
+  try { return new Intl.DateTimeFormat(loc, { month: 'long', year: 'numeric' }).format(d); } catch (e) { return ''; }
+}
+function reviewIsNew(iso) {
+  const d = new Date(iso || '');
+  return !isNaN(d) && (Date.now() - d.getTime()) < REVIEW_NEW_DAYS * 864e5;
+}
+
+// Live-Rezensionen von Google zuerst, dann die kuratierten – ohne Dubletten, neueste oben.
+function mergedReviews() {
+  const live = (LIVE_REVIEWS[currentLang] || []).map(r => ({ name: r.name, stars: r.stars, text: r.text, date: r.date }));
+  const seen = new Set(live.map(r => String(r.name).toLowerCase()));
+  const curated = REVIEWS
+    .filter(r => !seen.has(String(r.name).toLowerCase()))
+    .map(r => ({ name: r.name, stars: r.stars, text: reviewText(r), date: r.date }));
+  const ts = r => { const d = new Date(r.date || ''); return isNaN(d) ? 0 : d.getTime(); };
+  return live.concat(curated).sort((a, b) => ts(b) - ts(a)).slice(0, REVIEWS_MAX_CARDS);
 }
 
 function renderReviews() {
   const track = document.getElementById('reviewsTrack');
   const dots = document.getElementById('reviewsDots');
   if (!track) return;
+  const list = mergedReviews();
+  if (currentReview >= list.length) currentReview = 0;
   track.innerHTML = '';
   dots.innerHTML = '';
-  REVIEWS.forEach((r, i) => {
-    const initial = r.name.charAt(0).toUpperCase();
-    const card = document.createElement('div');
-    card.className = 'review-card' + (i === currentReview ? ' active' : '');
+  const neuLabel = escHtml(t('reviews.new') || 'Neu');
+  list.forEach((r, i) => {
+    const initial = String(r.name || '?').charAt(0).toUpperCase();
+    const datum = reviewDateLabel(r.date);
+    const card = document.createElement('article');
+    card.className = 'review-card';
+    card.setAttribute('aria-roledescription', 'slide');
+    card.setAttribute('aria-label', (i + 1) + ' / ' + list.length);
     card.innerHTML = `
-      <div class="review-stars">${'★'.repeat(r.stars)}</div>
-      <p class="review-text">"${reviewText(r)}"</p>
+      <div class="review-top">
+        <div class="review-stars" aria-label="${r.stars} / 5">${'★'.repeat(r.stars)}</div>
+        ${datum ? `<span class="review-date">${reviewIsNew(r.date) ? `<span class="review-new">${neuLabel}</span>` : ''}${escHtml(datum)}</span>` : ''}
+      </div>
+      <p class="review-text">"${escHtml(r.text)}"</p>
       <div class="review-author">
-        <div class="review-avatar">${initial}</div>
+        <div class="review-avatar" aria-hidden="true">${escHtml(initial)}</div>
         <div style="text-align: left;">
-          <div class="review-author-name">${r.name}</div>
-          <div class="review-author-meta">${t('reviews.via_google')}</div>
+          <div class="review-author-name">${escHtml(r.name)}</div>
+          <div class="review-author-meta">${escHtml(t('reviews.via_google'))}</div>
         </div>
       </div>`;
     track.appendChild(card);
@@ -12247,19 +12335,44 @@ function renderReviews() {
     dot.onclick = () => { goToReview(i); };
     dots.appendChild(dot);
   });
+  scrollToReview(currentReview, false);   // Sprachwechsel/Neuaufbau: Position halten, nicht animieren
+  fetchLiveReviews(currentLang);
 }
 
-function showReview(idx) {
-  const cards = document.querySelectorAll('#reviewsTrack .review-card');
-  const dots = document.querySelectorAll('#reviewsDots .reviews-dot');
-  cards.forEach((c, i) => c.classList.toggle('active', i === idx));
-  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+// Karte anfahren. smooth=false springt (Aufbau, Sprachwechsel, „Bewegung reduzieren").
+function scrollToReview(idx, smooth) {
+  const track = document.getElementById('reviewsTrack');
+  const card = track && track.children[idx];
+  if (!card) return;
   currentReview = idx;
+  syncReviewDots();
+  const behavior = (smooth && !reviewReducedMotion()) ? 'smooth' : 'auto';
+  try { track.scrollTo({ left: card.offsetLeft, behavior }); } catch (e) { track.scrollLeft = card.offsetLeft; }
 }
+
+function syncReviewDots() {
+  document.querySelectorAll('#reviewsDots .reviews-dot').forEach((d, i) => d.classList.toggle('active', i === currentReview));
+}
+
+// Nach dem Wischen: welche Karte liegt in der Mitte? (Scroll-Snap sorgt fuer die Rast)
+function reviewIndexFromScroll() {
+  const track = document.getElementById('reviewsTrack');
+  if (!track || !track.children.length) return 0;
+  let best = 0, bestDist = Infinity;
+  Array.from(track.children).forEach((c, i) => {
+    const dist = Math.abs(c.offsetLeft - track.scrollLeft);
+    if (dist < bestDist) { bestDist = dist; best = i; }
+  });
+  return best;
+}
+
+function showReview(idx) { scrollToReview(idx, true); }
 
 function moveReview(dir) {
-  let next = (currentReview + dir + REVIEWS.length) % REVIEWS.length;
-  showReview(next);
+  const n = (document.getElementById('reviewsTrack') || {}).children;
+  const len = n ? n.length : 0;
+  if (!len) return;
+  showReview((currentReview + dir + len) % len);
   restartReviewTimer();
 }
 
@@ -12268,18 +12381,60 @@ function goToReview(idx) {
   restartReviewTimer();
 }
 
-function restartReviewTimer() {
+function stopReviewTimer() {
   if (reviewTimer) clearInterval(reviewTimer);
+  reviewTimer = null;
+}
+function restartReviewTimer() {
+  stopReviewTimer();
+  if (reviewAutoStopped || reviewReducedMotion()) return;
   reviewTimer = setInterval(() => moveReviewAuto(), 6000);
 }
 
 function moveReviewAuto() {
-  let next = (currentReview + 1) % REVIEWS.length;
-  showReview(next);
+  if (document.hidden) return;
+  const track = document.getElementById('reviewsTrack');
+  const len = track ? track.children.length : 0;
+  if (!len) return;
+  showReview((currentReview + 1) % len);
+}
+
+// Rezensionen in der aktuellen Sprache von Google nachladen (einmal je Sprache und Sitzung)
+function fetchLiveReviews(lang) {
+  if (!lang || LIVE_REVIEWS[lang] || LIVE_REVIEWS_LOADING[lang]) return;
+  LIVE_REVIEWS_LOADING[lang] = true;
+  loadGoogleReviews(lang).finally(() => { LIVE_REVIEWS_LOADING[lang] = false; });
 }
 
 function initReviews() {
+  const track = document.getElementById('reviewsTrack');
+  if (!track) return;
   renderReviews();
+
+  // Punkte laufen dem Finger hinterher – ohne Timer, im naechsten Frame
+  let raf = null;
+  track.addEventListener('scroll', () => {
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = null;
+      const idx = reviewIndexFromScroll();
+      if (idx !== currentReview) { currentReview = idx; syncReviewDots(); }
+    });
+  }, { passive: true });
+
+  // Eigene Geste = Kontrolle uebernommen: Auto-Weiterlauf endet fuer diese Sitzung
+  const uebernehmen = () => { reviewAutoStopped = true; stopReviewTimer(); };
+  track.addEventListener('pointerdown', uebernehmen, { passive: true });
+  track.addEventListener('touchstart', uebernehmen, { passive: true });
+  track.addEventListener('wheel', uebernehmen, { passive: true });
+
+  // Maus drueber oder Fokus drin: kurz anhalten, danach weiter
+  const carousel = track.closest('.reviews-carousel') || track;
+  carousel.addEventListener('mouseenter', stopReviewTimer);
+  carousel.addEventListener('mouseleave', restartReviewTimer);
+  carousel.addEventListener('focusin', stopReviewTimer);
+  carousel.addEventListener('focusout', restartReviewTimer);
+
   restartReviewTimer();
 }
 
