@@ -90,7 +90,7 @@ const I18N = {
     "franchise.lead": "Wir wachsen Schritt für Schritt – und sind offen für Kooperationen: Event-Partnerschaften, Standort-Ideen, Zusammenarbeit mit Unternehmen und Vereinen aus der Region. Erzähl uns, was dir vorschwebt.",
     "franchise.p1_t": "Bewährtes Ertragsmodell", "franchise.p1_d": "Kalkulierbare Wareneinsätze, attraktive Margen pro Burger und ein klarer Weg zur Profitabilität – ohne Lieferdienst-Provisionen.",
     "franchise.p2_t": "Schlüsselfertiges Konzept", "franchise.p2_d": "Von der Truck-Konzeption über die Speisekarte und Lieferanten bis zum Marketing und dieser Bestell-Plattform – du startest mit einem kompletten System.",
-    "franchise.p3_t": "Starke, halal-zertifizierte Marke", "franchise.p3_d": "5,0★ bei über 180 Bewertungen, klare Positionierung und ein wachsender Stammkundenkreis – du übernimmst eine Marke mit Substanz.",
+    "franchise.p3_t": "Starke, halal-zertifizierte Marke", "franchise.p3_d": "5,0★ bei 246 Bewertungen, klare Positionierung und ein wachsender Stammkundenkreis – du übernimmst eine Marke mit Substanz.",
     "franchise.p4_t": "Persönliche Begleitung", "franchise.p4_d": "Wir teilen unser Know-how aus Konzeption und Realisation und begleiten dich beim Aufbau deines eigenen Standorts.",
     "franchise.cta_p": "Klingt nach deiner unternehmerischen Zukunft? Dann lass uns sprechen – ganz unverbindlich und vertraulich.",
     "franchise.cta_btn": "Kontakt aufnehmen",

@@ -83,7 +83,7 @@ I18N.fr = {
     "franchise.lead": "On grandit étape par étape – et on est ouverts aux collaborations : partenariats événementiels, idées d'emplacements, coopérations avec des entreprises et associations locales. Dis-nous ce que tu as en tête.",
     "franchise.p1_t": "Modèle économique éprouvé", "franchise.p1_d": "Coût matière maîtrisé, marges attractives par burger et un chemin clair vers la rentabilité – sans commissions de plateformes de livraison.",
     "franchise.p2_t": "Concept clé en main", "franchise.p2_d": "Du design du truck à la carte, en passant par les fournisseurs, le marketing et cette plateforme de commande – tu démarres avec un système complet.",
-    "franchise.p3_t": "Marque forte et certifiée halal", "franchise.p3_d": "5.0★ sur plus de 180 avis, un positionnement clair et une clientèle d'habitués qui grandit – tu reprends une marque qui a de la substance.",
+    "franchise.p3_t": "Marque forte et certifiée halal", "franchise.p3_d": "5.0★ sur 246 avis, un positionnement clair et une clientèle d'habitués qui grandit – tu reprends une marque qui a de la substance.",
     "franchise.p4_t": "Accompagnement personnel", "franchise.p4_d": "On partage notre savoir-faire, du concept à la réalisation, et on t'accompagne dans le lancement de ton propre emplacement.",
     "franchise.cta_p": "Ça ressemble à ton avenir d'entrepreneur ? Alors parlons-en – sans engagement et en toute confidentialité.",
     "franchise.cta_btn": "Prendre contact",

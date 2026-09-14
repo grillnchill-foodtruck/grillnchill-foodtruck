@@ -83,7 +83,7 @@ I18N.tr = {
     "franchise.lead": "Adım adım büyüyoruz – iş birliklerine açığız: etkinlik ortaklıkları, lokasyon fikirleri, bölgedeki şirket ve derneklerle iş birliği. Aklındakini bize anlat.",
     "franchise.p1_t": "Kanıtlanmış kazanç modeli", "franchise.p1_d": "Hesaplanabilir mal maliyetleri, burger başına cazip marjlar ve kârlılığa giden net bir yol – teslimat hizmeti komisyonları olmadan.",
     "franchise.p2_t": "Anahtar teslim konsept", "franchise.p2_d": "Truck tasarımından menüye ve tedarikçilere, pazarlamaya ve bu sipariş platformuna kadar – eksiksiz bir sistemle başlarsın.",
-    "franchise.p3_t": "Güçlü, helal sertifikalı marka", "franchise.p3_d": "180'den fazla değerlendirmede 5,0★, net konumlandırma ve büyüyen bir sadık müşteri kitlesi – özü olan bir markayı devralırsın.",
+    "franchise.p3_t": "Güçlü, helal sertifikalı marka", "franchise.p3_d": "246 değerlendirmede 5,0★, net konumlandırma ve büyüyen bir sadık müşteri kitlesi – özü olan bir markayı devralırsın.",
     "franchise.p4_t": "Kişisel destek", "franchise.p4_d": "Konsept ve hayata geçirme konusundaki bilgi birikimimizi paylaşır ve kendi lokasyonunu kurarken sana eşlik ederiz.",
     "franchise.cta_p": "Girişimci geleceğin gibi mi geliyor? O halde konuşalım – bağlayıcı olmadan ve gizlilik içinde.",
     "franchise.cta_btn": "İletişime geç",
