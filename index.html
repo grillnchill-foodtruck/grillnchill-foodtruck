@@ -5242,6 +5242,69 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   .reveal{ transform: none; }
   .btn:active, .btn-primary:active{ transform: none; }
 }
+
+/* ============================================
+   BREITE, KURZE BILDSCHIRME (iPhone Duo, kleine Laptops)
+   Entscheidung nach Breite, Höhe und Safe-Area – nie nach Gerät.
+   ============================================ */
+/* Senkrechte Systemleiste (Duo außen / innen quer): feste Leisten und Blätter
+   halten ihren Inhalt im sicheren Bereich, Hintergründe laufen weiter darunter. */
+.nav-inner {
+  padding-left: max(1.2rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.2rem, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 880px) {
+  .nav-inner {
+    padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+    padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+  }
+}
+.promo-bar {
+  padding-left: max(0.8rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.8rem, env(safe-area-inset-right, 0px));
+}
+.nav-mobile {
+  padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+}
+.cart-drawer { padding-right: env(safe-area-inset-right, 0px); }
+.cookie-banner {
+  left: max(0.8rem, env(safe-area-inset-left, 0px));
+  right: max(0.8rem, env(safe-area-inset-right, 0px));
+}
+.toast-stack, .sticky-cart, .cart-fab {
+  max-width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 1.6rem);
+}
+
+/* Desktop-Navigation zwischen 880 und 1023 px (Duo innen quer: 951 px):
+   sechs Links + Status + Warenkorb passen sonst nicht in eine Zeile. */
+@media (min-width: 880px) and (max-width: 1023px) {
+  .nav-inner { gap: 0.6rem; }
+  .nav-links { gap: 1rem; }
+  .nav-links a { font-size: 0.85rem; }
+  .nav-cart-text { display: none; }
+  .nav-cart-icon { display: inline-flex; }
+}
+
+/* Breit, aber niedrig (Duo innen quer 951×669): Titel und Hero so weit
+   kürzen, dass der Bestell-Knopf ohne Scrollen sichtbar bleibt. */
+@media (max-height: 720px) and (min-width: 880px) {
+  h1 { font-size: clamp(2.2rem, 5.6vw, 3.6rem); }
+  .hero { min-height: 0; padding: 1.6rem 0 2rem; }
+  .hero-grid { gap: 2.5rem; }
+}
+@media (max-height: 720px) and (max-width: 879px) {
+  .hero { min-height: 0; padding: 1.4rem 0 2rem; }
+}
+@media (max-height: 720px) and (min-width: 640px) and (max-width: 879px) {
+  h1 { font-size: clamp(2.2rem, 6.4vw, 4rem); }   /* App quer auf dem Duo (867×611) */
+}
+
+/* Einspaltig, aber breit (Duo innen hochkant 669 px, App quer 867 px):
+   Formularfelder und Knöpfe nicht über die ganze Breite ziehen. */
+@media (max-width: 879px) {
+  .catering-form { width: min(100%, 620px); justify-self: center; margin-inline: auto; } /* Grid-Kind: ohne width wuerde margin:auto es auf Inhaltsbreite schrumpfen */
+}
 </style>
 </head>
 <body>
