@@ -792,7 +792,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   padding-top: calc(0.55rem + var(--safe-top));
 }
 .promo-bar strong { color: #fff; }
-.promo-bar small { white-space: nowrap; }
+.promo-bar small { display: inline-block; max-width: 100%; text-wrap: balance; } /* rutscht als Ganzes in die naechste Zeile; bricht nur, wenn er allein nicht passt (TR/FR/PT auf schmalen Handys) */
 .promo-bar .code-pill {
   display: inline-block;
   background: var(--color-bg);
@@ -3597,7 +3597,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 }
 .story-stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* lange Woerter (z. B. tuerkisch) duerfen die Spalte nicht verbreitern */
   gap: 0.8rem;
   margin-top: 1.8rem;
 }
@@ -3623,6 +3623,13 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 600;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+@media (max-width: 380px) {
+  .story-stat { padding: 1.1rem 0.5rem; }
+  .story-stat-num { font-size: 1.8rem; }
+  .story-stat-label { letter-spacing: 0.03em; }
 }
 .story-visual {
   aspect-ratio: 1;
@@ -3842,8 +3849,13 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 
 @media (min-width: 880px) {
   .story-grid { grid-template-columns: 1.1fr 1fr; gap: 4rem; }
-  .story-stats { grid-template-columns: repeat(4, 1fr); }
   .story-stat-num { font-size: 2rem; }
+}
+/* Vier Kacheln nebeneinander erst, wenn die Story-Spalte breit genug ist ("Jahre", "değerlendirmede"
+   brauchen rund 135 px je Kachel); darunter 2 x 2. Frueher drueckten sie die Spalte auf 880-1160 px breiter. */
+.story-content { container-type: inline-size; }
+@media (min-width: 880px) {
+  @container (min-width: 560px) { .story-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 }
 
 /* ============================================
@@ -5050,11 +5062,13 @@ input[type="checkbox"].cfun-invalid {
 .catering-karte-note { font-size: 0.8rem; color: var(--color-text-muted); }
 .catering-packages {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.1rem;
   margin-bottom: 1.6rem;
   align-items: stretch;
 }
-@media (min-width: 820px) { .catering-packages { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 820px) { .catering-packages { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cat-card .btn { white-space: normal; text-wrap: balance; } /* "Richiedi questo pacchetto" usw. passt auf 320 px nicht in eine Zeile */
 .cat-card {
   position: relative;
   background: var(--color-bg-card);
@@ -5340,6 +5354,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   .nav-links a { font-size: 0.85rem; }
   .nav-cart-text { display: none; }
   .nav-cart-icon { display: inline-flex; }
+}
+/* Bis 959 px ohne Schriftzug neben dem Logo: mit ihm braucht die Leiste auf Deutsch,
+   Italienisch, Spanisch und Portugiesisch bis 934 px, der Warenkorb ragte ueber den Rand */
+@media (min-width: 880px) and (max-width: 959px) {
+  .nav-logo span { display: none; }
 }
 
 /* Breit, aber niedrig (Duo innen quer 951×669): Titel und Hero so weit
