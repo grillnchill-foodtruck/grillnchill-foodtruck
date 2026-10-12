@@ -6566,7 +6566,7 @@ body.onb-lock { overflow: hidden; }
      STICKY CART (Mobile)
      ============================================ -->
 <button class="sticky-cart" id="stickyCart" onclick="openCart()" aria-label="Warenkorb öffnen" data-i18n-aria="a11y.cart_open">
-  <span><span id="stickyCount">0</span> Artikel</span>
+  <span><span id="stickyCount">0</span> <span id="stickyLabel">Artikel</span></span>
   <span id="stickyTotal">0,00 €</span>
 </button>
 
@@ -10268,6 +10268,8 @@ function updateCartUI() {
   const count = cartItemCount();
   document.getElementById('navCartBadge').textContent = count;
   document.getElementById('stickyCount').textContent = count;
+  const sl = document.getElementById('stickyLabel');
+  if (sl) sl.textContent = t(count === 1 ? 'cart.n_item' : 'cart.n_items');
   document.getElementById('stickyTotal').textContent = formatPrice(cartTotal());
   const sticky = document.getElementById('stickyCart');
   if (count > 0) sticky.classList.add('show');
