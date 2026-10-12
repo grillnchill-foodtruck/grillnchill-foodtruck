@@ -12669,7 +12669,7 @@ async function renderGroupHost(preloaded, refresh) {
   }
   const link = groupLink(g.id);
   const wa = 'https://wa.me/?text=' + encodeURIComponent(t('grp.share_text').replace('{host}', g.host) + ' ' + link);
-  grpShare = { url: link, text: t('grp.share_text').replace('{host}', g.host) };
+  grpShare = { url: link, host: g.host, text: t('grp.share_text').replace('{host}', g.host) };
   // Teilen-Knopf, wo es ein Teilen-Blatt gibt (App, iMessage, Handy-Browser); WhatsApp bleibt als Direktweg
   const canShare = GNC_IMESSAGE || gncHas('gncShare') || !!navigator.share;
   const shareBtn = canShare ? `<button type="button" class="btn btn-primary btn-block grp-share-btn" style="margin-bottom:${GNC_IMESSAGE ? '1.2rem' : '0.6rem'};" onclick="shareGroupLink(this)">${t(GNC_IMESSAGE ? 'grp.send_chat' : 'grp.share')}</button>` : '';
@@ -14223,7 +14223,7 @@ var GNC_IMESSAGE = !!window.gncIMessage || /[?&]imessage=1/.test(location.search
 /* ---- Teilen: iMessage-App > natives Teilen-Blatt > Web Share > Zwischenablage ---- */
 async function gncShareLink(o) {
   o = o || {};
-  if (GNC_IMESSAGE && gncHas('gncIMessage')) { gncPost('gncIMessage', { url: o.url, title: o.title || '', text: o.text || '' }); return 'imessage'; }
+  if (GNC_IMESSAGE && gncHas('gncIMessage')) { gncPost('gncIMessage', { url: o.url, title: o.title || '', text: o.text || '', imageTitle: o.imageTitle || '' }); return 'imessage'; }
   if (gncHas('gncShare')) { gncPost('gncShare', { url: o.url, title: o.title || "Grill'n Chill", text: o.text || '' }); return 'native'; }
   if (navigator.share) { try { await navigator.share({ title: o.title || "Grill'n Chill", text: o.text || '', url: o.url }); return 'web'; } catch (e) { if (e && e.name === 'AbortError') return 'abort'; } }
   var ok = typeof inZwischenablage === 'function' ? await inZwischenablage((o.text ? o.text + ' ' : '') + o.url) : false;
@@ -14315,7 +14315,11 @@ var grpShare = null;
 function shareGroupLink(btn) {
   if (!grpShare) return;
   return withBusy(btn, function () {
-    return gncShareLink({ url: grpShare.url, title: "Grill'n Chill", text: grpShare.text }).then(function (how) {
+    // In iMessage wird daraus eine Blase: Titel aufs Foto, darunter Gruppe und Aufforderung
+    var o = GNC_IMESSAGE
+      ? { url: grpShare.url, imageTitle: t('grp.title'), title: "Grill'n Chill · " + grpShare.host, text: t('grp.imsg_tap') }
+      : { url: grpShare.url, title: "Grill'n Chill", text: grpShare.text };
+    return gncShareLink(o).then(function (how) {
       if (how === 'copied' && btn) { var v = btn.textContent; btn.textContent = t('grp.copied'); setTimeout(function () { btn.textContent = v; }, 1600); }
     });
   });
