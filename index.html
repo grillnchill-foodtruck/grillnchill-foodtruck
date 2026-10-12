@@ -4832,12 +4832,19 @@ body:has(#dipOverlay.open) .cart-fab { display: none; }
 
 /* ---------- Kategorie-Tabs mobil: Snap + Kanten-Fade ---------- */
 @media (max-width: 767px) {
+  /* Kanten-Fade nur auf der Seite, an der noch Chips liegen. Vorher blendete
+     die Maske auch ganz links aus, obwohl dort nichts mehr kommt, und legte
+     einen dunklen Rand auf den ersten Chip ("Alles"). */
   .menu-filters {
     scroll-snap-type: x proximity;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 26px), transparent 100%);
-    mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 26px), transparent 100%);
+    --fade-l: 0px;
+    --fade-r: 0px;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
     scroll-padding-inline: 18px;
   }
+  .menu-filters.more-l { --fade-l: 18px; }
+  .menu-filters.more-r { --fade-r: 26px; }
   .menu-filters > * { scroll-snap-align: start; }
 }
 
@@ -5304,6 +5311,164 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
    Formularfelder und Knöpfe nicht über die ganze Breite ziehen. */
 @media (max-width: 879px) {
   .catering-form { width: min(100%, 620px); justify-self: center; margin-inline: auto; } /* Grid-Kind: ohne width wuerde margin:auto es auf Inhaltsbreite schrumpfen */
+}
+
+/* ============================================
+   APP: NATIVE GLAS-LEISTE (iOS 26) + EINFUEHRUNG
+   ============================================ */
+/* Die App zeichnet die Leiste selbst aus Liquid Glass; die Web-Leiste bleibt
+   unsichtbar im DOM (Quelle fuer Tabs und Beschriftung). */
+html.native-tabbar body.app-forced .app-tabbar { visibility: hidden; pointer-events: none; }
+/* Weicher Rand unter dem Glas: der Inhalt laeuft unter der Leiste aus, statt
+   hart abzuschneiden. Liegt unter Warenkorb-Leiste und Nach-oben-Knopf. */
+html.native-tabbar body.app-forced::after {
+  content: '';
+  position: fixed; left: 0; right: 0; bottom: 0;
+  height: calc(92px + var(--safe-bottom));
+  background: linear-gradient(to top, rgba(10, 10, 10, 0.86) 0%, rgba(10, 10, 10, 0.55) 45%, rgba(10, 10, 10, 0) 100%);
+  pointer-events: none;
+  z-index: 89;
+}
+@media (prefers-reduced-transparency: reduce) {
+  html.native-tabbar body.app-forced::after { background: linear-gradient(to top, var(--color-bg) 60%, rgba(10, 10, 10, 0)); }
+}
+
+body.onb-lock { overflow: hidden; }
+.gnc-onb {
+  position: fixed; inset: 0; z-index: 11000;
+  display: flex; flex-direction: column;
+  color: var(--color-cream);
+  background:
+    radial-gradient(130% 55% at 50% -12%, rgba(232, 90, 36, 0.30), rgba(232, 90, 36, 0) 62%),
+    radial-gradient(90% 45% at 105% 108%, rgba(139, 46, 15, 0.38), rgba(139, 46, 15, 0) 70%),
+    var(--color-bg);
+  /* Seitenabstand sitzt innen (Kopf, Karten, Knoepfe), damit der Leuchtschein
+     der Bilder nicht an der Kante des Kartenbereichs abgeschnitten wird */
+  --onb-pl: max(1.2rem, env(safe-area-inset-left, 0px));
+  --onb-pr: max(1.2rem, env(safe-area-inset-right, 0px));
+  padding: calc(0.7rem + var(--safe-top)) 0 calc(1rem + var(--safe-bottom));
+  opacity: 0;
+  transform: scale(1.02);
+  transition: opacity .32s ease, transform .32s cubic-bezier(.2, .8, .2, 1);
+}
+.gnc-onb.open { opacity: 1; transform: none; }
+.onb-top {
+  display: flex; align-items: center; gap: 0.9rem;
+  width: 100%; max-width: calc(560px + 2.4rem); margin: 0 auto; min-height: 44px;
+  padding: 0 var(--onb-pr) 0 var(--onb-pl);
+}
+.onb-progress { flex: 1; display: flex; gap: 6px; }
+.onb-bar { flex: 1; height: 4px; border-radius: 2px; background: rgba(245, 233, 208, 0.16); overflow: hidden; }
+.onb-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--color-orange); transition: width .35s ease; }
+.onb-bar.done i, .onb-bar.now i { width: 100%; }
+.onb-top .mini-btn { flex: none; min-height: 40px; }
+.onb-viewport { flex: 1; min-height: 0; width: 100%; max-width: calc(560px + 2.4rem); margin: 0 auto; overflow: hidden; touch-action: pan-y; }
+.onb-track { display: flex; height: 100%; will-change: transform; }
+.onb-slide {
+  flex: 0 0 100%; min-width: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 1.4rem var(--onb-pr) 1.4rem var(--onb-pl);
+}
+.onb-art {
+  width: 76px; height: 76px; flex: none;
+  display: grid; place-items: center;
+  margin-bottom: 1.6rem;
+  border-radius: 24px;
+  color: var(--color-orange-bright);
+  background: linear-gradient(145deg, rgba(232, 90, 36, 0.22), rgba(139, 46, 15, 0.20));
+  border: 1px solid rgba(232, 90, 36, 0.38);
+  box-shadow: 0 0 26px rgba(232, 90, 36, 0.22);
+}
+.onb-art svg { width: 38px; height: 38px; }
+.onb-art-hero {
+  width: 112px; height: 112px; border-radius: 50%;
+  background: none; border: 0;
+  box-shadow: 0 0 0 1px rgba(245, 233, 208, 0.14), 0 0 34px rgba(232, 90, 36, 0.36);
+}
+.onb-art-hero img { width: 112px; height: 112px; border-radius: 50%; display: block; }
+.onb-eyebrow {
+  margin: 0 0 0.6rem;
+  font-size: 0.72rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--color-orange-bright);
+}
+.onb-title {
+  margin: 0 0 1rem;
+  font-family: var(--font-display); font-weight: 400; text-transform: uppercase;
+  font-size: clamp(1.85rem, 8vw, 2.6rem); line-height: 0.98; letter-spacing: -0.01em;
+  color: var(--color-cream);
+  text-wrap: balance;
+}
+.onb-text { margin: 0; max-width: 34rem; font-size: 1rem; line-height: 1.55; color: var(--color-cream-dim); }
+.onb-steps, .onb-perks, .onb-news { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.6rem; }
+.onb-steps li, .onb-perks li, .onb-news li {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.78rem 0.95rem;
+  font-size: 0.97rem; line-height: 1.4; color: var(--color-cream);
+  background: rgba(28, 28, 28, 0.78);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+.onb-num {
+  flex: none; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-size: 0.95rem; line-height: 1;
+  color: #140D06; background: var(--color-orange);
+}
+.onb-tick { flex: none; position: relative; width: 22px; height: 22px; border-radius: 50%; background: rgba(109, 190, 69, 0.16); }
+.onb-tick::after {
+  content: ''; position: absolute; left: 8px; top: 4px; width: 5px; height: 10px;
+  border: solid var(--color-success); border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.onb-news li svg { flex: none; width: 22px; height: 22px; color: var(--color-orange-bright); }
+.onb-text + .onb-news { margin-top: 1.1rem; }
+.onb-push { margin-top: 1.1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; }
+.onb-push p { margin: 0; flex: 1 1 14rem; font-size: 0.9rem; line-height: 1.5; color: var(--color-cream-dim); }
+.onb-push .onb-ok { color: var(--color-success); font-weight: 600; }
+.onb-actions {
+  width: 100%; max-width: calc(560px + 2.4rem); margin: 0 auto;
+  padding-left: var(--onb-pl); padding-right: var(--onb-pr);
+  display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
+  padding-top: 0.6rem;
+}
+.onb-actions .btn { min-height: 52px; }
+/* Wisch-Vorfuehrung: zwei Karten, ein Finger, der hin und her wischt */
+.onb-demo { margin-top: 1.5rem; display: flex; justify-content: center; }
+.onb-demo-phone {
+  position: relative; width: 156px; height: 100px; overflow: hidden;
+  border-radius: 22px; border: 1.5px solid var(--color-border-bright); background: var(--color-bg-elev);
+}
+.onb-demo-track { display: flex; gap: 10px; height: 100%; padding: 14px; animation: onbDemo 3.4s cubic-bezier(.3, .7, .2, 1) infinite; }
+.onb-demo-track span { flex: 0 0 126px; border-radius: 12px; background: linear-gradient(135deg, rgba(232, 90, 36, 0.62), rgba(139, 46, 15, 0.62)); }
+.onb-demo-track span:nth-child(2) { background: linear-gradient(135deg, rgba(255, 201, 60, 0.55), rgba(232, 90, 36, 0.5)); }
+.onb-demo-track span:nth-child(3) { background: linear-gradient(135deg, rgba(245, 233, 208, 0.38), rgba(154, 142, 122, 0.38)); }
+.onb-demo-hand { position: absolute; bottom: 4px; left: 58%; width: 32px; height: 32px; color: var(--color-cream); opacity: 0; animation: onbHand 3.4s cubic-bezier(.3, .7, .2, 1) infinite; }
+.onb-demo-hand svg { width: 100%; height: 100%; }
+@keyframes onbDemo {
+  0%, 20% { transform: translateX(0); }
+  42%, 70% { transform: translateX(-136px); }
+  92%, 100% { transform: translateX(0); }
+}
+@keyframes onbHand {
+  0%, 14% { opacity: 0; transform: translateX(0); }
+  20% { opacity: 1; transform: translateX(0); }
+  42% { opacity: 1; transform: translateX(-48px); }
+  48%, 64% { opacity: 0; transform: translateX(-48px); }
+  70% { opacity: 1; transform: translateX(-48px); }
+  92% { opacity: 1; transform: translateX(0); }
+  98%, 100% { opacity: 0; transform: translateX(0); }
+}
+@media (max-height: 640px) {
+  .onb-slide { overflow-y: auto; }   /* Querformat/kleine Geraete: Karte scrollt statt abzuschneiden */
+  .onb-art { width: 60px; height: 60px; margin-bottom: 1rem; border-radius: 18px; }
+  .onb-art svg { width: 30px; height: 30px; }
+  .onb-art-hero, .onb-art-hero img { width: 84px; height: 84px; }
+  .onb-title { font-size: clamp(1.6rem, 6.5vw, 2.1rem); }
+  .onb-demo { margin-top: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gnc-onb { transform: none; transition: opacity .2s ease; }
+  .onb-bar i { transition: none; }
+  .onb-demo-track, .onb-demo-hand { animation: none; }
 }
 </style>
 </head>
@@ -6707,6 +6872,10 @@ function accSettingsHtml() {
     ${pushHtml}
     <p style="margin:0 0 .35rem;font-size:.76rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">${t('acc.set_pay')}</p>
     <p style="margin:0;font-size:.82rem;color:var(--color-cream-dim);line-height:1.55;">${t('acc.set_pay_info')}</p>
+    ${(typeof onbEnabled === 'function' && onbEnabled()) ? `<button type="button" class="mini-btn" style="margin-top:1rem;" onclick="closeAccountOverlay(); setTimeout(function () { gncOnbOpen({ replay: true }); }, 260);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>
+      <span>${t('onb.replay')}</span>
+    </button>` : ''}
   </div>`;
 }
 function renderAccLogin(el, step) {
@@ -7740,6 +7909,7 @@ function commitOrderSuccess(order, cartSnapshot) {
     if (order && order.loyaltyApplied) consumeLoyaltyReward();
   }
   if (order) incrementCustomerOrderCount(order.email, order.phone);
+  if (order && typeof saveActiveOrder === 'function') { saveActiveOrder(order); if (typeof gncWatchSync === 'function') gncWatchSync(); }
 }
 
 /* Stempelkarte fürs Warenkorb-Panel */
@@ -7896,6 +8066,7 @@ async function loadShopStatus() {
     };
     applyShopStatus();
     if (typeof applyWeeklySpecial === 'function') applyWeeklySpecial();
+    if (typeof gncWatchSync === 'function') gncWatchSync();
   } catch (e) { /* Fail-open */ }
 }
 function applyShopStatus() {
@@ -11030,6 +11201,19 @@ function successNewOrder() {
 /* ====================================================================
    FILTERS
    ==================================================================== */
+(function () {
+  const bar = document.getElementById('menuFilters');
+  if (!bar) return;
+  function kanten() {
+    const max = bar.scrollWidth - bar.clientWidth;
+    bar.classList.toggle('more-l', bar.scrollLeft > 2);
+    bar.classList.toggle('more-r', max > 2 && bar.scrollLeft < max - 2);
+  }
+  bar.addEventListener('scroll', kanten, { passive: true });
+  window.addEventListener('resize', kanten);
+  if (window.ResizeObserver) new ResizeObserver(kanten).observe(bar);
+  kanten();
+})();
 document.getElementById('menuFilters').addEventListener('click', (e) => {
   if (e.target.classList.contains('filter-chip')) {
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
@@ -12782,6 +12966,8 @@ function appViewActive() {
 function setAppView(name, opts) {
   opts = opts || {};
   if (!APP_VIEWS.hasOwnProperty(name)) name = 'home';
+  if (appViewActive() && currentAppView && typeof appScrollPos !== 'undefined' && appScrollPos) appScrollPos[currentAppView] = window.scrollY;
+  if (typeof stageReset === 'function') stageReset();
   currentAppView = name;
   const show = APP_VIEWS[name];
   APP_BLOCKS.forEach(sel => {
@@ -12796,10 +12982,13 @@ function setAppView(name, opts) {
   document.body.dataset.appview = appViewActive() ? name : '';
   document.querySelectorAll('#appTabbar .app-tab[data-tabtarget]').forEach(t =>
     t.classList.toggle('active', t.dataset.tabtarget === name));
-  if (!opts.keepScroll) window.scrollTo(0, 0);
+  // Ohne weiches Scrollen (html hat scroll-behavior: smooth): die Bewegung macht die Feder
+  if (opts.restoreScroll) jumpScroll((appScrollPos && appScrollPos[name]) || 0);
+  else if (!opts.keepScroll) jumpScroll(0);
   if (!opts.noHistory && appViewActive()) {
     try { history.pushState({ appview: name }, '', location.pathname + location.search + (name === 'home' ? '' : '#' + name)); } catch (e) {}
   }
+  if (typeof ntbSync === 'function') ntbSync();
 }
 window.addEventListener('popstate', (e) => {
   if (!appViewActive()) return;
@@ -12814,7 +13003,7 @@ window.addEventListener('popstate', (e) => {
     if (!tab || tab.dataset.tabtarget === 'account') return;
     e.preventDefault();
     const name = tab.dataset.tabtarget;
-    if (appViewActive()) setAppView(name);
+    if (appViewActive()) gncGoView(name);
     else if (name === 'home') window.scrollTo({ top: 0, behavior: 'smooth' });
     else { const el = document.getElementById(name); if (el) el.scrollIntoView({ behavior: 'smooth' }); }
   });
@@ -12839,6 +13028,594 @@ document.addEventListener('click', (e) => {
 window.addEventListener('resize', () => { setAppView(currentAppView, { noHistory: true, keepScroll: true }); });
 // Start-View aus dem Hash (z. B. /?app=1#menu)
 setAppView(HASH_TO_VIEW[location.hash] || 'home', { noHistory: true, keepScroll: true });
+
+/* ====================================================================
+   APP-GESTEN, NATIVE GLAS-LEISTE, APPLE-WATCH-STAND, EINFUEHRUNG
+   Alles hier gilt nur im App-Modus (?app=1 / installierte PWA / iOS-App).
+   Zustand bewusst mit var: setAppView() laeuft schon beim Laden, bevor
+   dieser Block erreicht ist (let/const waeren dann noch gesperrt).
+   ==================================================================== */
+var GNC_REDUCED = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+var APP_TAB_ORDER = ['home', 'menu', 'catering', 'location'];
+var appScrollPos = {};
+// Sofort an eine Stelle springen, auch wenn html { scroll-behavior: smooth } gilt
+function jumpScroll(y) {
+  try { window.scrollTo({ top: y, left: 0, behavior: 'instant' }); }
+  catch (e) {
+    var st = document.documentElement.style, prev = st.scrollBehavior;
+    st.scrollBehavior = 'auto'; window.scrollTo(0, y); st.scrollBehavior = prev;
+  }
+}
+
+/* ---- Federn nach Apples Modell (WWDC 2018): response = Zeit bis zum Ziel,
+   damping 1 = ohne Ueberschwingen. Eine Feder startet immer beim aktuellen
+   Wert und uebernimmt den Schwung des Fingers (px/s). ---- */
+function gncSpring(apply) {
+  var x = 0, v = 0, target = 0, k = 0, c = 0, raf = 0, last = 0, done = null;
+  function step(ts) {
+    var dt = Math.min(0.034, Math.max(0.001, (ts - last) / 1000)); last = ts;
+    for (var i = 0, h = dt / 4; i < 4; i++) { var a = -k * (x - target) - c * v; v += a * h; x += v * h; }
+    if (Math.abs(x - target) < 0.35 && Math.abs(v) < 6) {
+      x = target; v = 0; raf = 0; apply(x);
+      if (done) { var d = done; done = null; d(); }
+      return;
+    }
+    apply(x); raf = requestAnimationFrame(step);
+  }
+  return {
+    value: function () { return x; },
+    jump: function (val) { if (raf) cancelAnimationFrame(raf); raf = 0; done = null; x = val; v = 0; apply(x); },
+    to: function (val, o) {
+      o = o || {};
+      var resp = o.response || 0.35, damp = o.damping == null ? 1 : o.damping;
+      k = Math.pow(2 * Math.PI / resp, 2); c = 4 * Math.PI * damp / resp;
+      target = val; if (typeof o.velocity === 'number') v = o.velocity; done = o.done || null;
+      if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); }
+    },
+  };
+}
+// Geschwindigkeit aus den letzten Fingerpositionen (px/s)
+function gncTracker() {
+  var s = [];
+  return {
+    add: function (x) { var t = performance.now(); s.push([x, t]); while (s.length > 6 || (s.length > 1 && t - s[0][1] > 100)) s.shift(); },
+    velocity: function () { if (s.length < 2) return 0; var a = s[0], b = s[s.length - 1], dt = (b[1] - a[1]) / 1000; return dt > 0 ? (b[0] - a[0]) / dt : 0; },
+  };
+}
+// Wo landet ein Wisch, wenn er ausrollt (Apples Projektionsformel)
+function gncProject(v, d) { d = d || 0.998; return (v / 1000) * d / (1 - d); }
+// Gummiband am Rand: je weiter drueber, desto weniger folgt der Inhalt
+function gncRubber(o, dim, c) { c = c || 0.55; return (o * dim * c) / (dim + c * Math.abs(o)); }
+
+/* ---- Inhalt der aktuellen Ansicht bewegen (Tabs) ---- */
+function appStageEls() {
+  var els = [];
+  APP_BLOCKS.forEach(function (sel) { var el = document.querySelector(sel); if (el && !el.hidden) els.push(el); });
+  var f = document.getElementById('kontakt'); if (f) els.push(f);
+  return els;
+}
+// Beim Ansichtswechsel alle Verschiebungen loeschen, auch an versteckten Bloecken
+function stageReset() {
+  APP_BLOCKS.concat(['#kontakt']).forEach(function (sel) { var el = document.querySelector(sel); if (el) { el.style.transform = ''; el.style.opacity = ''; } });
+}
+var stageFrom = 0, stageFade = 1;
+var stageSpring = gncSpring(function (x) {
+  var k = Math.min(1, Math.abs(x) / Math.max(1, Math.abs(stageFrom) || innerWidth));
+  var tr = Math.abs(x) < 0.5 ? '' : 'translate3d(' + x.toFixed(1) + 'px,0,0)';
+  var op = Math.abs(x) < 0.5 ? '' : String(1 - k * stageFade);
+  appStageEls().forEach(function (el) { el.style.transform = tr; el.style.opacity = op; });
+});
+function stagePageIn(dir, o) {
+  o = o || {};
+  if (GNC_REDUCED.matches) {
+    appStageEls().forEach(function (el) { if (el.animate) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' }); });
+    return;
+  }
+  stageFrom = typeof o.from === 'number' ? o.from : dir * 28; stageFade = o.fade || 1;
+  stageSpring.jump(stageFrom);
+  stageSpring.to(0, { response: 0.34, damping: 1, velocity: o.velocity || 0 });
+}
+// Tab wechseln: weiter rechts gleitet von rechts herein, weiter links von links.
+// Jeder Tab behaelt seine Scroll-Position; derselbe Tab noch einmal = nach oben.
+function gncGoView(name, o) {
+  o = o || {};
+  if (!APP_VIEWS.hasOwnProperty(name)) return;
+  if (name === currentAppView) { window.scrollTo({ top: 0, behavior: GNC_REDUCED.matches ? 'auto' : 'smooth' }); return; }
+  var dir = o.dir || (APP_TAB_ORDER.indexOf(name) >= APP_TAB_ORDER.indexOf(currentAppView) ? 1 : -1);
+  setAppView(name, { restoreScroll: true });
+  stagePageIn(dir, o);
+}
+
+/* ---- Kategorien der Speisekarte ---- */
+function catOrder() { return [].slice.call(document.querySelectorAll('#menuFilters .filter-chip')).map(function (c) { return c.dataset.cat; }); }
+var gridFrom = 0, gridFade = 1;
+var gridSpring = gncSpring(function (x) {
+  var g = document.getElementById('menuGrid'); if (!g) return;
+  var k = Math.min(1, Math.abs(x) / Math.max(1, Math.abs(gridFrom) || innerWidth));
+  g.style.transform = Math.abs(x) < 0.5 ? '' : 'translate3d(' + x.toFixed(1) + 'px,0,0)';
+  g.style.opacity = Math.abs(x) < 0.5 ? '' : String(1 - k * gridFade);
+});
+function gncSetCategory(cat, dir, o) {
+  o = o || {};
+  var chip = document.querySelector('#menuFilters .filter-chip[data-cat="' + cat + '"]');
+  if (!chip) return;
+  chip.click();   // vorhandener Filter: aktiver Chip + renderMenu()
+  var bar = document.getElementById('menuFilters');
+  if (bar && bar.scrollWidth > bar.clientWidth + 1) {
+    var br = bar.getBoundingClientRect(), cr = chip.getBoundingClientRect();
+    var left = bar.scrollLeft + (cr.left - br.left) - (bar.clientWidth - cr.width) / 2;
+    try { bar.scrollTo({ left: Math.max(0, left), behavior: GNC_REDUCED.matches ? 'auto' : 'smooth' }); } catch (e) { bar.scrollLeft = Math.max(0, left); }
+  }
+  // Kuerzere Kategorie: die Chip-Leiste bleibt im Blick
+  if (bar) { var top = bar.getBoundingClientRect().top; if (top < 0) jumpScroll(Math.max(0, window.scrollY + top - 12)); }
+  if (GNC_REDUCED.matches) {
+    var g = document.getElementById('menuGrid');
+    if (g && g.animate) g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
+    return;
+  }
+  gridFrom = typeof o.from === 'number' ? o.from : dir * 28; gridFade = o.fade || 1;
+  gridSpring.jump(gridFrom);
+  gridSpring.to(0, { response: 0.34, damping: 1, velocity: o.velocity || 0 });
+}
+
+/* ---- Offene Ebenen: dann wird weder gewischt noch die Glas-Leiste gezeigt ---- */
+function gncOverlayOpen() {
+  if (document.querySelector('#cartOverlay.open, #upsellOverlay.open, #dipOverlay.open, #modalOverlay.open, #navMobile.open, .gnc-onb.open')) return true;
+  var a = document.getElementById('accountOverlay'), g = document.getElementById('groupOverlay');
+  if ((a && a.style.display === 'flex') || (g && g.style.display === 'flex')) return true;
+  return document.body.classList.contains('body-scroll-locked');
+}
+
+/* ---- Wischen: Inhalt folgt dem Finger, Weg und Schwung entscheiden.
+   In der Speisekarte blaettert ein Wisch durch die Kategorien; an der ersten
+   und letzten Kategorie geht es weiter zum Nachbar-Tab. Nicht an den
+   Bildschirmraendern (Zurueck-Geste von iOS), nicht in Feldern und nicht in
+   Bereichen, die selbst seitlich scrollen. ---- */
+var sw = null;
+function swBlocked(t, x) {
+  if (!APP_FORCED || gncOverlayOpen()) return true;
+  if (x < 24 || x > innerWidth - 24) return true;
+  if (!t || !t.closest) return true;
+  if (t.closest('input, textarea, select, [contenteditable], .app-tabbar, .nav, .promo-bar, .push-optin, [data-noswipe]')) return true;
+  for (var el = t; el && el !== document.body; el = el.parentElement) {
+    if (el.scrollWidth > el.clientWidth + 1) { var ox = getComputedStyle(el).overflowX; if (ox === 'auto' || ox === 'scroll') return true; }
+  }
+  return false;
+}
+document.addEventListener('touchstart', function (e) {
+  sw = null;
+  if (!APP_FORCED || e.touches.length !== 1) return;
+  var t = e.touches[0];
+  if (swBlocked(e.target, t.clientX)) return;
+  var idx = APP_TAB_ORDER.indexOf(currentAppView);
+  if (idx < 0) return;
+  sw = { x0: t.clientX, y0: t.clientY, dx: 0, lock: false, idx: idx, inMenu: currentAppView === 'menu' && !!e.target.closest('#menu'), kind: 'tab', tr: gncTracker() };
+  sw.tr.add(t.clientX);
+}, { passive: true });
+document.addEventListener('touchmove', function (e) {
+  if (!sw || e.touches.length !== 1) return;
+  var t = e.touches[0], dx = t.clientX - sw.x0, dy = t.clientY - sw.y0;
+  if (!sw.lock) {
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    if (Math.abs(dx) <= Math.abs(dy) * 1.2) { sw = null; return; }
+    sw.lock = true;
+    var dirNow = dx < 0 ? 1 : -1;
+    if (sw.inMenu) {
+      var cats = catOrder(), ci = cats.indexOf(activeCategory);
+      if (ci >= 0 && cats[ci + dirNow]) sw.kind = 'cat';
+    }
+    sw.x0 = t.clientX; dx = 0;
+    if (sw.kind === 'cat') { gridFrom = 0; gridFade = 0.5; } else { stageFrom = 0; stageFade = 0.5; }
+  }
+  if (e.cancelable) e.preventDefault();
+  sw.dx = dx; sw.tr.add(t.clientX);
+  if (GNC_REDUCED.matches) return;
+  var has;
+  if (sw.kind === 'cat') {
+    var c2 = catOrder(), i2 = c2.indexOf(activeCategory);
+    has = dx < 0 ? i2 < c2.length - 1 : i2 > 0;
+    gridSpring.jump(has ? dx : gncRubber(dx, innerWidth * 0.35));
+  } else {
+    has = dx < 0 ? sw.idx < APP_TAB_ORDER.length - 1 : sw.idx > 0;
+    stageSpring.jump(has ? dx : gncRubber(dx, innerWidth * 0.35));
+  }
+}, { passive: false });
+function swEnd() {
+  var s = sw; sw = null;
+  if (!s || !s.lock) return;
+  var vel = s.tr.velocity(), w = innerWidth, dir = s.dx < 0 ? 1 : -1;
+  var end = s.dx + gncProject(vel, 0.99), same = (end < 0) === (s.dx < 0);
+  var from = dir * Math.max(48, Math.min(w * 0.45, w - Math.abs(s.dx)));
+  if (s.kind === 'cat') {
+    var cats = catOrder(), nb = cats[cats.indexOf(activeCategory) + dir];
+    if (nb && Math.abs(end) > w * 0.25 && same) gncSetCategory(nb, dir, { from: from, velocity: vel, fade: 0.5 });
+    else gridSpring.to(0, { response: 0.3, damping: 1, velocity: vel });
+  } else {
+    var nt = APP_TAB_ORDER[s.idx + dir];
+    if (nt && Math.abs(end) > w * 0.3 && same) gncGoView(nt, { dir: dir, from: from, velocity: vel, fade: 0.5 });
+    else stageSpring.to(0, { response: 0.3, damping: 1, velocity: vel });
+  }
+}
+document.addEventListener('touchend', swEnd, { passive: true });
+document.addEventListener('touchcancel', swEnd, { passive: true });
+
+/* ---- Native Glas-Leiste (iOS-App ab iOS 26): echtes Liquid Glass statt
+   Nachbau. Die Web-Leiste bleibt im DOM und ist die Quelle fuer Tabs und
+   Beschriftung. Unter iOS 26, auf Android und im Browser meldet niemand
+   "aktiv", dann bleibt alles wie bisher. ---- */
+var GNC_NATIVE_TABS = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gncTabs);
+var NTB_SYMBOL = { home: 'house', menu: 'fork.knife', catering: 'box.truck', location: 'mappin.and.ellipse', account: 'person.crop.circle' };
+var ntbOn = false, ntbSig = '', ntbHid = null, ntbRaf = 0;
+function ntbPost(msg) { try { window.webkit.messageHandlers.gncTabs.postMessage(msg); } catch (e) {} }
+function ntbSync() {
+  if (!GNC_NATIVE_TABS || !APP_FORCED) return;
+  var tabs = [].slice.call(document.querySelectorAll('#appTabbar .app-tab[data-tabtarget]')).map(function (t) {
+    var id = t.dataset.tabtarget, sp = t.querySelector('span');
+    return { id: id, label: (sp ? sp.textContent : t.textContent).trim(), symbol: NTB_SYMBOL[id] || 'circle' };
+  });
+  var sig = JSON.stringify([tabs, currentAppView]);
+  if (sig === ntbSig) return;
+  ntbSig = sig;
+  ntbPost({ type: 'configure', tabs: tabs, selected: currentAppView });
+}
+function ntbHiddenSync() {
+  if (!ntbOn) return;
+  var h = gncOverlayOpen();
+  if (h === ntbHid) return;
+  ntbHid = h;
+  ntbPost({ type: 'hidden', hidden: h });
+}
+// Antwort der App: true ab iOS 26 (Glas-Leiste steht), sonst false
+window.gncNativeTabsActive = function (on) {
+  ntbOn = !!on;
+  document.documentElement.classList.toggle('native-tabbar', ntbOn);
+  ntbHid = null;
+  ntbHiddenSync();
+  if (typeof gncOnbMaybeStart === 'function') gncOnbMaybeStart();
+};
+window.gncNativeTabSelect = function (id) {
+  id = String(id || '');
+  if (id === 'account') { openAccountOverlay(); ntbSig = ''; ntbSync(); return; }
+  if (APP_VIEWS.hasOwnProperty(id)) gncGoView(id);
+};
+// Die Seite wurde neu geladen (App startet, Sprachwechsel): Leiste neu melden
+window.gncNativeResync = function () { ntbSig = ''; ntbHid = null; ntbSync(); ntbHiddenSync(); gncWatchSync(true); };
+if (GNC_NATIVE_TABS && APP_FORCED) {
+  new MutationObserver(function () {
+    if (ntbRaf) return;
+    ntbRaf = requestAnimationFrame(function () { ntbRaf = 0; ntbHiddenSync(); });
+  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
+  ntbSync();
+}
+
+/* ---- Stand fuer die Apple Watch: Oeffnungszeiten der naechsten Tage,
+   Tagesschalter, Wartezeit, Treuekarte und die laufende Bestellung. Die Uhr
+   rechnet "offen bis" selbst und fragt den Bestellstatus direkt beim Server
+   (order-status, gleicher Schluessel wie der Status-Link aus der Mail). ---- */
+var ACTIVE_ORDER_KEY = 'gnc_active_order_v1';
+var GNC_WATCH = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gncWatch);
+var watchSig = '';
+function saveActiveOrder(order) {
+  try {
+    var m = String((order && order.statusUrl) || '').match(/\/s\/(GNC-[A-Za-z0-9-]+)\?k=([A-Za-z0-9]+)/);
+    if (!m) return;
+    localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify({ ref: m[1], k: m[2], mode: order.mode === 'delivery' ? 'delivery' : 'pickup', at: Date.now() }));
+  } catch (e) {}
+}
+function getActiveOrder() {
+  try {
+    var o = JSON.parse(localStorage.getItem(ACTIVE_ORDER_KEY) || 'null');
+    if (o && o.ref && o.k && Date.now() - o.at < 12 * 3600 * 1000) return o;
+  } catch (e) {}
+  return null;
+}
+function gncWatchSync(force) {
+  if (!GNC_WATCH || typeof hoursFor !== 'function') return;
+  var now = new Date(), days = [];
+  for (var i = 0; i < 8; i++) {
+    var d = new Date(now); d.setDate(now.getDate() + i);
+    var h = hoursFor(d), hol = getNRWHoliday(d), op = !!(h && !hol);
+    days.push({ d: dateKey(d), o: op ? h.open : '', c: op ? h.close : '', p: pickupOnlyFor(d) ? 1 : 0, df: op ? (deliveryFromFor(d) || '') : '' });
+  }
+  var L = getLoyalty(), rest = Math.max(0, LOYALTY_GOAL_EUR - L.spent);
+  var wd = ['location.sun', 'location.mon', 'location.tue', 'location.wed', 'location.thu', 'location.fri', 'location.sat'].map(function (k) { return t(k); });
+  var keys = ['open', 'closed', 'paused', 'until', 'opens', 'wait', 'pickup', 'delivery', 'off', 'from', 'order', 'st_confirmed', 'st_preparing', 'st_ready', 'st_way', 'st_done', 'loyalty', 'hours', 'empty', 'closed_day'];
+  var l = {};
+  keys.forEach(function (k) { l[k] = t('watch.' + k); });
+  l.today = t('co.today'); l.tomorrow = t('co.tomorrow'); l.wd = wd.join(',');
+  var snap = {
+    v: 1, lang: currentLang, days: days,
+    paused: !!SHOP_STATUS.paused, pauseMsg: SHOP_STATUS.pauseMessage || '',
+    wait: SHOP_STATUS.waitTime || 0, deliveryOff: !!SHOP_STATUS.deliveryOff, pickupOff: !!SHOP_STATUS.pickupOff,
+    loyalty: {
+      spent: Math.round(L.spent * 100) / 100, goal: LOYALTY_GOAL_EUR, reward: L.rewardAvailable ? 1 : 0,
+      text: L.rewardAvailable ? t('watch.loy_ready').replace('{amount}', euroKurz(LOYALTY_REWARD))
+        : t('watch.loy_rest').replace('{rest}', euroKurz(rest)).replace('{amount}', euroKurz(LOYALTY_REWARD)),
+    },
+    order: getActiveOrder(), l: l,
+  };
+  var sig = JSON.stringify(snap);
+  if (!force && sig === watchSig) return;
+  watchSig = sig;
+  snap.at = Date.now();
+  try { window.webkit.messageHandlers.gncWatch.postMessage(snap); } catch (e) {}
+}
+if (GNC_WATCH) {
+  setTimeout(gncWatchSync, 1500);
+  setInterval(gncWatchSync, 60000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) gncWatchSync(); });
+}
+
+/* ====================================================================
+   EINFUEHRUNG (ONBOARDING) - zwei Rollen
+   neu    : erster Start ohne Konto, ohne Bestellung -> 4 Karten, Ziel ist
+            die erste Bestellung (letzte Karte fuehrt zur Speisekarte)
+   stamm  : wer schon bestellt hat oder angemeldet ist -> "Neu in der App",
+            nur die Neuheiten seit der zuletzt gesehenen Version
+   Gemerkt wird je Geraet, welche Neuheiten (ONB_FEATURES.id) schon gezeigt
+   wurden. Was erst mit einem App-Update dazukommt (Glas-Leiste, Uhr), zeigt
+   die App beim ersten Start danach als "Neu in der App".
+   Bei kuenftigen Neuheiten: Eintrag in ONB_FEATURES ergaenzen, fertig.
+   ==================================================================== */
+var ONB_VERSION = 2;
+var ONB_KEY = 'gnc_onb_v1';
+// Die Einfuehrung kommt erst mit dem App-Update: Die iOS-App ab Build 6 setzt
+// window.gncAppBuild vor dem Laden der Seite. Die Website ist sofort live, die
+// alte App (1.0.1, Build 5) und der Browser zeigen deshalb keine Einfuehrung.
+var GNC_APP_BUILD = Number(window.gncAppBuild || 0);
+var ONB_MIN_BUILD = 6;
+function onbEnabled() { return !!APP_FORCED && GNC_APP_BUILD >= ONB_MIN_BUILD; }
+var ONB_IC = {
+  flame: '<path d="M12 22c4 0 7-2.7 7-6.6 0-3.1-1.8-5.4-3.6-7.2-.3 1.7-1.2 2.9-2.4 3.4.3-3.4-1.4-6.6-4.5-8.6.3 3-1.3 5-2.8 6.9C4.7 11.4 5 13.4 5 15.4 5 19.3 8 22 12 22z"/><path d="M12 22c-1.7 0-3-1.2-3-2.8 0-1.8 1.4-2.9 3-4.7 1.6 1.8 3 2.9 3 4.7 0 1.6-1.3 2.8-3 2.8z"/>',
+  order: '<path d="M4 11c0-4 3.6-6.5 8-6.5S20 7 20 11"/><path d="M3.5 14.5h17"/><path d="M4 18c1.5 1.6 4.5 2.5 8 2.5s6.5-.9 8-2.5"/>',
+  gift: '<rect x="3.5" y="8" width="17" height="4" rx="1"/><path d="M5 12v8h14v-8"/><path d="M12 8v12"/><path d="M12 8c-1.6-3.6-6-3.6-6-1 0 1.4 2.4 1 6 1zM12 8c1.6-3.6 6-3.6 6-1 0 1.4-2.4 1-6 1z"/>',
+  swipe: '<path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/>',
+  glass: '<rect x="3" y="15" width="18" height="6" rx="3"/><path d="M7 18h.01M12 18h.01M17 18h.01"/><path d="M5 11h14M8 7h8"/>',
+  watch: '<rect x="6.5" y="6" width="11" height="12" rx="3"/><path d="M9 6l.6-3h4.8l.6 3M9 18l.6 3h4.8l.6-3"/><path d="M12 9.5V12l1.6 1"/>',
+  ticket: '<path d="M4 7.5h16v3a1.5 1.5 0 0 0 0 3v3H4v-3a1.5 1.5 0 0 0 0-3z"/><path d="M14 7.5v9" stroke-dasharray="1.6 1.8"/>',
+  hand: '<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-.8a6 6 0 0 1-4.8-2.4L4.3 15a1.5 1.5 0 0 1 2.3-1.9L9 15"/>',
+};
+// Neuheiten mit Version; when() blendet aus, was auf diesem Geraet nicht gilt
+var ONB_FEATURES = [
+  { since: 2, id: 'swipe', icon: 'swipe', title: 'onb.f_swipe_title', text: 'onb.f_swipe_text', demo: true },
+  { since: 2, id: 'glass', icon: 'glass', title: 'onb.f_glass_title', text: 'onb.f_glass_text', when: function () { return ntbOn; } },
+  { since: 2, id: 'watch', icon: 'watch', title: 'onb.f_watch_title', text: 'onb.f_watch_text', when: function () { return GNC_WATCH; } },
+  { since: 2, id: 'voucher', icon: 'ticket', title: 'onb.f_voucher_title', text: 'onb.f_voucher_text' },
+];
+function onbState() { try { return JSON.parse(localStorage.getItem(ONB_KEY) || 'null') || {}; } catch (e) { return {}; } }
+function onbAvailable() { return ONB_FEATURES.filter(function (f) { return !f.when || f.when(); }); }
+function onbNews() { var seen = onbState().seen || []; return onbAvailable().filter(function (f) { return seen.indexOf(f.id) < 0; }); }
+// Alles, was auf diesem Geraet gerade gilt, als gesehen merken
+function onbSave() {
+  var st = onbState(), seen = st.seen || [];
+  onbAvailable().forEach(function (f) { if (seen.indexOf(f.id) < 0) seen.push(f.id); });
+  try { localStorage.setItem(ONB_KEY, JSON.stringify({ v: ONB_VERSION, seen: seen, at: Date.now() })); } catch (e) {}
+}
+// Kommt beim Start eine Einfuehrung? (neu und nie gesehen, oder ungesehene Neuheiten)
+function onbPending() {
+  if (!onbEnabled()) return false;
+  if (!onbState().at && onbRole() === 'neu') return true;
+  return onbNews().length > 0;
+}
+function onbRole() {
+  var known = (typeof accountLoggedIn === 'function' && accountLoggedIn()) || !!getLastOrder() || getLoyalty().spent > 0 || getLoyalty().rewardAvailable || !!loadCustomerData();
+  return known ? 'stamm' : 'neu';
+}
+function onbFirstName() {
+  var n = (typeof ACCOUNT !== 'undefined' && ACCOUNT && ACCOUNT.profile && ACCOUNT.profile.name) || ((loadCustomerData() || {}).name) || '';
+  return String(n).trim().split(/\s+/)[0] || '';
+}
+function euroKurz(n) { return formatPrice(n).replace(',00', ''); }
+function onbSlides(role) {
+  var goal = euroKurz(LOYALTY_GOAL_EUR), reward = euroKurz(LOYALTY_REWARD);
+  if (role === 'neu') {
+    var w = ONB_FEATURES.filter(function (f) { return f.id === 'watch' && f.when(); })[0];
+    return [
+      { icon: 'flame', hero: true, eyebrow: t('onb.n1_eyebrow'), title: t('onb.n1_title'), text: t('onb.n1_text') },
+      { icon: 'order', eyebrow: t('onb.n2_eyebrow'), title: t('onb.n2_title'),
+        steps: [t('onb.n2_s1'), t('onb.n2_s2'), t('onb.n2_s3')], push: true },
+      { icon: 'gift', eyebrow: t('onb.n3_eyebrow'), title: t('onb.n3_title'),
+        perks: [t('onb.n3_p1'), t('onb.n3_p2').replace('{goal}', goal).replace('{reward}', reward), t('onb.n3_p3'), t('onb.n3_p4').replace('{reward}', reward)] },
+    ].concat(w ? [{ icon: w.icon, eyebrow: t('onb.n3_eyebrow'), title: t(w.title), text: t(w.text) }] : []).concat([
+      { icon: 'swipe', eyebrow: t('onb.n4_eyebrow'), title: t('onb.f_swipe_title'), text: t('onb.f_swipe_text'), demo: true, last: true },
+    ]);
+  }
+  if (role === 'tour') {
+    // "Einfuehrung ansehen" im Konto: Ueberblick fuer alle, dazu was nur hier gilt (Glas-Leiste, Uhr)
+    var tour = onbSlides('neu');
+    tour[tour.length - 1].last = false;
+    ONB_FEATURES.forEach(function (f) {
+      if (f.id === 'glass' && f.when()) tour.push({ icon: f.icon, eyebrow: t('onb.r_eyebrow'), title: t(f.title), text: t(f.text) });
+    });
+    tour[tour.length - 1].last = true;
+    return tour;
+  }
+  var news = onbNews();
+  if (!news.length) return [];
+  var name = onbFirstName();
+  var out = [{
+    icon: 'flame', hero: true, eyebrow: t('onb.r_eyebrow'),
+    title: name ? t('onb.r_title_name').replace('{name}', escG(name)) : t('onb.r_title'),
+    text: t('onb.r_text'), list: news.map(function (f) { return { icon: f.icon, label: t(f.title) }; }),
+  }];
+  news.forEach(function (f) { out.push({ icon: f.icon, eyebrow: t('onb.r_eyebrow'), title: t(f.title), text: t(f.text), demo: !!f.demo }); });
+  out[out.length - 1].last = true;
+  return out;
+}
+var onb = null;
+function onbIcon(name) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ONB_IC[name] || '') + '</svg>';
+}
+function onbSlideHtml(s, i, n, role) {
+  var h = '<section class="onb-slide" role="group" aria-roledescription="' + escG(t('onb.slide')) + '" aria-label="' + escG(t('onb.step').replace('{n}', i + 1).replace('{m}', n)) + '"' + (i ? ' aria-hidden="true"' : '') + '>';
+  h += '<div class="onb-art' + (s.hero ? ' onb-art-hero' : '') + '">' + (s.hero ? '<img src="logo.png" alt="" width="96" height="96">' : onbIcon(s.icon)) + '</div>';
+  h += '<p class="onb-eyebrow">' + escG(s.eyebrow) + '</p>';
+  h += '<h2 class="onb-title" id="onbTitle' + i + '">' + s.title + '</h2>';
+  if (s.text) h += '<p class="onb-text">' + escG(s.text) + '</p>';
+  if (s.steps) h += '<ol class="onb-steps">' + s.steps.map(function (x, j) { return '<li><span class="onb-num">' + (j + 1) + '</span><span>' + escG(x) + '</span></li>'; }).join('') + '</ol>';
+  if (s.perks) h += '<ul class="onb-perks">' + s.perks.map(function (x) { return '<li><span class="onb-tick" aria-hidden="true"></span><span>' + escG(x) + '</span></li>'; }).join('') + '</ul>';
+  if (s.list) h += '<ul class="onb-news">' + s.list.map(function (x) { return '<li>' + onbIcon(x.icon) + '<span>' + escG(x.label) + '</span></li>'; }).join('') + '</ul>';
+  if (s.push && typeof gncPushState === 'function') {
+    var ps = gncPushState();
+    if (ps === 'off') h += '<div class="onb-push"><p>' + escG(t('onb.n2_push')) + '</p><button type="button" class="mini-btn onb-push-btn">' + escG(t('onb.push_btn')) + '</button></div>';
+    else if (ps === 'on') h += '<div class="onb-push"><p class="onb-ok">' + escG(t('onb.push_done')) + '</p></div>';
+  }
+  if (s.demo) h += '<div class="onb-demo" aria-hidden="true"><div class="onb-demo-phone"><div class="onb-demo-track"><span></span><span></span><span></span></div><div class="onb-demo-hand">' + onbIcon('hand') + '</div></div></div>';
+  return h + '</section>';
+}
+function gncOnbOpen(opts) {
+  opts = opts || {};
+  if (onb || !onbEnabled()) return;
+  var role = opts.replay ? 'tour' : (opts.role || onbRole());
+  // Schon eingefuehrt, aber ohne Bestellung: Neuheiten trotzdem als "Neu in der App"
+  if (role === 'neu' && onbState().at) role = 'stamm';
+  var slides = onbSlides(role);
+  if (!slides.length) { onbSave(); return; }
+  var n = slides.length;
+  var el = document.createElement('div');
+  el.className = 'gnc-onb';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  el.setAttribute('aria-labelledby', 'onbTitle0');
+  var bars = ''; for (var b = 0; b < n; b++) bars += '<span class="onb-bar"><i></i></span>';
+  var hasOrder = !!getLastOrder();
+  el.innerHTML =
+    '<div class="onb-top"><div class="onb-progress" aria-hidden="true">' + bars + '</div>' +
+      '<button type="button" class="mini-btn onb-skip">' + escG(t('onb.skip')) + '</button></div>' +
+    '<div class="onb-viewport"><div class="onb-track">' + slides.map(function (s, i) { return onbSlideHtml(s, i, n, role); }).join('') + '</div></div>' +
+    '<div class="onb-actions">' +
+      '<button type="button" class="btn btn-primary btn-block onb-next"></button>' +
+      '<button type="button" class="mini-btn onb-alt" hidden></button>' +
+    '</div>' +
+    '<p class="visually-hidden" aria-live="polite" id="onbLive"></p>';
+  document.body.appendChild(el);
+  onb = { el: el, n: n, i: 0, role: role, replay: !!opts.replay, hasOrder: role === 'stamm' && hasOrder, prevFocus: document.activeElement, track: el.querySelector('.onb-track') };
+  onb.spring = gncSpring(function (x) { onb && (onb.track.style.transform = 'translate3d(' + x.toFixed(1) + 'px,0,0)'); });
+  el.querySelector('.onb-skip').addEventListener('click', function () { gncOnbClose('skip'); });
+  el.querySelector('.onb-next').addEventListener('click', function () {
+    if (onb.i < onb.n - 1) onbGo(onb.i + 1);
+    else gncOnbClose('cta');
+  });
+  el.querySelector('.onb-alt').addEventListener('click', function () { gncOnbClose('look'); });
+  var pb = el.querySelector('.onb-push-btn');
+  if (pb) pb.addEventListener('click', function () {
+    pb.disabled = true;
+    Promise.resolve(window.gncEnablePush && window.gncEnablePush()).then(function (ok) {
+      var box = pb.parentElement;
+      if (ok && box) box.innerHTML = '<p class="onb-ok">' + escG(t('onb.push_done')) + '</p>';
+      else pb.disabled = false;
+    });
+  });
+  el.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); gncOnbClose('skip'); }
+    else if (e.key === 'ArrowRight' && onb.i < onb.n - 1) onbGo(onb.i + 1);
+    else if (e.key === 'ArrowLeft' && onb.i > 0) onbGo(onb.i - 1);
+    else if (e.key === 'Tab') {   // Fokus bleibt im Dialog
+      var f = [].slice.call(el.querySelectorAll('button:not([disabled]):not([hidden])')).filter(function (b) { return !b.closest('[aria-hidden="true"]'); });
+      if (!f.length) return;
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+  onbGestures(el);
+  document.body.classList.add('onb-lock');
+  void el.offsetWidth;   // Ausgangszustand festhalten, dann blendet die Transition ein
+  el.classList.add('open');
+  onbGo(0, { instant: true });
+  setTimeout(function () { var nx = el.querySelector('.onb-next'); if (nx) nx.focus({ preventScroll: true }); }, 60);
+}
+function onbGo(i, o) {
+  o = o || {};
+  if (!onb) return;
+  var w = onb.el.querySelector('.onb-viewport').clientWidth;
+  onb.i = Math.max(0, Math.min(onb.n - 1, i));
+  var x = -onb.i * w;
+  if (o.instant || GNC_REDUCED.matches) onb.spring.jump(x);
+  else onb.spring.to(x, { response: 0.42, damping: 1, velocity: o.velocity || 0 });
+  [].forEach.call(onb.el.querySelectorAll('.onb-slide'), function (s, j) {
+    if (j === onb.i) s.removeAttribute('aria-hidden'); else s.setAttribute('aria-hidden', 'true');
+    s.classList.toggle('is-current', j === onb.i);
+  });
+  [].forEach.call(onb.el.querySelectorAll('.onb-bar'), function (b, j) { b.classList.toggle('done', j < onb.i); b.classList.toggle('now', j === onb.i); });
+  onb.el.setAttribute('aria-labelledby', 'onbTitle' + onb.i);
+  var last = onb.i === onb.n - 1;
+  var next = onb.el.querySelector('.onb-next'), alt = onb.el.querySelector('.onb-alt');
+  next.textContent = !last ? t('onb.next') : (onb.hasOrder ? t('onb.cta_again') : t('onb.cta_menu'));
+  alt.hidden = !last;
+  alt.textContent = t(onb.hasOrder ? 'onb.cta_menu' : 'onb.cta_look');
+  onb.el.querySelector('.onb-skip').hidden = last;
+  var live = document.getElementById('onbLive');
+  if (live) live.textContent = t('onb.step').replace('{n}', onb.i + 1).replace('{m}', onb.n);
+}
+// Karten folgen dem Finger wie die Tabs (gleiche Feder, gleiche Regeln)
+function onbGestures(el) {
+  var vp = el.querySelector('.onb-viewport'), g = null;
+  vp.addEventListener('touchstart', function (e) {
+    if (!onb || e.touches.length !== 1) return;
+    var t0 = e.touches[0];
+    g = { x0: t0.clientX, y0: t0.clientY, lock: false, base: onb.spring.value(), dx: 0, tr: gncTracker() };
+    g.tr.add(t0.clientX);
+  }, { passive: true });
+  vp.addEventListener('touchmove', function (e) {
+    if (!g || !onb) return;
+    var t0 = e.touches[0], dx = t0.clientX - g.x0, dy = t0.clientY - g.y0;
+    if (!g.lock) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dx) <= Math.abs(dy)) { g = null; return; }
+      g.lock = true; g.x0 = t0.clientX; dx = 0;
+    }
+    if (e.cancelable) e.preventDefault();
+    g.dx = dx; g.tr.add(t0.clientX);
+    var w = vp.clientWidth, min = -(onb.n - 1) * w, x = g.base + dx;
+    if (x > 0) x = gncRubber(x, w); else if (x < min) x = min + gncRubber(x - min, w);
+    onb.spring.jump(x);
+  }, { passive: false });
+  function end() {
+    var s = g; g = null;
+    if (!s || !s.lock || !onb) return;
+    var vel = s.tr.velocity(), w = vp.clientWidth, endX = s.dx + gncProject(vel, 0.99);
+    var target = onb.i;
+    if (Math.abs(endX) > w * 0.25) target = onb.i + (endX < 0 ? 1 : -1);
+    onbGo(target, { velocity: vel });
+  }
+  vp.addEventListener('touchend', end, { passive: true });
+  vp.addEventListener('touchcancel', end, { passive: true });
+  window.addEventListener('resize', function () { if (onb) onbGo(onb.i, { instant: true }); });
+}
+function gncOnbClose(how) {
+  if (!onb) return;
+  var o = onb; onb = null;
+  if (!o.replay) onbSave();
+  o.el.classList.remove('open');
+  document.body.classList.remove('onb-lock');
+  setTimeout(function () { o.el.remove(); }, GNC_REDUCED.matches ? 0 : 320);
+  try { if (o.prevFocus && o.prevFocus.focus) o.prevFocus.focus({ preventScroll: true }); } catch (e) {}
+  if (how === 'cta') {
+    if (o.hasOrder && typeof repeatLastOrder === 'function') setTimeout(repeatLastOrder, 260);   // oeffnet selbst den Warenkorb
+    else gncGoView('menu');
+  } else if (how === 'look' && o.hasOrder) gncGoView('menu');
+  // Wer in der Einfuehrung schon nach Mitteilungen gefragt wurde, bekommt die
+  // Start-Frage nicht direkt hinterher (sonst zweimal dieselbe Bitte).
+  var askedPush = o.role !== 'stamm' && typeof gncPushState === 'function' && gncPushState() === 'off';
+  if (askedPush) { try { localStorage.setItem('gnc_push_frage', String(Date.now())); } catch (e) {} }
+  else if (!o.replay && typeof initPushOptIn === 'function') setTimeout(initPushOptIn, 1200);
+}
+// Automatisch nur beim Start der App, nicht bei Rueckkehr von der Zahlung,
+// nicht ueber offenen Ebenen und hoechstens einmal je Version.
+var onbChecked = false;
+if (onbEnabled()) setTimeout(gncOnbMaybeStart, 1300);
+function gncOnbMaybeStart() {
+  if (onbChecked || !onbEnabled()) return;
+  onbChecked = true;
+  if (!onbPending()) return;
+  try { if (localStorage.getItem(PENDING_STORE_KEY)) return; } catch (e) {}
+  if (/[?&](checkout|bezahlt|status|ref|grp|gruppe)=/.test(location.search)) return;
+  setTimeout(function () {
+    if (gncOverlayOpen() || document.getElementById('pushOptIn')) { onbChecked = false; return; }
+    gncOnbOpen();
+  }, 700);
+}
+
 
 function highlightToday() {  const today = new Date().getDay();
   document.querySelectorAll('#hoursList li').forEach(li => {
@@ -13802,6 +14579,7 @@ window.addEventListener('load', function () {
     // Swipe (mobil) mit Richtungs-Lock: horizontal = Slide wechseln, vertikal = normal scrollen
     var sx = null, sy = null, lockedH = false, dragDx = 0;
     wrap.style.touchAction = 'pan-y';   // Browser: vertikal scrollen ok, horizontal gehört uns
+    wrap.setAttribute('data-noswipe', '');   // Tab-Wischen der App hier aussetzen
     wrap.addEventListener('touchstart', function (e) {
       // Tippen auf Pfeile/Punkte/Bestellbutton ist kein Wisch
       if (e.target.closest('.sig-arrow, .sig-dot, button')) { sx = null; return; }
@@ -14271,6 +15049,9 @@ window.addEventListener('load', function () {
      Systems (an oder abgelehnt) kommt sie nie wieder. */
   function initPushOptIn() {
     if (!APP_FORCED) return;
+    // Einfuehrung offen oder noch nicht gesehen: die fragt selbst bzw. ruft uns danach
+    if (typeof onb !== 'undefined' && onb) return;
+    if (typeof onbPending === 'function' && onbPending()) return;
     if (window.gncPushState() !== 'off') return;
     try {
       var spaeter = Number(localStorage.getItem('gnc_push_frage') || 0);
@@ -14331,6 +15112,7 @@ window.addEventListener('load', function () {
   initSheetDrag();
   initPushUI();
   initPushOptIn();
+  window.initPushOptIn = initPushOptIn;   // die Einfuehrung ruft die Frage nach dem Schliessen
 
   initSignatureCarousel();
   initCartFab();
