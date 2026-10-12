@@ -12580,6 +12580,28 @@ function grpFehler(text) {
 }
 
 function groupLink(id) { return location.origin + '/?g=' + id; }
+/* Zeilen einer Gruppen-Auswahl. deutsch=true fuer den Server (Kubis Notiz beim
+   Uebernehmen), sonst in der Sprache des Betrachters (Anzeige beim Gastgeber). */
+function grpZeilen(entries, deutsch) {
+  const nameVon = m => deutsch ? m.name : productName(m);
+  const finde = id => MENU.find(m => m.id === id);
+  const dipN = id => { const d = finde(id); return d ? nameVon(d).replace(/^(Dip|Sos):\s*/, '') : ''; };
+  const drinkN = id => { const d = finde(id); return d ? nameVon(d) : ''; };
+  const sideN = id => { const o = sideOption(id); const m = finde(o.id); return m ? nameVon(m) : o.label; };
+  return Object.values(entries || {}).map(entry => {
+    const item = entry && finde(entry.menuId);
+    if (!item) return null;
+    let nm;
+    if (entry.isMenu) {
+      nm = nameVon(item) + '-' + (deutsch ? 'Menü' : t('menu.meal_suffix')) + (entry.double ? ' (Double Patty)' : '')
+        + ' [' + sideN(entry.side) + ', ' + drinkN(entry.drink) + ', ' + dipN(entry.dip) + ']';
+    } else {
+      nm = nameVon(item) + (entry.double ? ' (Double Patty)' : '');
+      if (entry.dip) nm += ' [' + dipN(entry.dip) + ']';
+    }
+    return { name: nm, qty: entry.qty };
+  }).filter(Boolean);
+}
 /* Maskierung für eingesetzte Werte. Anführungszeichen MÜSSEN mit: escG steht
    an neun Stellen in einem Attribut (value="${escG(...)}" bei Name, Telefon,
    Anschrift, Firma, Geburtstag). Ohne sie beendet ein " im Wert das Attribut
@@ -12686,7 +12708,7 @@ async function renderGroupHost(preloaded, refresh) {
   const rows = (g.contributions || []).map(c =>
     `<div style="padding:0.55rem 0;border-bottom:1px solid var(--color-border);">
        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:0.9rem;"><span>${escG(c.person)}</span><span style="color:var(--color-orange-bright);">${formatPrice(c.total || 0)}</span></div>
-       <div style="color:var(--color-text-muted);font-size:0.78rem;">${c.lines.map(l => l.qty + '× ' + escG(l.name)).join(' · ')}</div>
+       <div style="color:var(--color-text-muted);font-size:0.78rem;">${((c.entries && grpZeilen(c.entries, false).length) ? grpZeilen(c.entries, false) : c.lines).map(l => l.qty + '× ' + escG(l.name)).join(' · ')}</div>
      </div>`).join('');
   document.getElementById('groupBody').innerHTML = `
     <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('grp.host_intro').replace('{host}', escG(g.host))}</p>
@@ -12892,19 +12914,7 @@ async function submitToGroup(btn) {
   person = person.trim().slice(0, 30);
   if (!person) return;
   try { localStorage.setItem('gnc_group_person', person); } catch(e) {}
-  const lines = Object.entries(cart).map(([key, entry]) => {
-    const item = MENU.find(m => m.id === entry.menuId);
-    if (!item) return null;
-    let nm;
-    if (entry.isMenu) {
-      const side = sideOption(entry.side);
-      nm = item.name + '-Menü' + (entry.double ? ' (Double Patty)' : '') + ' [' + side.label + ', ' + drinkName(entry.drink) + ', ' + dipShortName(entry.dip) + ']';
-    } else {
-      nm = entry.double ? item.name + ' (Double Patty)' : item.name;
-      if (entry.dip) nm += ' [' + dipShortName(entry.dip) + ']';
-    }
-    return { name: nm, qty: entry.qty };
-  }).filter(Boolean);
+  const lines = grpZeilen(cart, true);   // deutsch: landet beim Uebernehmen in Kubis Bestellnotiz
   const sendBtn = btn || document.getElementById('cartCheckoutBtn');
   groupSending = true;
   gncBusy(sendBtn, true);
