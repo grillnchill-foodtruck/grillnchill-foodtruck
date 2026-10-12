@@ -62,6 +62,8 @@
 <style>
 /* Selbst gehostete Schriften (DSGVO-sauber, kein Google-Roundtrip) */
 @font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+/* Bowlby One kennt I mit Punkt, S/s mit Cedille und G/g mit Breve nicht; diese Datei liefert sie im selben Stil (werkzeug/schrift-tuerkisch.py) */
+@font-face{font-family:'GNC Display Ext';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/gnc-display-ext-400.woff2')format('woff2');unicode-range:U+011E-011F,U+0130,U+015E-015F}
 @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400-normal.woff2')format('woff2')}
 @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/inter-latin-500-normal.woff2')format('woff2')}
 @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/inter-latin-600-normal.woff2')format('woff2')}
@@ -675,7 +677,7 @@
   --color-error: #E04848;
   --color-yellow: #FFC93C;
 
-  --font-display: 'Bowlby One', 'Anton', Impact, sans-serif;
+  --font-display: 'Bowlby One', 'GNC Display Ext', 'Anton', Impact, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
   --radius-sm: 8px;
@@ -5209,6 +5211,8 @@ html.imgfx img[loading="lazy"].img-in { opacity: 1; }
 /* --- Typo-Rhythmus: Display-Headlines etwas ruhiger tracken --- */
 h1, h2, h3, .display { letter-spacing: -0.01em; }
 h1 { line-height: 0.92; }
+/* Mehr Zeilenabstand nur fuer Titel, in denen ein Akzent oder eine Cedille sonst in die Nachbarzeile ragt (Skript AKZENT-LUFT) */
+.gnc-luft { line-height: 1.22 !important; }
 
 /* --- Section-Header: einheitlicher Rhythmus + Signatur-Akzent --- */
 .section-header { margin-bottom: var(--space-7); }
@@ -5664,7 +5668,7 @@ body.onb-lock { overflow: hidden; }
   <div class="nav-inner">
     <a href="#top" class="nav-logo" aria-label="Grilln Chill Startseite" data-i18n-aria="a11y.home">
       <img src="logo.png" alt="Grilln Chill Logo" />
-      <span>Grilln Chill</span>
+      <span lang="en">Grilln Chill</span>
     </a>
     <ul class="nav-links">
       <li><a href="#menu" data-i18n="nav.menu">Speisekarte</a></li>
@@ -6104,7 +6108,7 @@ body.onb-lock { overflow: hidden; }
       </div>
       <div class="cat-card cat-featured reveal">
         <div class="cat-badge" data-i18n="catp.badge">Beliebteste Wahl</div>
-        <h3>Grill'n Chill</h3>
+        <h3 lang="en">Grill'n Chill</h3>
         <div class="cat-price">26&nbsp;€ <span data-i18n="catp.per">pro Person</span></div>
         <div class="cat-min" data-i18n="catp.min30">ab 30 Personen</div>
         <ul>
@@ -14234,6 +14238,70 @@ if (GNC_WATCH) {
   setInterval(gncWatchSync, 60000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) gncWatchSync(); });
 }
+
+/* ====================================================================
+   AKZENT-LUFT: Bowlby One setzt Akzente auf Grossbuchstaben (E mit Akut,
+   O/U mit Trema, tuerkisches I mit Punkt ...) bis 1,11 em ueber die
+   Grundlinie, Cedillen (C/S) 0,26 em darunter. Bei 0,92 bis 1,1 Zeilen-
+   abstand ragt so ein Zeichen in die Nachbarzeile, sobald ein Akzent in
+   einer Folgezeile steht oder eine Cedille vor einer Folgezeile. Nur diese
+   Titel bekommen die Klasse gnc-luft (mehr Zeilenabstand), alle anderen
+   behalten den engen Satz. Pruefung nach Sprachwechsel, neuem Inhalt,
+   geoeffneten Overlays, Groessenaenderung und geladenen Schriften.
+   ==================================================================== */
+(function () {
+  var SEL = 'h1, h2, h3, .display, .onb-title, .menu-card-title, .gncj-head2';
+  var HOCH = /[ÀÁÂÃÄÅÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝĞİ]/;
+  var TIEF = /[ÇŞ]/;
+  var plan = 0;
+  var r = document.createRange();
+
+  function sprache(el) { return ((el.closest('[lang]') || document.documentElement).lang) || 'de'; }
+
+  // true = braucht Luft, false = eng lassen, null = gerade nicht sichtbar
+  function braucht(el) {
+    var cs = getComputedStyle(el);
+    if (!/Bowlby/.test(cs.fontFamily)) return null;
+    var probe = cs.textTransform === 'uppercase' ? el.textContent.toLocaleUpperCase(sprache(el)) : el.textContent;
+    if (!HOCH.test(probe) && !TIEF.test(probe)) return false;
+    var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), n, oben = null, unten = null, hoch = [], tief = [];
+    while ((n = w.nextNode())) {
+      var gross = getComputedStyle(n.parentElement).textTransform === 'uppercase', sp = sprache(n.parentElement);
+      for (var i = 0; i < n.data.length; i++) {
+        var c = n.data[i];
+        if (/\s/.test(c)) continue;
+        r.setStart(n, i); r.setEnd(n, i + 1);
+        var b = r.getClientRects()[0];
+        if (!b || !b.width) continue;
+        if (oben === null || b.top < oben) oben = b.top;
+        if (unten === null || b.top > unten) unten = b.top;
+        var g = gross ? c.toLocaleUpperCase(sp) : c;
+        if (HOCH.test(g)) hoch.push(b.top);
+        if (TIEF.test(g)) tief.push(b.top);
+      }
+    }
+    if (oben === null) return null;
+    var halb = parseFloat(cs.fontSize) / 2;
+    return hoch.some(function (t) { return t > oben + halb; }) || tief.some(function (t) { return t < unten - halb; });
+  }
+  function pruefen() {
+    plan = 0;
+    var els = document.querySelectorAll(SEL);
+    for (var i = 0; i < els.length; i++) {
+      var need = braucht(els[i]);
+      if (need !== null && els[i].classList.contains('gnc-luft') !== need) els[i].classList.toggle('gnc-luft', need);
+    }
+  }
+  function bald() { if (!plan) plan = setTimeout(pruefen, 120); }
+
+  new MutationObserver(bald).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'hidden', 'lang'] });
+  window.addEventListener('resize', bald);
+  if (document.fonts) {
+    if (document.fonts.ready) document.fonts.ready.then(bald);
+    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', bald);
+  }
+  bald();
+})();
 
 /* ====================================================================
    APP 1.2 (BUILD 7): Live-Status, "Bin da", Haptik, Teilen, Team-Kopplung,

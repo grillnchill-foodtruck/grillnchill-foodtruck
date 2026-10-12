@@ -629,7 +629,7 @@
     /* Abzeichen im Konto */
     '.gncj-sec{margin:0 0 1rem;padding:0;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;color:#F5E9D0}',
     '.gncj-head{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;margin:0 0 .55rem}',
-    ".gncj-h{font-family:'Bowlby One',Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:1rem;letter-spacing:.02em;line-height:1.2;color:#F5E9D0;margin:0}",
+    ".gncj-h{font-family:'Bowlby One','GNC Display Ext',Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:1rem;letter-spacing:.02em;line-height:1.2;color:#F5E9D0;margin:0}",
     '.gncj-count{font-size:.75rem;font-weight:600;color:#9A8E7A;white-space:nowrap}',
     '.gncj-load{font-size:.78rem;color:#9A8E7A;margin:0}',
     '.gncj-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(4.9rem,1fr));gap:.45rem}',
@@ -654,7 +654,7 @@
     '.gncj-teaser{display:flex;align-items:center;gap:.8rem;margin:0 0 .9rem;padding:.85rem .9rem;border-radius:14px;border:1px solid rgba(232,90,36,.55);background:radial-gradient(140% 120% at 0% 0%,rgba(232,90,36,.35),rgba(232,90,36,0) 60%),#1C1C1C}',
     '.gncj-teaser-t{flex:1;min-width:0}',
     '.gncj-teaser-k{display:block;font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#FF7A3D;margin-bottom:.15rem}',
-    ".gncj-teaser-n{display:block;font-family:'Bowlby One',Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:1.02rem;line-height:1.2;color:#F5E9D0}",
+    ".gncj-teaser-n{display:block;font-family:'Bowlby One','GNC Display Ext',Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:1.02rem;line-height:1.2;color:#F5E9D0}",
     '.gncj-teaser-btn{-webkit-appearance:none;appearance:none;flex:none;min-height:44px;padding:0 1.1rem;border:0;border-radius:999px;background:#CC4715;color:#fff;font:700 .85rem/1 Inter,-apple-system,sans-serif;cursor:pointer;transition:background .2s,transform .2s}',
     '.gncj-teaser-btn:hover{background:#E85A24}',
     '.gncj-teaser-btn:active{transform:scale(.97)}',
@@ -677,7 +677,7 @@
     '.gncj-ov.is-paused .gncj-bar.is-active i{animation-play-state:paused}',
     '@keyframes gncj-fill{from{width:0}to{width:100%}}',
     '.gncj-top{position:absolute;left:16px;right:6px;top:calc(20px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;z-index:6;pointer-events:none}',
-    ".gncj-brand{font-family:'Bowlby One',Impact,sans-serif;font-size:.8rem;letter-spacing:.04em;color:rgba(245,233,208,.85)}",
+    ".gncj-brand{font-family:'Bowlby One','GNC Display Ext',Impact,sans-serif;font-size:.8rem;letter-spacing:.04em;color:rgba(245,233,208,.85)}",
     '.gncj-x{-webkit-appearance:none;appearance:none;pointer-events:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:0;border-radius:50%;background:rgba(10,10,10,.35);color:#F5E9D0;cursor:pointer;padding:0}',
     '.gncj-x:focus-visible{outline:2px solid #FF7A3D;outline-offset:2px}',
     '.gncj-x svg{width:20px;height:20px}',
@@ -693,11 +693,11 @@
     '.gncj-ov.is-rm .gncj-slide.is-active{transition-delay:0s}',
     '.gncj-inner{width:100%;max-width:24rem;margin:0 auto;text-align:center}',
     '.gncj-kick{margin:0 0 .6rem;font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#FF7A3D}',
-    ".gncj-year{margin:0 0 1.4rem;font-family:'Bowlby One',Impact,sans-serif;font-weight:400;font-size:clamp(3.4rem,17vw,5.6rem);font-size:clamp(3.4rem,17cqi,5.6rem);line-height:.95;color:#FF7A3D;background:linear-gradient(180deg,#FF7A3D,#E85A24);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}",
-    ".gncj-big{margin:0;font-family:'Bowlby One',Impact,sans-serif;font-weight:400;font-size:clamp(5rem,30vw,8.6rem);font-size:clamp(5rem,30cqi,8.6rem);line-height:.95;color:#F5E9D0;font-variant-numeric:tabular-nums}",
-    ".gncj-lbl{margin:.35rem 0 0;font-family:'Bowlby One',Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:1.35rem;line-height:1.15;color:#F5E9D0}",
+    ".gncj-year{margin:0 0 1.4rem;font-family:'Bowlby One','GNC Display Ext',Impact,sans-serif;font-weight:400;font-size:clamp(3.4rem,17vw,5.6rem);font-size:clamp(3.4rem,17cqi,5.6rem);line-height:.95;color:#FF7A3D;background:linear-gradient(180deg,#FF7A3D,#E85A24);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}",
+    ".gncj-big{margin:0;font-family:'Bowlby One','GNC Display Ext',Impact,sans-serif;font-weight:400;font-size:clamp(5rem,30vw,8.6rem);font-size:clamp(5rem,30cqi,8.6rem);line-height:.95;color:#F5E9D0;font-variant-numeric:tabular-nums}",
+    ".gncj-lbl{margin:.35rem 0 0;font-family:'Bowlby One','GNC Display Ext',Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:1.35rem;line-height:1.15;color:#F5E9D0}",
     '.gncj-sub{margin:.9rem 0 0;font-size:1rem;font-weight:500;line-height:1.45;color:#E6D9BC}',
-    ".gncj-head2{margin:0;font-family:'Bowlby One',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;text-wrap:balance;font-size:clamp(1.9rem,9vw,2.7rem);font-size:clamp(1.9rem,9cqi,2.7rem);line-height:1.08;color:#F5E9D0;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}",
+    ".gncj-head2{margin:0;font-family:'Bowlby One','GNC Display Ext',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:0;text-wrap:balance;font-size:clamp(1.9rem,9vw,2.7rem);font-size:clamp(1.9rem,9cqi,2.7rem);line-height:1.08;color:#F5E9D0;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto}",
     '.gncj-head2.gncj-long{font-size:clamp(1.45rem,6.6vw,2.05rem);font-size:clamp(1.45rem,6.6cqi,2.05rem)}',
     '.gncj-pic{position:relative;display:block;width:min(56vw,13rem);height:min(56vw,13rem);width:min(56cqi,13rem);height:min(56cqi,13rem);margin:0 auto 1.4rem;border-radius:50%;overflow:hidden;background:#140b07;border:4px solid #E85A24;box-shadow:0 0 0 10px rgba(232,90,36,.18),0 24px 60px rgba(0,0,0,.5)}',
     /* Produktbilder haben einen eigenen Rahmen und das Logo unten: Mitte vergroessern */
@@ -706,7 +706,7 @@
     '.gncj-rows{list-style:none;margin:1.2rem 0 0;padding:0;text-align:left;display:grid;gap:.7rem}',
     '.gncj-row{display:flex;flex-direction:column;gap:.15rem;padding:.85rem 1rem;border-radius:14px;background:rgba(28,28,28,.92);border:1px solid #2A2520}',
     '.gncj-row-k{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9A8E7A}',
-    ".gncj-row-v{font-family:'Bowlby One',Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:1.35rem;line-height:1.15;color:#F5E9D0}",
+    ".gncj-row-v{font-family:'Bowlby One','GNC Display Ext',Impact,sans-serif;font-weight:400;text-transform:uppercase;font-size:1.35rem;line-height:1.15;color:#F5E9D0}",
     '.gncj-earned{list-style:none;margin:1.3rem auto 0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;max-width:22rem}',
     '.gncj-big-s{font-size:clamp(2.6rem,14vw,4.2rem);font-size:clamp(2.6rem,14cqi,4.2rem);white-space:nowrap;text-transform:uppercase}',
     '.gncj-earned li{display:flex;align-items:center;gap:.35rem;padding:.4rem .7rem;border-radius:999px;background:rgba(28,28,28,.9);border:1px solid rgba(232,90,36,.55);font-size:.78rem;font-weight:700;color:#F5E9D0}',
@@ -1310,7 +1310,7 @@
   }
 
   /* --- Bild 1080 x 1920 ------------------------------------------------- */
-  var BOWLBY = "'Bowlby One', Impact, sans-serif";
+  var BOWLBY = "'Bowlby One', 'GNC Display Ext', Impact, sans-serif";
   var INTER = "Inter, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
   function schriftenBereit() {
@@ -1319,6 +1319,7 @@
     try {
       alle = Promise.all([
         doc.fonts.load('400 80px "Bowlby One"'),
+        doc.fonts.load('400 80px "GNC Display Ext"', '\u0130\u015E\u011E'),
         doc.fonts.load('700 40px Inter'),
         doc.fonts.load('600 40px Inter'),
         doc.fonts.load('500 40px Inter')
