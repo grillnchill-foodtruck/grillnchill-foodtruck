@@ -5420,6 +5420,7 @@ body.onb-lock { overflow: hidden; }
   transition: opacity .32s ease, transform .32s cubic-bezier(.2, .8, .2, 1);
 }
 .gnc-onb.open { opacity: 1; transform: none; }
+.gnc-onb:not(.open) { pointer-events: none; }   /* beim Ausblenden faengt die Ebene keine Tipps mehr ab */
 .onb-top {
   display: flex; align-items: center; gap: 0.9rem;
   width: 100%; max-width: calc(560px + 2.4rem); margin: 0 auto; min-height: 44px;
@@ -5434,9 +5435,15 @@ body.onb-lock { overflow: hidden; }
 .onb-track { display: flex; height: 100%; will-change: transform; }
 .onb-slide {
   flex: 0 0 100%; min-width: 0;
-  display: flex; flex-direction: column; justify-content: center;
+  display: flex; flex-direction: column;
   padding: 1.4rem var(--onb-pr) 1.4rem var(--onb-pl);
+  /* Passt eine Karte nicht (kleines iPhone, grosse Schrift), scrollt sie, statt
+     oben und unten abgeschnitten zu werden; seitlich ragt nichts in die Nachbarkarte */
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
 }
+/* Mittig, solange Platz ist; sonst beginnt die Karte oben (statt justify-content: center) */
+.onb-slide > :first-child { margin-top: auto; }
+.onb-slide > :last-child { margin-bottom: auto; }
 .onb-art {
   width: 76px; height: 76px; flex: none;
   display: grid; place-items: center;
@@ -5462,7 +5469,9 @@ body.onb-lock { overflow: hidden; }
 .onb-title {
   margin: 0 0 1rem;
   font-family: var(--font-display); font-weight: 400; text-transform: uppercase;
-  font-size: clamp(1.85rem, 8vw, 2.6rem); line-height: 0.98; letter-spacing: -0.01em;
+  font-size: clamp(1.7rem, 7.4vw, 2.6rem); line-height: 0.98; letter-spacing: -0.01em;
+  padding-top: 0.16em;   /* Punkte ueber Ö/Ü (bis 1,11 em hoch) beruehren sonst die Zeile darueber */
+  overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto;   /* "Gruppenbestellung" ragte auf 440 pt ueber den Rand */
   color: var(--color-cream);
   text-wrap: balance;
 }
@@ -5525,12 +5534,24 @@ body.onb-lock { overflow: hidden; }
   92% { opacity: 1; transform: translateX(0); }
   98%, 100% { opacity: 0; transform: translateX(0); }
 }
+/* Niedrige iPhones (SE, mini, 8): alles enger, damit die Karte mit fuenf Punkten ohne Scrollen passt */
+@media (max-height: 760px) {
+  .onb-slide { padding-top: 0.8rem; padding-bottom: 0.8rem; }
+  .onb-art { width: 58px; height: 58px; margin-bottom: 1rem; border-radius: 18px; }
+  .onb-art svg { width: 30px; height: 30px; }
+  .onb-art-hero, .onb-art-hero img { width: 72px; height: 72px; }
+  .onb-title { margin-bottom: 0.7rem; }
+  .onb-text { font-size: 0.95rem; line-height: 1.5; }
+  .onb-steps, .onb-perks, .onb-news { gap: 0.45rem; }
+  .onb-steps li, .onb-perks li, .onb-news li { padding: 0.55rem 0.85rem; font-size: 0.93rem; }
+  .onb-text + .onb-news { margin-top: 0.8rem; }
+  .onb-demo { margin-top: 1rem; }
+}
 @media (max-height: 640px) {
-  .onb-slide { overflow-y: auto; }   /* Querformat/kleine Geraete: Karte scrollt statt abzuschneiden */
   .onb-art { width: 60px; height: 60px; margin-bottom: 1rem; border-radius: 18px; }
   .onb-art svg { width: 30px; height: 30px; }
   .onb-art-hero, .onb-art-hero img { width: 84px; height: 84px; }
-  .onb-title { font-size: clamp(1.6rem, 6.5vw, 2.1rem); }
+  .onb-title { font-size: clamp(1.5rem, 6.5vw, 2.1rem); }
   .onb-demo { margin-top: 1rem; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -14644,6 +14665,7 @@ function gncOnbOpen(opts) {
   onb.spring = gncSpring(function (x) { onb && (onb.track.style.transform = 'translate3d(' + x.toFixed(1) + 'px,0,0)'); });
   el.querySelector('.onb-skip').addEventListener('click', function () { gncOnbClose('skip'); });
   el.querySelector('.onb-next').addEventListener('click', function () {
+    if (!onb) return;
     if (onb.i < onb.n - 1) onbGo(onb.i + 1);
     else gncOnbClose('cta');
   });
@@ -14698,7 +14720,9 @@ function onbGo(i, o) {
   next.textContent = !last ? t('onb.next') : (onb.hasOrder ? t('onb.cta_again') : t('onb.cta_menu'));
   alt.hidden = !last;
   alt.textContent = t(onb.hasOrder ? 'onb.cta_menu' : 'onb.cta_look');
-  onb.el.querySelector('.onb-skip').hidden = last;
+  // Oben bleibt immer ein Ausgang: auf der letzten Karte "Schliessen" statt "Ueberspringen".
+  // Vorher verschwand der Knopf dort; lag unten etwas ueber den Knoepfen, kam man nicht mehr raus.
+  onb.el.querySelector('.onb-skip').textContent = t(last ? 'a11y.close' : 'onb.skip');
   var live = document.getElementById('onbLive');
   if (live) live.textContent = t('onb.step').replace('{n}', onb.i + 1).replace('{m}', onb.n);
 }
@@ -14731,6 +14755,8 @@ function onbGestures(el) {
     var vel = s.tr.velocity(), w = vp.clientWidth, endX = s.dx + gncProject(vel, 0.99);
     var target = onb.i;
     if (Math.abs(endX) > w * 0.25) target = onb.i + (endX < 0 ? 1 : -1);
+    // Ueber die letzte Karte hinaus gewischt: Einfuehrung schliessen wie "Ueberspringen"
+    if (target > onb.n - 1) { gncOnbClose('skip'); return; }
     onbGo(target, { velocity: vel });
   }
   vp.addEventListener('touchend', end, { passive: true });
