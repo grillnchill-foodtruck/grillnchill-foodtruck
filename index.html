@@ -3309,6 +3309,9 @@ body.body-scroll-locked .sticky-cart { display: none !important; }
 }
 textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+/* Vor- und Nachname bleiben auch auf dem Handy nebeneinander, erst ganz schmal untereinander */
+.co-name-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 0.7rem; }
+@media (max-width: 340px) { .co-name-row { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 480px) {
   .form-row { grid-template-columns: 1fr; gap: 0; }
 }
@@ -6933,7 +6936,7 @@ function saveCustomerData() {
     const prev = loadCustomerData() || {};
     // Firma und Rechnungsadresse gehoeren dazu, sonst sind sie beim Zurueckgehen
     // im Bestellvorgang weg.
-    const fields = { name:'co-name', phone:'co-phone', email:'co-email', street:'co-street',
+    const fields = { firstName:'co-first', lastName:'co-last', phone:'co-phone', email:'co-email', street:'co-street',
                      zip:'co-zip', city:'co-city', note:'co-note',
                      company:'co-company', invStreet:'co-inv-street',
                      invZip:'co-inv-zip', invCity:'co-inv-city' };
@@ -6942,9 +6945,14 @@ function saveCustomerData() {
       const el = document.getElementById(id);
       if (el) data[key] = el.value || '';
     }
+    // "name" (ganzer Name) lesen weitere Stellen, z. B. die Begruessung in der Einfuehrung
+    if (document.getElementById('co-first')) data.name = coVollerName(data.firstName, data.lastName);
     localStorage.setItem(CUSTOMER_STORE_KEY, JSON.stringify(data));
   } catch (e) {}
 }
+function coVollerName(vor, nach) { return [vor, nach].map(s => String(s || '').trim()).filter(Boolean).join(' '); }
+// Altdaten und Konto kennen nur einen ganzen Namen: erstes Wort = Vorname, Rest = Nachname
+function coNameTeile(n) { const w = String(n || '').trim().split(/\s+/).filter(Boolean); return { vor: w[0] || '', nach: w.slice(1).join(' ') }; }
 function loadCustomerData() {
   try { return JSON.parse(localStorage.getItem(CUSTOMER_STORE_KEY) || 'null'); } catch (e) { return null; }
 }
@@ -10963,9 +10971,17 @@ function renderCart() {
       ${usageNote}
       ${orderStatusNote}
       <form id="checkoutForm" novalidate onsubmit="submitOrder(event)">
-        <div class="form-group">
-          <label for="co-name">${t('co.name')}</label>
-          <input type="text" id="co-name" class="form-input" required placeholder="${t('co.name_ph')}" autocomplete="name" />
+        <!-- Vor- und Nachname getrennt: mit einem Feld kamen oft nur Vornamen an.
+             An Server, Mails und Kasse geht weiter ein Feld "Vorname Nachname". -->
+        <div class="co-name-row">
+          <div class="form-group">
+            <label for="co-first">${t('co.first_name')}</label>
+            <input type="text" id="co-first" class="form-input" required pattern=".*\\S.*" placeholder="${t('co.first_ph')}" autocomplete="given-name" autocapitalize="words" />
+          </div>
+          <div class="form-group">
+            <label for="co-last">${t('co.last_name')}</label>
+            <input type="text" id="co-last" class="form-input" required pattern=".*\\S.*" placeholder="${t('co.last_ph')}" autocomplete="family-name" autocapitalize="words" />
+          </div>
         </div>
         <div class="form-group">
           <label for="co-email">${t('co.email')}</label>
@@ -11147,7 +11163,7 @@ function renderCart() {
     // Gespeicherte Kundendaten wiederherstellen + bei jeder Eingabe sichern,
     // damit nichts verloren geht, wenn man das Bestellfenster schließt oder
     // von der SumUp-Seite zurückkommt.
-    const _custMap = { 'co-name':'name','co-phone':'phone','co-email':'email','co-street':'street',
+    const _custMap = { 'co-first':'firstName','co-last':'lastName','co-phone':'phone','co-email':'email','co-street':'street',
                        'co-zip':'zip','co-city':'city','co-note':'note',
                        'co-company':'company','co-inv-street':'invStreet',
                        'co-inv-zip':'invZip','co-inv-city':'invCity' };
@@ -11158,6 +11174,13 @@ function renderCart() {
       if (_savedCust && _savedCust[key]) el.value = _savedCust[key];
       el.addEventListener('input', saveCustomerData);
     });
+    // Gespeichert ist nur der ganze Name (Bestellungen vor der Aufteilung)
+    if (_savedCust && !_savedCust.firstName && !_savedCust.lastName && _savedCust.name) {
+      const tl = coNameTeile(_savedCust.name);
+      const f = document.getElementById('co-first'), l = document.getElementById('co-last');
+      if (f && !f.value) f.value = tl.vor;
+      if (l && !l.value) l.value = tl.nach;
+    }
     // Angemeldete Kunden: Kontaktdaten aus dem Konto vorbelegen – wichtig vor
     // allem in der App, deren Speicher vom Browser getrennt ist (dort greift
     // die localStorage-Wiederherstellung von frueheren Bestellungen nicht).
@@ -11165,7 +11188,9 @@ function renderCart() {
     if (accountLoggedIn()) {
       const p = ACCOUNT.profile;
       const setzK = (id, v) => { const el = document.getElementById(id); if (el && !el.value && v) el.value = v; };
-      setzK('co-name', p.name);
+      const kn = coNameTeile(p.name);
+      setzK('co-first', kn.vor);
+      setzK('co-last', kn.nach);
       setzK('co-email', ACCOUNT.email);
       setzK('co-phone', p.phone);
       // Lieferanweisungen aus dem Konto -> Notizfeld (nur bei Lieferung;
@@ -11467,7 +11492,7 @@ async function submitOrder(e) {
   const soldEntry = Object.values(cart).find(en => en && isSoldOut(en.menuId));
   if (soldEntry) { releaseCheckout(); flashCartNotice(t('shop.soldout_cart')); return; }
   const form = e.target;
-  const name = form['co-name'].value;
+  const name = coVollerName(form['co-first'].value, form['co-last'].value);
   const phone = form['co-phone'].value;
   const email = form['co-email'] ? form['co-email'].value : '';
   const note = form['co-note'].value + (groupOrderNote ? '\n\n' + groupOrderNote : '');
