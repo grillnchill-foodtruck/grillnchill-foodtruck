@@ -12593,7 +12593,8 @@ function openGroupOverlay() {
   grpVorherFokus = document.activeElement;
   document.getElementById('groupOverlay').style.display = 'flex';
   document.body.style.overflow = 'hidden';
-  setTimeout(function () { const zu = document.querySelector('#groupOverlay button[aria-label]'); if (zu) zu.focus(); }, 60);
+  // Fokus fuer Screenreader und Tastatur, aber ohne sichtbaren Rahmen bei Tipp-Bedienung
+  setTimeout(function () { const zu = document.querySelector('#groupOverlay button[aria-label]'); if (zu) zu.focus({ focusVisible: false }); }, 60);
   if (groupJoin) { groupJoin.sent ? renderGroupSent() : renderGroupJoin(); }
   else if (groupHost) renderGroupHost();
   else renderGroupStart();
@@ -12609,6 +12610,14 @@ function renderGroupSent() {
       <p style="color:var(--color-text-muted);font-size:0.78rem;margin:0 0 1.2rem;">${t('grp.sent_again')}</p>
       <button class="btn btn-primary btn-block" onclick="closeGroupOverlay()">${t('grp.sent_ok')}</button>
     </div>`;
+}
+/* Teilnehmer: zur Speisekarte. In der App (und in iMessage) ist sie ein eigener
+   Tab, dort waere scrollIntoView auf der Startseite ins Leere gelaufen. */
+function grpZurKarte() {
+  closeGroupOverlay();
+  if (APP_FORCED && typeof gncGoView === 'function') { gncGoView('menu'); return; }
+  const m = document.getElementById('menu');
+  if (m) m.scrollIntoView({ behavior: 'smooth' });
 }
 function closeGroupOverlay() {
   document.getElementById('groupOverlay').style.display = 'none';
@@ -12868,7 +12877,7 @@ function renderGroupJoin() {
     <ol style="color:var(--color-text-muted);font-size:0.84rem;margin:0 0 1.2rem;padding-left:1.2rem;line-height:1.8;">
       <li>${t('grp.join_s1')}</li><li>${t('grp.join_s2')}</li><li>${t('grp.join_s3')}</li>
     </ol>
-    <button class="btn btn-primary btn-block" onclick="closeGroupOverlay();document.getElementById('menu').scrollIntoView({behavior:'smooth'})">${t('grp.join_go')}</button>
+    <button class="btn btn-primary btn-block" onclick="grpZurKarte()">${t('grp.join_go')}</button>
   `;
 }
 
