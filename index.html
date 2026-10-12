@@ -10976,11 +10976,11 @@ function renderCart() {
         <div class="co-name-row">
           <div class="form-group">
             <label for="co-first">${t('co.first_name')}</label>
-            <input type="text" id="co-first" class="form-input" required pattern=".*\\S.*" placeholder="${t('co.first_ph')}" autocomplete="given-name" autocapitalize="words" />
+            <input type="text" id="co-first" class="form-input" required maxlength="40" pattern=".*\\S.*" placeholder="${t('co.first_ph')}" autocomplete="given-name" autocapitalize="words" />
           </div>
           <div class="form-group">
             <label for="co-last">${t('co.last_name')}</label>
-            <input type="text" id="co-last" class="form-input" required pattern=".*\\S.*" placeholder="${t('co.last_ph')}" autocomplete="family-name" autocapitalize="words" />
+            <input type="text" id="co-last" class="form-input" required maxlength="40" pattern=".*\\S.*" placeholder="${t('co.last_ph')}" autocomplete="family-name" autocapitalize="words" />
           </div>
         </div>
         <div class="form-group">
@@ -11877,10 +11877,14 @@ function buildOrderDescription(o) {
   const name = (o.name || '').trim();
   const count = Array.isArray(o.items) ? o.items.reduce((n, i) => n + (i.qty || 0), 0) : 0;
   const total = typeof o.total === 'number' ? formatPrice(o.total) : '';
-  const parts = ['Grilln Chill', mode];
+  // Vor- und Nachname zuerst: In der SumUp-App wird die Zeile auf dem Handy
+  // gekuerzt, und der Nachname stand vorher genau an der Schnittstelle.
+  const parts = [];
   if (name) parts.push(name);
+  parts.push(mode);
   if (count) parts.push(count + ' Art.');
   if (total) parts.push(total);
+  parts.push('Grilln Chill');
   return parts.join(' · ').replace(/<[^>]*>/g, '').substring(0, 100);
 }
 
