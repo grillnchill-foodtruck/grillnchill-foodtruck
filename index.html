@@ -14044,7 +14044,8 @@ function gncSetCategory(cat, dir, o) {
 
 /* ---- Offene Ebenen: dann wird weder gewischt noch die Glas-Leiste gezeigt ---- */
 function gncOverlayOpen() {
-  if (document.querySelector('#cartOverlay.open, #upsellOverlay.open, #dipOverlay.open, #modalOverlay.open, #navMobile.open, .gnc-onb.open')) return true;
+  // .gncj-ov: Story "Dein Burger-Jahr" (burger-jahr.js)
+  if (document.querySelector('#cartOverlay.open, #upsellOverlay.open, #dipOverlay.open, #modalOverlay.open, #navMobile.open, .gnc-onb.open, .gncj-ov')) return true;
   var a = document.getElementById('accountOverlay'), g = document.getElementById('groupOverlay');
   if ((a && a.style.display === 'flex') || (g && g.style.display === 'flex')) return true;
   return document.body.classList.contains('body-scroll-locked');
@@ -14168,7 +14169,7 @@ if (GNC_NATIVE_TABS && APP_FORCED) {
   new MutationObserver(function () {
     if (ntbRaf) return;
     ntbRaf = requestAnimationFrame(function () { ntbRaf = 0; ntbHiddenSync(); });
-  }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
+  }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });   // childList: Ebenen, die sich selbst entfernen (Burger-Jahr)
   ntbSync();
 }
 
