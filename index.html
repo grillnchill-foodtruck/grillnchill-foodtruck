@@ -700,7 +700,11 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%;
+  /* Kein Doppeltipp-Zoom: zweimal schnell auf "Weiter" oder "+" zoomte die Seite heran,
+     in der Einfuehrung lagen die Knoepfe dann ausserhalb und man kam nicht mehr heraus.
+     Zoomen mit zwei Fingern bleibt erlaubt. */
+  touch-action: manipulation; }
 /* iOS: Schriftgroesse folgt der Systemeinstellung (Dynamic Type). Der Trick:
    font: -apple-system-body legt die vom Nutzer gewaehlte Groesse auf die
    Wurzel - saemtliche rem-Groessen skalieren mit. Android macht das ueber
