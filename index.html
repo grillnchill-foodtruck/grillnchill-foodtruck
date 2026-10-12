@@ -866,6 +866,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 }
 .nav-links a {
   color: var(--color-cream-dim);
+  white-space: nowrap;
   font-weight: 600;
   font-size: 0.9rem;
   position: relative;
@@ -5326,9 +5327,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
   max-width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 1.6rem);
 }
 
-/* Desktop-Navigation zwischen 880 und 1023 px (Duo innen quer: 951 px):
-   sechs Links + Status + Warenkorb passen sonst nicht in eine Zeile. */
-@media (min-width: 880px) and (max-width: 1023px) {
+/* Desktop-Navigation zwischen 880 und 1180 px (Duo innen quer: 951 px,
+   iPad Pro 13" hochkant: 1032 px): sechs Links + Status + Warenkorb passen
+   sonst nicht in eine Zeile ("Ueber uns" und "Mein Konto" brachen um). */
+@media (min-width: 880px) and (max-width: 1180px) {
   .nav-inner { gap: 0.6rem; }
   .nav-links { gap: 1rem; }
   .nav-links a { font-size: 0.85rem; }
