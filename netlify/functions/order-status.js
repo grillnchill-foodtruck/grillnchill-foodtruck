@@ -265,11 +265,12 @@ exports.handler = async (event) => {
     if (rec.arrivedAt) return json(200, { ok: true, first: false });
     rec.arrivedAt = new Date().toISOString();
     await s.setJSON(key, rec);
-    const vorname = String((rec.order && rec.order.name) || '').trim().split(/\s+/)[0].slice(0, 30);
-    await auditLog({ role: 'gast', name: 'Gast' }, 'Gast angekommen', '#' + ref + (vorname ? ' · ' + vorname : ''));
+    // Ganzer Name (Vor- und Nachname): am Truck stehen oft zwei gleiche Vornamen
+    const gast = String((rec.order && rec.order.name) || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+    await auditLog({ role: 'gast', name: 'Gast' }, 'Gast angekommen', '#' + ref + (gast ? ' · ' + gast : ''));
     await sendeTeamPush({
       title: 'Gast ist da',
-      body: '#' + ref.slice(-4) + (vorname ? ' · ' + vorname : ''),
+      body: '#' + ref.slice(-4) + (gast ? ' · ' + gast : ''),
       url: '/admin.html?tab=orders',
     });
     return json(200, { ok: true, first: true });
