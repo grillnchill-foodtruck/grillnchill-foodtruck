@@ -812,7 +812,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   /* Trennlinie erst, wenn wirklich Inhalt darunterliegt (siehe .nav-scrolled) */
   border-bottom: 1px solid transparent;
-  transition: transform .3s, border-color .25s ease, background-color .25s ease;
+  transition: transform 220ms var(--ease-out), border-color .25s ease, background-color .25s ease;
 }
 /* Weiche Kante statt harter Linie: der Verlauf zeigt sich nur beim Scrollen –
    dort, wo die schwebende Leiste den Inhalt tatsächlich überlappt. */
@@ -873,12 +873,13 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 }
 .nav-links a::after {
   content: ''; position: absolute; left: 0; bottom: -2px;
-  height: 2px; width: 0;
+  height: 2px; width: 100%;
   background: var(--color-orange);
-  transition: width .25s;
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .25s var(--ease-out);
 }
 .nav-links a:hover { color: var(--color-cream); }
-.nav-links a:hover::after { width: 100%; }
+.nav-links a:hover::after { transform: scaleX(1); }
 
 .nav-actions {
   display: flex; gap: 0.5rem; align-items: center;
@@ -909,8 +910,9 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   font-weight: 800;
   min-width: 20px;
   text-align: center;
-  transition: transform .2s;
+  transition: transform var(--dur-press) var(--ease-out);
 }
+.nav-cart-badge.bump { transform: scale(1.2); }
 
 .nav-burger {
   width: var(--tap); height: var(--tap);
@@ -991,7 +993,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .acc-push-btn[disabled] { opacity: .6; cursor: default; }
 .nav-burger span {
   display: block; width: 22px; height: 2px;
-  background: var(--color-cream); transition: .25s;
+  background: var(--color-cream); transition: transform .25s var(--ease-out), opacity .15s ease;
   border-radius: 2px;
 }
 /* Rückmeldung beim Drücken – nicht erst beim Loslassen */
@@ -1023,13 +1025,13 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   padding: calc(6rem + var(--safe-top)) 1.5rem 2rem;
   transform: translateY(-100%);
   visibility: hidden;
-  transition: transform .3s ease, visibility 0s linear .3s;
+  transition: transform .3s var(--ease-sheet), visibility 0s linear .3s;
   z-index: 80;
   box-shadow: var(--shadow-lg);
   border-bottom: 1px solid var(--color-border);
   pointer-events: none;
 }
-.nav-mobile.open { transform: translateY(0); visibility: visible; pointer-events: auto; transition: transform .3s ease, visibility 0s; }
+.nav-mobile.open { transform: translateY(0); visibility: visible; pointer-events: auto; transition: transform .3s var(--ease-sheet), visibility 0s; }
 .nav-mobile-brand {
   display: flex;
   align-items: center;
@@ -1263,7 +1265,6 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   border-radius: var(--radius-full);
   font-weight: 700;
   font-size: 0.95rem;
-  transition: all .2s;
   cursor: pointer;
   letter-spacing: 0.01em;
   border: 2px solid transparent;
@@ -1279,9 +1280,10 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 }
 .btn-primary:hover {
   background: var(--color-orange-bright);
-  transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(232, 90, 36, 0.5);
   color: #fff;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(232, 90, 36, 0.5); }
 }
 .btn-primary:active { transform: translateY(0); }
 .btn-secondary {
@@ -1791,14 +1793,14 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.5rem; font-weight: 700;
-  transition: all .15s;
+  transition: transform var(--dur-press) var(--ease-out), background-color .15s ease, color .15s ease;
   line-height: 1;
   box-shadow: 0 4px 12px rgba(232, 90, 36, 0.4);
 }
 @media (hover: hover) and (pointer: fine) {
   .add-btn:hover { background: var(--color-orange-bright); transform: scale(1.1); }
 }
-.add-btn:active { transform: scale(0.92); }
+.add-btn:active { transform: scale(0.96); }
 @media (prefers-reduced-motion: reduce) { .add-btn, .add-btn:active { transition: background .15s; transform: none; } }
 
 .qty-control {
@@ -1820,14 +1822,14 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   line-height: 1;
   flex-shrink: 0;
   position: relative;
-  transition: transform .12s;
+  transition: transform var(--dur-press) var(--ease-out);
 }
 /* Unsichtbare Trefferzone auf 44 px, ohne die Optik aufzublähen */
 .qty-control button::before {
   content: ''; position: absolute; top: 50%; left: 50%;
   width: 44px; height: 44px; transform: translate(-50%, -50%);
 }
-.qty-control button:active { transform: scale(0.9); }
+.qty-control button:active { transform: scale(0.95); }
 @media (prefers-reduced-motion: reduce) { .qty-control button:active { transform: none; } }
 .qty-control .qty-val {
   min-width: 30px;
@@ -1880,7 +1882,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   text-align: center;
   position: relative;
   transform: scale(0.92);
-  transition: transform .2s ease;
+  transition: transform 220ms var(--ease-out);
   box-shadow: 0 24px 60px rgba(0,0,0,0.5);
   max-height: calc(100vh - 2.4rem);
   max-height: calc(100dvh - 2.4rem);
@@ -2031,8 +2033,6 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .upsell-actions .upsell-skip { display: block; width: fit-content; max-width: 100%; margin-inline: auto; }
 
 .cart-drawer {
-  /* iOS-Sheet-Kurve: schnell weg vom Rand, weich in die Ruhe. */
-  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   position: fixed; top: 0; right: 0; bottom: 0;
   width: 100%;
   max-width: 480px;
@@ -2549,7 +2549,6 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 }
 .cart-upsell-card:active { transform: scale(0.97); }
 @media (prefers-reduced-motion: reduce) { .cart-upsell-card:active { transform: none; } }
-.cart-upsell-card:active { transform: translateY(0); }
 .cart-upsell-img {
   width: 100%;
   height: 58px;
@@ -2721,7 +2720,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   font-size: 0.76rem;
   line-height: 1.4;
   margin: 0 0 0.55rem;
-  min-height: 0;
+  min-height: 1.3em;
 }
 .geo-status.geo-busy { color: var(--color-text-muted); }
 .geo-status.geo-ok { color: var(--color-success); }
@@ -2767,9 +2766,11 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   border: 6px solid transparent;
   border-top-color: var(--color-border-bright);
 }
-.info-tip:hover .info-tip-bubble,
 .info-tip.open .info-tip-bubble {
   opacity: 1; visibility: visible; transform: translateY(0);
+}
+@media (hover: hover) and (pointer: fine) {
+  .info-tip:hover .info-tip-bubble { opacity: 1; visibility: visible; transform: translateY(0); }
 }
 .info-tip-bubble strong { color: var(--color-cream); font-weight: 700; }
 
@@ -2968,7 +2969,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   display: flex; align-items: center; gap: 0.8rem;
   z-index: 95;
   box-shadow: 0 12px 32px rgba(232, 90, 36, 0.5);
-  transition: transform .3s, visibility 0s linear .3s;
+  transition: transform 220ms var(--ease-out), visibility 0s linear 220ms;
   visibility: hidden;
   cursor: pointer;
   min-width: 280px;
@@ -2977,7 +2978,7 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   font-size: 0.95rem;
   min-height: 52px;
 }
-.sticky-cart.show { transform: translateX(-50%) translateY(0); visibility: visible; transition: transform .3s, visibility 0s; }
+.sticky-cart.show { transform: translateX(-50%) translateY(0); visibility: visible; transition: transform 220ms var(--ease-out), visibility 0s; }
 
 /* ============ Zurück nach oben ============ */
 .to-top {
@@ -2996,22 +2997,23 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
   /* versteckt leicht abgesenkt – es erscheint aus der Richtung, in die es zurückführt */
   opacity: 0; transform: translateY(12px) scale(0.9); pointer-events: none;
-  transition: opacity .2s ease, transform .25s cubic-bezier(.22,.61,.36,1), border-color .15s,
-              bottom .25s cubic-bezier(.22,.61,.36,1);
+  transition: opacity .2s ease, transform .25s var(--ease-out), border-color .15s,
+              translate .25s var(--ease-out);
 }
 /* Ganz am Seitenende weicht der Knopf nach oben aus: unten rechts sitzt dort
    die Sprachwahl im Footer, und der Knopf stand exakt darueber. Gesteuert
    ueber einen Observer auf #langSwitch – nur solange die Sprachwahl wirklich
    im Bild ist, sonst bleibt der Knopf an seinem gewohnten Platz. */
-.to-top.ueber-sprachwahl { bottom: calc(4rem + var(--safe-bottom)); }
+.to-top.ueber-sprachwahl { translate: 0 -3rem; }
 .to-top svg { width: 21px; height: 21px; }
 .to-top.show { opacity: 1; transform: none; pointer-events: auto; }
 .to-top:hover { border-color: var(--color-orange); }
 .to-top:active { transform: scale(0.92); }
 /* Platz lassen, wenn Warenkorb-Leiste oder App-Tab-Bar unten sitzen */
-body:has(.sticky-cart.show) .to-top { bottom: calc(4.8rem + var(--safe-bottom)); }
-body.app-forced .to-top { bottom: calc(5.4rem + var(--safe-bottom)); }
-body.app-forced:has(.sticky-cart.show) .to-top { bottom: calc(9rem + var(--safe-bottom)); }
+/* Versatz als translate (eigene Eigenschaft, addiert sich zu transform): kein Layout je Frame */
+body:has(.sticky-cart.show) .to-top { translate: 0 -3.8rem; }
+body.app-forced .to-top { translate: 0 -4.4rem; }
+body.app-forced:has(.sticky-cart.show) .to-top { translate: 0 -8rem; }
 body:has(#cartOverlay.open) .to-top,
 body:has(#upsellOverlay.open) .to-top,
 body:has(#dipOverlay.open) .to-top { display: none; }
@@ -3041,11 +3043,11 @@ body:has(#dipOverlay.open) .to-top { display: none; }
   color: var(--color-text-muted);
   font-family: inherit; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.02em;
   border-radius: 10px; text-decoration: none;
-  transition: color .15s;
+  transition: color .15s, transform var(--dur-press) var(--ease-out);
 }
 .app-tab svg { width: 22px; height: 22px; }
 .app-tab.active { color: var(--color-orange-bright); }
-.app-tab:active { transform: scale(0.94); }
+.app-tab:active { transform: scale(0.96); }
 /* Tab-Bar & App-Layout NUR im App-Modus (?app=1 / PWA) – normale Mobil-Seite bleibt One-Pager */
 @media (max-width: 899px) {
   /* Nur EINE Warenkorb-Leiste auf mobil: die schlanke sticky-cart – die dicke Pill wäre doppelt */
@@ -3122,7 +3124,7 @@ body.body-scroll-locked .sticky-cart { display: none !important; }
   pointer-events: none;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
   transform: translate(-50%, -50%) scale(1);
-  transition: transform .72s cubic-bezier(.45, -0.3, .7, .9), opacity .72s ease-in;
+  transition: transform 280ms var(--ease-in-out), opacity 280ms var(--ease-out);
   will-change: transform, opacity;
 }
 
@@ -3186,7 +3188,7 @@ body.body-scroll-locked .sticky-cart { display: none !important; }
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--color-text-muted);
-  transition: all .15s;
+  transition: background-color .15s ease, color .15s ease, transform var(--dur-press) var(--ease-out);
   text-align: center;
   min-height: 44px;
   display: flex; align-items: center; justify-content: center;
@@ -3365,7 +3367,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   background: rgba(240, 138, 42, 0.05);
   padding: 0.9rem 1rem 0.6rem;
   margin: 0 0 0.9rem;
-  animation: inv-in 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: inv-in 260ms var(--ease-out) both;
 }
 .invoice-addr[hidden] { display: none; }
 .invoice-addr-head {
@@ -3771,9 +3773,10 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   transition: transform .2s, box-shadow .2s;
 }
 .reviews-google-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
   color: #1a1a1a; /* globales a:hover (cream) würde sonst Weiß-auf-Weiß erzeugen */
+}
+@media (hover: hover) and (pointer: fine) {
+  .reviews-google-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
 }
 @media (max-width: 600px) {
   .review-card { padding: 1.5rem 1.2rem 1.2rem; }
@@ -4054,9 +4057,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
     grid-template-columns: repeat(2, 1fr);
     max-height: 0; opacity: 0; margin: 0;
     overflow: hidden;
-    transition: max-height .35s ease, opacity .25s ease, margin-top .25s ease;
+    transition: max-height 250ms var(--ease-out), opacity .25s ease, margin-top .25s ease;
   }
-  .zones-list.open { max-height: 1200px; opacity: 1; margin-top: 0.6rem; }
+  .zones-list.open { max-height: 600px; opacity: 1; margin-top: 0.6rem; }
 }
 
 /* ============================================
@@ -4167,14 +4170,14 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 .faq-answer {
   max-height: 0;
   overflow: hidden;
-  transition: max-height .35s ease, padding .25s;
+  transition: max-height 250ms var(--ease-out), padding .25s;
   padding: 0 1.3rem;
   color: var(--color-cream-dim);
   font-size: 0.95rem;
   line-height: 1.65;
 }
 .faq-item.open .faq-answer {
-  max-height: 500px;
+  max-height: 600px;
   padding-bottom: 1.2rem;
 }
 
@@ -4239,7 +4242,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   background: var(--color-orange);
   color: #fff;
   border-color: var(--color-orange);
-  transform: translateY(-2px);
+}
+@media (hover: hover) and (pointer: fine) {
+  .social-links a:hover { transform: translateY(-2px); }
 }
 .social-links svg { width: 20px; height: 20px; }
 
@@ -4255,7 +4260,10 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   display: block; border-radius: 7px;
   transition: transform .15s, opacity .15s;
 }
-.store-badges a:hover { transform: translateY(-2px); opacity: .9; }
+.store-badges a:hover { opacity: .9; }
+@media (hover: hover) and (pointer: fine) {
+  .store-badges a:hover { transform: translateY(-2px); }
+}
 /* In der App selbst waere "Lade die App" sinnlos */
 .app-forced .store-badges { display: none; }
 
@@ -4296,9 +4304,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   box-shadow: var(--shadow-lg);
   transform: translateY(calc(100% + 0.8rem + var(--safe-bottom) + 24px));
   visibility: hidden; /* geschlossen auch für Screenreader unsichtbar */
-  transition: transform .35s ease, visibility 0s linear .35s;
+  transition: transform .3s var(--ease-sheet), visibility 0s linear .3s;
 }
-.cookie-banner.show { transform: translateY(0); visibility: visible; transition: transform .35s ease, visibility 0s; }
+.cookie-banner.show { transform: translateY(0); visibility: visible; transition: transform .3s var(--ease-sheet), visibility 0s; }
 .cookie-banner h4 {
   font-size: 1.05rem;
   color: var(--color-cream);
@@ -4322,7 +4330,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   border-top: 1px dashed var(--color-border);
   max-height: 0;
   overflow: hidden;
-  transition: max-height .25s, padding .25s;
+  transition: max-height 250ms var(--ease-out), padding .25s;
 }
 .cookie-banner.show-options .cookie-options {
   max-height: 300px;
@@ -4409,23 +4417,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 .modal-body ul li { margin-bottom: 0.3rem; }
 
 /* ============================================
-   SCROLL ANIMATIONS
+   SCROLL ANIMATIONS (.reveal steht im Design-Pass-Block weiter unten)
    ============================================ */
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity .6s ease, transform .6s ease;
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
   .hero-video { display: none; }
 }
 
@@ -4458,7 +4452,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   .rv {
     opacity: 0;
     transform: translateY(18px);
-    transition: opacity .6s cubic-bezier(.22,.61,.36,1), transform .6s cubic-bezier(.22,.61,.36,1);
+    transition: opacity .6s var(--ease-out), transform .6s var(--ease-out);
     will-change: opacity, transform;
   }
   .rv.rv-in { opacity: 1; transform: none; }
@@ -4466,7 +4460,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 
 /* Produktfotos: sanfter Zoom beim Hover (nur echte Pointer-Geräte) */
 @media (hover: hover) {
-  .menu-card-photo { transition: transform .5s cubic-bezier(.22,.61,.36,1); }
+  .menu-card-photo { transition: transform .5s var(--ease-out); }
   .menu-card:hover .menu-card-photo { transform: scale(1.06); }
   .menu-card:hover { box-shadow: var(--shadow-md), 0 0 32px rgba(232, 90, 36, 0.12); }
 }
@@ -4481,11 +4475,11 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
     left: -80%;
     width: 55%;
     background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,0.28) 50%, transparent 100%);
-    transform: skewX(-18deg);
-    transition: left .55s ease;
+    transform: skewX(-18deg) translateX(0);
+    transition: transform .55s ease;
     pointer-events: none;
   }
-  .btn-primary:hover::after { left: 130%; }
+  .btn-primary:hover::after { transform: skewX(-18deg) translateX(382%); }
 }
 
 /* Konfetti-Overlay (Bestell-Erfolg) */
@@ -4625,7 +4619,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   @keyframes quenchBody { 0% { transform: scaleY(1); } 55% { transform: scaleY(0.9); } 100% { transform: none; } }
 
   /* Erster Auftritt: materialisieren statt aufpoppen. */
-  .status-appear { animation: statusAppear 380ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+  .status-appear { animation: statusAppear 380ms var(--ease-out) both; }
   @keyframes statusAppear {
     from { opacity: 0; transform: scale(0.94); }
     to   { opacity: 1; transform: none; }
@@ -4659,7 +4653,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 
 /* ---------- Hero-Eingangssequenz (einmalig beim Laden) ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  .hero h1 span { display: inline-block; opacity: 0; transform: translateY(24px); animation: heroRise .7s cubic-bezier(.22,.61,.36,1) forwards; }
+  .hero h1 span { display: inline-block; opacity: 0; transform: translateY(24px); animation: heroRise .7s var(--ease-out) forwards; }
   .hero h1 span:nth-child(3) { animation-delay: .12s; }
   .hero-lead    { opacity: 0; animation: heroFade .6s ease .3s forwards; }
   .hero-actions { opacity: 0; animation: heroFade .6s ease .42s forwards; }
@@ -4727,7 +4721,7 @@ section[id], footer[id] { scroll-margin-top: 84px; }
   transform: perspective(900px) rotate(-1.2deg) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg));
   transition: transform .08s linear;
 }
-.signature-media.tilt-reset { transition: transform .5s cubic-bezier(.22,.61,.36,1); }
+.signature-media.tilt-reset { transition: transform .5s var(--ease-out); }
 .signature-media::before {
   content: '';
   position: absolute; inset: 0;
@@ -4752,14 +4746,8 @@ section[id], footer[id] { scroll-margin-top: 84px; }
   @keyframes shimmer { from { background-position: 130% 0; } to { background-position: -90% 0; } }
 }
 
-/* Warenkorb-Badge: Pop bei Änderung */
-@media (prefers-reduced-motion: no-preference) {
-  .nav-cart-badge.pop { animation: badgePop .35s cubic-bezier(.34,1.56,.64,1); }
-  @keyframes badgePop { 40% { transform: scale(1.4); } 100% { transform: scale(1); } }
-}
-
 /* ---------- Best-of-3: sanfter Inhaltswechsel + Dots ---------- */
-.signature-inner { transition: transform .3s cubic-bezier(.22,.61,.36,1); }
+.signature-inner { transition: transform .3s var(--ease-out); }
 .signature-inner.sig-dragging { transition: none; }
 .signature-inner .signature-copy > *,
 .signature-media img { transition: opacity .28s ease, transform .28s ease; }
@@ -4913,7 +4901,7 @@ body:has(#dipOverlay.open) .cart-fab { display: none; }
   text-align: center;
   opacity: 0;
   transform: translateY(-10px);
-  transition: opacity .3s ease, transform .3s ease;
+  transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out);
 }
 .toast.in { opacity: 1; transform: translateY(0); }
 
@@ -4948,7 +4936,7 @@ body:has(#dipOverlay.open) .cart-fab { display: none; }
 /* Catering-Funnel (3 Schritte) */
 .cfun-head { margin-bottom: 1.2rem; }
 .cfun-bar { height: 4px; background: var(--color-bg-card); border-radius: 2px; overflow: hidden; }
-.cfun-bar span { display: block; height: 100%; width: 33.33%; background: var(--color-orange); border-radius: 2px; transition: width .3s ease; }
+.cfun-bar span { display: block; height: 100%; width: 100%; background: var(--color-orange); border-radius: 2px; transform: scaleX(0.3333); transform-origin: left; transition: transform .3s var(--ease-out); }
 .cfun-meta { display: flex; justify-content: space-between; align-items: baseline; margin-top: .55rem; font-size: .8rem; }
 #cfunCount { color: var(--color-text-muted); }
 #cfunTitle { color: var(--color-cream); font-weight: 700; }
@@ -5126,15 +5114,11 @@ body::-webkit-scrollbar-thumb:hover { background: #4A3B2A; }
 @keyframes blTrack { from { letter-spacing: 0.55em; opacity: 0; } to { letter-spacing: 0.26em; opacity: 1; } }
 @keyframes blSweep { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
 
-#scrollProgress { position: fixed; top: 0; left: 0; height: 2px; width: 0;
-  background: linear-gradient(90deg, var(--color-orange-solid), var(--color-orange-bright));
-  z-index: 11000; pointer-events: none; box-shadow: 0 0 8px rgba(232,90,36,0.5); }
-
-html.imgfx img[loading="lazy"] { opacity: 0; transition: opacity 0.5s ease; }
+html.imgfx img[loading="lazy"] { opacity: 0; transition: opacity 200ms var(--ease-out); }
 html.imgfx img[loading="lazy"].img-in { opacity: 1; }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .menu-card-photo { transition: transform 0.45s cubic-bezier(0.2, 0.6, 0.2, 1); }
+  .menu-card-photo { transition: transform 0.45s var(--ease-out); }
   .menu-card:hover .menu-card-photo { transform: scale(1.045); }
 }
 
@@ -5156,6 +5140,9 @@ html.imgfx img[loading="lazy"].img-in { opacity: 1; }
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);/* back.out - Press/Pop */
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);     /* Standard-UI */
   --dur-1: 140ms; --dur-2: 220ms; --dur-3: 340ms; --dur-4: 460ms;
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);   /* iOS-Sheet-Kurve: schnell weg vom Rand, weich in die Ruhe */
+  --dur-press: 160ms;
   /* 4px-basiertes Abstandssystem (beruhigt den Rhythmus) */
   --space-1:.25rem; --space-2:.5rem;  --space-3:.75rem; --space-4:1rem;
   --space-5:1.5rem; --space-6:2rem;   --space-7:3rem;   --space-8:4rem;
@@ -5185,12 +5172,13 @@ h1 { line-height: 0.92; }
 
 /* --- Scroll-Reveal: weicheres Expo-Easing statt generischem ease --- */
 .reveal{
+  opacity: 0;
   transform: translateY(22px);
   transition: opacity var(--dur-4) var(--ease-out),
               transform var(--dur-4) var(--ease-out);
   will-change: opacity, transform;
 }
-.reveal.visible{ transform: none; }
+.reveal.visible{ opacity: 1; transform: none; }
 
 /* Stagger fuer nebeneinander erscheinende Karten (reine CSS-Kaskade) */
 .comparison-grid .reveal:nth-child(2){ transition-delay:.08s; }
@@ -5204,9 +5192,11 @@ h1 { line-height: 0.92; }
               color var(--dur-2) var(--ease-out),
               border-color var(--dur-2) var(--ease-out);
 }
-.btn:active{ transform: scale(.97); }
+.btn:active{ transform: scale(.97); transition-duration: 100ms; transition-timing-function: var(--ease-out); }
 .btn-primary{ box-shadow: 0 6px 20px rgba(232,90,36,.30); }
-.btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 12px 30px rgba(232,90,36,.42); }
+@media (hover: hover) and (pointer: fine){
+  .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 12px 30px rgba(232,90,36,.42); }
+}
 .btn-primary:active{ transform: scale(.97); }
 
 /* --- Fokus-Ringe: klar sichtbar fuer Tastatur-Nav (skill: Prio 1 A11y) --- */
@@ -5222,7 +5212,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 
 /* --- Karten: eine konsistente, ruhige Hover-Elevation ueberall --- */
-@media (hover: hover){
+@media (hover: hover) and (pointer: fine){
   .comparison-card, .hours-card, .faq-item, .map-frame{
     transition: transform var(--dur-2) var(--ease-out),
                 box-shadow var(--dur-2) var(--ease-out),
@@ -5239,7 +5229,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible,
 }
 
 /* --- Nav-Links: Unterstrich weicher/schneller --- */
-.nav-links a::after{ transition: width var(--dur-2) var(--ease-out); }
+.nav-links a::after{ transition: transform var(--dur-2) var(--ease-out); }
 
 /* --- Savings-Bar: dezenter Rand statt harter Kante --- */
 
@@ -5470,6 +5460,110 @@ body.onb-lock { overflow: hidden; }
   .onb-bar i { transition: none; }
   .onb-demo-track, .onb-demo-hand { animation: none; }
 }
+
+/* ============ WARTEN: Busy-Knopf, Spinner, Skelett, Warte-Ebene ============ */
+@keyframes gncSpin { to { transform: rotate(360deg); } }
+@keyframes gncBreath { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+.is-busy { position: relative; cursor: progress !important; color: transparent !important; }
+.is-busy > :not(.busy-spin) { visibility: hidden; }
+.is-busy:disabled, .btn.is-busy:disabled { opacity: 1; }
+.btn-primary.is-busy::after { display: none; }            /* kein Licht-Sweep auf wartenden Knoepfen */
+.busy-spin {
+  position: absolute; left: 50%; top: 50%;
+  width: 16px; height: 16px; margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 2px solid var(--busy-ink, currentColor);
+  border-right-color: transparent;
+  opacity: 0;
+  animation: gncSpin 0.8s linear infinite;
+  transition: opacity 150ms var(--ease-out);
+  pointer-events: none;
+}
+.is-busy.busy-shown .busy-spin { opacity: 1; }
+.busy-spin.lg { width: 28px; height: 28px; margin: -14px 0 0 -14px; border-width: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .busy-spin { animation: gncBreath 1.2s ease-in-out infinite; border-right-color: var(--busy-ink, currentColor); }
+}
+.skel { position: relative; overflow: hidden; background: var(--color-bg-card); border-radius: var(--radius-sm); }
+@media (prefers-reduced-motion: no-preference) {
+  .skel { background: linear-gradient(90deg, var(--color-bg-card) 0%, var(--color-bg-soft) 50%, var(--color-bg-card) 100%); background-size: 260% 100%; animation: shimmer 1.4s linear infinite; }
+}
+.gnc-wait {
+  position: fixed; inset: 0; z-index: 10500;
+  display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+  background: rgba(6, 5, 4, 0.72);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  opacity: 0; transition: opacity 200ms var(--ease-out);
+}
+.gnc-wait.show { opacity: 1; }
+.gnc-wait-card {
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+  min-width: 220px; max-width: 320px; padding: 1.6rem 1.4rem 1.4rem;
+  background: var(--color-bg-elev); border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  color: var(--color-cream); text-align: center; font-weight: 600;
+  transform: scale(0.96); transition: transform 200ms var(--ease-out);
+}
+.gnc-wait.show .gnc-wait-card { transform: none; }
+.gnc-wait-ring { position: relative; width: 28px; height: 28px; --busy-ink: var(--color-orange-bright); }
+.gnc-wait-ring .busy-spin { opacity: 1; }
+.gnc-wait-sub { margin: -0.4rem 0 0; font-size: 0.82rem; font-weight: 500; color: var(--color-text-muted); }
+@media (prefers-reduced-motion: reduce) { .gnc-wait, .gnc-wait-card { transition: opacity 150ms ease; transform: none; } }
+
+/* ---- Kasse: Formularsperre waehrend der Bestellung, Hinweiszeile, Zonen-Pruefung ---- */
+.is-locked input, .is-locked select, .is-locked textarea, .is-locked button:not(.is-busy), .is-locked label { pointer-events: none; }
+.is-locked input, .is-locked select, .is-locked textarea { opacity: 0.7; transition: opacity 150ms ease; }
+.co-wait-hint { min-height: 1.2em; margin: 0.5rem 0 0; font-size: 0.8rem; color: var(--color-text-muted); text-align: center; }
+/* Flex nur im Ladezustand: das Ergebnis enthaelt <strong> und <br> und bleibt normaler Textfluss */
+.zone-info { min-height: 2.6em; font-size: 0.85rem; line-height: 1.35; }
+.zone-loading { display: flex; align-items: center; gap: 0.5rem; color: var(--color-text-muted); }
+.zone-loading::before { content: ''; flex: none; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--color-orange-bright); border-right-color: transparent; animation: gncSpin 0.8s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .zone-loading::before { animation: gncBreath 1.2s ease-in-out infinite; border-right-color: var(--color-orange-bright); } }
+
+/* ---- Konto: Mini-Knoepfe gesperrt, Wartezeile bei der Anmeldung, Meldungen, Adresse loeschen ---- */
+.mini-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.mini-btn.is-busy:disabled { opacity: 1; }
+.acc-wait { display: flex; align-items: center; gap: 0.6rem; margin: 0 0 0.9rem; font-size: 0.88rem; color: var(--color-cream-dim); }
+.acc-wait-ring { position: relative; flex: none; width: 16px; height: 16px; --busy-ink: var(--color-orange-bright); }
+.acc-wait-ring .busy-spin { opacity: 1; }
+.acc-msg { opacity: 0; transition: opacity 200ms var(--ease-out); }
+.acc-msg.show { opacity: 1; }
+.acc-adr { transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+.acc-adr.is-leaving { opacity: 0; transform: translateX(-8px); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .acc-adr.is-leaving { transform: none; } }
+
+/* ---- Gruppe, Gutschein-Pruefung, Laden-Status ---- */
+.grp-skel { display: flex; flex-direction: column; gap: 8px; }
+.grp-skel .skel { height: 44px; }
+.grp-err { margin: 0.6rem 0; font-size: 0.82rem; font-weight: 600; color: var(--color-error); }
+.grp-updated { margin: 0 0 0.3rem; font-size: 0.74rem; color: var(--color-text-muted); }
+.voucher-checking { color: var(--color-text-muted); font-size: 0.85rem; }
+@keyframes totalFlash { from { background-color: rgba(232, 90, 36, 0.18); } to { background-color: transparent; } }
+.total-flash { border-radius: 4px; animation: totalFlash 600ms ease; }
+@keyframes statusFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.status-fade-in { animation: statusFadeIn 220ms var(--ease-out) both; }
+
+/* ---- Bestehende Animationen: Karten-Druck, Reduced Motion je Element ---- */
+/* .reveal.visible hob die Karten-Transition und den Druck auf (0.985) auf.
+   opacity bleibt drin, damit das Menue-Stagger weiter einblendet. */
+.menu-card.reveal.visible { transition: opacity var(--dur-4) var(--ease-out), transform var(--dur-press) var(--ease-out), border-color .15s ease, box-shadow .2s ease; will-change: auto; }
+.menu-card.reveal.visible:active { transform: scale(0.985); }
+/* Statt des globalen 0.01ms-Hammers: Bewegung je Element weg, Blenden bleiben */
+@media (prefers-reduced-motion: reduce) {
+  .nav-mobile, .sticky-cart, .toast, .upsell-modal, .cart-drawer, .cookie-banner, .nav { transition-property: opacity, visibility !important; transition-duration: 200ms !important; }
+  .nav-mobile, .upsell-modal, .cookie-banner, .toast { transform: none !important; }
+  /* Menue ohne Verschieben: geschlossen unsichtbar, sonst bliebe es bis zum Ende der Verzoegerung stehen */
+  .nav-mobile { opacity: 0; transition: opacity 200ms ease, visibility 0s linear 200ms !important; }
+  .nav-mobile.open { opacity: 1; transition: opacity 200ms ease, visibility 0s !important; }
+  .reveal, .rv { transform: none !important; transition: opacity 200ms ease !important; }
+  .fly-to-cart { display: none !important; }
+  /* weitere Elemente mit Bewegung ohne eigene Regel */
+  .signature-inner { transition: none !important; }
+  .signature-inner.sig-swap .signature-copy > *:not(.sig-dots),
+  .signature-inner.sig-swap .signature-media img { transform: none !important; }
+  .info-tip-bubble { transform: none !important; }
+  #savedToast { transform: translateX(-50%) !important; }
+  .nav-cart-badge.bump { transform: none; }
+}
 </style>
 </head>
 <body>
@@ -5499,7 +5593,6 @@ body.onb-lock { overflow: hidden; }
   setTimeout(hide, 3000);
 })();
 </script>
-<div id="scrollProgress" aria-hidden="true"></div>
 <a class="skip-link" href="#menu" data-i18n="a11y.skip">Direkt zur Speisekarte</a>
 
 <!-- ============================================
@@ -6763,13 +6856,20 @@ function saveAccount() {
 }
 function accountLoggedIn() { return !!(ACCOUNT && ACCOUNT.token && ACCOUNT.profile); }
 async function accountApi(action, body) {
-  const res = await fetch('/account', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, email: (ACCOUNT && ACCOUNT.email) || (body && body.email), token: ACCOUNT && ACCOUNT.token, ...(body || {}) }),
-  });
-  return { ok: res.ok, status: res.status, d: await res.json().catch(() => ({})) };
+  try {
+    const res = await fetch('/account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, email: (ACCOUNT && ACCOUNT.email) || (body && body.email), token: ACCOUNT && ACCOUNT.token, ...(body || {}) }),
+    });
+    return { ok: res.ok, status: res.status, d: await res.json().catch(() => ({})) };
+  } catch (e) {
+    // Keine Verbindung: Aufrufer zeigen dann acc.err_network statt still zu haengen
+    return { ok: false, status: 0, d: { error: 'network' } };
+  }
 }
+// Fehlertext fuer eine misslungene Konto-Antwort (status 0 = keine Verbindung)
+function accErrText(r) { return r && r.status === 0 ? t('acc.err_network') : t('acc.error'); }
 async function refreshAccount() {
   if (!ACCOUNT || !ACCOUNT.token) return;
   try {
@@ -6827,12 +6927,8 @@ function renderAccount(step) {
 // App-Einstellungen (Sprache, Benachrichtigungen, Zahlungsarten) – ohne Login nutzbar
 async function accEnablePush(btn) {
   if (typeof gncEnablePush !== 'function') return;
-  const label = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '…';
-  const ok = await gncEnablePush();
-  btn.disabled = false;
-  btn.textContent = label;
+  // Ring statt "…": Knopf behaelt Breite und Beschriftung (auch fuer Screenreader)
+  const ok = await withBusy(btn, () => gncEnablePush());
   if (ok) renderAccount();            // Abschnitt neu zeichnen → zeigt den Erfolg
 }
 function accLangToggle(btn) {
@@ -6883,7 +6979,7 @@ function renderAccLogin(el, step) {
     el.innerHTML = `
       <p id="accCodeHint" style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('acc.code_sent').replace('{email}', escG(accLoginEmail))}</p>
       <input type="text" id="accCode" class="form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-labelledby="accCodeHint" placeholder="000000" style="width:100%;text-align:center;font-size:1.5rem;letter-spacing:0.4em;font-family:ui-monospace,Menlo,monospace;">
-      <button class="btn btn-primary btn-block" style="margin-top:0.9rem;" onclick="accVerify()">${t('acc.login_btn')}</button>
+      <button class="btn btn-primary btn-block" style="margin-top:0.9rem;" onclick="accVerify(this)">${t('acc.login_btn')}</button>
       <p style="text-align:center;margin:0.8rem 0 0;font-size:0.78rem;"><a href="#" onclick="renderAccount('email');return false;" style="color:var(--color-text-muted);">${t('acc.back')}</a></p>`;
     setTimeout(() => { const c = document.getElementById('accCode'); if (c) c.focus(); }, 80);
     return;
@@ -6892,7 +6988,7 @@ function renderAccLogin(el, step) {
     <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('acc.intro')}</p>
     <input type="email" id="accEmail" class="form-input" autocomplete="email" aria-label="${t('co.email').replace(' *', '')}" placeholder="${t('co.email_ph')}" value="${escG(accLoginEmail)}" style="width:100%;">
     <div class="login-weg" style="margin-top:0.9rem;">${loginChip('email')}
-      <button class="btn btn-primary btn-block" onclick="accRequestCode()">${t('acc.send_code')}</button>
+      <button class="btn btn-primary btn-block" onclick="accRequestCode(this)">${t('acc.send_code')}</button>
     </div>
     ${socialButtonsHtml()}
     <p style="color:var(--color-text-muted);font-size:0.75rem;margin:0.9rem 0 0;line-height:1.5;">${t('acc.privacy_hint')}</p>`;
@@ -7015,73 +7111,124 @@ window.addEventListener('apple-login-result', (ev) => {
 async function accClaimStamps(email) {
   accLoginEmail = String(email || '').trim().toLowerCase();
   openAccountOverlay('kompakt');
+  // Gleich in den Code-Schritt: Feld gesperrt, bis der Code wirklich unterwegs ist
+  renderAccount('code');
+  const feld = document.getElementById('accCode');
+  const hinweis = document.getElementById('accCodeHint');
+  if (feld) feld.disabled = true;
+  if (hinweis) hinweis.textContent = t('acc.code_sending').replace('{email}', accLoginEmail);
   const r = await accountApi('request_code', { email: accLoginEmail });
-  if (r.ok || r.status === 429) renderAccount('code');
-  else flashAccMsg(t('acc.error'));
+  if (r.ok || r.status === 429) renderAccount('code');   // Feld frei, Fokus, "Code gesendet"
+  else { renderAccount(); flashAccMsg(accErrText(r)); }
 }
 
+/* Platzhalter waehrend der Apple/Google-Anmeldung: Wartezeile plus zwei
+   Skelett-Balken an der Stelle der Stempelkarte. */
+function accShowSigningIn() {
+  const el = document.getElementById('accountBody');
+  if (!el) return;
+  el.setAttribute('aria-busy', 'true');
+  el.innerHTML = `
+    <div class="acc-wait" role="status"><span class="acc-wait-ring" aria-hidden="true"><span class="busy-spin"></span></span><span>${t('acc.signing_in')}</span></div>
+    <div class="skel" style="height:18px;width:100%;"></div>
+    <div class="skel" style="height:64px;width:100%;margin-top:0.6rem;"></div>`;
+}
 async function socialLoginFinish(anbieter, idToken, name) {
   let localLoyalty = null;
   try {
     const raw = JSON.parse(localStorage.getItem(LOYALTY_KEY) || 'null');
     if (raw) localLoyalty = { spent: Number(raw.spent) || 0, rewards: raw.rewardAvailable ? 1 : 0 };
   } catch (e) {}
+  accShowSigningIn();   // Ausweis ist da: ab hier sichtbar warten, Formular nicht mehr klickbar
+  const fertig = () => { const b = document.getElementById('accountBody'); if (b) b.removeAttribute('aria-busy'); };
   try {
     const res = await fetch('/.netlify/functions/social-login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ anbieter, idToken, name, localLoyalty }),
     });
     const d = await res.json().catch(() => ({}));
-    if (!res.ok || !d.token) { flashAccMsg(t('acc.error')); return; }
+    if (!res.ok || !d.token) { fertig(); renderAccount(); flashAccMsg(t('acc.error')); return; }
     ACCOUNT = { email: d.email, token: d.token, profile: {} };
     merkeLoginWeg(anbieter);
     saveAccount();
     try { localStorage.removeItem(LOYALTY_KEY); } catch (e) {}
     await refreshAccount();          // Profil holen (legt auch den QR-Token an)
+    fertig();
     updateAccountUI();
     renderAccount();
     renderCart();
-  } catch (e) { flashAccMsg(t('acc.error')); }
+  } catch (e) { fertig(); renderAccount(); flashAccMsg(t('acc.error')); }
 }
-async function accRequestCode() {
+async function accRequestCode(btn) {
   const inp = document.getElementById('accEmail');
   const email = (inp.value || '').trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { inp.style.borderColor = 'var(--color-red, #E04848)'; return; }
-  accLoginEmail = email;
-  const r = await accountApi('request_code', { email });
-  if (r.ok) renderAccount('code');
-  else if (r.status === 429) flashAccMsg(t('acc.too_soon'));
-  else flashAccMsg(t('acc.error'));
+  return withBusy(btn, async () => {
+    accLoginEmail = email;
+    inp.disabled = true;
+    let r;
+    try { r = await accountApi('request_code', { email }); }
+    finally { inp.disabled = false; }
+    if (r.ok) renderAccount('code');
+    else if (r.status === 429) flashAccMsg(t('acc.too_soon'), btn);
+    else flashAccMsg(accErrText(r), btn);
+  });
 }
-async function accVerify() {
-  const code = (document.getElementById('accCode').value || '').replace(/\D/g, '');
+async function accVerify(btn) {
+  const feld = document.getElementById('accCode');
+  const code = (feld.value || '').replace(/\D/g, '');
   if (code.length !== 6) return;
   let localLoyalty = null;
   try {
     const raw = JSON.parse(localStorage.getItem(LOYALTY_KEY) || 'null');
     if (raw) localLoyalty = { spent: Number(raw.spent) || 0, rewards: raw.rewardAvailable ? 1 : 0 };
   } catch (e) {}
-  const r = await accountApi('verify', { email: accLoginEmail, code, localLoyalty });
-  if (r.ok) {
-    ACCOUNT = { email: accLoginEmail, token: r.d.token, profile: r.d.profile };
-    merkeLoginWeg('email');
-    saveAccount();
-    try { localStorage.removeItem(LOYALTY_KEY); } catch (e) {}
-    updateAccountUI();
-    renderAccount();
-    renderCart();
-  } else {
-    flashAccMsg(r.d.error === 'wrong_code' ? t('acc.wrong_code') : r.d.error === 'code_expired' ? t('acc.code_expired') : t('acc.error'));
-  }
+  return withBusy(btn, async () => {
+    feld.disabled = true;
+    let r;
+    try { r = await accountApi('verify', { email: accLoginEmail, code, localLoyalty }); }
+    finally { feld.disabled = false; }
+    if (r.ok) {
+      ACCOUNT = { email: accLoginEmail, token: r.d.token, profile: r.d.profile };
+      merkeLoginWeg('email');
+      saveAccount();
+      try { localStorage.removeItem(LOYALTY_KEY); } catch (e) {}
+      updateAccountUI();
+      renderAccount();
+      renderCart();
+    } else {
+      flashAccMsg(r.d.error === 'wrong_code' ? t('acc.wrong_code') : r.d.error === 'code_expired' ? t('acc.code_expired') : accErrText(r), btn);
+    }
+  });
 }
-function flashAccMsg(msg) {
+/* Fehlermeldung im Konto. Mit anchor steht sie direkt unter dem Knopf, der sie
+   ausgeloest hat (sonst am Ende des Overlays, oft ausserhalb des Sichtbereichs).
+   Immer nur eine Meldung zur Zeit; role="alert" sorgt fuers Vorlesen. */
+let accMsgT = 0;
+function flashAccMsg(msg, anchor) {
   const el = document.getElementById('accountBody');
   if (!el) return;
+  const alt = document.getElementById('accMsg');
+  if (alt) alt.remove();
+  clearTimeout(accMsgT);
   const n = document.createElement('p');
+  n.id = 'accMsg';
+  n.className = 'acc-msg';
+  n.setAttribute('role', 'alert');
   n.style.cssText = 'color:var(--color-red,#E04848);font-size:0.8rem;margin:0.7rem 0 0;text-align:center;';
   n.textContent = msg;
-  el.appendChild(n);
-  setTimeout(() => { try { el.removeChild(n); } catch (e) {} }, 3500);
+  if (anchor && anchor.isConnected && el.contains(anchor)) {
+    // In einer Flex-Zeile (Feld + Knopf) unter die ganze Zeile, nicht daneben
+    let ziel = anchor;
+    const par = anchor.parentElement;
+    if (par && par !== el && /flex/.test(getComputedStyle(par).display)) ziel = par;
+    ziel.insertAdjacentElement('afterend', n);
+  } else {
+    el.appendChild(n);
+  }
+  void n.offsetWidth;   // Ausgangszustand festhalten, dann blendet die Transition ein
+  n.classList.add('show');
+  accMsgT = setTimeout(() => { n.remove(); }, 3500);
 }
 function renderAccProfile(el) {
   const p = ACCOUNT.profile;
@@ -7101,7 +7248,7 @@ function renderAccProfile(el) {
         ${addrTagRow('accAdrRename')}
         <input type="text" id="accAdrRename" class="form-input" maxlength="24" style="margin:0.5rem 0;" value="${escG(addressLabel(a))}" placeholder="${t('acc.adr_label_ph')}">
         <div style="display:flex;gap:0.45rem;">
-          <button type="button" class="btn btn-primary btn-sm" style="flex:1;" onclick="accSaveLabel(${i})">${t('acc.adr_save_name')}</button>
+          <button type="button" class="btn btn-primary btn-sm" style="flex:1;" onclick="accSaveLabel(${i}, this)">${t('acc.adr_save_name')}</button>
           <button type="button" class="mini-btn" onclick="accCancelRename()">${t('acc.adr_cancel')}</button>
         </div>
       </div>`;
@@ -7109,7 +7256,7 @@ function renderAccProfile(el) {
     return `<div class="acc-adr">
       <div class="acc-adr-main"><b>${escG(addressLabel(a))}</b><br><span>${escG(a.street)}, ${escG(a.zip)} ${escG(a.city)}</span></div>
       <button type="button" class="acc-adr-act" onclick="accRenameAddress(${i})" aria-label="${t('acc.adr_rename')}" title="${t('acc.adr_rename')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l4 4"/></svg></button>
-      <button type="button" class="acc-adr-act act-del" onclick="accDeleteAddress(${i})" aria-label="${t('a11y.delete')}" title="${t('a11y.delete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg></button>
+      <button type="button" class="acc-adr-act act-del" onclick="accDeleteAddress(${i}, this)" aria-label="${t('a11y.delete')}" title="${t('a11y.delete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg></button>
     </div>`;
   }).join('');
   const addForm = (p.addresses || []).length < 3 ? `
@@ -7123,7 +7270,7 @@ function renderAccProfile(el) {
           <input type="text" id="accAdrZip" class="form-input" maxlength="10" placeholder="PLZ">
           <input type="text" id="accAdrCity" class="form-input" maxlength="40" placeholder="${t('co.city')}">
         </div>
-        <button class="btn btn-primary" type="button" onclick="accAddAddress()">${t('acc.save_address')}</button>
+        <button class="btn btn-primary" type="button" onclick="accAddAddress(this)">${t('acc.save_address')}</button>
       </div>
     </details>` : '';
   const voll = !accountKompakt;
@@ -7177,7 +7324,7 @@ ${voll ? `    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">
           <input type="text" id="accBizZip" class="form-input" maxlength="10" inputmode="numeric" placeholder="33649" value="${escG((p.business||{}).zip || '')}">
           <input type="text" id="accBizCity" class="form-input" maxlength="40" placeholder="${t('co.city')}" value="${escG((p.business||{}).city || '')}">
         </div>
-        <button type="button" class="mini-btn" style="justify-self:start;" onclick="accSaveBiz()">${t('acc.save')}</button>
+        <button type="button" class="mini-btn" style="justify-self:start;" onclick="accSaveBiz(false, this)">${t('acc.save')}</button>
       </div>
       <p class="field-note">${t('acc.biz_note')}</p>
     </div>
@@ -7198,7 +7345,7 @@ ${voll ? `    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">
         <input type="text" id="accBirthday" class="form-input" maxlength="6" inputmode="numeric"
                placeholder="${t('acc.birthday_ph')}" value="${escG(p.birthday || '')}" style="flex:1;"
                oninput="accBdayFmt(this)"${p.birthdayLocked ? ' disabled' : ''}>
-        ${p.birthdayLocked ? '' : `<button type="button" class="mini-btn" onclick="accSaveBirthday()" style="align-self:stretch;">${t('acc.save')}</button>`}
+        ${p.birthdayLocked ? '' : `<button type="button" class="mini-btn" onclick="accSaveBirthday(this)" style="align-self:stretch;">${t('acc.save')}</button>`}
       </div>
       <p style="font-size:0.7rem;color:var(--color-text-muted);margin:0.35rem 0 0;line-height:1.4;">${
         p.birthdayLocked ? t('acc.birthday_locked')
@@ -7220,7 +7367,7 @@ ${voll ? `    <div style="margin-bottom:0.3rem;font-weight:700;font-size:0.85rem
     <div style="margin:1rem 0 0.25rem;font-weight:700;font-size:0.85rem;">${t('acc.dnote_title')}</div>
     <p style="font-size:0.72rem;color:var(--color-text-muted);margin:0 0 0.4rem;line-height:1.45;">${t('acc.dnote_hint')}</p>
     <textarea id="accDeliveryNote" class="form-input" rows="2" maxlength="200" placeholder="${t('acc.dnote_ph')}" style="width:100%;resize:vertical;">${escG(p.deliveryNote || '')}</textarea>
-    <button class="btn btn-primary btn-block" style="margin-top:1rem;" onclick="accSaveProfile()">${t('acc.save')}</button>
+    <button class="btn btn-primary btn-block" id="accSaveProfileBtn" style="margin-top:1rem;" onclick="accSaveProfile(this)">${t('acc.save')}</button>
     <div id="standingBox"></div>
 ` : ''}
     <div class="acc-actions">
@@ -7232,7 +7379,7 @@ ${voll ? `    <div style="margin-bottom:0.3rem;font-weight:700;font-size:0.85rem
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/></svg>
         <span>${t('acc.logout')}</span>
       </button>
-      ${voll ? `<button type="button" class="mini-btn mini-btn-danger" onclick="accDeleteAccount()">
+      ${voll ? `<button type="button" class="mini-btn mini-btn-danger" onclick="accDeleteAccount(this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg>
         <span>${t('acc.delete')}</span>
       </button>` : ''}
@@ -7280,22 +7427,25 @@ async function renderWalletBtns() {
       || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
     const istAndroid = !istIOS && /Android/.test(ua);
     const btns = [];
-    if (d.google && !istIOS) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'google\')">' + t('acc.wallet_google') + '</button>');
-    if (d.apple && !istAndroid) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'apple\')">' + t('acc.wallet_apple') + '</button>');
+    if (d.google && !istIOS) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'google\', this)">' + t('acc.wallet_google') + '</button>');
+    if (d.apple && !istAndroid) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'apple\', this)">' + t('acc.wallet_apple') + '</button>');
     if (btns.length) { row.innerHTML = btns.join(''); row.style.display = 'flex'; }
   } catch (e) {}
 }
-async function addToWallet(kind) {
-  try {
-    const r = await fetch('/.netlify/functions/wallet-pass', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: kind, email: ACCOUNT.email, token: ACCOUNT.token }),
-    });
-    const d = await r.json().catch(() => ({}));
-    if (r.ok && d.url) { window.open(d.url, '_blank'); return; }
-    flashAccMsg(d.hint || t('acc.error'));
-  } catch (e) { flashAccMsg(t('acc.error')); }
+async function addToWallet(kind, btn) {
+  // Pass-Erzeugung dauert 1-3 s: Ring im Knopf, Doppeltipp ignorieren
+  return withBusy(btn, async () => {
+    try {
+      const r = await fetch('/.netlify/functions/wallet-pass', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: kind, email: ACCOUNT.email, token: ACCOUNT.token }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.url) { window.open(d.url, '_blank'); return; }
+      flashAccMsg(d.hint || t('acc.error'), btn);
+    } catch (e) { flashAccMsg(t('acc.error'), btn); }
+  });
 }
 function renderAccQr() {
   const box = document.getElementById('accQr');
@@ -7338,41 +7488,59 @@ function showSavedToast(msg) {
   n.style.cssText = 'position:fixed;left:50%;bottom:2.2rem;transform:translateX(-50%) translateY(8px);z-index:10001;' +
     'display:inline-flex;align-items:center;gap:0.45rem;background:#1E2A1A;border:1px solid #6DBE45;color:#9FE07A;' +
     'font-size:0.85rem;font-weight:700;padding:0.55rem 1rem;border-radius:999px;opacity:0;' +
-    'transition:opacity 0.25s ease, transform 0.25s ease;box-shadow:0 8px 30px rgba(0,0,0,0.5);pointer-events:none;';
+    'transition:opacity 220ms var(--ease-out), transform 220ms var(--ease-out);box-shadow:0 8px 30px rgba(0,0,0,0.5);pointer-events:none;';
   document.body.appendChild(n);
-  requestAnimationFrame(() => { n.style.opacity = '1'; n.style.transform = 'translateX(-50%) translateY(0)'; });
+  // Doppelter Frame: Startzustand ist sicher gemalt, bevor die Transition beginnt
+  requestAnimationFrame(() => requestAnimationFrame(() => { n.style.opacity = '1'; n.style.transform = 'translateX(-50%) translateY(0)'; }));
   setTimeout(() => {
     n.style.opacity = '0'; n.style.transform = 'translateX(-50%) translateY(8px)';
     setTimeout(() => n.remove(), 300);
   }, 1700);
 }
-async function accSaveBirthday() {
+/* Speichern geklappt: kurz "✓ Gespeichert" im Knopf, danach wieder der
+   Ursprungstext. label = Beschriftung von VOR dem Warten (ohne Ring). */
+function accSavedTick(btn, label) {
+  if (!btn || !btn.isConnected) return;
+  if (!btn.dataset.label) btn.dataset.label = label || btn.innerHTML;
+  btn.textContent = '✓ ' + t('acc.saved');
+  clearTimeout(btn._savedT);
+  btn._savedT = setTimeout(() => { btn.innerHTML = btn.dataset.label; delete btn.dataset.label; }, 1200);
+}
+async function accSaveBirthday(btn) {
   const inp = document.getElementById('accBirthday');
   const val = (inp.value || '').trim();
   if (val && !/^\d{1,2}\.\d{1,2}\.?$/.test(val)) {
     inp.style.borderColor = 'var(--color-red, #E04848)';
-    flashAccMsg(t('acc.birthday_ph'));
+    flashAccMsg(t('acc.birthday_ph'), btn);
     return;
   }
-  const r = await accountApi('save', { birthday: val });
+  const label = btn ? (btn.dataset.label || btn.innerHTML) : '';
+  const r = await withBusy(btn, () => accountApi('save', { birthday: val }));
+  if (!r) return;   // zweiter Tipp waehrend des Wartens
   if (r.ok) {
     ACCOUNT.profile = r.d.profile; saveAccount();
     inp.value = ACCOUNT.profile.birthday || '';
     inp.style.borderColor = '';
+    accSavedTick(btn, label);
     showSavedToast(t('acc.saved'));
   } else {
-    flashAccMsg(t('acc.error'));
+    flashAccMsg(accErrText(r), btn);
   }
 }
-async function accSaveProfile() {
-  const r = await accountApi('save', {
+async function accSaveProfile(btn) {
+  const r = await withBusy(btn, () => accountApi('save', {
     name: document.getElementById('accName').value,
     phone: document.getElementById('accPhone').value,
     birthday: (document.getElementById('accBirthday') || { value: undefined }).value,
     deliveryNote: (document.getElementById('accDeliveryNote') || { value: undefined }).value,
-  });
-  if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
-  else flashAccMsg(t('acc.error'));
+  }));
+  if (!r) return;   // zweiter Tipp waehrend des Wartens
+  if (r.ok) {
+    ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount();
+    accSavedTick(document.getElementById('accSaveProfileBtn'));   // neu gezeichneter Knopf
+    showSavedToast(t('acc.saved'));
+  }
+  else flashAccMsg(accErrText(r), btn);
 }
 function flashAccMsgOk(msg) {
   const el = document.getElementById('accountBody');
@@ -7392,7 +7560,7 @@ function accBizToggle() {
   if (box) box.hidden = !an;
   if (!an) accSaveBiz(true);   // Abwaehlen sofort sichern
 }
-async function accSaveBiz(nurKennzeichen) {
+async function accSaveBiz(nurKennzeichen, btn) {
   const an = !!document.getElementById('accBizOn')?.checked;
   const wert = id => (document.getElementById(id)?.value || '').trim();
   const daten = {
@@ -7402,12 +7570,14 @@ async function accSaveBiz(nurKennzeichen) {
     zip: wert('accBizZip'),
     city: wert('accBizCity'),
   };
-  if (an && !nurKennzeichen && !daten.company) { flashAccMsg(t('acc.biz_need_name')); return; }
-  const r = await accountApi('save', { business: daten });
+  if (an && !nurKennzeichen && !daten.company) { flashAccMsg(t('acc.biz_need_name'), btn); return; }
+  const label = btn ? (btn.dataset.label || btn.innerHTML) : '';
+  const r = await withBusy(btn, () => accountApi('save', { business: daten }));
+  if (!r) return;   // zweiter Tipp waehrend des Wartens
   if (r.ok) {
     ACCOUNT.profile = r.d.profile; saveAccount();
-    if (!nurKennzeichen) showSavedToast(t('acc.saved'));
-  } else flashAccMsg(t('acc.error'));
+    if (!nurKennzeichen) { accSavedTick(btn, label); showSavedToast(t('acc.saved')); }
+  } else flashAccMsg(accErrText(r), btn);
 }
 
 /* Stehende Bestellungen ------------------------------------------------------
@@ -7427,9 +7597,13 @@ async function standingApi(action, body) {
   return { ok: res.ok, status: res.status, d: await res.json().catch(() => ({})) };
 }
 
+// Bis zur ersten Antwort zeigt die Liste Skelett-Zeilen statt "keine Dauerbestellungen"
+let standingLoaded = false;
 async function loadStanding() {
-  const r = await standingApi('list');
-  STANDING = (r.ok && r.d.orders) || [];
+  let r = null;
+  try { r = await standingApi('list'); } catch (e) {}
+  STANDING = (r && r.ok && r.d.orders) || [];
+  standingLoaded = true;
   renderStanding();
 }
 
@@ -7471,7 +7645,9 @@ function renderStanding() {
   box.innerHTML = `
     <div style="margin:1.2rem 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('so.title')}</div>
     <p class="field-note" style="margin:0 0 0.6rem;">${t('so.intro')}</p>
-    ${liste || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.5rem;">${t('so.empty')}</p>`}
+    ${!standingLoaded
+      ? `<div aria-hidden="true"><div class="skel" style="height:56px;margin:0 0 0.5rem;"></div><div class="skel" style="height:56px;margin:0 0 0.5rem;"></div></div>`
+      : (liste || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.5rem;">${t('so.empty')}</p>`)}
     ${STANDING.length < 3 ? `
       <button type="button" class="btn btn-secondary btn-block" id="soToggle"
               style="margin-top:0.6rem;" onclick="toggleStandingForm()">${t('so.add')}</button>
@@ -7487,7 +7663,7 @@ function renderStanding() {
           <input type="checkbox" id="soRemind">
           <span>${t('so.remind_optin')}</span>
         </label>
-        <button class="btn btn-primary" type="button" onclick="standingCreate()">${t('so.save')}</button>
+        <button class="btn btn-primary" type="button" onclick="standingCreate(this)">${t('so.save')}</button>
       </div>`
       : ''}`;
 }
@@ -7531,7 +7707,7 @@ function itemsAusKorb(korb) {
   }).filter(Boolean);
 }
 
-async function standingCreate() {
+async function standingCreate(btn) {
   const quelle = document.getElementById('soSource')?.value || 'cart';
   let korb = cart;
   if (quelle.startsWith('hist:')) {
@@ -7540,18 +7716,24 @@ async function standingCreate() {
     if (alt && alt.snap) korb = alt.snap;
   }
   const items = itemsAusKorb(korb);
-  if (!items.length) { flashAccMsg(t('so.need_cart')); return; }
-  const r = await standingApi('create', {
-    name: (document.getElementById('soName')?.value || '').trim(),
-    weekday: Number(document.getElementById('soDay').value),
-    time: document.getElementById('soTime').value || '12:30',
-    mode: checkoutMode,
-    items,
-    // Erinnerung nur, wenn ausdrücklich angehakt
-    remind: !!document.getElementById('soRemind')?.checked,
+  if (!items.length) { flashAccMsg(t('so.need_cart'), btn); return; }
+  // Nicht idempotent: ein Doppeltipp waeren zwei Dauerbestellungen
+  return withBusy(btn, async () => {
+    let r;
+    try {
+      r = await standingApi('create', {
+        name: (document.getElementById('soName')?.value || '').trim(),
+        weekday: Number(document.getElementById('soDay').value),
+        time: document.getElementById('soTime').value || '12:30',
+        mode: checkoutMode,
+        items,
+        // Erinnerung nur, wenn ausdrücklich angehakt
+        remind: !!document.getElementById('soRemind')?.checked,
+      });
+    } catch (e) { flashAccMsg(t('acc.err_network'), btn); return; }
+    if (r.ok) { showSavedToast(t('so.saved')); loadStanding(); }
+    else flashAccMsg(r.d && r.d.hint ? r.d.hint : t('acc.error'), btn);
   });
-  if (r.ok) { showSavedToast(t('so.saved')); loadStanding(); }
-  else flashAccMsg(r.d && r.d.hint ? r.d.hint : t('acc.error'));
 }
 
 async function standingSet(id, action) {
@@ -7628,20 +7810,21 @@ function accPickLabel(targetId, key) {
 let accEditingAdr = null;   // Index der Adresse, die gerade umbenannt wird
 function accRenameAddress(i) { accEditingAdr = i; renderAccount(); }
 function accCancelRename() { accEditingAdr = null; renderAccount(); }
-async function accSaveLabel(i) {
+async function accSaveLabel(i, btn) {
   const el = document.getElementById('accAdrRename');
   const list = [...(ACCOUNT.profile.addresses || [])];
   if (!el || !list[i]) return;
   const val = (el.value || '').trim();
-  if (!val) { flashAccMsg(t('acc.adr_name_needed')); return; }
+  if (!val) { flashAccMsg(t('acc.adr_name_needed'), btn); return; }
   list[i] = { ...list[i], label: val, labelKey: labelKeyFor(val) };
   accEditingAdr = null;
-  const r = await accountApi('save', { addresses: list });
+  const r = await withBusy(btn, () => accountApi('save', { addresses: list }));
+  if (!r) return;   // zweiter Tipp waehrend des Wartens
   if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
-  else { renderAccount(); flashAccMsg(t('acc.error')); }
+  else { renderAccount(); flashAccMsg(accErrText(r)); }
 }
 
-async function accAddAddress() {
+async function accAddAddress(btn) {
   const rawLabel = document.getElementById('accAdrLabel').value;
   const a = {
     label: rawLabel,
@@ -7650,26 +7833,44 @@ async function accAddAddress() {
     zip: document.getElementById('accAdrZip').value,
     city: document.getElementById('accAdrCity').value,
   };
-  if (!a.street.trim() || !a.zip.trim()) { flashAccMsg(t('acc.adr_incomplete')); return; }
+  if (!a.street.trim() || !a.zip.trim()) { flashAccMsg(t('acc.adr_incomplete'), btn); return; }
   const list = [...(ACCOUNT.profile.addresses || []), a].slice(0, 3);
-  const r = await accountApi('save', { addresses: list });
+  const r = await withBusy(btn, () => accountApi('save', { addresses: list }));
+  if (!r) return;   // zweiter Tipp waehrend des Wartens
   if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
-  else flashAccMsg(t('acc.error'));
+  else flashAccMsg(accErrText(r), btn);
 }
-async function accDeleteAddress(i) {
+async function accDeleteAddress(i, btn) {
+  const row = btn && btn.closest('.acc-adr');
+  if (row && row.classList.contains('is-leaving')) return;
   const list = [...(ACCOUNT.profile.addresses || [])];
   list.splice(i, 1);
   accEditingAdr = null;   // sonst zeigt der Index auf die falsche Adresse
+  // Zeile sofort ausblenden; die anderen Adress-Knoepfe sperren, solange
+  // gespeichert wird (sonst rechnet ein zweites Loeschen mit der alten Liste)
+  const body = document.getElementById('accountBody');
+  const knoepfe = body ? [...body.querySelectorAll('.acc-adr-act')] : [];
+  knoepfe.forEach(b => { b.disabled = true; });
+  if (row) row.classList.add('is-leaving');
   const r = await accountApi('save', { addresses: list });
   if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
+  else {
+    // Fehler: Zeile und Knoepfe wiederherstellen
+    if (row) row.classList.remove('is-leaving');
+    knoepfe.forEach(b => { b.disabled = false; });
+    flashAccMsg(accErrText(r), row || btn);
+  }
 }
 async function accLogout() {
-  try { await accountApi('logout'); } catch (e) {}
+  // Abmelden wirkt sofort; der Server-Aufruf laeuft im Hintergrund weiter.
+  // accountApi liest E-Mail und Token beim Aufruf, also VOR dem Zuruecksetzen.
+  accountApi('logout').catch(() => {});
   ACCOUNT = null;
   // Auch die geladenen Dauerbestellungen verwerfen. Sonst blitzen sie beim
   // naechsten Anmelden auf demselben Geraet kurz beim FALSCHEN Kunden auf,
   // bis die Antwort des Servers sie ersetzt.
   STANDING = [];
+  standingLoaded = false;
   saveAccount(); updateAccountUI(); renderAccount(); renderCart();
 }
 /* Adresse nach erfolgreicher Lieferbestellung still ins Konto übernehmen */
@@ -7734,13 +7935,16 @@ function accReorderFallback() {
   repeatLastOrder();
   if (typeof hapticTick === 'function') hapticTick();
 }
-async function accDeleteAccount() {
+async function accDeleteAccount(btn) {
+  if (gncIsBusy(btn)) return;
   if (!confirm(t('acc.delete_confirm'))) return;
-  const r = await accountApi('delete');
+  const r = await withBusy(btn, () => accountApi('delete'));
+  if (!r) return;   // zweiter Tipp waehrend des Wartens
   if (r.ok) {
-    ACCOUNT = null; saveAccount(); updateAccountUI(); renderAccount(); renderCart();
+    ACCOUNT = null; standingLoaded = false;
+    saveAccount(); updateAccountUI(); renderAccount(); renderCart();
   } else {
-    flashAccMsg(t('acc.error'));
+    flashAccMsg(accErrText(r), btn);
   }
 }
 function accShareRef() {
@@ -7958,6 +8162,7 @@ let testPromoApplied = false;  // 🔧 Test-Code aktiv (setzt Gesamtbetrag auf 1
 // Browser steht der Code nirgends mehr fest.
 let testOrderCode = '';
 let voucherApplied = null;     // Persönlicher 3-€-Gutschein aus der Retargeting-Mail: { code, value, minOrder }
+var voucherChecking = false;   // Gutschein wird nach der Rueckkehr von SumUp gerade neu geprueft
 let deliveryDistance = null;  // null = not checked, number = km
 let deliveryZone = null;       // matched zone object
 let deliveryAddressValid = false;
@@ -8041,7 +8246,7 @@ async function loadGoogleReviews(lang) {
     }
     // Live-Rezensionen fuer diese Sprache merken; leeres Array = „geladen, nichts da" (kein Dauer-Retry)
     LIVE_REVIEWS[lang] = (d && Array.isArray(d.reviews)) ? d.reviews.filter(r => r && r.text && r.name) : [];
-    if (LIVE_REVIEWS[lang].length && lang === currentLang && typeof renderReviews === 'function') renderReviews();
+    if (LIVE_REVIEWS[lang].length && lang === currentLang && typeof swapLiveReviews === 'function') swapLiveReviews();
   } catch (e) { LIVE_REVIEWS[lang] = LIVE_REVIEWS[lang] || []; /* Fallback bleibt */ }
 }
 
@@ -8082,7 +8287,15 @@ function applyShopStatus() {
       wc.style.display = 'none';
     }
   }
+  // Hinweis-Banner, die hier NEU auftauchen, weich einblenden statt hineinzuploppen.
+  // Spaetere renderMenu()-Laeufe bauen sie ohne Klasse neu: kein erneutes Einblenden.
+  const STATUS_BANNER = ['menuPausedBanner', 'menuModeOffNote'];
+  const vorher = STATUS_BANNER.filter(id => document.getElementById(id));
   renderMenu(false);
+  STATUS_BANNER.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && vorher.indexOf(id) === -1) el.classList.add('status-fade-in');
+  });
   const drawer = document.getElementById('cartDrawer');
   if (drawer && drawer.classList.contains('open')) renderCart();
 }
@@ -8307,6 +8520,9 @@ function renderMenu(animate = false) {
     `;
     grid.appendChild(card);
   });
+
+  // Schon einmal geladene Fotos sofort zeigen: kein erneutes Einblenden bei jedem Neuaufbau
+  if (window.IMG_SEEN) grid.querySelectorAll('img').forEach(i => { if (IMG_SEEN.has(i.src)) i.classList.add('img-in'); });
 
   buildAllergenLegend();
 
@@ -8903,17 +9119,35 @@ function removeFromCart(key) {
     });
   }
 
+  /* Eine Leiste fuer mehrere Loeschungen hintereinander: Text und Timer werden
+     erneuert, das Einfahren (undoIn) laeuft nur beim ersten Einfuegen. renderCart()
+     baut den Korb neu und nimmt die Leiste dabei mit; sie wird dann ohne
+     Animation wieder vorne eingesetzt. */
+  let undoBar = null;
+  function dropUndoBar() {
+    clearTimeout(undoTimer);
+    if (undoBar) { undoBar.remove(); undoBar = null; }
+  }
   function showUndoRemove(key, entry, order, idx) {
     if (!entry) return;
-    const old = document.getElementById('cartUndoBar');
-    if (old) old.remove();
     clearTimeout(undoTimer);
-    const bar = document.createElement('div');
-    bar.id = 'cartUndoBar';
-    bar.className = 'cart-undo-bar';
-    bar.setAttribute('role', 'status');
-    bar.innerHTML = '<span>' + t('cart.removed') + '</span><button type="button">' + t('cart.undo') + '</button>';
-    bar.querySelector('button').addEventListener('click', function () {
+    const old = document.getElementById('cartUndoBar');
+    if (old && old !== undoBar) old.remove();
+    let bar = undoBar;
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'cartUndoBar';
+      bar.className = 'cart-undo-bar';
+      bar.setAttribute('role', 'status');
+      bar.innerHTML = '<span></span><button type="button"></button>';
+      bar.querySelector('button').addEventListener('click', function () { if (bar._undo) bar._undo(); });
+      undoBar = bar;
+    } else {
+      bar.style.animation = 'none';   // Keyframe nur beim ersten Einfuegen
+    }
+    bar.querySelector('span').textContent = t('cart.removed');
+    bar.querySelector('button').textContent = t('cart.undo');
+    bar._undo = function () {
       // Eintrag an seiner alten Stelle wieder einsetzen
       const rebuilt = {};
       const keys = order.filter(function (k) { return k !== key; });
@@ -8922,12 +9156,12 @@ function removeFromCart(key) {
       Object.keys(cart).forEach(function (k) { delete cart[k]; });
       Object.keys(rebuilt).forEach(function (k) { cart[k] = rebuilt[k]; });
       saveCart(); renderMenu(); renderCart(); updateCartUI();
-      bar.remove();
+      dropUndoBar();
       if (window.hapticTick) hapticTick(10);
-    });
+    };
     const body = document.getElementById('cartBody');
-    if (body) { body.insertBefore(bar, body.firstChild); body.scrollTop = 0; }
-    undoTimer = setTimeout(function () { bar.remove(); }, 6000);
+    if (body && body.firstChild !== bar) { body.insertBefore(bar, body.firstChild); body.scrollTop = 0; }
+    undoTimer = setTimeout(dropUndoBar, 6000);
   }
 
   const body = document.getElementById('cartBody');
@@ -9178,12 +9412,13 @@ function setGeoStatus(state) {
 function useMyLocation() {
   if (!('geolocation' in navigator)) { setGeoStatus('fail'); return; }
   const btn = document.getElementById('geoBtn');
-  if (btn) btn.disabled = true;
+  if (gncIsBusy(btn)) return;
+  gncBusy(btn, true);   // Ring bis Standort und Rueckwaerts-Geocode da sind
   setGeoStatus('locating');
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       const addr = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
-      if (!addr) { setGeoStatus('fail'); if (btn) btn.disabled = false; return; }
+      if (!addr) { setGeoStatus('fail'); gncBusy(btn, false); return; }
       const s = document.getElementById('co-street');
       const z = document.getElementById('co-zip');
       const c = document.getElementById('co-city');
@@ -9193,7 +9428,7 @@ function useMyLocation() {
       if (typeof saveCustomerData === 'function') saveCustomerData();
       onAddressChange();          // Liefer-Zone direkt prüfen
       setGeoStatus('ok');         // "Adresse übernommen – bitte prüfen"
-      if (btn) btn.disabled = false;
+      gncBusy(btn, false);
       // Zur Kontrolle direkt ins Adressfeld scrollen + fokussieren
       if (s) {
         try { s.focus({ preventScroll: true }); } catch (_) { s.focus(); }
@@ -9205,7 +9440,7 @@ function useMyLocation() {
       // Code 1 = abgelehnt. Safari fragt dann nicht erneut – die Seite kann die
       // Entscheidung nicht zuruecksetzen, also sagen wir, wo sie steht.
       setGeoStatus(err && err.code === 1 ? 'denied' : 'fail');
-      if (btn) btn.disabled = false;
+      gncBusy(btn, false);
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
   );
@@ -9246,10 +9481,13 @@ async function getRestaurantOrigin() {
   return { lat: RESTAURANT_LOCATION.lat, lon: RESTAURANT_LOCATION.lon };
 }
 
+// Laeuft gerade eine Zonen-Pruefung? Dann bleibt der Bestellknopf gesperrt.
+var zoneChecking = false;
 async function checkDeliveryAddress(street, zip, city) {
   const zoneInfo = document.getElementById('zoneInfo');
   if (!zoneInfo) return;
   if (!street || !zip || !city || zip.length !== 5) {
+    zoneChecking = false;
     deliveryDistance = null;
     deliveryZone = null;
     deliveryAddressValid = false;
@@ -9261,15 +9499,19 @@ async function checkDeliveryAddress(street, zip, city) {
   const key = `${street}|${zip}|${city}`.toLowerCase().trim();
   if (key === lastGeocodeKey && deliveryDistance != null) {
     // Identische, bereits aufgelöste Adresse → Anzeige wiederherstellen, kein erneutes Geocoding
+    zoneChecking = false;
     renderZoneInfo();
     updateCheckoutSummary();
     refreshCartDeliveryUI();
     return;
   }
+  zoneChecking = true;
   zoneInfo.innerHTML = `<div class="zone-info zone-loading">${t('zone.checking')}</div>`;
+  updateCheckoutSummary();
   const coords = await geocodeAddress(street, zip, city);
-  if (coords === undefined) return; // cancelled by newer request
+  if (coords === undefined) return; // cancelled by newer request (die neuere Pruefung haelt zoneChecking)
   if (!coords) {
+    zoneChecking = false;
     deliveryDistance = null;
     deliveryZone = null;
     deliveryAddressValid = false;
@@ -9280,6 +9522,7 @@ async function checkDeliveryAddress(street, zip, city) {
   }
   const origin = await getRestaurantOrigin();
   const km = haversineKm(origin.lat, origin.lon, coords.lat, coords.lon);
+  zoneChecking = false;
   deliveryDistance = km;
   deliveryZone = findZone(km);
   deliveryAddressValid = !!deliveryZone;
@@ -9377,9 +9620,12 @@ function updateCheckoutSummary() {
     }
   }
   if (submitBtn) {
+    // Eine laufende Zonen-Pruefung zaehlt wie "Adresse noch nicht geprueft"
     const blocked = checkoutMode === 'delivery' &&
-      (!deliveryZone || cartSubtotal() < deliveryZone.minOrder);
-    submitBtn.disabled = blocked;
+      (zoneChecking || !deliveryZone || cartSubtotal() < deliveryZone.minOrder);
+    // Waehrend der Bestellung nicht entsperren; der Zustand gilt nach dem Warten
+    if (gncIsBusy(submitBtn)) { submitBtn._busyWasDisabled = blocked; return; }
+    submitBtn.disabled = blocked || checkoutBusy;
   }
 }
 
@@ -9420,7 +9666,8 @@ function normalizePhone(phone) {
 /* ====================================================================
    PROMO CODE
    ==================================================================== */
-function quickApplyPromo() {
+function quickApplyPromo(chip) {
+  if (gncIsBusy(chip)) return;   // Doppeltipp waehrend der Pruefung ignorieren
   const code = adCode();
   if (code === 'WM') {
     // WM-Aktion (bis 20.07.2026): Staffel-Rabatt direkt anwenden
@@ -9433,6 +9680,7 @@ function quickApplyPromo() {
     return;
   }
   // GRILL5 (ab 20.07.2026): läuft als Gutschein über die Server-Prüfung
+  gncBusy(chip, true);   // sperrt den Chip und zeigt den Ring, bis die Antwort da ist
   fetch('/voucher-check', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -9440,6 +9688,7 @@ function quickApplyPromo() {
   })
     .then(r => r.json())
     .then(d => {
+      gncBusy(chip, false);
       if (d && d.valid) {
         voucherApplied = {
           code,
@@ -9465,9 +9714,10 @@ function quickApplyPromo() {
         flashCartNotice(t('promo.invalid'));
       }
     })
-    .catch(() => { flashCartNotice(t('promo.invalid')); });
+    .catch(() => { gncBusy(chip, false); flashCartNotice(t('promo.invalid')); });
 }
-function applyPromo() {
+function applyPromo(btn) {
+  if (gncIsBusy(btn)) return;   // Doppeltipp waehrend der Pruefung ignorieren
   const input = document.getElementById('promoInput');
   if (!input) return;
   const code = input.value.trim().toUpperCase();
@@ -9503,6 +9753,7 @@ function applyPromo() {
     }
     // Gutschein (Kampagne aus dem Admin ODER persönlicher Retargeting-Code) → serverseitig prüfen
     input.disabled = true;
+    gncBusy(btn, true);   // Knopf zeigt den Ring und nimmt keinen zweiten Tipp an
     fetch('/voucher-check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -9511,6 +9762,7 @@ function applyPromo() {
       .then(r => r.json())
       .then(d => {
         input.disabled = false;
+        gncBusy(btn, false);
         // 🔧 Testbestellung: nur der Server weiss, welcher Code das ist.
         // Er meldet kind:'test' zurueck – dann verhaelt sich der Warenkorb
         // exakt wie frueher beim lokalen Test-Code.
@@ -9557,7 +9809,7 @@ function applyPromo() {
             : t('promo.invalid'));
         }
       })
-      .catch(() => { input.disabled = false; promoInputError(input, t('promo.invalid')); });
+      .catch(() => { input.disabled = false; gncBusy(btn, false); promoInputError(input, t('promo.invalid')); });
   } else {
     promoInputError(input, t('promo.invalid'));
   }
@@ -9673,8 +9925,21 @@ function updateCartUI() {
 }
 function pulseCart() {
   const badge = document.getElementById('navCartBadge');
-  badge.style.transform = 'scale(1.4)';
-  setTimeout(() => badge.style.transform = '', 200);
+  if (!badge || (window.__gncMotion && __gncMotion.reduce)) return;
+  badge.classList.remove('bump'); void badge.offsetWidth; badge.classList.add('bump');
+  clearTimeout(badge._bumpT); badge._bumpT = setTimeout(() => badge.classList.remove('bump'), 140);
+}
+/* Puls nur, wenn sich die Zahl seit dem letzten Mal geaendert hat (badge.dataset.n).
+   Laeuft gerade ein Flug, pulst erst die Landung: kein doppelter Sprung, und
+   5x schnell hinzufuegen startet den Puls nicht fuenfmal neu. */
+var cartFlights = 0;
+function pulseCartIfChanged() {
+  const badge = document.getElementById('navCartBadge');
+  if (!badge) return;
+  const n = badge.textContent;
+  if (badge.dataset.n === n) return;
+  badge.dataset.n = n;
+  pulseCart();
 }
 
 // UX-Gimmick: kleines Element fliegt vom Auslöser zur Warenkorb-Leiste
@@ -9701,6 +9966,7 @@ function gestureOrigin(ev, fallbackEl) {
 }
 
 function flyToCart(start) {
+  if (window.__gncMotion && __gncMotion.reduce) { pulseCartIfChanged(); return; }
   try {
     if (!start) return;
     // Punkt {x,y} oder (aus Altbeständen) ein Rechteck
@@ -9720,12 +9986,22 @@ function flyToCart(start) {
     fly.style.left = startX + 'px';
     fly.style.top = startY + 'px';
     document.body.appendChild(fly);
+    cartFlights++;
+    let gelandet = false;
+    const landen = () => {
+      if (gelandet) return;
+      gelandet = true;
+      cartFlights = Math.max(0, cartFlights - 1);
+      fly.remove();
+      pulseCartIfChanged();
+    };
+    // Puls und Aufraeumen beim Ende der Bewegung; Sicherheitsnetz, falls transitionend ausbleibt
+    fly.addEventListener('transitionend', (ev) => { if (ev.propertyName === 'transform') landen(); });
+    setTimeout(landen, 400);
     requestAnimationFrame(() => {
       fly.style.transform = `translate(-50%,-50%) translate(${endX - startX}px, ${endY - startY}px) scale(0.25) rotate(28deg)`;
       fly.style.opacity = '0.1';
     });
-    setTimeout(() => { pulseCart(); }, 580);
-    setTimeout(() => fly.remove(), 760);
   } catch (e) {}
 }
 
@@ -10082,13 +10358,13 @@ function renderCart() {
       const manualField = `
         <div class="promo-input-wrap">
           <input type="text" id="promoInput" placeholder="${t('promo.placeholder')}" aria-label="${t('promo.placeholder_short')}" autocomplete="off" />
-          <button class="btn btn-secondary btn-sm" onclick="applyPromo()" style="min-height: auto; padding: 0.7rem 1rem;">${t('promo.redeem')}</button>
+          <button class="btn btn-secondary btn-sm" onclick="applyPromo(this)" style="min-height: auto; padding: 0.7rem 1rem;">${t('promo.redeem')}</button>
         </div>`;
       if (adCode()) {
         // Standard: aufgeräumt – nur Ein-Tipp-Chip + dezenter Link fürs Eingabefeld
         promoHtml = `
           <div class="promo-compact">
-            <button type="button" class="promo-apply" onclick="quickApplyPromo()">
+            <button type="button" class="promo-apply" onclick="quickApplyPromo(this)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4.8A2 2 0 0 1 4.8 2.8H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg>
               <span>${t('promo.quick_chip').replace('{code}', adCode())}</span>
             </button>
@@ -10127,7 +10403,7 @@ function renderCart() {
             <input type="text" id="co-zip" class="form-input" pattern="[0-9]{5}" placeholder="33649" autocomplete="postal-code" inputmode="numeric" oninput="onAddressChange(); saveCustomerData();" />
             <input type="text" id="co-city" class="form-input" placeholder="${t('co.city')}" autocomplete="address-level2" oninput="onAddressChange(); saveCustomerData();" />
           </div>
-          <div id="zoneInfo"></div>
+          <div id="zoneInfo" aria-live="polite"></div>
           <p class="delivery-check-carry">${t('co.fee_check_carry')}</p>
         </div>
       `;
@@ -10150,7 +10426,7 @@ function renderCart() {
       // Scrollen sichtbar. Im Inhalt bleibt nur die Artikelliste (+ Hinweise).
       body.innerHTML = itemsHtml + `${stepBanner}`;
       footer.innerHTML = groupJoin ? `
-        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitToGroup()" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
+        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitToGroup(this)" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
         <p style="text-align:center;color:var(--color-cream-dim);font-size:0.78rem;margin:0.6rem 0 0;line-height:1.5;">${t('grp.entry_join').replace('{host}', escG(groupJoin.host || ''))}<br>${t('grp.join_s3')}</p>
       ` : `
         <div class="cart-foot-sum">
@@ -10218,6 +10494,7 @@ function renderCart() {
             <span>Gesamt → ${formatPrice(TEST_TOTAL)}</span>
           </div>
         ` : ''}
+        ${voucherChecking ? `<div class="cart-summary-row voucher-checking">${t('promo.checking')}</div>` : ''}
         <div class="cart-summary-row total">
           <span id="cartTotalLabel">${needAddress && !testPromoApplied ? t('co.total_nodelivery') : t('cart.total')}</span>
           <span id="cartTotalVal">${formatPrice(total)}</span>
@@ -10227,7 +10504,7 @@ function renderCart() {
 
     if (groupJoin) {
       footer.innerHTML = `
-        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitToGroup()" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
+        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitToGroup(this)" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
         <p style="text-align:center;color:var(--color-cream-dim);font-size:0.78rem;margin:0.6rem 0 0;line-height:1.5;">${t('grp.entry_join').replace('{host}', escG(groupJoin.host || ''))}<br>${t('grp.join_s3')}</p>
       `;
       return;
@@ -10349,7 +10626,7 @@ function renderCart() {
               <input type="text" id="co-city" class="form-input" required value="Bielefeld" autocomplete="address-level2" oninput="onAddressChange()" />
             </div>
           </div>
-          <div id="zoneInfo"></div>
+          <div id="zoneInfo" aria-live="polite"></div>
         ` : `
           <div class="form-group">
             <label for="co-pickup-time">${t('co.pickup_time')}</label>
@@ -10435,6 +10712,7 @@ function renderCart() {
           <div class="cart-summary-row" id="coTipRow" style="${tipAmount() > 0 ? '' : 'display:none;'}">
             <span>${t('co.tip_label')} (<span id="coTipPct">${tipPercent}</span>&nbsp;%)</span><span id="coTip">${formatPrice(tipAmount())}</span>
           </div>
+          ${voucherChecking ? `<div class="cart-summary-row voucher-checking">${t('promo.checking')}</div>` : ''}
           <div class="cart-summary-row total">
             <span>${t('cart.total')}</span><span id="coTotal" data-co-total>${formatPrice(cartGrandTotal())}</span>
           </div>
@@ -10457,6 +10735,7 @@ function renderCart() {
       <button type="button" id="coSubmit" class="btn btn-primary btn-block btn-lg" onclick="triggerCheckoutSubmit()">
         ${t('checkout.submit_cash')}
       </button>
+      <p id="coWaitHint" class="co-wait-hint" aria-live="polite"></p>
       <p id="coSubmitHint" style="text-align: center; font-size: 0.78rem; color: var(--color-text-muted); margin: 0.6rem 0 0;">
         ${t('checkout.hint_cash')}
       </p>
@@ -10550,6 +10829,9 @@ function renderCart() {
       renderZoneInfo();
     }
     updateCheckoutSummary();
+
+    // Fuss neu gebaut, waehrend eine Bestellung laeuft: Wartezustand wieder anlegen
+    if (checkoutBusy) { gncBusy(checkoutSubmitBtn(), true); lockCheckoutForm(true); }
 
     // Code WM ist unbegrenzt nutzbar – keine geräte-lokale Verwendungsprüfung mehr.
   }
@@ -10678,16 +10960,45 @@ function validateCheckoutForm() {
    der Knopf tot wirkte. Ab jetzt eine Quelle fuer alle Stellen. */
 function checkoutSubmitBtn() { return document.getElementById('coSubmit'); }
 
+/* Kasse im Wartezustand: eine Bestellung laeuft. Solange das Flag steht,
+   startet kein zweites submitOrder (Doppeltipp = Doppelbestellung), und
+   weder Adress-Pruefung noch Neuaufbau des Fusses entsperren den Knopf. */
+var checkoutBusy = false;
+var checkoutHintT = 0;
+function lockCheckoutForm(on) {
+  var f = document.getElementById('checkoutForm');
+  if (!f) return;
+  f.classList.toggle('is-locked', on);
+  if (on) f.setAttribute('aria-busy', 'true'); else f.removeAttribute('aria-busy');
+}
+function setCheckoutHint(txt) {
+  var el = document.getElementById('coWaitHint');
+  if (el) el.textContent = txt || '';
+}
+function releaseCheckout() {
+  checkoutBusy = false;
+  clearTimeout(checkoutHintT);
+  gncBusy(checkoutSubmitBtn(), false);
+  lockCheckoutForm(false);
+  setCheckoutHint('');
+  // Sperre wegen Adresse/Mindestwert gilt nach dem Warten weiter
+  try { updateCheckoutSummary(); } catch (e) {}
+}
+
 /* Die Beschriftung des Bestellknopfes richtet sich nach der gewaehlten Zahlart.
    Beim Zuruecksetzen nach einem Fehlversuch darf nicht der Bar-Text
    stehenbleiben, wenn online bezahlt werden soll. */
 function resetCheckoutSubmitLabel() {
   const btn = checkoutSubmitBtn();
+  releaseCheckout();
   if (!btn) return;
   const checked = document.querySelector('input[name="pay"]:checked');
   btn.disabled = false;
+  // Der Ring bleibt bis zum Ende seiner Mindestanzeige (gncBusy raeumt ihn danach ab)
+  const ring = btn.querySelector(':scope > .busy-spin');
   btn.innerHTML = t(checked && checked.value === 'sumup'
     ? 'checkout.submit_online' : 'checkout.submit_cash');
+  if (ring) btn.appendChild(ring);
   /* Der Knopf ist auch dann gesperrt, wenn bei Lieferung die Adresse fehlt
      oder der Mindestbestellwert nicht erreicht ist. Diese Sperre gehoert
      wiederhergestellt – sonst macht das Entsperren hier eine Bestellung
@@ -10744,9 +11055,15 @@ function triggerCheckoutSubmit() {
 async function submitOrder(e) {
   e.preventDefault();
   if (!validateCheckoutForm()) return;
-  if (SHOP_STATUS.paused) { flashCartNotice(t('shop.paused_notice')); return; }
+  // Sperre VOR dem ersten await: ein zweiter Tipp startet keine zweite Bestellung
+  if (checkoutBusy) return;
+  checkoutBusy = true;
+  const sb = checkoutSubmitBtn();
+  gncBusy(sb, true);
+  lockCheckoutForm(true);
+  if (SHOP_STATUS.paused) { releaseCheckout(); flashCartNotice(t('shop.paused_notice')); return; }
   const soldEntry = Object.values(cart).find(en => en && isSoldOut(en.menuId));
-  if (soldEntry) { flashCartNotice(t('shop.soldout_cart')); return; }
+  if (soldEntry) { releaseCheckout(); flashCartNotice(t('shop.soldout_cart')); return; }
   const form = e.target;
   const name = form['co-name'].value;
   const phone = form['co-phone'].value;
@@ -10758,6 +11075,7 @@ async function submitOrder(e) {
   // Bestellstatus nach Öffnungszeiten prüfen
   const os = getOrderingState();
   if (checkoutMode === 'delivery' && !os.delivery) {
+    releaseCheckout();
     flashCartNotice(t('co.delivery_cutoff'));
     return; // Lieferung an diesem Tag nicht möglich
   }
@@ -10772,6 +11090,7 @@ async function submitOrder(e) {
   // Zusätzlich lokale Sofort-Sperre: der eigene Empfehlungs-Code ist nie einlösbar.
   if (voucherApplied && accountLoggedIn() && ACCOUNT.profile.refCode
       && voucherApplied.code === ACCOUNT.profile.refCode) {
+    releaseCheckout();
     voucherApplied = null;
     renderCart();
     flashCartNotice(t('promo.ref_self'));
@@ -10787,6 +11106,7 @@ async function submitOrder(e) {
       const vd = await vres.json().catch(() => null);
       if (!vd || !vd.valid) {
         const reason = vd && vd.reason;
+        releaseCheckout();
         voucherApplied = null;
         renderCart();
         flashCartNotice(reason === 'ref_self' ? t('promo.ref_self')
@@ -10916,10 +11236,13 @@ async function submitOrder(e) {
     // (z. B. nur Dips) würden mit einem 400 abgelehnt → hier sauber abfangen.
     const amountToCharge = Math.round(total * 100) / 100;
     if (amountToCharge < 1.00) {
+      releaseCheckout();
       flashCartNotice(t('co.min_online'));
       return;
     }
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = t('co.creating_payment'); }
+    // Knopf wartet schon (gncBusy oben); dauert es, sagt die Zeile darunter Bescheid
+    clearTimeout(checkoutHintT);
+    checkoutHintT = setTimeout(() => setCheckoutHint(t('wait.slow')), 2500);
 
     // TEST-MODUS: simulierte Online-Zahlung ohne echtes Backend
     if (TEST_MODE_NO_BACKEND) {
@@ -11009,6 +11332,9 @@ async function submitOrder(e) {
         }));
       } catch(e) {}
 
+      // Weiterleitung steht unmittelbar bevor: nicht entsperren, die Seite navigiert weg
+      clearTimeout(checkoutHintT);
+      setCheckoutHint(t('wait.to_sumup'));
       window.location.href = data.hosted_checkout_url;
       return;
     } catch (err) {
@@ -11053,12 +11379,15 @@ async function submitOrder(e) {
   // --- Bar / EC vor Ort → Bestellung automatisch per E-Mail an Pasquale ---
   const orderWithRef = { ...orderData, reference: 'GNC-' + Date.now() };
 
-  const submitBtnCash = checkoutSubmitBtn();
-  if (submitBtnCash) { submitBtnCash.disabled = true; submitBtnCash.innerHTML = t('co.sending'); }
+  // Knopf wartet schon (gncBusy oben). Bewusst KEIN Timeout/Abbruch des Requests:
+  // Bestellung auf dem Server + Fehlermeldung beim Kunden waere eine Doppelbestellung.
+  clearTimeout(checkoutHintT);
+  checkoutHintT = setTimeout(() => setCheckoutHint(t('wait.slow')), 4000);
 
   // E-Mail an Pasquale (Owner-Notification mit Status-Buttons) + Bestätigung an Kunde
   sendOrderConfirmationEmails(orderWithRef)
     .then(result => {
+      releaseCheckout();
       if (result === false) {
         // E-Mail-Versand fehlgeschlagen → Fehler anzeigen, NICHT als erfolgreich werten
         resetCheckoutSubmitLabel();
@@ -11867,13 +12196,37 @@ let groupOrderNote = '';   // Pro-Person-Aufschlüsselung für die Bestell-Notiz
 
 try { groupHost = JSON.parse(localStorage.getItem(GROUP_HOST_KEY) || 'null'); } catch(e) {}
 
+/* Netzwerkfehler werfen nicht mehr, sondern kommen als { ok:false, d:{}, net:true }
+   zurueck. net unterscheidet "keine Verbindung" von einer Ablehnung durch den
+   Server: nur bei einer echten Ablehnung darf die gemerkte Gruppe weg. */
 async function groupApi(payload) {
-  const res = await fetch(GROUP_API, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const d = await res.json().catch(() => ({}));
-  return { ok: res.ok, d };
+  try {
+    const res = await fetch(GROUP_API, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const d = await res.json().catch(() => ({}));
+    return { ok: res.ok, d };
+  } catch (e) {
+    return { ok: false, d: {}, net: true };
+  }
+}
+/* Toast fuer Deep-Links: showToast steht in einem spaeteren Skript-Block.
+   Vor dem Ende des Aufbaus wird deshalb bis DOMContentLoaded gewartet. */
+function toastNachAufbau(key) {
+  const zeig = () => { if (typeof showToast === 'function') showToast(t(key)); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', zeig, { once: true });
+  else zeig();
+}
+function grpZeit() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function grpFehler(text) {
+  const el = document.getElementById('grpErr');
+  if (!el) return;
+  el.textContent = text || '';
+  el.hidden = !text;
 }
 
 function groupLink(id) { return location.origin + '/?g=' + id; }
@@ -11919,25 +12272,45 @@ function renderGroupStart() {
     <p style="color:var(--color-cream-dim);font-size:0.9rem;margin:0 0 1rem;">${t('grp.intro')}</p>
     <label for="grpHostName" style="display:block;font-weight:600;font-size:0.86rem;margin-bottom:0.4rem;">${t('grp.host_label')}</label>
     <input type="text" id="grpHostName" class="form-input" maxlength="40" placeholder="${t('grp.host_ph')}" style="margin-bottom:1rem;">
-    <button class="btn btn-primary btn-block" onclick="createGroup()">${t('grp.create')}</button>
+    <button class="btn btn-primary btn-block" onclick="createGroup(this)">${t('grp.create')}</button>
+    <p id="grpErr" class="grp-err" role="alert" hidden></p>
   `;
 }
-async function createGroup() {
+async function createGroup(btn) {
   const host = (document.getElementById('grpHostName').value || '').trim();
   if (!host) { document.getElementById('grpHostName').focus(); return; }
-  const r = await groupApi({ action: 'create', host });
-  if (!r.ok) { alert(t('grp.error')); return; }
-  groupHost = { id: r.d.id, hostKey: r.d.hostKey, host };
-  try { localStorage.setItem(GROUP_HOST_KEY, JSON.stringify(groupHost)); } catch(e) {}
-  updateGroupEntryBtn();
-  renderGroupHost(r.d.group);
+  return withBusy(btn, async () => {
+    grpFehler('');
+    const r = await groupApi({ action: 'create', host });
+    if (!r.ok) { grpFehler(r.net ? t('acc.err_network') : t('grp.error')); return; }
+    groupHost = { id: r.d.id, hostKey: r.d.hostKey, host };
+    try { localStorage.setItem(GROUP_HOST_KEY, JSON.stringify(groupHost)); } catch(e) {}
+    updateGroupEntryBtn();
+    renderGroupHost(r.d.group);
+  });
 }
 
-/* ---- Gastgeber-Cockpit ---- */
-async function renderGroupHost(preloaded) {
+/* ---- Gastgeber-Cockpit ----
+   Ohne vorgeladene Gruppe: bis zur ersten Antwort drei Skelett-Zeilen.
+   refresh=true (Knopf "Aktualisieren"): Ansicht bleibt stehen, der Knopf wartet. */
+function refreshGroupHost(btn) {
+  return withBusy(btn, () => renderGroupHost(null, true));
+}
+async function renderGroupHost(preloaded, refresh) {
   let g = preloaded;
   if (!g) {
+    const body = document.getElementById('groupBody');
+    if (!refresh && body) {
+      body.innerHTML = '<div class="grp-skel" aria-busy="true"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>';
+    }
     const r = await groupApi({ action: 'get', id: groupHost.id });
+    if (!r.ok && r.net) {
+      // Keine Verbindung: Gruppe behalten, nur Bescheid sagen
+      if (refresh) { grpFehler(t('acc.err_network')); return; }
+      if (body) body.innerHTML = '<p id="grpErr" class="grp-err" role="alert">' + escG(t('acc.err_network')) + '</p>'
+        + '<button type="button" class="btn btn-secondary btn-block" onclick="refreshGroupHost(this)">' + t('grp.refresh') + '</button>';
+      return;
+    }
     if (!r.ok) {
       localStorage.removeItem(GROUP_HOST_KEY); groupHost = null; updateGroupEntryBtn();
       renderGroupStart(); return;
@@ -11961,12 +12334,14 @@ async function renderGroupHost(preloaded) {
     <a href="${wa}" target="_blank" rel="noopener" class="btn btn-primary btn-block" style="text-align:center;text-decoration:none;margin-bottom:1.2rem;">${t('grp.whatsapp')}</a>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.3rem;">
       <strong style="font-size:0.9rem;">${t('grp.list_title').replace('{n}', (g.contributions || []).length)}</strong>
-      <button onclick="renderGroupHost()" style="background:none;border:none;color:var(--color-orange-bright);font-weight:700;font-size:0.8rem;cursor:pointer;">${t('grp.refresh')}</button>
+      <button onclick="refreshGroupHost(this)" style="background:none;border:none;color:var(--color-orange-bright);font-weight:700;font-size:0.8rem;cursor:pointer;">${t('grp.refresh')}</button>
     </div>
+    <p class="grp-updated">${t('grp.updated').replace('{time}', grpZeit())}</p>
+    <p id="grpErr" class="grp-err" role="alert" hidden></p>
     <div style="margin-bottom:1rem;">${rows || '<p style="color:var(--color-text-muted);font-size:0.84rem;padding:0.6rem 0;">' + t('grp.empty') + '</p>'}</div>
     ${(g.contributions || []).length ? `
       <div style="display:flex;justify-content:space-between;font-weight:800;margin-bottom:1rem;"><span>${t('grp.sum')}</span><span style="color:var(--color-orange-bright);">${formatPrice(total)}</span></div>
-      <button class="btn btn-primary btn-block" onclick="importGroup()">${t('grp.import')}</button>` : ''}
+      <button class="btn btn-primary btn-block" onclick="importGroup(this)">${t('grp.import')}</button>` : ''}
     <div class="grp-discard-center">
       <button type="button" class="grp-discard-btn" onclick="discardGroup()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg>
@@ -12039,30 +12414,38 @@ async function copyGroupLink(btn) {
   f.setSelectionRange(0, f.value.length);
 }
 /* ---- Gastgeber: alles übernehmen & zur Kasse ---- */
-async function importGroup() {
-  const r = await groupApi({ action: 'get', id: groupHost.id });
-  if (!r.ok) { alert(t('grp.error')); return; }
-  const g = r.d.group;
-  if (!(g.contributions || []).length) return;
-  // Beiträge in den eigenen Warenkorb mergen – Preise rechnet der Warenkorb neu
-  g.contributions.forEach(c => {
-    Object.entries(c.entries || {}).forEach(([key, entry]) => {
-      if (!entry || !entry.menuId) return;
-      if (cart[key]) cart[key].qty += (entry.qty || 1);
-      else cart[key] = { ...entry };
-    });
+// Zweite Sicherung neben dem Busy-Knopf: ein Doppeltipp wuerde jede Menge verdoppeln
+var groupImporting = false;
+async function importGroup(btn) {
+  if (groupImporting) return;
+  return withBusy(btn, async () => {
+    groupImporting = true;
+    try {
+      const r = await groupApi({ action: 'get', id: groupHost.id });
+      if (!r.ok) { alert(t('grp.error')); return; }
+      const g = r.d.group;
+      if (!(g.contributions || []).length) return;
+      // Beiträge in den eigenen Warenkorb mergen – Preise rechnet der Warenkorb neu
+      g.contributions.forEach(c => {
+        Object.entries(c.entries || {}).forEach(([key, entry]) => {
+          if (!entry || !entry.menuId) return;
+          if (cart[key]) cart[key].qty += (entry.qty || 1);
+          else cart[key] = { ...entry };
+        });
+      });
+      saveCart();
+      // Pro-Person-Aufschlüsselung für Küche & Mails
+      groupOrderNote = '— ' + t('grp.note_head').replace('{host}', g.host) + ' —\n'
+        + g.contributions.map(c => c.person + ': ' + c.lines.map(l => l.qty + '× ' + l.name).join(', ')).join('\n');
+      if (groupOrderNote.length > 1200) groupOrderNote = groupOrderNote.slice(0, 1197) + '…';
+      // Gruppe schließen (keine weiteren Beiträge)
+      groupApi({ action: 'close', id: groupHost.id, hostKey: groupHost.hostKey }).catch(() => {});
+      localStorage.removeItem(GROUP_HOST_KEY);
+      groupHost = null; updateGroupEntryBtn();
+      closeGroupOverlay();
+      renderCart(); updateCartUI(); openCart();
+    } finally { groupImporting = false; }
   });
-  saveCart();
-  // Pro-Person-Aufschlüsselung für Küche & Mails
-  groupOrderNote = '— ' + t('grp.note_head').replace('{host}', g.host) + ' —\n'
-    + g.contributions.map(c => c.person + ': ' + c.lines.map(l => l.qty + '× ' + l.name).join(', ')).join('\n');
-  if (groupOrderNote.length > 1200) groupOrderNote = groupOrderNote.slice(0, 1197) + '…';
-  // Gruppe schließen (keine weiteren Beiträge)
-  groupApi({ action: 'close', id: groupHost.id, hostKey: groupHost.hostKey }).catch(() => {});
-  localStorage.removeItem(GROUP_HOST_KEY);
-  groupHost = null; updateGroupEntryBtn();
-  closeGroupOverlay();
-  renderCart(); updateCartUI(); openCart();
 }
 
 /* ---- B2B-Starter-Link (?team) – öffnet direkt "Gruppenlink erstellen" ---- */
@@ -12083,14 +12466,17 @@ async function importGroup() {
     const p = new URLSearchParams(location.search);
     const id = p.get('so'), tok = p.get('t');
     if (!id || !tok) return;
+    toastNachAufbau('so.loading');
     fetch('/.netlify/functions/standing-orders', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'byLink', id, linkToken: tok }),
     }).then(r => r.json()).then(d => {
       if (d && d.ok && d.order) {
         fillCartFromItems(d.order.items, d.order.mode);
+      } else {
+        toastNachAufbau('acc.error');   // Link abgelehnt (abgelaufen, unbekannt)
       }
-    }).catch(() => {});
+    }).catch(() => { toastNachAufbau('acc.err_network'); });
     // Kennung aus der Adresse nehmen, damit ein Neuladen nicht doppelt füllt
     const u = new URL(location.href);
     u.searchParams.delete('so'); u.searchParams.delete('t');
@@ -12103,9 +12489,16 @@ async function importGroup() {
   try {
     const gid = new URLSearchParams(location.search).get('g');
     if (gid && /^[A-Z2-9]{8}$/i.test(gid)) {
-      groupJoin = { id: gid.toUpperCase(), host: '' };
+      groupJoin = { id: gid.toUpperCase(), host: '', loading: true };
+      updateGroupEntryBtn();
       groupApi({ action: 'get', id: groupJoin.id }).then(r => {
-        if (!r.ok || r.d.group.status !== 'open') { groupJoin = null; updateGroupEntryBtn(); return; }
+        if (!r.ok || !r.d.group || r.d.group.status !== 'open') {
+          const geschlossen = r.ok && r.d.group && r.d.group.status !== 'open';
+          groupJoin = null; updateGroupEntryBtn();
+          toastNachAufbau(geschlossen ? 'grp.closed' : 'grp.error');
+          return;
+        }
+        groupJoin.loading = false;
         groupJoin.host = r.d.group.host;
         updateGroupEntryBtn();
         setTimeout(openGroupOverlay, 700);
@@ -12125,7 +12518,9 @@ function renderGroupJoin() {
 }
 
 /* Teilnehmer: Checkout-Abzweig – statt Kasse geht die Auswahl an die Gruppe */
-async function submitToGroup() {
+var groupSending = false;   // Auswahl ist unterwegs: kein zweites Absenden
+async function submitToGroup(btn) {
+  if (groupSending) return;
   if (!Object.keys(cart).length) return;
   let person = '';
   try { person = (localStorage.getItem('gnc_group_person') || '').trim(); } catch(e) {}
@@ -12146,7 +12541,16 @@ async function submitToGroup() {
     }
     return { name: nm, qty: entry.qty };
   }).filter(Boolean);
-  const r = await groupApi({ action: 'add', id: groupJoin.id, person, entries: cart, lines, total: cartSubtotal() });
+  const sendBtn = btn || document.getElementById('cartCheckoutBtn');
+  groupSending = true;
+  gncBusy(sendBtn, true);
+  let r;
+  try {
+    r = await groupApi({ action: 'add', id: groupJoin.id, person, entries: cart, lines, total: cartSubtotal() });
+  } finally {
+    groupSending = false;
+    gncBusy(sendBtn, false);
+  }
   if (!r.ok) {
     alert(r.d && r.d.error === 'closed' ? t('grp.closed') : t('grp.error'));
     return;
@@ -12160,7 +12564,7 @@ async function submitToGroup() {
 function updateGroupEntryBtn() {
   const b = document.getElementById('groupEntryBtn');
   if (!b) return;
-  if (groupJoin) b.textContent = t('grp.entry_join').replace('{host}', groupJoin.host || '');
+  if (groupJoin) b.textContent = groupJoin.loading ? t('grp.loading') : t('grp.entry_join').replace('{host}', groupJoin.host || '');
   else if (groupHost) b.textContent = t('grp.entry_host');
   else b.textContent = t('grp.entry');
   // Ausstieg nur zeigen, solange eine Gruppe laeuft
@@ -12213,7 +12617,7 @@ const CFUN_TITLE_KEYS = { 1: 'catering.fun_step1', 2: 'catering.fun_step2', 3: '
 function cfunRender(focus) {
   document.querySelectorAll('.cfun-step').forEach(s => { s.hidden = parseInt(s.dataset.cfun) !== cfunStep; });
   const fill = document.getElementById('cfunBarFill');
-  if (fill) fill.style.width = (cfunStep / 3 * 100) + '%';
+  if (fill) fill.style.transform = 'scaleX(' + (cfunStep / 3) + ')';
   const count = document.getElementById('cfunCount');
   if (count) count.textContent = t('catering.fun_progress').replace('{n}', cfunStep);
   const title = document.getElementById('cfunTitle');
@@ -12278,6 +12682,8 @@ cfunRender(false);
 
 document.getElementById('cateringForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  // Anfrage laeuft schon (z. B. Enter im Feld waehrend des Wartens): nicht doppelt senden
+  if (gncIsBusy(document.getElementById('cfSubmit'))) return;
   const form = e.target;
   const name = form['cf-name'].value;
   const email = form['cf-email'].value;
@@ -12343,12 +12749,14 @@ document.getElementById('cateringForm').addEventListener('submit', async (e) => 
   }
 
   const submitBtn = document.getElementById('cfSubmit');
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '⏳ Sende Anfrage ...'; }
+  gncBusy(submitBtn, true);
 
   const contactPref = form['cf-contactpref'] ? form['cf-contactpref'].value : '';
   const ok = await sendCateringRequest({ name, email, phone, date, guests, location, msg, package: pkg, contactPref, turnstileToken });
 
   if (ok) {
+    // Hoehe halten, damit die Seite beim Tausch nicht springt; Erfolg weich einblenden
+    form.style.minHeight = form.offsetHeight + 'px';
     form.innerHTML = `
       <div class="success-screen">
         <div class="success-icon">✓</div>
@@ -12359,12 +12767,22 @@ document.getElementById('cateringForm').addEventListener('submit', async (e) => 
         </p>
       </div>
     `;
+    const erfolg = form.querySelector('.success-screen');
+    if (erfolg) {
+      erfolg.style.opacity = '0';
+      void erfolg.offsetWidth;
+      erfolg.style.transition = 'opacity 220ms var(--ease-out)';
+      erfolg.style.opacity = '1';
+    }
+    setTimeout(() => { form.style.minHeight = ''; }, 240);
   } else {
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = 'Anfrage senden'; }
+    gncBusy(submitBtn, false);   // Knopftext bleibt der uebersetzte (catering.f_submit)
     if (TURNSTILE_SITEKEY && typeof turnstile !== 'undefined' && turnstile.reset) turnstile.reset();
     const hint = document.getElementById('cfHint');
     if (hint) {
-      hint.innerHTML = 'Übermittlung fehlgeschlagen. Bitte ruf uns an: <a href="tel:+4915118540604" style="color:var(--color-orange-bright);font-weight:600;">+49 151 18 54 06 04</a> oder schreib an <a href="mailto:info@grillnchill-foodtruck.de" style="color:var(--color-orange-bright);font-weight:600;">info@grillnchill-foodtruck.de</a>.';
+      hint.innerHTML = t('catering.err_send')
+        .replace('{phone}', '<a href="tel:+4915118540604" style="color:var(--color-orange-bright);font-weight:600;">+49 151 18 54 06 04</a>')
+        .replace('{mail}', '<a href="mailto:info@grillnchill-foodtruck.de" style="color:var(--color-orange-bright);font-weight:600;">info@grillnchill-foodtruck.de</a>');
       hint.style.color = 'var(--color-error)';
     }
   }
@@ -12586,6 +13004,36 @@ function renderReviews() {
   fetchLiveReviews(currentLang);
 }
 
+/* Live-Rezensionen einsetzen, ohne dem Finger die Karten wegzuziehen:
+   Laeuft gerade eine Geste oder rollt die Spur noch nach, wird bis zum Ende
+   gewartet. Beim Tausch haelt die Spur ihre Hoehe und blendet von 0.6 auf 1. */
+let reviewGesture = false;
+let reviewLastScroll = 0;
+function reviewTrackBusy() {
+  return reviewGesture || (Date.now() - reviewLastScroll) < 200;
+}
+function swapLiveReviews() {
+  const track = document.getElementById('reviewsTrack');
+  if (!track) return;
+  if (reviewTrackBusy()) {
+    clearTimeout(track._swapT);
+    track._swapT = setTimeout(swapLiveReviews, 250);
+    return;
+  }
+  clearTimeout(track._swapT);
+  clearTimeout(track._swapDoneT);
+  track.style.minHeight = track.offsetHeight + 'px';
+  track.style.transition = 'none';
+  track.style.opacity = '0.6';
+  renderReviews();
+  void track.offsetWidth;
+  track.style.transition = 'opacity 180ms var(--ease-out)';
+  track.style.opacity = '1';
+  track._swapDoneT = setTimeout(() => {
+    track.style.minHeight = ''; track.style.transition = ''; track.style.opacity = '';
+  }, 200);
+}
+
 // Karte anfahren. smooth=false springt (Aufbau, Sprachwechsel, „Bewegung reduzieren").
 function scrollToReview(idx, smooth) {
   const track = document.getElementById('reviewsTrack');
@@ -12661,6 +13109,7 @@ function initReviews() {
   // Punkte laufen dem Finger hinterher – ohne Timer, im naechsten Frame
   let raf = null;
   track.addEventListener('scroll', () => {
+    reviewLastScroll = Date.now();   // Nachrollen zaehlt fuer swapLiveReviews als laufende Geste
     if (raf) return;
     raf = requestAnimationFrame(() => {
       raf = null;
@@ -12670,10 +13119,12 @@ function initReviews() {
   }, { passive: true });
 
   // Eigene Geste = Kontrolle uebernommen: Auto-Weiterlauf endet fuer diese Sitzung
-  const uebernehmen = () => { reviewAutoStopped = true; stopReviewTimer(); };
+  const uebernehmen = () => { reviewAutoStopped = true; stopReviewTimer(); reviewGesture = true; };
+  const losgelassen = () => { reviewGesture = false; reviewLastScroll = Date.now(); };
   track.addEventListener('pointerdown', uebernehmen, { passive: true });
   track.addEventListener('touchstart', uebernehmen, { passive: true });
-  track.addEventListener('wheel', uebernehmen, { passive: true });
+  track.addEventListener('wheel', () => { reviewAutoStopped = true; stopReviewTimer(); reviewLastScroll = Date.now(); }, { passive: true });
+  ['pointerup', 'pointercancel', 'touchend', 'touchcancel'].forEach(ev => track.addEventListener(ev, losgelassen, { passive: true }));
 
   // Maus drueber oder Fokus drin: kurz anhalten, danach weiter
   const carousel = track.closest('.reviews-carousel') || track;
@@ -13035,7 +13486,64 @@ setAppView(HASH_TO_VIEW[location.hash] || 'home', { noHistory: true, keepScroll:
    Zustand bewusst mit var: setAppView() laeuft schon beim Laden, bevor
    dieser Block erreicht ist (let/const waeren dann noch gesperrt).
    ==================================================================== */
-var GNC_REDUCED = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+/* ---- Warten sichtbar machen (Busy-Knopf, Warte-Ebene) ---- */
+function gncBusy(btn, on) {
+  if (!btn) return;
+  if (on) {
+    if (btn.classList.contains('is-busy')) return;
+    btn.style.setProperty('--busy-ink', getComputedStyle(btn).color);
+    btn._busyWasDisabled = !!btn.disabled;
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    btn.setAttribute('aria-busy', 'true');
+    var sp = document.createElement('span');
+    sp.className = 'busy-spin'; sp.setAttribute('aria-hidden', 'true');
+    btn.appendChild(sp);
+    btn._busyShownAt = 0;
+    btn._busyT = setTimeout(function () { btn.classList.add('busy-shown'); btn._busyShownAt = Date.now(); }, 150);
+    return;
+  }
+  if (!btn.classList.contains('is-busy')) return;
+  clearTimeout(btn._busyT);
+  var rest = btn._busyShownAt ? Math.max(0, 400 - (Date.now() - btn._busyShownAt)) : 0;
+  setTimeout(function () {
+    btn.classList.remove('is-busy', 'busy-shown');
+    btn.removeAttribute('aria-busy');
+    btn.style.removeProperty('--busy-ink');
+    var sp = btn.querySelector(':scope > .busy-spin'); if (sp) sp.remove();
+    btn.disabled = !!btn._busyWasDisabled;
+  }, rest);
+}
+function gncIsBusy(btn) { return !!(btn && btn.classList.contains('is-busy')); }
+async function withBusy(btn, fn) {
+  if (!btn) return fn();                // Aufruf ohne Knopf (z. B. aus accClaimStamps)
+  if (gncIsBusy(btn)) return;           // zweiter Tipp waehrend des Wartens: ignorieren
+  gncBusy(btn, true);
+  try { return await fn(); } finally { gncBusy(btn, false); }
+}
+var gncWaitEl = null;
+function gncWaitOverlay(text, sub) {
+  if (!gncWaitEl) {
+    gncWaitEl = document.createElement('div');
+    gncWaitEl.className = 'gnc-wait';
+    gncWaitEl.setAttribute('role', 'status');
+    gncWaitEl.setAttribute('aria-live', 'polite');
+    gncWaitEl.innerHTML = '<div class="gnc-wait-card"><div class="gnc-wait-ring"><span class="busy-spin lg" aria-hidden="true"></span></div><div class="gnc-wait-text"></div><p class="gnc-wait-sub" hidden></p></div>';
+    document.body.appendChild(gncWaitEl);
+  }
+  gncWaitEl.querySelector('.gnc-wait-text').textContent = text || '';
+  var s = gncWaitEl.querySelector('.gnc-wait-sub'); s.hidden = !sub; s.textContent = sub || '';
+  void gncWaitEl.offsetWidth;
+  gncWaitEl.classList.add('show');
+}
+function gncWaitHide() {
+  if (!gncWaitEl) return;
+  var el = gncWaitEl; gncWaitEl = null;
+  el.classList.remove('show');
+  setTimeout(function () { el.remove(); }, 220);
+}
+
+var GNC_REDUCED =window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
 var APP_TAB_ORDER = ['home', 'menu', 'catering', 'location'];
 var appScrollPos = {};
 // Sofort an eine Stelle springen, auch wenn html { scroll-behavior: smooth } gilt
@@ -13499,11 +14007,15 @@ function gncOnbOpen(opts) {
   el.querySelector('.onb-alt').addEventListener('click', function () { gncOnbClose('look'); });
   var pb = el.querySelector('.onb-push-btn');
   if (pb) pb.addEventListener('click', function () {
-    pb.disabled = true;
-    Promise.resolve(window.gncEnablePush && window.gncEnablePush()).then(function (ok) {
+    withBusy(pb, function () { return Promise.resolve(window.gncEnablePush && window.gncEnablePush()); }).then(function (ok) {
       var box = pb.parentElement;
-      if (ok && box) box.innerHTML = '<p class="onb-ok">' + escG(t('onb.push_done')) + '</p>';
-      else pb.disabled = false;
+      if (!ok || !box) return;
+      // Fokussierter Knopf verschwindet: Fokus auf "Weiter", Ergebnis ansagen
+      box.innerHTML = '<p class="onb-ok">' + escG(t('onb.push_done')) + '</p>';
+      var nx = el.querySelector('.onb-next');
+      if (nx) { try { nx.focus({ preventScroll: true }); } catch (e) { nx.focus(); } }
+      var live = document.getElementById('onbLive');
+      if (live) live.textContent = t('onb.push_done');
     });
   });
   el.addEventListener('keydown', function (e) {
@@ -13770,6 +14282,14 @@ function stelleKasseWieder(order) {
        die Antwort negativ aus, sieht der Kunde schlicht den Preis ohne ihn. */
     voucherApplied = null;
     if (order.voucherCode) {
+      /* Waehrend der Pruefung steht im Warenkorb "Gutschein wird geprueft";
+         aendert sich danach die Summe, leuchtet sie kurz auf. Ohne Gutschein
+         verschwindet nur die Zeile, ohne das Formular neu aufzubauen. */
+      voucherChecking = true;
+      const pruefungFertig = () => {
+        voucherChecking = false;
+        document.querySelectorAll('.voucher-checking').forEach(el => el.remove());
+      };
       fetch('/voucher-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -13777,6 +14297,7 @@ function stelleKasseWieder(order) {
       })
         .then(r => r.json())
         .then(d => {
+          pruefungFertig();
           if (!d || !d.valid || d.kind === 'test') return;
           voucherApplied = {
             code: order.voucherCode, kind: d.kind || 'personal', type: d.type || 'fixed',
@@ -13785,8 +14306,11 @@ function stelleKasseWieder(order) {
           };
           if (!voucherApplied.combinable) { promoApplied = false; loyaltyApplied = false; }
           renderCart(); updateCartUI();
+          document.querySelectorAll('#coTotal, #cartTotalVal').forEach(el => {
+            el.classList.remove('total-flash'); void el.offsetWidth; el.classList.add('total-flash');
+          });
         })
-        .catch(() => {});
+        .catch(pruefungFertig);
     }
   } catch (e) {
     // Im Zweifel wenigstens den Schritt setzen – lieber Schritt 3 ohne
@@ -13842,6 +14366,10 @@ async function handlePaymentReturn() {
   const cleanUrl = () => window.history.replaceState({}, '', window.location.pathname);
 
   if (status === 'return' || status === 'success') {
+    // Wer gerade bezahlt hat, sieht sofort, dass geprueft wird. Sicherheitsnetz:
+    // spaetestens nach 12 s verschwindet die Ebene, egal was passiert.
+    gncWaitOverlay(t('wait.paying'), t('wait.paying_sub'));
+    var payWaitT = setTimeout(gncWaitHide, 12000);
     // Echten Zahlungsstatus bei SumUp prüfen – NUR "PAID" zählt als bezahlt.
     // Dreiwertig: 'paid' | 'notpaid' (FAILED/EXPIRED) | 'unknown' (Netzwerkfehler o. Ä.)
     // Bei 'unknown' bleibt der Zwischenspeicher erhalten – die Seite prüft beim
@@ -13886,6 +14414,7 @@ async function handlePaymentReturn() {
       const abzug = pending && pending.order;
       raeumeAufWennNochAktuell();
       stelleKasseWieder(abzug);
+      clearTimeout(payWaitT); gncWaitHide();
       setTimeout(() => openCart(), 250);
       return;
     }
@@ -13893,6 +14422,7 @@ async function handlePaymentReturn() {
     if (verdict === 'unknown') {
       // Echter Netzwerkfehler bei der Prüfung: still bleiben, beim nächsten Laden erneut
       // prüfen. Webhook/Abgleich benachrichtigen serverseitig ohnehin bei Zahlung.
+      clearTimeout(payWaitT); gncWaitHide();
       return;
     }
 
@@ -13910,6 +14440,7 @@ async function handlePaymentReturn() {
       cart = {}; saveCart();
       checkoutStep = 'success';
       if (typeof celebrateOrderSuccess === 'function') setTimeout(celebrateOrderSuccess, 350);
+      clearTimeout(payWaitT); gncWaitHide();
       setTimeout(() => openCart(), 200);
     } else {
       // ❌ Nicht bezahlt / abgebrochen: Warenkorb + Daten bleiben erhalten,
@@ -13922,6 +14453,7 @@ async function handlePaymentReturn() {
       const abzug2 = pending && pending.order;
       raeumeAufWennNochAktuell();
       stelleKasseWieder(abzug2);
+      clearTimeout(payWaitT); gncWaitHide();
       setTimeout(() => {
         openCart();
         flashCartNotice(t('co.pay_not_completed'));
@@ -14168,7 +14700,7 @@ window.addEventListener('load', function () {
   function initReveals() {
     if (reduceMotion || !('IntersectionObserver' in window)) return;
     var targets = document.querySelectorAll(
-      'section h2, .menu-card, .story-stat, .faq-item'
+      'section h2, .story-stat, .faq-item'
     );
     if (!targets.length) return;
     var io = new IntersectionObserver(function (entries) {
@@ -14472,14 +15004,14 @@ window.addEventListener('load', function () {
     });
   }
 
-  /* ---------- Warenkorb-Badge: Pop bei jeder Änderung ---------- */
+  /* ---------- Warenkorb-Badge: Puls bei geaenderter Zahl (pulseCart) ---------- */
   function initBadgePop() {
     var badge = document.getElementById('navCartBadge');
     if (!badge || !('MutationObserver' in window)) return;
+    badge.dataset.n = badge.textContent;
     new MutationObserver(function () {
-      badge.classList.remove('pop');
-      void badge.offsetWidth;   // Reflow → Animation neu starten
-      badge.classList.add('pop');
+      // Mit Flug pulst erst die Landung (flyToCart), sonst sofort
+      if (!cartFlights && typeof pulseCartIfChanged === 'function') pulseCartIfChanged();
       if (typeof updateCartFab === 'function') updateCartFab();
     }).observe(badge, { childList: true, characterData: true, subtree: true });
   }
@@ -14867,7 +15399,7 @@ window.addEventListener('load', function () {
     body.style.animation = 'none';
     void body.offsetWidth;                 // Neustart erzwingen
     body.style.animation = 'cart-step-' + (dir > 0 ? 'fwd' : 'back') +
-      ' 300ms cubic-bezier(0.22, 0.61, 0.36, 1) both';
+      ' 300ms var(--ease-out) both';
   };
 
   /* Weiche Kante statt harter Linie: Der Verlauf erscheint nur dort, wo
@@ -15003,15 +15535,22 @@ window.addEventListener('load', function () {
       }, 30000);
     });
   }
+  /* Public Key einmal holen und das Promise merken. Schlaegt es fehl, wird
+     es verworfen, damit der naechste Versuch neu fragt. */
+  var pushKeyP = null;
+  function pushKey() {
+    return pushKeyP || (pushKeyP = fetch('/push-subscribe').then(function (r) { return r.json(); }));   // GET liefert den Public Key
+  }
   window.gncEnablePush = async function () {
     if (istIOSPushApp()) return iosPushAnmelden();
     if (window.gncPushState() === 'unsupported') { showToast(t('push.error')); return false; }
     try {
-      var keyRes = await fetch('/push-subscribe');           // GET liefert den Public Key
-      var keyData = await keyRes.json();
-      if (!keyData.publicKey) { showToast(t('push.error')); return false; }
+      // ZUERST die Erlaubnis: der System-Dialog kommt sofort (Nutzer-Geste bleibt
+      // erhalten, kein Leerlauf), DANACH Schluessel holen und abonnieren.
       var perm = await Notification.requestPermission();
       if (perm !== 'granted') { showToast(t('push.denied')); return false; }
+      var keyData = await pushKey();
+      if (!keyData || !keyData.publicKey) { pushKeyP = null; showToast(t('push.error')); return false; }
       var reg = await navigator.serviceWorker.ready;
       var sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
@@ -15030,6 +15569,7 @@ window.addEventListener('load', function () {
       if (typeof track === 'function') track('push_enabled');
       return true;
     } catch (err) {
+      pushKeyP = null;
       showToast(t('push.error'));
       return false;
     }
@@ -15085,9 +15625,11 @@ window.addEventListener('load', function () {
       wrap.classList.remove('show');
       setTimeout(function () { wrap.remove(); }, 350);
     }
-    document.getElementById('pushOptInJa').addEventListener('click', function () {
-      zu();
-      window.gncEnablePush();
+    var ja = document.getElementById('pushOptInJa');
+    ja.addEventListener('click', function () {
+      if (gncIsBusy(ja)) return;
+      // Karte bleibt offen, bis das System geantwortet hat
+      withBusy(ja, function () { return window.gncEnablePush(); }).then(zu, zu);
     });
     document.getElementById('pushOptInSpaeter').addEventListener('click', function () {
       try { localStorage.setItem('gnc_push_frage', String(Date.now())); } catch (e) {}
@@ -15127,25 +15669,14 @@ window.addEventListener('load', function () {
   initEmbers();
 })();
 
-/* ===== Premium: Scroll-Fortschritt + sanftes Bild-Einblenden ===== */
+/* ===== Premium: sanftes Bild-Einblenden =====
+   (Die Scroll-Fortschrittsleiste ist .scroll-progress mit scaleX, siehe initScrollProgress.)
+   IMG_SEEN merkt sich geladene Quellen: renderMenu() zeigt sie beim Neuaufbau sofort. */
+var IMG_SEEN = window.IMG_SEEN = window.IMG_SEEN || new Set();
 (function(){
-  var bar=document.getElementById('scrollProgress');
-  if(bar){
-    var ticking=false;
-    function update(){
-      ticking=false;
-      var h=document.documentElement;
-      var max=h.scrollHeight-h.clientHeight;
-      bar.style.width=(max>0?(h.scrollTop/max*100):0)+'%';
-    }
-    window.addEventListener('scroll',function(){
-      if(!ticking){ ticking=true; requestAnimationFrame(update); }
-    },{passive:true});
-    update();
-  }
   try{
     document.documentElement.classList.add('imgfx');
-    function markIn(img){ img.classList.add('img-in'); }
+    function markIn(img){ if (img.src) IMG_SEEN.add(img.src); img.classList.add('img-in'); }
     document.addEventListener('load',function(e){
       if(e.target && e.target.tagName==='IMG') markIn(e.target);
     },true);

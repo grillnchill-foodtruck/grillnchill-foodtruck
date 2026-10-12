@@ -357,8 +357,46 @@
   .team-row small{color:var(--faint);font-family:var(--mono);font-size:.66rem;display:block}
   .tabpane{animation:fadein .22s ease-out}
   @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* ============ WARTEN: Busy-Knopf, Spinner, Ladebalken, Skelett ============
+     Beschriftung bleibt im DOM (Breite bleibt gleich), darueber ein Ring in
+     der Textfarbe des Knopfs. Chips bekommen nur den Ring, keine Bewegung. */
+  :root{--ease-out:cubic-bezier(0.23,1,0.32,1)}
+  @keyframes gncSpin{to{transform:rotate(360deg)}}
+  @keyframes gncBreath{0%,100%{opacity:.4}50%{opacity:1}}
+  .is-busy{position:relative;cursor:progress!important;color:transparent!important;opacity:1!important}
+  .is-busy>:not(.busy-spin){visibility:hidden}
+  .busy-spin{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;
+    border:2px solid var(--busy-ink,currentColor);border-right-color:transparent;opacity:0;pointer-events:none;
+    animation:gncSpin .8s linear infinite;transition:opacity 150ms var(--ease-out)}
+  .is-busy.busy-shown .busy-spin{opacity:1}
+  .chip:disabled,.btn-ghost:disabled,.tpl:disabled{opacity:.5;cursor:not-allowed}
+  .chip.is-busy:disabled,.btn-ghost.is-busy:disabled{opacity:1}
+  .loadbar{position:absolute;left:0;right:0;top:0;height:2px;overflow:hidden;border-radius:2px;opacity:0;transition:opacity 150ms ease;pointer-events:none}
+  .loadbar.on{opacity:1}
+  .loadbar::before{content:'';position:absolute;inset:0;width:40%;background:var(--ember);animation:loadbar 1.1s var(--ease-out) infinite}
+  @keyframes loadbar{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+  .skel{background:var(--card2);border-radius:var(--r-sm)}
+  @media (prefers-reduced-motion: no-preference){
+    .skel{background:linear-gradient(90deg,var(--card2) 0%,var(--border) 50%,var(--card2) 100%);background-size:260% 100%;animation:shimmer 1.4s linear infinite}
+  }
+  @keyframes shimmer{from{background-position:130% 0}to{background-position:-130% 0}}
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  /* Status-Ticket, solange noch kein Stand vom Server da ist: grauer Punkt, kein Puls */
+  .ticket.loading .dot{background:var(--faint)}
+  .ticket.loading .state .display{color:var(--dim);font-size:1rem}
+  #pane-today.st-loading .card:not(#itemsCard){opacity:.5}
+  #pushNote:not(:empty){margin-top:.6rem}
+  #pushNote.unklar{color:var(--amber);font-weight:700}
+
+  /* Reduzierte Bewegung: Animationen weg, Warte-Zeichen bleiben (pulsieren statt drehen). */
   @media (prefers-reduced-motion: reduce){
-    *,*::before,*::after{animation:none!important;transition:none!important}
+    *,*::before,*::after{transition-duration:.01ms!important}
+    .tabpane,.confirm-ov,.confirm-box,.shake,.dot::after{animation:none!important}
+    .busy-spin,.icon-btn.spin svg{animation:gncBreath 1.2s ease-in-out infinite!important}
+    .busy-spin{border-right-color:var(--busy-ink,currentColor)}
+    .loadbar::before{animation:none;width:100%;opacity:.6}
+    .skel{animation:none!important}
   }
 .copy-mini{background:none;border:none;color:var(--ember-hi);cursor:pointer;font-size:.85rem;padding:0 .1rem;vertical-align:middle;line-height:1}
 .copy-mini:hover{color:var(--cream)}
@@ -503,14 +541,14 @@
 
   <div class="wrap">
     <!-- Status-Ticket -->
-    <div class="ticket live" id="ticket">
+    <div class="ticket loading" id="ticket">
       <div class="ticket-inner">
         <span class="dot"></span>
         <div class="state">
-          <div class="display" id="ticketState">ONLINE</div>
-          <small id="ticketSub">Der Grill nimmt Bestellungen an.</small>
+          <div class="display" id="ticketState">Status wird geladen …</div>
+          <small id="ticketSub"></small>
         </div>
-        <div class="stamp" id="ticketStamp">—</div>
+        <div class="stamp" id="ticketStamp"></div>
       </div>
       <div class="ticket-perf" aria-hidden="true"></div>
     </div>
@@ -625,7 +663,8 @@
 
     <!-- ============ TAB: BESTELLUNGEN ============ -->
     <section class="tabpane hidden" id="pane-orders" role="tabpanel">
-      <div class="card">
+      <div class="card" id="ordCard" style="position:relative;overflow:hidden;">
+        <div class="loadbar" id="ordBar" aria-hidden="true"></div>
         <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.8rem;">
           <input type="text" id="ordSearch" placeholder="Suche: Nr., Name, Telefon" style="flex:1" inputmode="search">
           <button class="icon-btn" id="ordReload" aria-label="Neu laden" title="Neu laden">
@@ -661,7 +700,7 @@
         <button class="btn" id="alertBtn">Bestell-Alarm aktivieren</button>
         <p class="hint" id="alertState" style="margin-top:.6rem;"></p>
       </div>
-      <div class="card">
+      <div class="card" id="pushCard">
         <h2>Nachricht an alle Abonnenten</h2>
         <p class="hint" style="margin-bottom:1rem;">Erscheint als Benachrichtigung auf Handy &amp; Desktop. Faustregel: höchstens 1–2 pro Woche.</p>
         <div class="tpl-row" id="tplRow">
@@ -690,6 +729,7 @@
           <div class="counter"><span id="cntBody">0</span>/200</div>
         </div>
         <button class="btn" id="pushSendBtn">An alle senden</button>
+        <p class="hint" id="pushNote" aria-live="polite"></p>
         <div class="stat-chips" id="pushMeta"></div>
       </div>
     </section>
@@ -701,9 +741,9 @@
           <h2>Rechnungen</h2>
           <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
             <select id="invYear" onchange="loadInvoices()" style="width:auto;min-width:9rem;"></select>
-            <button type="button" class="abtn" onclick="loadInvoices()">Aktualisieren</button>
+            <button type="button" class="abtn" onclick="loadInvoices(this)">Aktualisieren</button>
             <button type="button" class="abtn" onclick="invoicesCsv()">CSV</button>
-            <button type="button" class="abtn primary" onclick="invoicesZip()">Alle als PDF (ZIP)</button>
+            <button type="button" class="abtn primary" onclick="invoicesZip(this)">Alle als PDF (ZIP)</button>
           </div>
         </div>
         <p class="muted" style="margin:0 0 .8rem;font-size:.85rem;">
@@ -718,7 +758,7 @@
         <div class="card-hd">
           <h2>Datensicherung</h2>
           <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
-            <button type="button" class="abtn" onclick="loadBackups()">Aktualisieren</button>
+            <button type="button" class="abtn" onclick="loadBackups(this)">Aktualisieren</button>
             <button type="button" class="abtn primary" onclick="backupJetzt(event)">Jetzt sichern &amp; laden</button>
           </div>
         </div>
@@ -809,7 +849,7 @@
           <h2 style="margin:0">Gekaufte Gutscheine</h2>
           <span class="hint" style="margin:0;">Verkäufe über /gutscheine</span>
         </div>
-        <div id="vPurchases"><p class="empty">Noch keine Gutschein-Verkäufe.</p></div>
+        <div id="vPurchases"><p class="empty">Verkäufe werden geladen …</p></div>
       </div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;">
@@ -979,8 +1019,68 @@ function toast(msg, kind){
   clearTimeout(t._t); t._t=setTimeout(()=>{t.className='toast '+(kind||'');},2600);
 }
 
+/* ---- Warten sichtbar machen (Busy-Knopf) ---- */
+function gncBusy(btn, on) {
+  if (!btn) return;
+  if (on) {
+    if (btn.classList.contains('is-busy')) return;
+    btn.style.setProperty('--busy-ink', getComputedStyle(btn).color);
+    btn._busyWasDisabled = !!btn.disabled;
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    btn.setAttribute('aria-busy', 'true');
+    var sp = document.createElement('span');
+    sp.className = 'busy-spin'; sp.setAttribute('aria-hidden', 'true');
+    btn.appendChild(sp);
+    btn._busyShownAt = 0;
+    btn._busyT = setTimeout(function () { btn.classList.add('busy-shown'); btn._busyShownAt = Date.now(); }, 150);
+    return;
+  }
+  if (!btn.classList.contains('is-busy')) return;
+  clearTimeout(btn._busyT);
+  var rest = btn._busyShownAt ? Math.max(0, 400 - (Date.now() - btn._busyShownAt)) : 0;
+  setTimeout(function () {
+    btn.classList.remove('is-busy', 'busy-shown');
+    btn.removeAttribute('aria-busy');
+    btn.style.removeProperty('--busy-ink');
+    var sp = btn.querySelector(':scope > .busy-spin'); if (sp) sp.remove();
+    btn.disabled = !!btn._busyWasDisabled;
+  }, rest);
+}
+async function withBusy(btn, fn) {
+  if (!btn) return fn();
+  if (btn.classList.contains('is-busy')) return;   // zweiter Tipp waehrend des Wartens: ignorieren
+  gncBusy(btn, true);
+  try { return await fn(); } finally { gncBusy(btn, false); }
+}
+/* Beschriftung setzen, ohne einen laufenden Spinner zu entfernen. */
+function setBtnLabel(btn, text){
+  if(!btn) return;
+  const sp=btn.querySelector(':scope > .busy-spin');
+  btn.textContent=text;
+  if(sp) btn.appendChild(sp);
+}
+/* Platzhalter-Zeilen fuer das erste Laden einer Liste. */
+function skelRows(n, h, label){
+  let s='<div aria-busy="true"><span class="sr-only">'+label+'</span>';
+  for(let i=0;i<n;i++) s+='<div class="skel" aria-hidden="true" style="height:'+h+'px;margin-bottom:.55rem;"></div>';
+  return s+'</div>';
+}
+/* Liste beim Neuladen behalten, aber gedimmt und als beschaeftigt markiert. */
+function listBusy(el, on){
+  if(!el) return;
+  el.style.opacity = on ? '.5' : '';
+  if(on) el.setAttribute('aria-busy','true'); else el.removeAttribute('aria-busy');
+}
+
 /* ---------------- Dirty-State ---------------- */
+/* REV zaehlt jede Aenderung im Reiter "Heute". save() merkt sich den Stand
+   beim Absenden und blendet die Speicherleiste nur aus, wenn seitdem nichts
+   mehr geaendert wurde. Sonst ginge eine Aenderung waehrend des Speicherns
+   still verloren. */
+let REV = 0;
 function setDirty(on){
+  if(on) REV++;
   dirty = on;
   $('savebar').classList.toggle('show', on);
 }
@@ -991,6 +1091,7 @@ function paintTicket(paused, updatedAt, waitTime){
   savedPaused = !!paused;
   if (typeof waitTime !== 'undefined') savedWait = parseInt(waitTime,10)||0;
   const tk=$('ticket');
+  tk.classList.remove('loading');
   tk.classList.toggle('paused', savedPaused);
   tk.classList.toggle('live', !savedPaused);
   $('ticketState').textContent = savedPaused ? 'PAUSIERT' : 'ONLINE';
@@ -1063,8 +1164,33 @@ function updatePreview(){
 }
 
 /* ---------------- Laden ---------------- */
-async function loadStatus(){
+let statusLoaded=false, statusLoading=null;
+/* Neutrales Ticket, solange kein Stand vom Server da ist. Vorher standen hier
+   die HTML-Vorgaben ("ONLINE", gruener Puls), auch wenn der Laden pausiert war. */
+function paintTicketNeutral(text, sub){
+  const tk=$('ticket');
+  tk.classList.remove('live','paused');
+  tk.classList.add('loading');
+  $('ticketState').textContent=text;
+  $('ticketSub').textContent=sub||'';
+  $('ticketStamp').textContent='';
+}
+/* Nur ein Ladevorgang zur Zeit: ein zweiter Aufruf haengt sich an den laufenden. */
+function loadStatus(){
+  if(!statusLoading) statusLoading=loadStatusRun().finally(()=>{ statusLoading=null; });
+  return statusLoading;
+}
+async function loadStatusRun(){
   const rb=$('refreshBtn'); rb.classList.add('spin');
+  const pane=$('pane-today');
+  const first=!statusLoaded;
+  // Bis zur Antwort keine Eingaben: die Antwort wuerde sie sonst ueberschreiben.
+  pane.inert=true; pane.setAttribute('aria-busy','true');
+  if(first){
+    paintTicketNeutral('Status wird geladen …');
+    pane.classList.add('st-loading');
+    $('itemsCard').innerHTML=skelRows(3,36,'Artikel werden geladen …');
+  }
   try{
     const res=await fetch(API,{cache:'no-store'});
     const s=await res.json();
@@ -1082,19 +1208,28 @@ async function loadStatus(){
     updatePreview();
     paintTicket(s.paused, s.updatedAt, s.waitTime);
     setDirty(false);
+    statusLoaded=true;
     return true;
   }catch(e){
     toast('Status konnte nicht geladen werden','err');
-    renderItems([]);
+    // Beim Neuladen den bisherigen Stand stehen lassen; nur ohne jeden Stand leer aufbauen.
+    if(first){
+      paintTicketNeutral('Status unbekannt','Konnte nicht geladen werden. Oben rechts neu laden.');
+      renderItems([]);
+    }
     return false;
   }finally{
     rb.classList.remove('spin');
+    pane.inert=false; pane.removeAttribute('aria-busy'); pane.classList.remove('st-loading');
   }
 }
 
 /* ---------------- Speichern ---------------- */
 async function save(){
-  const btn=$('saveBtn'); btn.disabled=true; btn.textContent='Speichern …';
+  const btn=$('saveBtn');
+  if(btn.classList.contains('is-busy')) return;
+  gncBusy(btn,true);
+  const rev=REV;
   const payload={
     password: currentPw,
     paused: $('pausedToggle').checked,
@@ -1125,12 +1260,13 @@ async function save(){
       return;
     }
     toast('Gespeichert','ok');
-    setDirty(false);
+    // Waehrend des Speicherns geaendert: Leiste bleibt sichtbar, die neue Aenderung ist noch offen.
+    if(REV===rev) setDirty(false);
     if(data.status) paintTicket(data.status.paused, data.status.updatedAt, data.status.waitTime);
   }catch(e){
     toast('Netzwerkfehler – bitte erneut versuchen','err');
   }finally{
-    btn.disabled=false; btn.textContent='Speichern';
+    gncBusy(btn,false);
   }
 }
 
@@ -1152,9 +1288,16 @@ function resetPanelState(){
   ORDERS=[]; INVOICES=[]; VOUCHERS=[]; CATERING=[]; REV_DAYS=[]; BACKUPS=[];
   ordersLoaded=false; invoicesLoaded=false; vouchersLoaded=false;
   cateringLoaded=false; teamLoaded=false; statsLoaded=false; revLoaded=false;
+  statusLoaded=false;
+  // Laufende Ladevorgaenge und Aktionen gehoeren zur alten Anmeldung: ihre
+  // Antworten verwerfen (Zaehler hochsetzen), sonst zeichnete eine spaete
+  // Antwort fremde Daten in die Sitzung des naechsten.
+  ordReqSeq++; ordLoading=false; ordHeld=null; PENDING.clear(); ORD_TOUCHED.clear();
+  catSeq++; vSeq++; invSeq++; bakSeq++; auditSeq++; revSeq++;
+  ordLoadUi(false); ordStamp(null); revBusy(false);
   ['ordersOut','invList','bakList','vList','vPurchases','cateringOut','statsOut',
    'teamList','auditOut','scanResult'].forEach(id=>{
-    const el=$(id); if(el) el.innerHTML='';
+    const el=$(id); if(el){ el.innerHTML=''; listBusy(el,false); }
   });
   // Zurueck auf den ersten Reiter, damit niemand auf einem fremden landet.
   const ersterTab=document.querySelector('.tab[data-tab="today"]');
@@ -1170,7 +1313,12 @@ function showLogin(){
   currentPw='';
   resetPanelState();
 }
+/* Busy-Flag: die Enter-Taste im Passwortfeld umging bisher den gesperrten
+   Knopf und konnte eine zweite Anmeldung starten. Der Knopf bleibt busy, bis
+   der Laden-Status geladen ist. */
+let unlocking=false;
 async function unlock(){
+  if(unlocking) return;
   const pw=$('pw').value.trim();
   if(!pw){
     $('loginCard').classList.remove('shake'); void $('loginCard').offsetWidth;
@@ -1178,9 +1326,14 @@ async function unlock(){
     toast('Bitte Passwort eingeben','err');
     return;
   }
-  const btn=$('unlockBtn'); btn.disabled=true; btn.textContent='Prüfen …';
+  unlocking=true;
+  const btn=$('unlockBtn');
+  gncBusy(btn,true);
+  try{ await unlockRun(pw); }
+  finally{ unlocking=false; gncBusy(btn,false); }
+}
+async function unlockRun(pw){
   const who=await whoami(pw);
-  btn.disabled=false; btn.textContent='Entsperren';
   if(who && who.gesperrt){
     $('loginCard').classList.remove('shake'); void $('loginCard').offsetWidth;
     $('loginCard').classList.add('shake');
@@ -1357,19 +1510,36 @@ window.addEventListener('beforeunload',(e)=>{
 $('pushTitle').addEventListener('input',()=>{ $('cntTitle').textContent=$('pushTitle').value.length; });
 $('pushBody').addEventListener('input',()=>{ $('cntBody').textContent=$('pushBody').value.length; });
 document.querySelectorAll('.tpl').forEach(b=>b.addEventListener('click',()=>{
+  if(pushSending) return;
   $('pushTitle').value=b.dataset.t; $('pushBody').value=b.dataset.b;
   $('cntTitle').textContent=b.dataset.t.length; $('cntBody').textContent=b.dataset.b.length;
 }));
 
-let pushArmed=false, pushArmTimer=null;
+let pushArmed=false, pushArmTimer=null, pushSending=false;
 function pushZiel(){ const c=document.querySelector('#pushZiel .chip[aria-pressed="true"]'); return c?c.dataset.ziel:'alle'; }
 function pushBtnLabel(){ return {alle:'An alle senden', app:'Nur an App-Nutzer senden', web:'Nur an Browser-Nutzer senden'}[pushZiel()]; }
 document.addEventListener('click',(e)=>{
   const z=e.target.closest('#pushZiel .chip'); if(!z) return;
+  // Waehrend des Sendens weder Ziel noch Beschriftung aendern.
+  if(pushSending) return;
   document.querySelectorAll('#pushZiel .chip').forEach(c=>c.setAttribute('aria-pressed', c===z?'true':'false'));
-  pushArmed=false; clearTimeout(pushArmTimer); $('pushSendBtn').classList.remove('confirm'); $('pushSendBtn').textContent=pushBtnLabel();
+  pushArmed=false; clearTimeout(pushArmTimer); $('pushSendBtn').classList.remove('confirm'); setBtnLabel($('pushSendBtn'), pushBtnLabel());
 });
+/* Waehrend des Sendens (5 bis 20 s und mehr) Ziel, Vorlagen und Felder sperren. */
+function pushLock(on){
+  pushSending=on;
+  const card=$('pushCard');
+  if(on) card.setAttribute('aria-busy','true'); else card.removeAttribute('aria-busy');
+  card.querySelectorAll('.tpl, #pushZiel .chip').forEach(b=>{ b.disabled=on; });
+  $('pushTitle').disabled=on; $('pushBody').disabled=on;
+}
+function pushNote(text, unklar){
+  const n=$('pushNote');
+  n.textContent=text||'';
+  n.classList.toggle('unklar', !!unklar);
+}
 async function sendPush(){
+  if(pushSending) return;
   const btn=$('pushSendBtn');
   const title=$('pushTitle').value.trim();
   const body=$('pushBody').value.trim();
@@ -1388,15 +1558,28 @@ async function sendPush(){
   }
   pushArmed=false; clearTimeout(pushArmTimer);
   btn.classList.remove('confirm');
-  btn.disabled=true; btn.textContent='Senden …';
+  setBtnLabel(btn, pushBtnLabel());
+  gncBusy(btn,true);
+  pushLock(true);
+  pushNote('Senden kann bis zu 30 s dauern.');
+  /* Unklares Ende (Netzabriss, Zeitueberschreitung, Serverfehler mitten im
+     Versand): Pushes koennen trotzdem raus sein. Ein erneuter Versuch wuerde
+     den Rundruf verdoppeln, also erst ins Protokoll schauen lassen. */
+  const unklar=()=>{
+    pushNote('Status unklar. Bitte erst im Protokoll prüfen, bevor du erneut sendest.', true);
+    toast('Status unklar');
+  };
   try{
     const res=await fetch('/push-send',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({password:currentPw,title,body,url:'/',ziel:pushZiel()})
     });
     const d=await res.json().catch(()=>({}));
+    pushNote('');
     if(sperreGemeldet(res)) return;
     if(res.status===401){ toast('Falsches Passwort','err'); return; }
+    // vapid_not_configured: es wurde nachweislich nichts gesendet
+    if(res.status>=500 && d.error!=='vapid_not_configured'){ unklar(); return; }
     if(!res.ok){ toast((d.error||'Senden fehlgeschlagen')+(d.detail?(' – '+d.detail):''),'err'); return; }
     // iOS-App (Firebase-Thema): 'gesendet', 'nicht_eingerichtet' oder ein Fehlertext
     const iosOk = d.ios==='gesendet';
@@ -1411,8 +1594,8 @@ async function sendPush(){
       '<span class="schip">Bereinigt <b>'+d.removed+'</b></span>'+
       (d.uebersprungen?'<span class="schip">Nicht im Ziel <b>'+d.uebersprungen+'</b></span>':'')+
       '<span class="schip'+((iosOk||iosSkip)?'':' warn')+'">'+iosTxt.replace('iOS-App: ','iOS-App <b>')+'</b></span>';
-  }catch(e){ toast('Netzwerkfehler','err'); }
-  finally{ btn.disabled=false; btn.textContent=pushBtnLabel(); }
+  }catch(e){ unklar(); }
+  finally{ pushLock(false); gncBusy(btn,false); }
 }
 $('pushSendBtn').addEventListener('click',sendPush);
 
@@ -1469,16 +1652,28 @@ function renderRevenue(){
       +'<span style="width:92px;text-align:right;font-weight:700;font-size:.85rem;flex:none;">'+t.toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</span></div>';
   }).join(''):'<p class="empty">Keine Umsätze im gewählten Zeitraum.</p>';
 }
+/* Zaehler je Anfrage: bei schnellem Wechsel der Zeitraum-Chips gewinnt die
+   juengste Anfrage, eine spaete Antwort fuer den alten Zeitraum wird verworfen.
+   Bis zur Antwort sind die alten Zahlen gedimmt, damit sie nicht fuer den
+   neu gewaehlten Zeitraum gehalten werden. */
+let revSeq=0;
+function revBusy(on){
+  listBusy($('revDays'), on);
+  ['revTotal','revCount','revAvg'].forEach(id=>{ $(id).style.opacity = on ? '.5' : ''; });
+}
 async function loadRevenue(){
   const range=revRangeDates();
   if(!range) return;
-  $('revDays').innerHTML='<p class="empty">Lade Umsätze …</p>';
+  const seq=++revSeq;
+  if(!revLoaded) $('revDays').innerHTML='<p class="empty">Lade Umsätze …</p>';
+  revBusy(true);
   try{
     const res=await fetch('/.netlify/functions/revenue-stats',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({password:currentPw,from:range[0],to:range[1]})
     });
     const d=await res.json().catch(()=>({}));
+    if(seq!==revSeq) return;
     if(!res.ok){
       if(res.status===403){
         // Nur der Inhaber: Team-Admins & Mitarbeiter sehen die Karte gar nicht erst
@@ -1486,13 +1681,19 @@ async function loadRevenue(){
         revLoaded=true;
         return;
       }
-      $('revDays').innerHTML='<p class="empty">Konnte Umsätze nicht laden.</p>';
+      revFehler('Konnte Umsätze nicht laden.');
       return;
     }
     REV_DAYS=d.days||[];
     revLoaded=true;
     renderRevenue();
-  }catch(e){ $('revDays').innerHTML='<p class="empty">Netzwerkfehler – bitte erneut.</p>'; }
+  }catch(e){ if(seq===revSeq) revFehler('Netzwerkfehler. Bitte erneut versuchen.'); }
+  finally{ if(seq===revSeq) revBusy(false); }
+}
+/* Fehler: keine alten Zahlen unter dem neuen Zeitraum stehen lassen. */
+function revFehler(txt){
+  ['revTotal','revCount','revAvg'].forEach(id=>{ $(id).textContent='-'; });
+  $('revDays').innerHTML='<p class="empty" style="color:var(--red);">'+txt+'</p>';
 }
 document.addEventListener('click',(e)=>{
   const r=e.target.closest('[data-rrange]');
@@ -1544,10 +1745,10 @@ function renderScanCard(){
         +'</details>'
       : '')
     +'</div>');
-  $('scanCredit').addEventListener('click',()=>scanAction('credit'));
-  $('scanRedeem').addEventListener('click',()=>scanAction('redeem'));
+  $('scanCredit').addEventListener('click',e=>scanAction('credit',e.currentTarget));
+  $('scanRedeem').addEventListener('click',e=>scanAction('redeem',e.currentTarget));
   $('scanAgain').addEventListener('click',()=>{ scanCard=null; scanToken=null; scanSetResult(''); startScan(); });
-  if($('scanAdjGo')) $('scanAdjGo').addEventListener('click',scanAdjust);
+  if($('scanAdjGo')) $('scanAdjGo').addEventListener('click',e=>scanAdjust(e.currentTarget));
 }
 /* Bestätigung vor geldwerten Buchungen: zeigt Kunde + Betrag, bevor gebucht wird.
    Liefert ein Promise<boolean>. Enter bestätigt, Escape/Außenklick bricht ab. */
@@ -1578,7 +1779,16 @@ function confirmBooking(opts){
 }
 const eur=n=>Number(n||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
 
-async function scanAction(action){
+/* Geldwerte Buchungen: nur eine zur Zeit (vom Tipp bis zur Antwort, die
+   Bestaetigung eingeschlossen). Sonst konnte ein zweiter Tipp waehrend des
+   Wartens doppelt gutschreiben. */
+let scanActing=false;
+async function scanAction(action, btn){
+  if(scanActing) return;
+  scanActing=true;
+  try{ await scanActionRun(action, btn); } finally{ scanActing=false; }
+}
+async function scanActionRun(action, btn){
   const body={password:currentPw,action,token:scanToken};
   const cust=(scanCard&&scanCard.name)||'Kunde';
   if(action==='credit'){
@@ -1599,18 +1809,25 @@ async function scanAction(action){
     });
     if(!ok) return;
   }
+  gncBusy(btn,true);
   try{
     const res=await fetch('/.netlify/functions/loyalty-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await res.json().catch(()=>({}));
-    if(!res.ok){ toast(d.hint||d.error||'Fehler'); return; }
+    if(!res.ok){ toast(d.hint||d.error||'Fehler','err'); return; }
     scanCard=d.card; renderScanCard();
     toast(action==='credit'?('Gutgeschrieben'+(d.earned?' · +'+d.earned+' Bonus!':'')):'Bonus eingelöst');
     if(navigator.vibrate) navigator.vibrate(18);
-  }catch(e){ toast('Netzwerkfehler'); }
+  }catch(e){ toast('Netzwerkfehler','err'); }
+  finally{ gncBusy(btn,false); }
 }
 
 /* Guthaben direkt korrigieren (nur Admin) – mit Vorher/Nachher-Bestätigung */
-async function scanAdjust(){
+async function scanAdjust(btn){
+  if(scanActing) return;
+  scanActing=true;
+  try{ await scanAdjustRun(btn); } finally{ scanActing=false; }
+}
+async function scanAdjustRun(btn){
   const rwRaw=($('scanAdjRewards').value||'').trim();
   const spRaw=($('scanAdjSpent').value||'').replace(',','.').trim();
   const bdRaw=(($('scanAdjBday')||{}).value||'').trim();
@@ -1641,14 +1858,16 @@ async function scanAdjust(){
   if(rwRaw!=='') body.rewards=parseInt(rwRaw,10);
   if(spRaw!=='') body.spent=parseFloat(spRaw);
   if(bdRaw!=='') body.birthday=bdRaw;
+  gncBusy(btn,true);
   try{
     const res=await fetch('/.netlify/functions/loyalty-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await res.json().catch(()=>({}));
-    if(!res.ok){ toast(d.hint||d.error||'Fehler'); return; }
+    if(!res.ok){ toast(d.hint||d.error||'Fehler','err'); return; }
     scanCard=d.card; renderScanCard();
     toast('Guthaben geändert');
     if(navigator.vibrate) navigator.vibrate(18);
-  }catch(e){ toast('Netzwerkfehler'); }
+  }catch(e){ toast('Netzwerkfehler','err'); }
+  finally{ gncBusy(btn,false); }
 }
 async function scanFound(text){
   const m=String(text||'').match(/GNCQR:([a-f0-9]{12,40})/);
@@ -1657,10 +1876,10 @@ async function scanFound(text){
   try{
     const res=await fetch('/.netlify/functions/loyalty-scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:currentPw,action:'lookup',token:m[1]})});
     const d=await res.json().catch(()=>({}));
-    if(!res.ok){ toast(d.error==='not_found'?'Karte unbekannt':'Fehler'); scanBusy=false; startScan(); return; }
+    if(!res.ok){ toast(d.error==='not_found'?'Karte unbekannt':'Fehler','err'); scanBusy=false; startScan(); return; }
     scanToken=m[1]; scanCard=d.card; renderScanCard();
     if(navigator.vibrate) navigator.vibrate(60);
-  }catch(e){ toast('Netzwerkfehler'); }
+  }catch(e){ toast('Netzwerkfehler','err'); }
   scanBusy=false;
 }
 function scanLoop(detector,canvas,ctx){
@@ -1710,9 +1929,11 @@ function stopScan(){
 }
 $('scanStart').addEventListener('click',startScan);
 $('scanStop').addEventListener('click',stopScan);
-$('scanManualGo').addEventListener('click',()=>{ scanFound($('scanManual').value.indexOf('GNCQR:')===0?$('scanManual').value:'GNCQR:'+$('scanManual').value.trim()); });
+$('scanManualGo').addEventListener('click',()=>withBusy($('scanManualGo'),()=>scanFound($('scanManual').value.indexOf('GNCQR:')===0?$('scanManual').value:'GNCQR:'+$('scanManual').value.trim())));
 async function loadStats(){
-  const btn=$('statsBtn'); btn.disabled=true; btn.textContent='Laden …';
+  const btn=$('statsBtn');
+  if(btn.classList.contains('is-busy')) return;
+  gncBusy(btn,true);
   try{
     const res=await fetch('/track?days=7&password='+encodeURIComponent(currentPw));
     if(sperreGemeldet(res)) return;
@@ -1742,13 +1963,23 @@ async function loadStats(){
     html+='</table>';
     $('statsOut').innerHTML=html;
   }catch(e){ toast('Zahlen konnten nicht geladen werden','err'); }
-  finally{ btn.disabled=false; btn.textContent='Neu laden'; }
+  finally{ gncBusy(btn,false); }
 }
 $('statsBtn').addEventListener('click',loadStats);
-$('revGo').addEventListener('click',loadRevenue);
+$('revGo').addEventListener('click',()=>withBusy($('revGo'),loadRevenue));
 
 /* ---------------- Bestellungen ---------------- */
 let ordersLoaded=false, ORDERS=[];
+/* Bestellungen mit laufender Aktion: Referenz -> was laeuft ('fstate:<state>'
+   oder 'action:<aktion>'). renderOrders() baut deren Knoepfe gesperrt auf,
+   der laufende zeigt den Spinner. So macht auch ein Neuaufbau mitten im
+   Warten (Suche, Filter, anderer Chip) den Knopf nicht wieder aktiv, und der
+   Kunde bekommt keinen doppelten Push. */
+const PENDING=new Map();
+const ORD_TOUCHED=new Map();   // Referenz -> Zeitpunkt der letzten lokalen Aenderung
+let ordHeld=null;              // Poll-Ergebnis, das waehrend einer Aktion zurueckgehalten wird
+let ordLoading=false, ordReqSeq=0;
+const BUSY_SPIN='<span class="busy-spin" aria-hidden="true"></span>';
 function euro(n){ return (typeof n==='number'? n : parseFloat(n)||0).toFixed(2).replace('.',',')+' €'; }
 function ordTime(iso){
   try{
@@ -1792,6 +2023,8 @@ document.addEventListener('click',(e)=>{
   renderOrders();
 });
 function renderOrders(){
+  // Vor dem ersten Laden nichts zeichnen: Skelett bzw. Platzhalter bleiben stehen.
+  if(!ordersLoaded) return;
   // Aufgeklappte Zeilen über den Refresh hinweg offen halten
   const openRefs=new Set([...document.querySelectorAll('#ordersOut .ord.open')].map(el=>el.dataset.ref));
   renderOrdFilters();
@@ -1843,7 +2076,7 @@ function renderOrders(){
       (o.deliveryFee>0)?('Liefergebühr: <b>'+euro(o.deliveryFee)+'</b>'):'',
       (o.tip>0)?('Trinkgeld: <b>'+euro(o.tip)+'</b>'):'',
     ].filter(Boolean).join(' · ');
-    return '<div class="ord" data-ref="'+esc2(r.reference)+'">'
+    return '<div class="ord" data-ref="'+esc2(r.reference)+'"'+(PENDING.has(r.reference)?' aria-busy="true"':'')+'>'
       +'<div class="ord-head" data-toggle>'
       +'<div class="ord-when">'+when.d+'<br>'+when.t+'</div>'
       +'<div class="ord-main"><div class="ord-name">'+esc2(o.name||'–')+'</div>'
@@ -1876,15 +2109,32 @@ function buildStatusChips(r){
   if(r.status!=='completed'||r.giftcard||r.kind==='giftcard') return ''; // Giftcards nie mit Pickup/Delivery-Status rendern
   const steps=FSTATE_STEPS[(r.order&&r.order.mode)==='delivery'?'delivery':'pickup'];
   const cur=r.fstate||'confirmed';
+  const pend=PENDING.get(r.reference)||'';
   return '<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin:.5rem 0 .2rem;">'
-    +steps.map(st=>'<button type="button" class="chip" data-fstate="'+st[0]+'" data-fref="'+esc2(r.reference)+'" aria-pressed="'+(cur===st[0]?'true':'false')+'">'+st[1]+'</button>').join('')
+    +steps.map(st=>{
+      const busy=pend==='fstate:'+st[0];
+      return '<button type="button" class="chip'+(busy?' is-busy busy-shown':'')+'" data-fstate="'+st[0]+'" data-fref="'+esc2(r.reference)+'" aria-pressed="'+(cur===st[0]?'true':'false')+'"'
+        +(pend?' disabled':'')+(busy?' aria-busy="true" style="--busy-ink:var(--cream)"':'')+'>'+st[1]+(busy?BUSY_SPIN:'')+'</button>';
+    }).join('')
     +'</div><div class="hint" style="margin:.1rem 0 .4rem;">Kunde sieht den Status live und bekommt Push (falls aktiviert).</div>';
+}
+/* Nach Ende einer Aktion: zurueckgehaltenes Poll-Ergebnis anwenden, sobald
+   keine Aktion mehr laeuft, sonst nur neu zeichnen. */
+function ordAfterPending(){
+  if(!PENDING.size && ordHeld){
+    const h=ordHeld; ordHeld=null;
+    ordApply(h.orders, h.t0);
+    return;
+  }
+  renderOrders();
 }
 document.addEventListener('click',async(e)=>{
   const c=e.target.closest('[data-fstate]');
   if(!c) return;
   const ref=c.dataset.fref, state=c.dataset.fstate;
-  c.disabled=true;
+  if(PENDING.has(ref)) return;
+  PENDING.set(ref,'fstate:'+state);
+  renderOrders();
   try{
     const res=await fetch('/.netlify/functions/order-status',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -1894,40 +2144,65 @@ document.addEventListener('click',async(e)=>{
     if(res.ok){
       const o=ORDERS.find(x=>x.reference===ref);
       if(o) o.fstate=state;
-      renderOrders();
+      ORD_TOUCHED.set(ref,Date.now());
       toast('Status gesetzt'+(d.pushed?' · Push raus':'')+(d.mailed?' · Mail raus':''));
-    } else toast(d.hint||d.error||'Fehler beim Setzen');
-  }catch(err){ toast('Netzwerkfehler'); }
-  c.disabled=false;
+    } else toast(d.hint||d.error||'Fehler beim Setzen','err');
+  }catch(err){ toast('Netzwerkfehler','err'); }
+  finally{
+    PENDING.delete(ref);
+    ordAfterPending();
+  }
 });
 function buildOrdActions(r){
   const btns=[];
   const gc=r.kind==='giftcard';
   const completeLabel=gc?'Gutschein ausstellen + Mail senden':'Abschließen + Mails senden';
+  const pend=PENDING.get(r.reference)||'';
+  // Laufende Aktion: alle Knoepfe gesperrt, der laufende mit Spinner in seiner Textfarbe.
+  const b=(cls,action,label)=>{
+    const busy=pend==='action:'+action;
+    const ink=cls==='primary'?'#fff':cls==='danger'?'#8FB7E8':'var(--cream)';
+    return '<button type="button" class="abtn'+(cls?' '+cls:'')+(busy?' is-busy busy-shown':'')+'" data-action="'+action+'" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'"'
+      +(pend?' disabled':'')+(busy?' aria-busy="true" style="--busy-ink:'+ink+'"':'')+'>'+label+(busy?BUSY_SPIN:'')+'</button>';
+  };
   if(r.status==='pending'||r.status==='abandoned'){
-    btns.push('<button type="button" class="abtn" data-action="check" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Zahlung prüfen</button>');
-    btns.push('<button type="button" class="abtn primary" data-action="complete" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">'+completeLabel+'</button>');
-    btns.push('<button type="button" class="abtn" data-action="cancel" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Stornieren</button>');
+    btns.push(b('','check','Zahlung prüfen'));
+    btns.push(b('primary','complete',completeLabel));
+    btns.push(b('','cancel','Stornieren'));
   }
   if(istAdmin() && r.status==='completed'){
-    btns.push('<button type="button" class="abtn danger" data-action="refund" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Als rückerstattet markieren</button>');
+    btns.push(b('danger','refund','Als rückerstattet markieren'));
   }
   if(istAdmin() && (r.status==='pending'||r.status==='abandoned')){
-    btns.push('<button type="button" class="abtn danger" data-action="refund" data-ref="'+esc2(r.reference)+'" data-gc="'+(gc?'1':'')+'">Rückerstattet</button>');
+    btns.push(b('danger','refund','Rückerstattet'));
   }
   return btns.length ? '<div class="ord-actions">'+btns.join('')+'</div>' : '';
 }
+/* Gutschein-Verkaeufe (#vPurchases) tragen dieselben Aktionsknoepfe, werden
+   aber nicht von renderOrders() gezeichnet: dort die Sperre direkt setzen. */
+function markPendingPurchases(){
+  document.querySelectorAll('#vPurchases .ord[data-ref]').forEach(o=>{
+    const pend=PENDING.has(o.dataset.ref);
+    if(pend) o.setAttribute('aria-busy','true'); else o.removeAttribute('aria-busy');
+    o.querySelectorAll('.abtn[data-action]').forEach(bt=>{ if(!bt.classList.contains('is-busy')) bt.disabled=pend; });
+  });
+}
 
 async function orderAction(ref, action, btn, isGc){
+  if(PENDING.has(ref)) return;
   if(action==='cancel' && !confirm('#'+ref+' stornieren?\n\nVorher wird live bei SumUp geprüft, dass wirklich KEINE Zahlung vorliegt. Der Eintrag bleibt 14 Tage als „Storniert" sichtbar und wird dann automatisch aufgeräumt.')) return;
   if(action==='complete' && isGc && !confirm('Gutschein für #'+ref+' JETZT ausstellen?\n\nErzeugt den Code und mailt ihn an den Käufer – bitte nur, wenn die Zahlung sicher eingegangen ist (SumUp-Dashboard). Tipp: Erst „Zahlung prüfen" versuchen.')) return;
   if(action==='complete' && !isGc && !confirm('Bestellung #'+ref+' abschließen?\n\nLöst Kundenbestätigung, Inhaber-Mail und Telegram aus (nur einmal – Doppelversand ist ausgeschlossen).')) return;
   if(action==='refund' && !confirm('#'+ref+' als rückerstattet markieren?'+(isGc?'\n\nDer zugehörige Gutschein-Code wird dabei deaktiviert.':'')+'\n\nDie eigentliche Erstattung machst du in SumUp – hier wird nur der Status gesetzt.')) return;
-  // Beschriftung merken: das finally stellte bisher nur disabled zurueck,
-  // der Text kam allein ueber ein spaeteres renderOrders() zurueck. Bei 401,
-  // Serverfehler oder Netzabriss blieb der Knopf auf "Moment …" stehen.
-  const btnAlt = btn ? btn.textContent : '';
-  if(btn){ btn.disabled=true; btn.textContent='Moment …'; }
+  // Kein Text-Tausch mehr ("Moment …" aenderte die Breite): die Bestellung
+  // kommt in PENDING, renderOrders() zeichnet ihre Knoepfe gesperrt und den
+  // laufenden mit Spinner. Knoepfe ausserhalb der Liste (Gutschein-Verkaeufe)
+  // bekommen den Spinner direkt.
+  PENDING.set(ref,'action:'+action);
+  renderOrders();
+  const ext = (btn && btn.isConnected) ? btn : null;
+  if(ext) gncBusy(ext,true);
+  markPendingPurchases();
   try{
     const res=await fetch('/.netlify/functions/orders-action',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -1947,7 +2222,7 @@ async function orderAction(ref, action, btn, isGc){
       ORDERS[i].status=d.status||ORDERS[i].status;
       if(d.status==='completed') ORDERS[i].completedAt=ORDERS[i].completedAt||new Date().toISOString();
     }
-    renderOrders();
+    ORD_TOUCHED.set(ref,Date.now());
     if(isGc && typeof loadVouchers==='function') loadVouchers();
     if(action==='cancel'){ toast('Storniert – kein Phantom mehr in der Liste','ok'); }
     if(action==='check'){
@@ -1960,7 +2235,12 @@ async function orderAction(ref, action, btn, isGc){
       toast('Als rückerstattet markiert','ok');
     }
   }catch(e){ toast('Netzwerkfehler','err'); }
-  finally{ if(btn){ btn.disabled=false; btn.textContent=btnAlt; } }
+  finally{
+    PENDING.delete(ref);
+    if(ext) gncBusy(ext,false);
+    markPendingPurchases();
+    ordAfterPending();
+  }
 }
 
 // Auto-Abgleich: offene Zahlungen beim Laden des Tabs selbst prüfen
@@ -1970,6 +2250,7 @@ async function autoCheckPending(){
   if(!pendings.length) return;
   let changed=false;
   for(const r of pendings){
+    if(PENDING.has(r.reference)) continue;   // dort laeuft gerade eine Aktion von Hand
     try{
       const res=await fetch('/.netlify/functions/orders-action',{
         method:'POST',headers:{'Content-Type':'application/json'},
@@ -1979,6 +2260,7 @@ async function autoCheckPending(){
       if(res.ok && d.status && d.status!==r.status){
         const i=ORDERS.findIndex(o=>o.reference===r.reference);
         if(i>=0){ ORDERS[i].status=d.status; if(d.status==='completed') ORDERS[i].completedAt=new Date().toISOString(); }
+        ORD_TOUCHED.set(r.reference,Date.now());
         changed=true;
         if(d.status==='completed') toast('#'+r.reference+': bezahlt – Benachrichtigungen gesendet','ok');
       }
@@ -1986,28 +2268,87 @@ async function autoCheckPending(){
   }
   if(changed) renderOrders();
 }
-let ordersLastLoad=0;
+let ordersLastLoad=0, ordBarT=null;
+/* Statuszeile unter der Liste: Zeit der letzten Aktualisierung oder, in
+   Bernstein, dass sie fehlgeschlagen ist (auch beim stillen Hintergrund-Poll). */
+function ordStamp(ok){
+  const st=$('ordUpdated'); if(!st) return;
+  const hm=t=>new Date(t).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if(ok===null){ st.textContent=''; st.style.color='var(--faint)'; return; }
+  st.style.color = ok ? 'var(--faint)' : 'var(--amber)';
+  st.textContent = ok ? 'Aktualisiert '+hm(ordersLastLoad)
+    : 'Aktualisierung fehlgeschlagen'+(ordersLastLoad?(' · Stand '+hm(ordersLastLoad)):'');
+}
+/* Serverliste uebernehmen. Was lokal nach dem Start der Anfrage geaendert
+   wurde (Status gesetzt, abgeschlossen ...), ist neuer als die Antwort und
+   bleibt stehen, sonst saehe ein gerade gesetzter Status wieder alt aus. */
+function ordApply(list, t0){
+  list.forEach(r=>{
+    const at=ORD_TOUCHED.get(r.reference);
+    if(!(at>t0)) return;
+    const cur=ORDERS.find(x=>x.reference===r.reference);
+    if(cur){ r.status=cur.status; r.fstate=cur.fstate; r.completedAt=cur.completedAt; }
+  });
+  ORDERS=list;
+  ordersLoaded=true;
+  ordersLastLoad=Date.now();
+  renderOrders();
+  ordStamp(true);
+  autoCheckPending();
+}
+function ordLoadUi(on){
+  const rb=$('ordReload'), bar=$('ordBar');
+  clearTimeout(ordBarT);
+  if(on){
+    rb.classList.add('spin'); rb.disabled=true;
+    // Ladebalken erst nach 300 ms: schnelle Antworten blitzen nicht.
+    if(ordersLoaded){ ordBarT=setTimeout(()=>bar.classList.add('on'),300); $('ordersOut').setAttribute('aria-busy','true'); }
+  }else{
+    rb.classList.remove('spin'); rb.disabled=false;
+    bar.classList.remove('on'); $('ordersOut').removeAttribute('aria-busy');
+  }
+}
 async function loadOrders(silent){
-  if(!silent) $('ordersOut').innerHTML='<p class="empty">Bestellungen werden geladen …</p>';
+  // Nur ein Ladevorgang zur Zeit. Laeuft schon einer (z. B. der Poll), wird
+  // er bei einem Tipp auf "Neu laden" nur sichtbar gemacht.
+  if(ordLoading){ if(!silent) ordLoadUi(true); return; }
+  ordLoading=true;
+  const seq=++ordReqSeq;
+  const t0=Date.now();
+  const first=!ordersLoaded;
+  if(!silent){
+    // Erstes Laden: Skelett. Neuladen: die alte Liste bleibt stehen
+    // (Scroll-Position, aufgeklappte Bestellungen), oben laeuft ein Ladebalken.
+    if(first) $('ordersOut').innerHTML=skelRows(4,64,'Bestellungen werden geladen …');
+    ordLoadUi(true);
+  }
+  // Fehlertexte nur dann IN die Liste schreiben, wenn es noch keine gibt.
+  // Dann aber den Platzhalter ersetzen, sonst stand nach abgelaufener
+  // Anmeldung dauerhaft das Skelett da und nur ein Toast wies darauf hin.
+  const box=(!silent&&first)?'ordersOut':null;
   try{
     const res=await fetch('/.netlify/functions/orders-list?days=30&password='+encodeURIComponent(currentPw),{cache:'no-store'});
-    // Den Platzhalter ERSETZEN. Sonst stand nach abgelaufener Anmeldung
-    // dauerhaft "werden geladen …" da und nur ein Toast wies darauf hin.
-    if(sperreGemeldet(res, silent?null:'ordersOut')) return;
+    if(seq!==ordReqSeq) return;   // veraltete Antwort (z. B. nach Abmelden)
+    if(sperreGemeldet(res, box)){ ordStamp(false); return; }
     if(res.status===401){
-      if(!silent){ toast('Anmeldung abgelaufen – bitte neu anmelden','err');
-        $('ordersOut').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; }
+      if(!silent) toast('Anmeldung abgelaufen. Bitte neu anmelden.','err');
+      if(box) $('ordersOut').innerHTML='<p class="empty">Anmeldung abgelaufen. Bitte neu anmelden.</p>';
+      ordStamp(false);
       return; }
     const d=await res.json();
-    ORDERS=d.orders||[];
-    ordersLoaded=true;
-    ordersLastLoad=Date.now();
-    renderOrders();
-    const st=$('ordUpdated');
-    if(st) st.textContent='Aktualisiert '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-    autoCheckPending();
+    if(seq!==ordReqSeq) return;
+    // Laeuft gerade eine Aktion, nicht neu aufbauen: Ergebnis merken und
+    // anwenden, sobald alle Aktionen fertig sind (ordAfterPending).
+    if(PENDING.size){ ordHeld={orders:d.orders||[], t0}; return; }
+    ordHeld=null;
+    ordApply(d.orders||[], t0);
   }catch(e){
-    if(!silent) $('ordersOut').innerHTML='<p class="empty">Bestellungen konnten nicht geladen werden – bitte neu versuchen.</p>';
+    if(seq!==ordReqSeq) return;
+    if(box) $('ordersOut').innerHTML='<p class="empty" style="color:var(--red);">Bestellungen konnten nicht geladen werden. Bitte neu versuchen.</p>';
+    else if(!silent) toast('Aktualisierung fehlgeschlagen','err');
+    ordStamp(false);
+  }finally{
+    if(seq===ordReqSeq){ ordLoading=false; ordLoadUi(false); }
   }
 }
 
@@ -2050,22 +2391,37 @@ $('ordCsv').addEventListener('click',()=>{
 });
 
 /* ---------------- Catering-Anfragen ---------------- */
-let CATERING=[]; let cateringLoaded=false;
+let CATERING=[]; let cateringLoaded=false; let catSeq=0;
+/* Neuladen behaelt die Liste (Icon dreht); nur beim ersten Laden steht ein
+   Platzhalter da. Zaehler je Anfrage: nur die juengste Antwort zeichnet. */
 async function loadCatering(silent){
-  if(!silent) $('cateringOut').innerHTML='<p class="empty">Anfragen werden geladen …</p>';
+  const seq=++catSeq;
+  const first=!cateringLoaded;
+  if(!silent){
+    if(first) $('cateringOut').innerHTML='<p class="empty">Anfragen werden geladen …</p>';
+    else listBusy($('cateringOut'),true);
+    $('catReload').classList.add('spin');
+  }
+  const box=(!silent&&first)?'cateringOut':null;
   try{
     const res=await fetch('/.netlify/functions/catering-list?days=180&password='+encodeURIComponent(currentPw),{cache:'no-store'});
-    if(sperreGemeldet(res, silent?null:'cateringOut')) return;
+    if(seq!==catSeq) return;
+    if(sperreGemeldet(res, box)) return;
     if(res.status===401){
-      if(!silent){ toast('Anmeldung abgelaufen – bitte neu anmelden','err');
-        $('cateringOut').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; }
+      if(!silent) toast('Anmeldung abgelaufen. Bitte neu anmelden.','err');
+      if(box) $('cateringOut').innerHTML='<p class="empty">Anmeldung abgelaufen. Bitte neu anmelden.</p>';
       return; }
     const d=await res.json();
+    if(seq!==catSeq) return;
     CATERING=d.requests||[];
     cateringLoaded=true;
     renderCatering();
   }catch(e){
-    if(!silent) $('cateringOut').innerHTML='<p class="empty">Anfragen konnten nicht geladen werden – bitte neu versuchen.</p>';
+    if(seq!==catSeq) return;
+    if(box) $('cateringOut').innerHTML='<p class="empty" style="color:var(--red);">Anfragen konnten nicht geladen werden. Bitte neu versuchen.</p>';
+    else if(!silent) toast('Anfragen konnten nicht geladen werden','err');
+  }finally{
+    if(seq===catSeq){ $('catReload').classList.remove('spin'); listBusy($('cateringOut'),false); }
   }
 }
 function renderCatering(){
@@ -2087,24 +2443,30 @@ function renderCatering(){
         ${r.msg?'<br><span style="color:var(--faint);">„'+esc2(r.msg)+'“</span>':''}
       </div>
       <div style="display:flex;gap:.45rem;">
-        <button class="btn-ghost" onclick="cateringAction('${r.key}','${r.done?'undone':'done'}')">${r.done?'Wieder öffnen':'Erledigt'}</button>
-        <button class="btn-ghost" onclick="cateringAction('${r.key}','delete')" style="color:var(--red);">Löschen</button>
+        <button class="btn-ghost" onclick="cateringAction('${r.key}','${r.done?'undone':'done'}',this)">${r.done?'Wieder öffnen':'Erledigt'}</button>
+        <button class="btn-ghost" onclick="cateringAction('${r.key}','delete',this)" style="color:var(--red);">Löschen</button>
       </div>
     </div>`;
   }).join('');
 }
-async function cateringAction(key,action){
+async function cateringAction(key,action,btn){
+  if(btn && btn.classList.contains('is-busy')) return;
   if(action==='delete' && !confirm('Anfrage wirklich endgültig löschen?')) return;
+  // Knopf busy bis die Liste neu da ist; der Nachbarknopf derselben Anfrage ist so lange gesperrt.
+  const others=btn&&btn.parentElement ? [...btn.parentElement.querySelectorAll('button')].filter(b=>b!==btn) : [];
+  others.forEach(b=>{ b.disabled=true; });
+  gncBusy(btn,true);
   try{
     const res=await fetch('/.netlify/functions/catering-list',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({password:currentPw,key,action}),
     });
     if(!res.ok){ toast('Aktion fehlgeschlagen','err'); return; }
-    loadCatering(true);
+    await loadCatering(true);
   }catch(e){ toast('Aktion fehlgeschlagen','err'); }
+  finally{ gncBusy(btn,false); others.forEach(b=>{ b.disabled=false; }); }
 }
-$('catReload').addEventListener('click',()=>loadCatering());
+$('catReload').addEventListener('click',()=>{ if(!$('catReload').classList.contains('spin')) loadCatering(); });
 
 /* ---------------- Gutscheine (Admin) ---------------- */
 let vouchersLoaded=false, VOUCHERS=[];
@@ -2247,6 +2609,7 @@ function renderPurchases(P){
       +(actions.length?('<div class="ord-body" style="display:block;"><div class="ord-actions">'+actions.join('')+'</div></div>'):'')
       +'</div>';
   }).join('');
+  markPendingPurchases();   // laufende Aktionen bleiben auch nach dem Neuaufbau gesperrt
 }
 /* ---------------- Rechnungen (nur Admins) ---------------- */
 let invoicesLoaded=false, INVOICES=[];
@@ -2255,22 +2618,32 @@ let invoicesLoaded=false, INVOICES=[];
 // bleiben" (localStorage) wiederhergestellt wurde – dann kam ein leeres
 // Passwort und der Server antwortete mit 401.
 function invPw(){ return currentPw || sessionStorage.getItem(PW_KEY) || ''; }
-async function loadInvoices(){
+/* btn: der Aktualisieren-Knopf (busy); die Jahresauswahl ruft ohne Knopf auf.
+   Liste bleibt beim Neuladen gedimmt stehen, nur die juengste Antwort zeichnet. */
+let invSeq=0;
+function loadInvoices(btn){ return withBusy(btn, loadInvoicesRun); }
+async function loadInvoicesRun(){
+  const seq=++invSeq;
   const jahr=$('invYear').value||'';
   const url='/.netlify/functions/invoices-list?password='+encodeURIComponent(invPw())
             +(jahr?('&year='+encodeURIComponent(jahr)):'');
   let d=null;
   let status=0;
+  listBusy($('invList'),true);
   try{ const r=await fetch(url); status=r.status; d=await r.json().catch(()=>({}));
+       if(seq!==invSeq) return;
        if(status===429){ const t='Zu viele Fehlversuche. Bitte später erneut versuchen.';
          toast(t,'err'); $('invList').innerHTML='<p class="empty">'+t+'</p>'; return; }
        if(status===403){ $('invList').innerHTML='<p class="empty">Rechnungen sind nur für Admins sichtbar.</p>'; return; }
        if(status===401){ $('invList').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; return; }
        if(!r.ok) throw new Error('HTTP '+status);
   }catch(e){
-    $('invList').innerHTML='<p class="empty">Rechnungen konnten nicht geladen werden'
+    if(seq!==invSeq) return;
+    $('invList').innerHTML='<p class="empty" style="color:var(--red);">Rechnungen konnten nicht geladen werden'
       +(status?(' (Fehler '+status+')'):'')+'.</p>';
     return;
+  }finally{
+    if(seq===invSeq) listBusy($('invList'),false);
   }
   invoicesLoaded=true;
   INVOICES=d.invoices||[];
@@ -2328,8 +2701,8 @@ function renderInvoices(){
 /* Einzelne Rechnung als PDF. Wie beim ZIP wird die Antwort als Blob geholt,
    damit das Passwort nicht in der Adresszeile landet. */
 async function invoicePdf(nummer, btn){
-  const alt = btn ? btn.innerHTML : '';
-  if(btn){ btn.disabled=true; btn.innerHTML='<span>Lädt …</span>'; }
+  if(btn && btn.classList.contains('is-busy')) return;
+  gncBusy(btn,true);
   try{
     const r=await fetch('/.netlify/functions/invoice-pdf?password='+encodeURIComponent(invPw())
             +'&no='+encodeURIComponent(nummer));
@@ -2344,24 +2717,33 @@ async function invoicePdf(nummer, btn){
     a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href),4000);
     toast('Rechnung '+nummer+' geladen');
-  }catch(e){ toast('Rechnung konnte nicht erzeugt werden'); }
-  finally{ if(btn){ btn.disabled=false; btn.innerHTML=alt; } }
+  }catch(e){ toast('Rechnung konnte nicht erzeugt werden','err'); }
+  finally{ gncBusy(btn,false); }
 }
 /* ---------------- Datensicherung ---------------- */
 let BACKUPS=[];
 const bakMb = (b) => (Number(b||0)/1048576).toFixed(2).replace('.',',')+' MB';
 
-async function loadBackups(){
-  $('bakList').innerHTML='<p class="empty">Lade …</p>';
+/* Neuladen behaelt die Liste (gedimmt); nur ohne Liste steht "Lade …" da. */
+let bakSeq=0;
+function loadBackups(btn){ return withBusy(btn, loadBackupsRun); }
+async function loadBackupsRun(){
+  const seq=++bakSeq;
+  if(!BACKUPS.length) $('bakList').innerHTML='<p class="empty">Lade …</p>';
+  listBusy($('bakList'),true);
   try{
     const r=await fetch('/.netlify/functions/backup-list?password='+encodeURIComponent(invPw()));
+    if(seq!==bakSeq) return;
     if(sperreGemeldet(r,'bakList')) return;
     if(r.status===403){ $('bakList').innerHTML='<p class="empty">Datensicherungen sind nur für Admins zugänglich.</p>'; return; }
     if(r.status===401){ $('bakList').innerHTML='<p class="empty">Anmeldung abgelaufen – bitte neu anmelden.</p>'; return; }
     if(!r.ok) throw new Error('HTTP '+r.status);
-    BACKUPS=(await r.json()).staende||[];
+    const neu=(await r.json()).staende||[];
+    if(seq!==bakSeq) return;
+    BACKUPS=neu;
     renderBackups();
-  }catch(e){ $('bakList').innerHTML='<p class="empty">Sicherungen konnten nicht geladen werden.</p>'; }
+  }catch(e){ if(seq===bakSeq) $('bakList').innerHTML='<p class="empty" style="color:var(--red);">Sicherungen konnten nicht geladen werden.</p>'; }
+  finally{ if(seq===bakSeq) listBusy($('bakList'),false); }
 }
 
 function renderBackups(){
@@ -2394,8 +2776,8 @@ function renderBackups(){
 /* Herunterladen. "jetzt" erzeugt serverseitig einen frischen Stand, ohne ihn
    abzulegen – nützlich vor einer groesseren Aenderung. */
 async function backupLaden(stand, btn){
-  const alt=btn?btn.innerHTML:'';
-  if(btn){ btn.disabled=true; btn.innerHTML='<span>Lädt …</span>'; }
+  if(btn && btn.classList.contains('is-busy')) return;
+  gncBusy(btn,true);
   try{
     const r=await fetch('/.netlify/functions/backup-list?password='+encodeURIComponent(invPw())
             +'&stand='+encodeURIComponent(stand));
@@ -2413,17 +2795,17 @@ async function backupLaden(stand, btn){
     setTimeout(()=>URL.revokeObjectURL(a.href),4000);
     toast('Sicherung geladen ('+bakMb(blob.size)+')','ok');
   }catch(e){ toast('Sicherung konnte nicht geladen werden','err'); }
-  finally{ if(btn){ btn.disabled=false; btn.innerHTML=alt; } }
+  finally{ gncBusy(btn,false); }
 }
 function backupJetzt(ev){ backupLaden('jetzt', ev&&ev.target&&ev.target.closest('button')); }
 
 /* Alle Rechnungen als ZIP mit einzelnen PDFs. Der Server erzeugt die PDFs
    und packt sie; wir laden die Antwort als Blob, damit das Passwort nicht
    in der Adresszeile landet. */
-async function invoicesZip(){
+async function invoicesZip(btn){
   const jahr=$('invYear').value||'';
-  const btn=event&&event.target; const alt=btn?btn.textContent:'';
-  if(btn){ btn.disabled=true; btn.textContent='Erzeuge …'; }
+  if(btn && btn.classList.contains('is-busy')) return;
+  gncBusy(btn,true);
   try{
     const r=await fetch('/.netlify/functions/invoices-zip?password='+encodeURIComponent(invPw())
             +(jahr?('&year='+encodeURIComponent(jahr)):''));
@@ -2440,8 +2822,8 @@ async function invoicesZip(){
     const anzahl=r.headers.get('X-Invoice-Count');
     const gekuerzt=r.headers.get('X-Invoice-Truncated')==='1';
     toast(anzahl ? (anzahl+' Rechnungen geladen'+(gekuerzt?' (nur die neuesten – zu viele für ein Paket)':'')) : 'ZIP geladen');
-  }catch(e){ toast('ZIP konnte nicht erzeugt werden'); }
-  finally{ if(btn){ btn.disabled=false; btn.textContent=alt; } }
+  }catch(e){ toast('ZIP konnte nicht erzeugt werden','err'); }
+  finally{ gncBusy(btn,false); }
 }
 
 /* Spaltenaufbau EINMAL \u2013 die Gesamtliste und die einzelne Rechnung nutzen
@@ -2479,15 +2861,44 @@ function invoiceCsv(nummer){
   toast('Rechnung '+nummer+' als CSV geladen');
 }
 
+/* Neuladen behaelt beide Listen (gedimmt), nur die juengste Antwort zeichnet.
+   Ein Netzfehler loeste bisher eine unbehandelte Ausnahme aus, die Listen
+   blieben dann ohne Hinweis stehen. */
+let vSeq=0;
 async function loadVouchers(){
-  const r=await vApi({action:'list'});
+  const seq=++vSeq;
+  if(!vouchersLoaded){
+    $('vList').innerHTML='<p class="empty">Gutscheine werden geladen …</p>';
+    $('vPurchases').innerHTML='<p class="empty">Verkäufe werden geladen …</p>';
+  }else{ listBusy($('vList'),true); listBusy($('vPurchases'),true); }
+  let r;
+  try{ r=await vApi({action:'list'}); }catch(e){ r={ok:false,d:{}}; }
+  if(seq!==vSeq) return;
+  listBusy($('vList'),false); listBusy($('vPurchases'),false);
   vouchersLoaded=true;
-  if(!r.ok){ $('vList').innerHTML='<p class="empty">Gutscheine konnten nicht geladen werden.</p>'; return; }
+  if(!r.ok){
+    const t='Gutscheine konnten nicht geladen werden.';
+    if(VOUCHERS.length) toast(t,'err');
+    else $('vList').innerHTML='<p class="empty" style="color:var(--red);">'+t+'</p>';
+    if(!$('vPurchases').querySelector('.ord')) $('vPurchases').innerHTML='<p class="empty" style="color:var(--red);">Verkäufe konnten nicht geladen werden.</p>';
+    return;
+  }
   VOUCHERS=r.d.vouchers||[];
   renderVouchers();
   renderPurchases(r.d.purchases||[]);
 }
-$('vReload').addEventListener('click',loadVouchers);
+$('vReload').addEventListener('click',()=>withBusy($('vReload'),loadVouchers));
+/* Gutschein-Aktion: Knopf busy, bis die Liste neu da ist (der Knopf wird dabei
+   ersetzt, ein zweiter Tipp trifft also nie dieselbe Aktion). */
+function vAktion(btn, payload, okText, failText){
+  return withBusy(btn, async()=>{
+    let r;
+    try{ r=await vApi(payload); }
+    catch(err){ toast('Netzwerkfehler. Bitte erneut versuchen.','err'); return; }
+    if(r.ok){ toast(typeof okText==='function'?okText(r):okText,'ok'); await loadVouchers(); }
+    else toast(failText,'err');
+  });
+}
 async function copyText(txt){
   try{ await navigator.clipboard.writeText(txt); return true; }
   catch(err){
@@ -2513,7 +2924,7 @@ document.addEventListener('click',async(e)=>{
   if(rs){
     const mail=rs.dataset.vMail||'den Käufer';
     if(!confirm('Gutschein-Mail erneut senden an '+mail+'?\n\nDer Kunde erhält dieselbe Mail wie beim Kauf (Code, Betrag, Einlöse-Anleitung).')) return;
-    rs.disabled=true; const t0=rs.textContent; rs.textContent='Sende …';
+    gncBusy(rs,true);
     try{
       const res=await fetch('/.netlify/functions/orders-action',{
         method:'POST',headers:{'Content-Type':'application/json'},
@@ -2523,37 +2934,31 @@ document.addEventListener('click',async(e)=>{
       if(res.ok){ toast('Mail erneut gesendet'+(d.sentTo?(' an '+d.sentTo):''),'ok'); }
       else toast(d.hint||'Mailversand fehlgeschlagen','err');
     }catch(err){ toast('Netzwerkfehler – bitte erneut versuchen','err'); }
-    rs.disabled=false; rs.textContent=t0;
+    finally{ gncBusy(rs,false); }
     return;
   }
   const mu=e.target.closest('[data-v-used]');
   if(mu){
     if(!confirm('Gutschein „'+mu.dataset.vUsed+'" als eingelöst markieren?\n\nNutze das, wenn er z. B. am Truck angenommen wurde. Online ist er danach nicht mehr einlösbar.')) return;
-    const r=await vApi({action:'markUsed',code:mu.dataset.vUsed});
-    if(r.ok){ toast('Als eingelöst markiert','ok'); loadVouchers(); } else toast('Fehlgeschlagen','err');
+    await vAktion(mu,{action:'markUsed',code:mu.dataset.vUsed},'Als eingelöst markiert','Fehlgeschlagen');
     return;
   }
   const mn=e.target.closest('[data-v-unused]');
   if(mn){
     if(!confirm('Einlösung von „'+mn.dataset.vUnused+'" zurücknehmen?\n\nDer Gutschein ist danach wieder einlösbar.')) return;
-    const r=await vApi({action:'markUnused',code:mn.dataset.vUnused});
-    if(r.ok){ toast('Einlösung zurückgenommen','ok'); loadVouchers(); } else toast('Fehlgeschlagen','err');
+    await vAktion(mn,{action:'markUnused',code:mn.dataset.vUnused},'Einlösung zurückgenommen','Fehlgeschlagen');
     return;
   }
   const tg=e.target.closest('[data-v-toggle]');
   if(tg){
-    const r=await vApi({action:'toggle',code:tg.dataset.vToggle});
-    if(r.ok){ toast(r.d.active?'Gutschein aktiviert':'Gutschein pausiert','ok'); loadVouchers(); }
-    else toast('Umschalten fehlgeschlagen','err');
+    await vAktion(tg,{action:'toggle',code:tg.dataset.vToggle},r=>r.d.active?'Gutschein aktiviert':'Gutschein pausiert','Umschalten fehlgeschlagen');
     return;
   }
   const del=e.target.closest('[data-v-del]');
   if(del){
     const code=del.dataset.vDel;
     if(!confirm('Gutschein „'+code+'" endgültig löschen?\n\nTipp: „Pausieren" reicht meist – dann bleiben die Einlöse-Zahlen erhalten.')) return;
-    const r=await vApi({action:'delete',code});
-    if(r.ok){ toast('Gutschein gelöscht','ok'); loadVouchers(); }
-    else toast('Löschen fehlgeschlagen','err');
+    await vAktion(del,{action:'delete',code},'Gutschein gelöscht','Löschen fehlgeschlagen');
   }
 });
 $('vCreateBtn').addEventListener('click',async()=>{
@@ -2563,8 +2968,12 @@ $('vCreateBtn').addEventListener('click',async()=>{
   if(code.length<3){ toast('Code: mindestens 3 Zeichen','err'); return; }
   if(!value||value<=0){ toast('Bitte einen Wert eingeben','err'); return; }
   if(type==='percent'&&value>100){ toast('Prozent: maximal 100','err'); return; }
-  const btn=$('vCreateBtn'); btn.disabled=true; btn.textContent='Anlegen …';
-  const r=await vApi({action:'create',voucher:{
+  const btn=$('vCreateBtn');
+  if(btn.classList.contains('is-busy')) return;
+  // try/finally: nach einem Netzfehler blieb der Knopf bisher dauerhaft gesperrt.
+  gncBusy(btn,true);
+  let r;
+  try{ r=await vApi({action:'create',voucher:{
     code,type,value,
     maxDiscount:parseFloat($('vMax').value)||0,
     minOrder:parseFloat($('vMin').value)||0,
@@ -2577,8 +2986,9 @@ $('vCreateBtn').addEventListener('click',async()=>{
     mode:$('vMode').value,
     appOnly:$('vAppOnly').checked,
     note:$('vNote').value.trim(),
-  }});
-  btn.disabled=false; btn.textContent='Gutschein anlegen';
+  }}); }
+  catch(e){ toast('Netzwerkfehler. Bitte erneut versuchen.','err'); return; }
+  finally{ gncBusy(btn,false); }
   if(r.ok){
     toast('Gutschein '+code+' angelegt','ok');
     ['vCode','vValue','vMax','vMin','vUses','vFrom','vTo','vNote'].forEach(id=>$(id).value='');
@@ -2604,9 +3014,15 @@ async function loadTeam(){
   const adminOpt=document.querySelector('#tmRole option[value="admin"]');
   if(adminOpt) adminOpt.hidden = currentRole!=='superadmin';
   loadAudit();
-  const r=await teamApi({action:'list'});
+  let r;
+  try{ r=await teamApi({action:'list'}); }catch(e){ r={ok:false,d:{}}; }
   teamLoaded=true;
-  if(!r.ok){ $('teamList').innerHTML='<p class="empty">Team konnte nicht geladen werden.</p>'; return; }
+  if(!r.ok){
+    // Vorhandene Liste beim Neuladen stehen lassen, nur melden.
+    if($('teamList').querySelector('.team-row')) toast('Team konnte nicht geladen werden','err');
+    else $('teamList').innerHTML='<p class="empty" style="color:var(--red);">Team konnte nicht geladen werden.</p>';
+    return;
+  }
   const staff=r.d.staff||[];
   $('teamList').innerHTML = staff.length
     ? staff.map(u=>{
@@ -2630,6 +3046,17 @@ async function loadTeam(){
       }).join('')
     : '<p class="empty">Noch keine Team-Zugänge. Leg unten den ersten an.</p>';
 }
+/* Team-Aktion: Knopf busy, bis sie fertig ist (samt Neuladen der Liste).
+   Ein Netzfehler loeste bisher eine unbehandelte Ausnahme aus, ohne Hinweis. */
+function tmAktion(btn, payload, onOk, failText){
+  return withBusy(btn, async()=>{
+    let r;
+    try{ r=await teamApi(payload); }
+    catch(err){ toast('Netzwerkfehler. Bitte erneut versuchen.','err'); return; }
+    if(r.ok) await onOk(r);
+    else toast(failText(r),'err');
+  });
+}
 document.addEventListener('click',async(e)=>{
   const pwBtn=e.target.closest('[data-tm-pw]');
   if(pwBtn){
@@ -2637,9 +3064,9 @@ document.addEventListener('click',async(e)=>{
     const npw=prompt('Neues Passwort für „'+name+'" (mind. 6 Zeichen):\n\nTipp-Schema: wort-wort-zahl, z. B. glut-sesam-42');
     if(npw===null) return;
     if(npw.trim().length<6){ toast('Passwort: mindestens 6 Zeichen','err'); return; }
-    const r=await teamApi({action:'setpassword',name,staffPassword:npw.trim()});
-    if(r.ok){ toast('Passwort geändert – '+name+' meldet sich damit neu an','ok'); }
-    else toast(r.d.hint||r.d.error||'Ändern fehlgeschlagen','err');
+    await tmAktion(pwBtn,{action:'setpassword',name,staffPassword:npw.trim()},
+      ()=>toast('Passwort geändert. '+name+' meldet sich damit neu an.','ok'),
+      r=>r.d.hint||r.d.error||'Ändern fehlgeschlagen');
     return;
   }
   const rl=e.target.closest('[data-tm-role]');
@@ -2649,35 +3076,46 @@ document.addEventListener('click',async(e)=>{
       ? '„'+name+'" zum Admin machen?\n\nAdmins haben Vollzugriff: Push an Kunden, Zahlen, Team-Verwaltung und Rückerstattungen.'
       : '„'+name+'" zum Mitarbeiter zurückstufen?\n\nDanach nur noch Laden-Status und Bestellungen.';
     if(!confirm(msg)) return;
-    const r=await teamApi({action:'setrole',name,role:to});
-    if(r.ok){ toast('Rolle geändert: '+name+' ist jetzt '+(to==='admin'?'Admin':'Mitarbeiter'),'ok'); loadTeam(); }
-    else toast('Rollenwechsel fehlgeschlagen','err');
+    await tmAktion(rl,{action:'setrole',name,role:to},
+      async()=>{ toast('Rolle geändert: '+name+' ist jetzt '+(to==='admin'?'Admin':'Mitarbeiter'),'ok'); await loadTeam(); },
+      ()=>'Rollenwechsel fehlgeschlagen');
     return;
   }
   const rm=e.target.closest('[data-tm-remove]');
   if(!rm) return;
   const name=rm.dataset.tmRemove;
   if(!confirm('Zugang von „'+name+'" entfernen? Die Person kann sich danach nicht mehr anmelden.')) return;
-  const r=await teamApi({action:'remove',name});
-  if(r.ok){ toast('Zugang entfernt','ok'); loadTeam(); } else toast('Entfernen fehlgeschlagen','err');
+  await tmAktion(rm,{action:'remove',name},
+    async()=>{ toast('Zugang entfernt','ok'); await loadTeam(); },
+    ()=>'Entfernen fehlgeschlagen');
 });
 $('tmAddBtn').addEventListener('click',async()=>{
   const name=$('tmName').value.trim();
   const pw=$('tmPw').value;
   if(!name){ toast('Name fehlt','err'); return; }
   if(pw.length<6){ toast('Passwort: mindestens 6 Zeichen','err'); return; }
-  const btn=$('tmAddBtn'); btn.disabled=true; btn.textContent='Anlegen …';
-  const r=await teamApi({action:'add',name,staffPassword:pw,role:$('tmRole').value});
-  btn.disabled=false; btn.textContent='Zugang anlegen';
-  if(r.ok){ toast(name+' angelegt','ok'); $('tmName').value=''; $('tmPw').value=''; loadTeam(); }
-  else toast(r.d.hint||r.d.error||'Anlegen fehlgeschlagen','err');
+  // try/finally ueber withBusy: nach einem Netzfehler blieb der Knopf bisher dauerhaft gesperrt.
+  await tmAktion($('tmAddBtn'),{action:'add',name,staffPassword:pw,role:$('tmRole').value},
+    ()=>{ toast(name+' angelegt','ok'); $('tmName').value=''; $('tmPw').value=''; loadTeam(); },
+    r=>r.d.hint||r.d.error||'Anlegen fehlgeschlagen');
 });
 
+/* Neuladen behaelt das Protokoll (gedimmt); ein Fehler ersetzt es nicht,
+   solange schon Eintraege da sind. Nur die juengste Antwort zeichnet. */
+let auditSeq=0;
+function auditFehler(){
+  if($('auditOut').querySelector('.team-row')) toast('Protokoll konnte nicht geladen werden','err');
+  else $('auditOut').innerHTML='<p class="empty" style="color:var(--red);">Protokoll konnte nicht geladen werden.</p>';
+}
 async function loadAudit(){
+  const seq=++auditSeq;
+  listBusy($('auditOut'),true);
   try{
     const res=await fetch('/.netlify/functions/audit-log?days=14&password='+encodeURIComponent(currentPw),{cache:'no-store'});
-    if(!res.ok){ $('auditOut').innerHTML='<p class="empty">Protokoll konnte nicht geladen werden.</p>'; return; }
+    if(seq!==auditSeq) return;
+    if(!res.ok){ auditFehler(); return; }
     const d=await res.json();
+    if(seq!==auditSeq) return;
     const list=d.entries||[];
     if(!list.length){ $('auditOut').innerHTML='<p class="empty">Noch keine Einträge – ab der nächsten Änderung wird hier protokolliert.</p>'; return; }
     $('auditOut').innerHTML=list.map(e=>{
@@ -2688,9 +3126,10 @@ async function loadAudit(){
         +'<small style="font-family:inherit;font-size:.76rem;color:var(--dim);">'+esc2(e.detail)+'</small></div>'
         +'</div>';
     }).join('');
-  }catch(e){ $('auditOut').innerHTML='<p class="empty">Protokoll konnte nicht geladen werden.</p>'; }
+  }catch(e){ if(seq===auditSeq) auditFehler(); }
+  finally{ if(seq===auditSeq) listBusy($('auditOut'),false); }
 }
-$('logReload').addEventListener('click',loadAudit);
+$('logReload').addEventListener('click',()=>withBusy($('logReload'),loadAudit));
 
 /* ---------------- Protokoll-Export (CSV & PDF, volle 30 Tage) ---------------- */
 async function auditFetchAll(){
@@ -2704,7 +3143,7 @@ function auditStamp(){
   const p=x=>String(x).padStart(2,'0');
   return n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate());
 }
-$('logCsv').addEventListener('click',async()=>{
+$('logCsv').addEventListener('click',()=>withBusy($('logCsv'),async()=>{
   try{
     const list=await auditFetchAll();
     if(!list.length){ toast('Keine Einträge zum Export','err'); return; }
@@ -2723,8 +3162,8 @@ $('logCsv').addEventListener('click',async()=>{
     setTimeout(()=>URL.revokeObjectURL(a.href),4000);
     toast(list.length+' Einträge exportiert');
   }catch(e){ toast('Export fehlgeschlagen','err'); }
-});
-$('logPdf').addEventListener('click',async()=>{
+}));
+$('logPdf').addEventListener('click',()=>withBusy($('logPdf'),async()=>{
   try{
     const list=await auditFetchAll();
     if(!list.length){ toast('Keine Einträge zum Export','err'); return; }
@@ -2767,7 +3206,7 @@ $('logPdf').addEventListener('click',async()=>{
     const go=()=>{ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(err){ toast('Drucken nicht möglich','err'); } };
     if(doc.readyState==='complete') setTimeout(go,120); else f.onload=()=>setTimeout(go,120);
   }catch(e){ toast('Export fehlgeschlagen','err'); }
-});
+}));
 
 /* ---------------- Bestell-Alarm (Push auf dieses Gerät) ---------------- */
 function b64ToU8(base64String){
@@ -2788,12 +3227,14 @@ async function refreshAlertUI(){
   try{
     const st=await alertSub();
     const on=!!(st&&st.sub);
-    $('alertBtn').textContent = on ? 'Bestell-Alarm deaktivieren' : 'Bestell-Alarm aktivieren';
+    setBtnLabel($('alertBtn'), on ? 'Bestell-Alarm deaktivieren' : 'Bestell-Alarm aktivieren');
     $('alertState').textContent = on ? 'Aktiv auf diesem Gerät – du bekommst jede neue Bestellung als Benachrichtigung.' : (('Notification' in window)&&Notification.permission==='denied' ? 'Benachrichtigungen sind im Browser blockiert – bitte in den Website-Einstellungen erlauben.' : '');
   }catch(e){}
 }
 $('alertBtn').addEventListener('click',async()=>{
-  const btn=$('alertBtn'); btn.disabled=true;
+  const btn=$('alertBtn');
+  if(btn.classList.contains('is-busy')) return;
+  gncBusy(btn,true);
   try{
     const st=await alertSub();
     if(!st){ toast('Push wird auf diesem Gerät nicht unterstützt','err'); return; }
@@ -2816,7 +3257,7 @@ $('alertBtn').addEventListener('click',async()=>{
       toast('Bestell-Alarm aktiv','ok');
     }
   }catch(e){ toast('Das hat nicht geklappt – bitte erneut versuchen','err'); }
-  finally{ btn.disabled=false; refreshAlertUI(); }
+  finally{ gncBusy(btn,false); refreshAlertUI(); }
 });
 setTimeout(refreshAlertUI,600);
 

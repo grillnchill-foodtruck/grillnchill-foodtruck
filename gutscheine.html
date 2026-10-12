@@ -109,15 +109,31 @@
     --dur-2:220ms;
   }
   .btn{transition:transform var(--dur-2) var(--ease-spring),box-shadow var(--dur-2) var(--ease-out),background-color var(--dur-2) var(--ease-out),filter var(--dur-2) var(--ease-out);will-change:transform}
-  .btn:not([disabled]):hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(232,90,36,.42)}
+  @media (hover: hover) and (pointer: fine){ .btn:not([disabled]):hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(232,90,36,.42)} }
   .btn:not([disabled]):active{transform:scale(.98)}
   /* Betrags-Buttons: sauberes Hover/Press, ruhigerer Aktiv-Glow */
   .amt{transition:transform var(--dur-2) var(--ease-out),border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out);will-change:transform}
-  @media(hover:hover){ .amt:hover{transform:translateY(-3px);border-color:rgba(232,90,36,.5)} }
+  @media (hover: hover) and (pointer: fine){ .amt:hover{transform:translateY(-3px);border-color:rgba(232,90,36,.5)} }
   .amt:active{transform:scale(.97)}
   .amt[aria-pressed="true"]{box-shadow:0 6px 18px rgba(232,90,36,.20)}
   /* Fokus-Ringe (A11y) */
   a:focus-visible,button:focus-visible,.btn:focus-visible,.amt:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--orange-b);outline-offset:3px;border-radius:10px}
+
+  /* ============ WARTEN: Busy-Knopf, Pruef-Panel ============ */
+  @keyframes gncSpin { to { transform: rotate(360deg); } }
+  @keyframes gncBreath { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+  .is-busy { position: relative; cursor: progress !important; color: transparent !important; opacity: 1 !important; }
+  .is-busy > :not(.busy-spin) { visibility: hidden; }
+  .busy-spin { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; border: 2px solid var(--busy-ink, currentColor); border-right-color: transparent; opacity: 0; animation: gncSpin .8s linear infinite; transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .is-busy.busy-shown .busy-spin { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .busy-spin { animation: gncBreath 1.2s ease-in-out infinite; border-right-color: var(--busy-ink, currentColor); } }
+  /* Rueckkehr von SumUp: Ring sofort sichtbar, solange der Status geprueft wird */
+  .check-ring { position: relative; width: 28px; height: 28px; margin: 0 auto 1rem; --busy-ink: var(--orange-b); }
+  .check-ring .busy-spin { width: 28px; height: 28px; margin: -14px 0 0 -14px; border-width: 3px; opacity: 1; }
+  /* Alle Panels liegen in derselben Rasterzelle, damit Pruef-Panel und Ergebnis ueberblenden */
+  .panels { display: grid; }
+  .panels > .panel { grid-area: 1 / 1; }
+  @media (prefers-reduced-motion: reduce){ .btn,.amt{transform:none !important;will-change:auto} }
 </style>
 
 <!-- Strukturierte Daten. Als einzige oeffentliche Seite hatte diese hier
@@ -210,6 +226,7 @@
     </div>
 
     <button class="btn" id="buyBtn">Gutschein über <span id="btnAmt">50&nbsp;€</span> kaufen</button>
+    <p id="buyHint" aria-live="polite" style="min-height:1.2em;margin:.5rem 0 0;font-size:.82rem;opacity:.75;text-align:center"></p>
     <p class="terms">
       Sichere Zahlung über SumUp (Karte, Apple&nbsp;Pay, Google&nbsp;Pay) · Code kommt automatisch nach Zahlungseingang per E-Mail<br>
       3&nbsp;Jahre gültig · online einlösbar ab Bestellwert in Gutscheinhöhe · keine Barauszahlung
@@ -223,7 +240,11 @@
   </div>
 
   <!-- Rückkehr von SumUp -->
-  <div class="container">
+  <div class="container panels">
+    <div class="panel" id="panelCheck" role="status">
+      <div class="check-ring"><span class="busy-spin" aria-hidden="true"></span></div>
+      <h2 class="display" style="font-size:1.3rem;">Zahlung wird geprüft …</h2>
+    </div>
     <div class="panel" id="panelOk">
       <div class="pico ok">✓</div>
       <h2 class="display" style="font-size:1.4rem;margin-bottom:0.5rem;">Bezahlt – Gutschein ist unterwegs!</h2>
@@ -253,6 +274,42 @@
 </footer>
 
 <script>
+/* ---- Warten sichtbar machen (Busy-Knopf) ---- */
+function gncBusy(btn, on) {
+  if (!btn) return;
+  if (on) {
+    if (btn.classList.contains('is-busy')) return;
+    btn.style.setProperty('--busy-ink', getComputedStyle(btn).color);
+    btn._busyWasDisabled = !!btn.disabled;
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    btn.setAttribute('aria-busy', 'true');
+    var sp = document.createElement('span');
+    sp.className = 'busy-spin'; sp.setAttribute('aria-hidden', 'true');
+    btn.appendChild(sp);
+    btn._busyShownAt = 0;
+    btn._busyT = setTimeout(function () { btn.classList.add('busy-shown'); btn._busyShownAt = Date.now(); }, 150);
+    return;
+  }
+  if (!btn.classList.contains('is-busy')) return;
+  clearTimeout(btn._busyT);
+  var rest = btn._busyShownAt ? Math.max(0, 400 - (Date.now() - btn._busyShownAt)) : 0;
+  setTimeout(function () {
+    btn.classList.remove('is-busy', 'busy-shown');
+    btn.removeAttribute('aria-busy');
+    btn.style.removeProperty('--busy-ink');
+    var sp = btn.querySelector(':scope > .busy-spin'); if (sp) sp.remove();
+    btn.disabled = !!btn._busyWasDisabled;
+  }, rest);
+}
+function gncIsBusy(btn) { return !!(btn && btn.classList.contains('is-busy')); }
+async function withBusy(btn, fn) {
+  if (!btn) return fn();
+  if (gncIsBusy(btn)) return;           // zweiter Tipp waehrend des Wartens: ignorieren
+  gncBusy(btn, true);
+  try { return await fn(); } finally { gncBusy(btn, false); }
+}
+
 const PENDING_KEY = 'gnc_gift_pending_v1';
 let amount = 50;
 
@@ -276,7 +333,16 @@ document.getElementById('customAmt').addEventListener('blur',e=>{
   }
 });
 
-document.getElementById('buyBtn').addEventListener('click', async ()=>{
+const buyBtn=document.getElementById('buyBtn');
+const buyHint=document.getElementById('buyHint');
+// Hinweiszeile unter dem Kauf-Knopf: Fehler rot und als Alert, sonst ruhig
+function setBuyHint(text, isErr){
+  if(isErr){ buyHint.setAttribute('role','alert'); buyHint.style.color='var(--red)'; buyHint.style.opacity='1'; }
+  else { buyHint.removeAttribute('role'); buyHint.style.color=''; buyHint.style.opacity='.75'; }
+  buyHint.textContent=text||'';
+}
+
+buyBtn.addEventListener('click', async ()=>{
   const email=document.getElementById('gcEmail').value.trim();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
     document.getElementById('gcEmail').focus();
@@ -284,8 +350,9 @@ document.getElementById('buyBtn').addEventListener('click', async ()=>{
     setTimeout(()=>document.getElementById('gcEmail').style.borderColor='',1800);
     return;
   }
-  const btn=document.getElementById('buyBtn');
-  btn.disabled=true; btn.textContent='Einen Moment …';
+  const btn=buyBtn;
+  setBuyHint('');
+  gncBusy(btn,true);
   try{
     const res=await fetch('/.netlify/functions/giftcard-checkout',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -305,17 +372,21 @@ document.getElementById('buyBtn').addEventListener('click', async ()=>{
     });
     const d=await res.json().catch(()=>({}));
     if(!res.ok||!d.hosted_checkout_url){
-      alert(d.hint||'Das hat nicht geklappt – bitte versuche es erneut.');
-      btn.disabled=false; btn.innerHTML='Gutschein über <span id="btnAmt">'+amount+' €</span> kaufen';
+      setBuyHint(d.hint||'Das hat nicht geklappt. Bitte versuche es erneut.', true);
+      gncBusy(btn,false);
       return;
     }
     try{ localStorage.setItem(PENDING_KEY, JSON.stringify({checkoutId:d.id, reference:d.reference, email, at:Date.now()})); }catch(e){}
+    setBuyHint('Weiter zu SumUp …');
     window.location.href=d.hosted_checkout_url;
   }catch(e){
-    alert('Netzwerkfehler – bitte versuche es erneut.');
-    btn.disabled=false; btn.innerHTML='Gutschein über <span id="btnAmt">'+amount+' €</span> kaufen';
+    setBuyHint('Netzwerkfehler. Bitte versuche es erneut.', true);
+    gncBusy(btn,false);
   }
 });
+
+// Zurueck von SumUp aus dem Back/Forward-Cache: Knopf wieder bedienbar, Hinweis leeren
+window.addEventListener('pageshow', e => { if (e.persisted) { gncBusy(buyBtn,false); setBuyHint(''); } });
 
 // Rückkehr von SumUp: Status prüfen und passendes Panel zeigen
 (async function(){
@@ -323,24 +394,41 @@ document.getElementById('buyBtn').addEventListener('click', async ()=>{
   if(params.get('payment')!=='return') return;
   let pending=null;
   try{ pending=JSON.parse(localStorage.getItem(PENDING_KEY)||'null'); }catch(e){}
-  document.getElementById('buyView').style.display='none';
+  const buyView=document.getElementById('buyView');
+  const check=document.getElementById('panelCheck');
+  buyView.style.display='none';
   window.history.replaceState({},'', '/gutscheine.html');
   const show=(id)=>{['panelOk','panelWait','panelErr'].forEach(p=>document.getElementById(p).classList.toggle('show',p===id));};
   if(!pending||!pending.checkoutId){ show('panelWait'); return; }
+  // Statt leerer Flaeche sofort das Pruef-Panel; das Ergebnis blendet danach darueber
+  check.classList.add('show');
+  const FADE='opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)';
+  const reveal=(id)=>{
+    const el=id?document.getElementById(id):buyView;
+    el.style.opacity='0';
+    if(id){ show(id); }
+    else { check.classList.remove('show'); buyView.style.display=''; }
+    void el.offsetWidth;
+    el.style.transition=FADE; el.style.opacity='1';
+    if(id){
+      check.style.transition=FADE; check.style.opacity='0';
+      setTimeout(()=>{ check.classList.remove('show'); check.style.transition=''; check.style.opacity=''; },220);
+    }
+  };
   try{
     const r=await fetch('/.netlify/functions/sumup-status?id='+encodeURIComponent(pending.checkoutId));
     const d=await r.json().catch(()=>null);
     const st=d&&d.status?String(d.status).toUpperCase():'';
     if(st==='PAID'){
       document.getElementById('okMail').textContent=pending.email?(' an '+pending.email):'';
-      show('panelOk');
+      reveal('panelOk');
       try{ localStorage.removeItem(PENDING_KEY); }catch(e){}
     } else if(st==='FAILED'||st==='EXPIRED'){
-      show('panelErr');
+      reveal('panelErr');
       try{ localStorage.removeItem(PENDING_KEY); }catch(e){}
     } else if(st==='PENDING'){
       // Ohne Zahlung zurück: Vorgang still stornieren, Kaufformular wieder einblenden (war oben ausgeblendet)
-      document.getElementById('buyView').style.display='';
+      reveal(null);
       try{
         fetch('/.netlify/functions/giftcard-checkout',{
           method:'POST',headers:{'Content-Type':'application/json'},
@@ -349,9 +437,9 @@ document.getElementById('buyBtn').addEventListener('click', async ()=>{
       }catch(e){}
       try{ localStorage.removeItem(PENDING_KEY); }catch(e){}
     } else {
-      show('panelWait'); // Webhook/5-Min-Abgleich stellen den Code serverseitig sicher
+      reveal('panelWait'); // Webhook/5-Min-Abgleich stellen den Code serverseitig sicher
     }
-  }catch(e){ show('panelWait'); }
+  }catch(e){ reveal('panelWait'); }
 })();
 </script>
 </body>

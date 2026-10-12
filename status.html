@@ -24,7 +24,7 @@
   .eta .lbl{font-size:.72rem;color:#8F8471;}
   .tl{position:relative;padding-left:28px;}
   .tl .line{position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:#2E2820;border-radius:2px;}
-  .tl .fill{position:absolute;left:7px;top:8px;width:2px;background:linear-gradient(180deg,#CC4715,#FF7A3D);border-radius:2px;transition:height .6s ease;}
+  .tl .fill{position:absolute;left:7px;top:8px;width:2px;background:linear-gradient(180deg,#CC4715,#FF7A3D);border-radius:2px;transition:height 450ms cubic-bezier(0.16,1,0.3,1);}
   .step{position:relative;padding-bottom:1.15rem;}
   .step:last-child{padding-bottom:0;}
   .dot{position:absolute;left:-28px;top:2px;width:16px;height:16px;border-radius:50%;background:#14110D;border:2px solid #3a342b;}
@@ -52,9 +52,45 @@
 
   /* ============ DESIGN PASS v2 · ui-ux-pro-max ============ */
   .btn{transition:transform .2s cubic-bezier(0.34,1.56,0.64,1),box-shadow .2s cubic-bezier(0.16,1,0.3,1),filter .2s ease;will-change:transform}
-  .btn:not([disabled]):hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(232,90,36,.34)}
+  @media (hover: hover) and (pointer: fine){ .btn:not([disabled]):hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(232,90,36,.34)} }
   .btn:not([disabled]):active{transform:scale(.97)}
   a:focus-visible,button:focus-visible,.btn:focus-visible,[tabindex]:focus-visible{outline:3px solid #FF7A3D;outline-offset:3px;border-radius:10px}
+
+  /* ============ WARTEN: Busy-Knopf, Skelett, Aktualisieren ohne Neuaufbau ============ */
+  @keyframes gncSpin { to { transform: rotate(360deg); } }
+  @keyframes gncBreath { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
+  .is-busy { position: relative; cursor: progress !important; color: transparent !important; opacity: 1 !important; }
+  .is-busy > :not(.busy-spin) { visibility: hidden; }
+  .busy-spin { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; border: 2px solid var(--busy-ink, currentColor); border-right-color: transparent; opacity: 0; animation: gncSpin .8s linear infinite; transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .is-busy.busy-shown .busy-spin { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .busy-spin { animation: gncBreath 1.2s ease-in-out infinite; border-right-color: var(--busy-ink, currentColor); } }
+  /* Skelett beim ersten Laden, in Endgroesse */
+  .skel { background: rgba(255,255,255,.06); border-radius: 8px; }
+  @media (prefers-reduced-motion: no-preference) { .skel { background: linear-gradient(90deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,.11) 50%, rgba(255,255,255,.05) 100%); background-size: 260% 100%; animation: shimmer 1.4s linear infinite; } }
+  @keyframes shimmer { from { background-position: 130% 0; } to { background-position: -130% 0; } }
+  .skel-row{display:flex;align-items:center;gap:10px;margin-bottom:1.15rem;}
+  .skel-row:last-child{margin-bottom:0;}
+  .skel-dot{flex:none;width:18px;height:18px;border-radius:50%;}
+  .skel-bar{width:60%;height:14px;}
+  .skel-card{height:120px;border-radius:16px;margin-bottom:.9rem;}
+  .visually-hidden{position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  /* Verbindungshinweis: leer ohne Hoehe, bleibt aber als Live-Region im Baum */
+  .conn{margin:0 0 .9rem;padding:.6rem .85rem;font-size:.8rem;line-height:1.45;color:#C9BCA4;background:#17140F;border:1px solid #2E2820;border-radius:12px;text-align:center;}
+  .conn:empty{margin:0;padding:0;border:0;}
+  /* Push-Karte: Knopf mit fester Breite, Hinweiszeile darunter */
+  .pushcard{flex-wrap:wrap;row-gap:0;}
+  .pushcard .btn{flex:none;}
+  .pushcard .pushnote{flex:0 0 100%;font-size:.74rem;color:#FF7A3D;}
+  .pushcard .pushnote:not(:empty){margin-top:.55rem;}
+  /* Neuer Schritt: Punkt kurz anheben */
+  .dot{transition:transform 220ms cubic-bezier(0.16,1,0.3,1);}
+  .dot.lift{transform:scale(1.15);transition:none;}
+  @media (prefers-reduced-motion: reduce){
+    .step.now .dot{animation:none}
+    .tl .fill{transition:none}
+    .dot,.dot.lift{transform:none;transition:none}
+    .btn{transform:none !important}
+  }
 </style>
 </head>
 <body>
@@ -63,7 +99,18 @@
     <a class="brand" href="/">GRILL'N CHILL</a>
     <span class="refpill" id="refPill">…</span>
   </header>
-  <div id="app"><p class="empty" id="loadingTxt">Status wird geladen …</p></div>
+  <p class="conn" id="connMsg" aria-live="polite"></p>
+  <div id="app" aria-busy="true">
+    <p class="visually-hidden" id="loadingTxt">Status wird geladen …</p>
+    <div class="card" aria-hidden="true">
+      <div class="skel-row"><span class="skel skel-dot"></span><span class="skel skel-bar"></span></div>
+      <div class="skel-row"><span class="skel skel-dot"></span><span class="skel skel-bar"></span></div>
+      <div class="skel-row"><span class="skel skel-dot"></span><span class="skel skel-bar"></span></div>
+      <div class="skel-row"><span class="skel skel-dot"></span><span class="skel skel-bar"></span></div>
+    </div>
+    <div class="skel skel-card" aria-hidden="true"></div>
+  </div>
+  <p class="visually-hidden" aria-live="polite" id="stLive"></p>
   <footer id="footTxt">Diese Seite aktualisiert sich automatisch.</footer>
 </div>
 <script>
@@ -80,8 +127,10 @@ var STR = {
     planPickup: 'Geplante Abholung', planDelivery: 'Geplante Lieferung',
     push: 'Sag dir Bescheid, sobald es weitergeht – direkt aufs Handy.',
     pushOn: 'Alles klar – wir melden uns, sobald sich der Status ändert.',
-    enable: 'Aktivieren', busy: 'Moment …', total: 'Gesamt', call: 'Anrufen', truck: 'Zum Truck',
+    enable: 'Aktivieren', total: 'Gesamt', call: 'Anrufen', truck: 'Zum Truck',
     auto: 'Diese Seite aktualisiert sich automatisch.', clock: ' Uhr',
+    offline: 'Verbindung gerade nicht möglich. Wir versuchen es weiter.',
+    pushBlocked: 'Mitteilungen sind in den Einstellungen blockiert.',
     steps: {
       pickup: [
         { id: 'confirmed', t: 'Bestellung bestätigt' },
@@ -103,8 +152,10 @@ var STR = {
     planPickup: 'Scheduled pickup', planDelivery: 'Scheduled delivery',
     push: 'Get notified the moment things move on – right on your phone.',
     pushOn: 'All set – we will let you know when the status changes.',
-    enable: 'Enable', busy: 'One sec …', total: 'Total', call: 'Call us', truck: 'Find the truck',
+    enable: 'Enable', total: 'Total', call: 'Call us', truck: 'Find the truck',
     auto: 'This page refreshes automatically.', clock: '',
+    offline: "Can't connect right now. We'll keep trying.",
+    pushBlocked: 'Notifications are blocked in your settings.',
     steps: {
       pickup: [
         { id: 'confirmed', t: 'Order confirmed' },
@@ -126,8 +177,10 @@ var STR = {
     planPickup: 'Planlanan teslim alma', planDelivery: 'Planlanan teslimat',
     push: 'Sipariş ilerlediğinde haber verelim – doğrudan telefonuna.',
     pushOn: 'Tamamdır – durum değişince haber vereceğiz.',
-    enable: 'Aç', busy: 'Bir saniye …', total: 'Toplam', call: 'Ara', truck: 'Trucka git',
+    enable: 'Aç', total: 'Toplam', call: 'Ara', truck: 'Trucka git',
     auto: 'Bu sayfa otomatik olarak yenilenir.', clock: '',
+    offline: 'Şu an bağlantı kurulamıyor. Denemeye devam ediyoruz.',
+    pushBlocked: 'Bildirimler ayarlarında engellenmiş.',
     steps: {
       pickup: [
         { id: 'confirmed', t: 'Sipariş onaylandı' },
@@ -148,6 +201,44 @@ var T = STR[LANG];
 var REF = (location.pathname.split('/s/')[1] || '').split('/')[0].replace(/[^A-Za-z0-9-]/g, '');
 var KEY = new URLSearchParams(location.search).get('k') || '';
 var DATA = null, PUSH_STATE = 'idle';
+var SHOWN = null;      // zuletzt gezeichneter Stand { mode, state }; null = noch nichts gezeichnet
+var CONN_OFF = false;  // Verbindungshinweis sichtbar
+
+/* ---- Warten sichtbar machen (Busy-Knopf) ---- */
+function gncBusy(btn, on) {
+  if (!btn) return;
+  if (on) {
+    if (btn.classList.contains('is-busy')) return;
+    btn.style.setProperty('--busy-ink', getComputedStyle(btn).color);
+    btn._busyWasDisabled = !!btn.disabled;
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    btn.setAttribute('aria-busy', 'true');
+    var sp = document.createElement('span');
+    sp.className = 'busy-spin'; sp.setAttribute('aria-hidden', 'true');
+    btn.appendChild(sp);
+    btn._busyShownAt = 0;
+    btn._busyT = setTimeout(function () { btn.classList.add('busy-shown'); btn._busyShownAt = Date.now(); }, 150);
+    return;
+  }
+  if (!btn.classList.contains('is-busy')) return;
+  clearTimeout(btn._busyT);
+  var rest = btn._busyShownAt ? Math.max(0, 400 - (Date.now() - btn._busyShownAt)) : 0;
+  setTimeout(function () {
+    btn.classList.remove('is-busy', 'busy-shown');
+    btn.removeAttribute('aria-busy');
+    btn.style.removeProperty('--busy-ink');
+    var sp = btn.querySelector(':scope > .busy-spin'); if (sp) sp.remove();
+    btn.disabled = !!btn._busyWasDisabled;
+  }, rest);
+}
+function gncIsBusy(btn) { return !!(btn && btn.classList.contains('is-busy')); }
+async function withBusy(btn, fn) {
+  if (!btn) return fn();
+  if (gncIsBusy(btn)) return;           // zweiter Tipp waehrend des Wartens: ignorieren
+  gncBusy(btn, true);
+  try { return await fn(); } finally { gncBusy(btn, false); }
+}
 
 
 function euro(x) { return (typeof x === 'number') ? x.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }) : ''; }
@@ -156,39 +247,64 @@ function hhmm(iso) {
   try { return new Date(iso).toLocaleTimeString(LANG === 'tr' ? 'tr-TR' : (LANG === 'en' ? 'en-GB' : 'de-DE'), { hour: '2-digit', minute: '2-digit' }) + T.clock; } catch (e) { return ''; }
 }
 
-function render() {
-  var el = document.getElementById('app');
-  if (!DATA) { el.innerHTML = '<p class="empty">' + T.notfound + '</p>'; return; }
-  document.getElementById('refPill').textContent = '#' + DATA.reference;
-  var steps = T.steps[DATA.mode] || T.steps.pickup;
+/* ---- Zeichnen: einmal komplett, danach nur geaenderte Teile ---- */
+function stepsFor() { return T.steps[DATA.mode] || T.steps.pickup; }
+function stepIndex(steps) {
   var idx = 0;
   for (var i = 0; i < steps.length; i++) { if (steps[i].id === DATA.state) idx = i; }
+  return idx;
+}
+function stepCls(j, idx, isFinal) { return j < idx ? 'done' : (j === idx ? (isFinal ? 'done' : 'now') : ''); }
+function stepSub(st, j, idx, isFinal) {
+  var time = DATA.times && DATA.times[st.id] ? hhmm(DATA.times[st.id]) : '';
+  if (time) return time;
+  if (j === idx && !isFinal && st.s) return st.s;
+  return '';
+}
+function fillPctFor(steps, idx) { return steps.length > 1 ? Math.round(idx / (steps.length - 1) * 100) : 0; }
+
+function pushHtml(isFinal) {
+  if (isFinal) return '';
+  if (PUSH_STATE === 'on') return '<div class="card pushcard"><p>' + T.pushOn + '</p></div>';
+  if (!('serviceWorker' in navigator && 'PushManager' in window)) return '';
+  return '<div class="card pushcard"><p id="pushTxt" aria-live="polite">' + T.push + '</p>'
+    + '<button class="btn" id="pushBtn" type="button">' + T.enable + '</button>'
+    + '<p class="pushnote" id="pushNote" aria-live="polite"></p></div>';
+}
+function bindPush() {
+  var pb = document.getElementById('pushBtn');
+  if (pb) pb.addEventListener('click', enablePush);
+}
+
+function renderNotFound() {
+  var el = document.getElementById('app');
+  el.innerHTML = '<p class="empty">' + T.notfound + '</p>';
+  el.setAttribute('aria-busy', 'false');
+  SHOWN = null;
+}
+
+function renderFull() {
+  var el = document.getElementById('app');
+  var steps = stepsFor();
+  var idx = stepIndex(steps);
   var isFinal = idx === steps.length - 1;
-  var fillPct = steps.length > 1 ? Math.round(idx / (steps.length - 1) * 100) : 0;
+  var fillPct = fillPctFor(steps, idx);
 
   var html = '';
   if (DATA.isPreorder && DATA.scheduledFor) {
     html += '<div class="card eta"><div><div class="lbl">' + (DATA.mode === 'delivery' ? T.planDelivery : T.planPickup) + '</div><div class="big">' + DATA.scheduledFor.replace(/</g, '&lt;') + '</div></div></div>';
   }
-  html += '<div class="card"><div class="tl"><span class="line"></span><span class="fill" style="height:' + fillPct + '%"></span>';
+  html += '<div class="card" id="tlCard"><div class="tl"><span class="line"></span><span class="fill" style="height:' + fillPct + '%"></span>';
   for (var j = 0; j < steps.length; j++) {
     var st = steps[j];
-    var cls = j < idx ? 'done' : (j === idx ? (isFinal ? 'done' : 'now') : '');
-    var time = DATA.times && DATA.times[st.id] ? hhmm(DATA.times[st.id]) : '';
-    html += '<div class="step ' + cls + '"><span class="dot"></span><div class="t">' + st.t + '</div>';
-    if (time) html += '<div class="s">' + time + '</div>';
-    else if (j === idx && !isFinal && st.s) html += '<div class="s">' + st.s + '</div>';
+    var sub = stepSub(st, j, idx, isFinal);
+    html += '<div class="step ' + stepCls(j, idx, isFinal) + '"><span class="dot"></span><div class="t">' + st.t + '</div>';
+    if (sub) html += '<div class="s">' + sub + '</div>';
     html += '</div>';
   }
   html += '</div></div>';
 
-  if (!isFinal && 'serviceWorker' in navigator && 'PushManager' in window && PUSH_STATE !== 'on') {
-    html += '<div class="card pushcard"><p>' + T.push + '</p>'
-      + '<button class="btn" id="pushBtn"' + (PUSH_STATE === 'busy' ? ' disabled' : '') + '>'
-      + (PUSH_STATE === 'busy' ? T.busy : T.enable) + '</button></div>';
-  } else if (PUSH_STATE === 'on' && !isFinal) {
-    html += '<div class="card pushcard"><p>' + T.pushOn + '</p></div>';
-  }
+  html += pushHtml(isFinal);
 
   if (DATA.items && DATA.items.length) {
     html += '<div class="card items">';
@@ -205,8 +321,56 @@ function render() {
     + '<a href="https://maps.google.com/maps?cid=2860232172322750720" target="_blank" rel="noopener">' + T.truck + '</a>'
     + '</div>';
   el.innerHTML = html;
-  var pb = document.getElementById('pushBtn');
-  if (pb) pb.addEventListener('click', enablePush);
+  el.setAttribute('aria-busy', 'false');
+  bindPush();
+  SHOWN = { mode: DATA.mode, state: DATA.state };
+}
+
+// Polling: nur Schritte, Balken, Zeiten und Push-Karte anfassen, damit Fokus und Puls bleiben
+function updateSteps() {
+  var el = document.getElementById('app');
+  var steps = stepsFor();
+  var nodes = el.querySelectorAll('.tl .step');
+  if (nodes.length !== steps.length) { renderFull(); return; }
+  var idx = stepIndex(steps);
+  var isFinal = idx === steps.length - 1;
+  for (var j = 0; j < steps.length; j++) {
+    var node = nodes[j];
+    var cls = stepCls(j, idx, isFinal);
+    node.className = 'step' + (cls ? ' ' + cls : '');
+    var sub = stepSub(steps[j], j, idx, isFinal);
+    var s = node.querySelector('.s');
+    if (sub) {
+      if (!s) { s = document.createElement('div'); s.className = 's'; node.appendChild(s); }
+      s.textContent = sub;
+    } else if (s) { s.remove(); }
+  }
+  var fill = el.querySelector('.tl .fill');
+  if (fill) fill.style.height = fillPctFor(steps, idx) + '%';
+  var dot = nodes[idx].querySelector('.dot');
+  if (dot) { dot.classList.add('lift'); void dot.offsetWidth; dot.classList.remove('lift'); }
+
+  var pc = el.querySelector('.pushcard');
+  if (isFinal && pc) { pc.remove(); }
+  else if (!isFinal && !pc) {
+    var ph = pushHtml(false), tc = document.getElementById('tlCard');
+    if (ph && tc) { tc.insertAdjacentHTML('afterend', ph); bindPush(); }
+  }
+
+  document.getElementById('stLive').textContent = steps[idx].t;
+  SHOWN.state = DATA.state;
+}
+
+function paint() {
+  document.getElementById('refPill').textContent = '#' + DATA.reference;
+  if (!SHOWN || SHOWN.mode !== DATA.mode) renderFull();
+  else if (SHOWN.state !== DATA.state) updateSteps();
+}
+
+function setConn(off) {
+  if (off === CONN_OFF) return;
+  CONN_OFF = off;
+  document.getElementById('connMsg').textContent = off ? T.offline : '';
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -218,29 +382,54 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 function enablePush() {
-  PUSH_STATE = 'busy'; render();
-  navigator.serviceWorker.register('/sw.js').then(function (reg) {
-    return fetch('/.netlify/functions/push-subscribe').then(function (r) { return r.json(); }).then(function (kd) {
-      if (!kd.publicKey) throw new Error('no key');
-      return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(kd.publicKey) });
-    });
-  }).then(function (sub) {
-    return fetch('/.netlify/functions/order-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'subscribe', reference: REF, k: KEY, subscription: sub, lang: LANG }),
-    });
-  }).then(function (r) {
-    PUSH_STATE = r.ok ? 'on' : 'idle'; render();
-  }).catch(function () { PUSH_STATE = 'idle'; render(); });
+  var btn = document.getElementById('pushBtn');
+  var note = document.getElementById('pushNote');
+  if (note) note.textContent = '';
+  withBusy(btn, function () {
+    return navigator.serviceWorker.register('/sw.js').then(function (reg) {
+      return fetch('/.netlify/functions/push-subscribe').then(function (r) { return r.json(); }).then(function (kd) {
+        if (!kd.publicKey) throw new Error('no key');
+        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(kd.publicKey) });
+      });
+    }).then(function (sub) {
+      return fetch('/.netlify/functions/order-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'subscribe', reference: REF, k: KEY, subscription: sub, lang: LANG }),
+      });
+    }).then(function (r) {
+      PUSH_STATE = r.ok ? 'on' : 'idle';
+    }).catch(function () { PUSH_STATE = 'idle'; });
+  }).then(function () {
+    if (PUSH_STATE === 'on') {
+      // Karte in place umstellen: Text tauschen (Live-Region), Knopf und Hinweis entfernen
+      var pb = document.getElementById('pushBtn'), pn = document.getElementById('pushNote'), pt = document.getElementById('pushTxt');
+      if (pb) pb.remove();
+      if (pn) pn.remove();
+      if (pt) pt.textContent = T.pushOn;
+    } else if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+      var n = document.getElementById('pushNote');
+      if (n) n.textContent = T.pushBlocked;
+    }
+  });
 }
 
 function load() {
-  if (!REF || !KEY) { DATA = null; render(); return; }
+  if (!REF || !KEY) { DATA = null; renderNotFound(); return; }
   fetch('/.netlify/functions/order-status?ref=' + encodeURIComponent(REF) + '&k=' + encodeURIComponent(KEY))
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (d) { if (d) { DATA = d; } render(); }) // transienter Fehler (null) beim Polling: zuletzt geladene Daten behalten statt "nicht gefunden"
-    .catch(function () { render(); });
+    .then(function (r) {
+      if (r.ok) return r.json();
+      // 4xx (unbekannt, Link ungueltig): wie bisher "nicht gefunden"; 408, 429 und 5xx gelten als voruebergehend
+      if (r.status >= 400 && r.status < 500 && r.status !== 408 && r.status !== 429) return null;
+      throw new Error('HTTP ' + r.status);
+    })
+    .then(function (d) {
+      setConn(false);
+      if (d) { DATA = d; paint(); }
+      else if (!DATA) renderNotFound(); // beim Polling: zuletzt geladene Daten behalten statt "nicht gefunden"
+    }, function () {
+      setConn(true); // Netzwerk oder Server: Hinweis zeigen, Polling laeuft weiter
+    });
 }
 
 (function initStatic() {

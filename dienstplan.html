@@ -144,6 +144,29 @@
   .leer{color:var(--faint);font-size:.8rem;text-align:center;padding:.3rem 0}
   .hinweis-lesen{background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);
     color:var(--dim);font-size:.78rem;padding:.5rem .8rem;margin:.6rem 0}
+
+  /* ============ WARTEN: Busy-Knopf, Spinner, Skelett (wie im Admin-Tool) ============ */
+  :root{--ease-out:cubic-bezier(0.23,1,0.32,1)}
+  @keyframes gncSpin{to{transform:rotate(360deg)}}
+  @keyframes gncBreath{0%,100%{opacity:.4}50%{opacity:1}}
+  .is-busy{position:relative;cursor:progress!important;color:transparent!important;opacity:1!important}
+  .is-busy>:not(.busy-spin){visibility:hidden}
+  .busy-spin{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;
+    border:2px solid var(--busy-ink,currentColor);border-right-color:transparent;opacity:0;pointer-events:none;
+    animation:gncSpin .8s linear infinite;transition:opacity 150ms var(--ease-out)}
+  .is-busy.busy-shown .busy-spin{opacity:1}
+  .skel{background:var(--card2);border-radius:var(--r-sm)}
+  @media (prefers-reduced-motion: no-preference){
+    .skel{background:linear-gradient(90deg,var(--card2) 0%,var(--border) 50%,var(--card2) 100%);background-size:260% 100%;animation:shimmer 1.4s linear infinite}
+  }
+  @keyframes shimmer{from{background-position:130% 0}to{background-position:-130% 0}}
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .toast.err{background:var(--red);border-color:var(--red);color:#fff}
+  .wnav .wtitel .speichert{color:var(--ember-hi);font-weight:700}
+  @media (prefers-reduced-motion: reduce){
+    .busy-spin{animation:gncBreath 1.2s ease-in-out infinite!important;border-right-color:var(--busy-ink,currentColor)}
+    .skel{animation:none!important}
+  }
 </style>
 </head>
 <body>
@@ -162,14 +185,14 @@
     <p style="color:var(--dim);font-size:.85rem;margin:.4rem 0 0;">Admin-Passwort zum Planen – Team-Passwort zum Ansehen.</p>
     <input type="password" id="pw" autocomplete="current-password" placeholder="Passwort">
     <label><input type="checkbox" id="pwStay" checked> Angemeldet bleiben</label>
-    <button onclick="anmelden()">Anmelden</button>
+    <button id="loginBtn" onclick="anmelden(this)">Anmelden</button>
     <p class="fehler" id="loginFehler" role="alert"></p>
   </section>
 
   <section id="plan" hidden>
     <div class="wnav">
       <button onclick="wocheWechseln(-1)" aria-label="Vorherige Woche">‹</button>
-      <div class="wtitel"><b id="wTitel"></b><span id="wDatum"></span></div>
+      <div class="wtitel"><b id="wTitel"></b><span id="wDatum"></span><span class="speichert" id="speichert" aria-live="polite"></span></div>
       <button onclick="wocheWechseln(1)" aria-label="Nächste Woche">›</button>
     </div>
     <button class="heute-btn" id="heuteBtn" onclick="zuHeute()" hidden>Zur aktuellen Woche</button>
@@ -183,7 +206,7 @@
     </div>
 
     <div class="aktionen" id="aktionen" hidden>
-      <button class="a-rand" onclick="vorwocheUebernehmen()">↺ Vorwoche übernehmen</button>
+      <button class="a-rand" onclick="vorwocheUebernehmen(this)">↺ Vorwoche übernehmen</button>
       <button class="a-rand" onclick="teamSheetOeffnen()">👥 Team verwalten</button>
       <button class="a-hell a-breit" onclick="planTeilen()">Plan teilen (WhatsApp)</button>
     </div>
@@ -218,7 +241,7 @@
   <h2 id="teamTitel">Team verwalten</h2>
   <div id="teamListe"></div>
   <button class="plus" onclick="mitarbeiterHinzufuegen()" style="margin-bottom:1rem;">+ Person hinzufügen</button>
-  <button class="ok" onclick="teamSpeichern()">Speichern</button>
+  <button class="ok" onclick="teamSpeichern(this)">Speichern</button>
   <button class="zu" onclick="teamSheetZu()">Abbrechen</button>
 </div>
 
@@ -241,6 +264,46 @@ let montag = wochenMontag(new Date());
 let sheetTag = null;             // Tag, fuer den gerade eine Schicht angelegt wird
 let sheetPid = null;
 let sheetVorherFokus = null;
+let geladeneWoche = null;        // Woche (JJJJ-MM-TT), zu der `schichten` gehoert
+let laedt = false;               // eine Woche laedt gerade: Bearbeiten gesperrt
+let ladeSeq = 0;                 // Zaehler je Anfrage: nur die juengste Antwort rendern
+let speicherKette = Promise.resolve();
+let offeneSaves = 0;
+
+/* ---- Warten sichtbar machen (Busy-Knopf) ---- */
+function gncBusy(btn, on) {
+  if (!btn) return;
+  if (on) {
+    if (btn.classList.contains('is-busy')) return;
+    btn.style.setProperty('--busy-ink', getComputedStyle(btn).color);
+    btn._busyWasDisabled = !!btn.disabled;
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    btn.setAttribute('aria-busy', 'true');
+    var sp = document.createElement('span');
+    sp.className = 'busy-spin'; sp.setAttribute('aria-hidden', 'true');
+    btn.appendChild(sp);
+    btn._busyShownAt = 0;
+    btn._busyT = setTimeout(function () { btn.classList.add('busy-shown'); btn._busyShownAt = Date.now(); }, 150);
+    return;
+  }
+  if (!btn.classList.contains('is-busy')) return;
+  clearTimeout(btn._busyT);
+  var rest = btn._busyShownAt ? Math.max(0, 400 - (Date.now() - btn._busyShownAt)) : 0;
+  setTimeout(function () {
+    btn.classList.remove('is-busy', 'busy-shown');
+    btn.removeAttribute('aria-busy');
+    btn.style.removeProperty('--busy-ink');
+    var sp = btn.querySelector(':scope > .busy-spin'); if (sp) sp.remove();
+    btn.disabled = !!btn._busyWasDisabled;
+  }, rest);
+}
+async function withBusy(btn, fn) {
+  if (!btn) return fn();
+  if (btn.classList.contains('is-busy')) return;   // zweiter Tipp waehrend des Wartens: ignorieren
+  gncBusy(btn, true);
+  try { return await fn(); } finally { gncBusy(btn, false); }
+}
 
 function wochenMontag(d) {
   const x = new Date(d); x.setHours(12,0,0,0);
@@ -263,19 +326,29 @@ function gespeicherteAnmeldung() {
 }
 let anmeldung = gespeicherteAnmeldung();
 
+/* Netzfehler abfangen: vorher brach die Seite ohne jedes Zeichen ab.
+   status 0 = keine Verbindung; der rote Toast ist dann schon gezeigt. */
 async function api(action, extra) {
-  const r = await fetch('/.netlify/functions/dienstplan', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: anmeldung, action, ...(extra || {}) }),
-  });
-  return { status: r.status, d: await r.json().catch(() => ({})) };
+  try {
+    const r = await fetch('/.netlify/functions/dienstplan', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: anmeldung, action, ...(extra || {}) }),
+    });
+    return { status: r.status, d: await r.json().catch(() => ({})) };
+  } catch (e) {
+    toast('Keine Verbindung. Bitte erneut versuchen.', 'err');
+    return { status: 0, d: {} };
+  }
 }
 
-async function anmelden() {
+function anmelden(btn) { return withBusy(btn || $('loginBtn'), anmeldenRun); }
+async function anmeldenRun() {
   const pw = $('pw').value;
   if (!pw) return;
+  $('loginFehler').textContent = '';
   anmeldung = pw;
   const { status, d } = await api('lesen', { woche: iso(montag) });
+  if (status === 0) { anmeldung = null; $('loginFehler').textContent = 'Keine Verbindung. Bitte erneut versuchen.'; return; }
   if (status === 429) { $('loginFehler').textContent = d.hint || 'Zu viele Versuche – bitte kurz warten.'; return; }
   if (!d.ok) { $('loginFehler').textContent = 'Passwort falsch.'; anmeldung = null; return; }
   sessionStorage.setItem(PW_KEY, pw);
@@ -294,13 +367,55 @@ async function anmelden() {
 }
 
 /* ---------- Laden & Rendern ---------- */
+/* Wochenwechsel: Titel sofort, die alten Schichten gedimmt und gesperrt, bis
+   die neue Woche da ist. Bei schnellem Blaettern rendert nur die juengste
+   Antwort; eine spaete Antwort fuer eine andere Woche wird verworfen. Sonst
+   konnten Titel und Schichten auseinanderlaufen und das naechste Speichern
+   die falsche Woche ueberschreiben. */
 async function laden() {
   if (!anmeldung) { $('login').hidden = false; $('plan').hidden = true; return; }
-  const { d } = await api('lesen', { woche: iso(montag) });
-  if (!d.ok) { anmeldung = null; try { sessionStorage.removeItem(PW_KEY); } catch(e) {} $('login').hidden = false; $('plan').hidden = true; return; }
-  zeigePlan(d);
+  const seq = ++ladeSeq;
+  const woche = iso(montag);
+  laedt = true;
+  titelZeichnen();
+  if (geladeneWoche === null) {
+    // Erstes Laden: Platzhalter-Tage statt leerer Seite
+    $('plan').hidden = false;
+    $('tage').innerHTML = '<span class="sr-only">Plan wird geladen …</span>'
+      + '<div class="skel" aria-hidden="true" style="height:72px;margin-bottom:.65rem"></div>'.repeat(7);
+  }
+  planGesperrt(true);
+  const { status, d } = await api('lesen', { woche });
+  if (seq !== ladeSeq) return;
+  laedt = false;
+  planGesperrt(false);
+  if (status === 401) { anmeldung = null; try { sessionStorage.removeItem(PW_KEY); } catch(e) {} $('login').hidden = false; $('plan').hidden = true; return; }
+  if (!d.ok) {
+    // Netzfehler: Toast kam schon aus api(). Sonst Fehler hier melden.
+    if (status) toast(d.hint || 'Plan konnte nicht geladen werden', 'err');
+    if (geladeneWoche === null) {
+      $('tage').innerHTML = '<p class="leer">Plan konnte nicht geladen werden.</p>'
+        + '<button class="plus" onclick="laden()">Erneut versuchen</button>';
+      return;
+    }
+    // Zurueck zu der Woche, deren Schichten noch angezeigt werden: Titel und Plan passen so zusammen.
+    montag = new Date(geladeneWoche + 'T12:00:00');
+    render();
+    return;
+  }
+  zeigePlan(d, woche);
 }
-function zeigePlan(d) {
+/* Waehrend eine Woche laedt: alte Schichten gedimmt und nicht bedienbar. */
+function planGesperrt(on) {
+  ['tage', 'summen', 'aktionen'].forEach(id => {
+    const el = $(id);
+    el.style.opacity = (on && geladeneWoche !== null) ? '.5' : '';
+    el.inert = on;
+  });
+  if (on) $('tage').setAttribute('aria-busy', 'true'); else $('tage').removeAttribute('aria-busy');
+}
+function zeigePlan(d, woche) {
+  geladeneWoche = woche || iso(montag);
   personal = d.personal || [];
   schichten = d.schichten || {};
   istAdmin = d.rolle === 'admin';
@@ -312,13 +427,16 @@ function zeigePlan(d) {
 }
 const person = (pid) => personal.find(p => p.id === pid) || { name: '?', farbe: '#555' };
 
-function render() {
-  // Wochen-Titel
+function titelZeichnen() {
   const ende = new Date(montag); ende.setDate(ende.getDate() + 6);
   const heuteMontag = iso(wochenMontag(new Date())) === iso(montag);
   $('wTitel').textContent = heuteMontag ? 'Diese Woche' : 'KW ' + kalenderwoche(montag);
   $('wDatum').textContent = datumKurz(montag) + ' – ' + datumKurz(ende) + ende.getFullYear();
   $('heuteBtn').hidden = heuteMontag;
+}
+function render() {
+  // Wochen-Titel
+  titelZeichnen();
 
   // Tages-Karten
   const heute = iso(new Date(Date.now() - 0));
@@ -377,6 +495,7 @@ function zuHeute() { montag = wochenMontag(new Date()); laden(); }
 
 /* ---------- Schicht anlegen / entfernen ---------- */
 function schichtSheetOeffnen(tag) {
+  if (laedt) return;   // Woche laedt noch: nichts in die angezeigte alte Woche eintragen
   if (!personal.length) { teamSheetOeffnen(); toast('Leg zuerst dein Team an 👇'); return; }
   sheetTag = tag; sheetPid = personal[0].id;
   sheetVorherFokus = document.activeElement;
@@ -408,24 +527,47 @@ async function schichtSpeichern() {
   await speichern();
 }
 async function schichtWeg(tag, idx) {
+  if (laedt) return;
   (schichten[tag] || []).splice(idx, 1);
   if (schichten[tag] && !schichten[tag].length) delete schichten[tag];
   render();
   await speichern();
 }
-async function speichern() {
-  const { d } = await api('speichern', { woche: iso(montag), schichten });
-  toast(d.ok ? 'Gespeichert ✓' : 'Speichern fehlgeschlagen!');
-  if (!d.ok) laden();   // Serverstand zurueckholen statt stiller Abweichung
+/* Saves laufen nacheinander (Promise-Kette): zwei schnelle Aenderungen
+   konnten sich sonst ueberholen, und der aeltere Stand gewann. Woche und
+   Schichten werden beim Ausloesen festgehalten, damit ein Wochenwechsel
+   dazwischen nichts in die falsche Woche schreibt. */
+function speichern() {
+  const woche = iso(montag), stand = schichten;
+  offeneSaves++; speicherStatus();
+  const lauf = speicherKette.then(async () => {
+    const { status, d } = await api('speichern', { woche, schichten: stand });
+    if (d.ok) { toast('Gespeichert ✓'); return; }
+    if (status) toast(d.hint || 'Speichern fehlgeschlagen', 'err');
+    // Serverstand zurueckholen statt stiller Abweichung (nur wenn nichts mehr nachkommt)
+    if (offeneSaves === 1 && woche === iso(montag) && !laedt) laden();
+  }).finally(() => { offeneSaves--; speicherStatus(); });
+  speicherKette = lauf.catch(() => {});
+  return lauf;
+}
+function speicherStatus() {
+  $('speichert').textContent = offeneSaves ? ' · Speichert …' : '';
 }
 
 /* ---------- Vorwoche uebernehmen ---------- */
-async function vorwocheUebernehmen() {
+function vorwocheUebernehmen(btn) { return withBusy(btn, vorwocheRun); }
+async function vorwocheRun() {
+  if (laedt) return;
   const belegt = Object.keys(schichten).length;
   if (belegt && !confirm('Diese Woche hat schon Einträge – mit der Vorwoche überschreiben?')) return;
+  const ziel = iso(montag);
   const vor = new Date(montag); vor.setDate(vor.getDate() - 7);
-  const { d } = await api('lesen', { woche: iso(vor) });
-  if (!d.ok || !Object.keys(d.schichten || {}).length) { toast('Die Vorwoche ist leer.'); return; }
+  const { status, d } = await api('lesen', { woche: iso(vor) });
+  if (!status) return;   // keine Verbindung, Toast kam schon
+  // Inzwischen andere Woche gewaehlt: nichts in die neue Woche schreiben.
+  if (iso(montag) !== ziel || laedt) return;
+  if (!d.ok) { toast(d.hint || 'Vorwoche konnte nicht geladen werden', 'err'); return; }
+  if (!Object.keys(d.schichten || {}).length) { toast('Die Vorwoche ist leer.'); return; }
   // Tage der Vorwoche auf diese Woche verschieben (gleicher Wochentag)
   schichten = {};
   for (const [tag, liste] of Object.entries(d.schichten)) {
@@ -438,6 +580,7 @@ async function vorwocheUebernehmen() {
 
 /* ---------- Teilen (WhatsApp) ---------- */
 function planTeilen() {
+  if (laedt) return;
   const ende = new Date(montag); ende.setDate(ende.getDate() + 6);
   let text = '📋 Dienstplan ' + datumKurz(montag) + '–' + datumKurz(ende) + '. (Grill\'n Chill)\n';
   for (let i = 0; i < 7; i++) {
@@ -477,21 +620,23 @@ function teamSheetZu() {
   $('teamHg').classList.remove('offen'); $('teamSheet').classList.remove('offen');
   try { if (teamVorherFokus) teamVorherFokus.focus(); } catch(e) {}
 }
-async function teamSpeichern() {
+function teamSpeichern(btn) { return withBusy(btn, teamSpeichernRun); }
+async function teamSpeichernRun() {
   const neu = [...$('teamListe').children].map(z => ({
     id: z.dataset.pid || undefined,
     name: z.querySelector('input[type=text]').value.trim(),
     farbe: z.querySelector('input[type=color]').value,
   })).filter(p => p.name);
-  const { d } = await api('personal', { personal: neu });
+  const { status, d } = await api('personal', { personal: neu });
   if (d.ok) { personal = d.personal; teamSheetZu(); render(); toast('Team gespeichert ✓'); }
-  else toast('Speichern fehlgeschlagen!');
+  else if (status) toast(d.hint || 'Speichern fehlgeschlagen', 'err');
 }
 
 /* ---------- Kleinkram ---------- */
 let toastTimer = null;
-function toast(msg) {
+function toast(msg, art) {
   const t = $('toast'); t.textContent = msg; t.classList.add('an');
+  t.classList.toggle('err', art === 'err');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('an'), 2400);
 }
 document.addEventListener('keydown', (e) => {
