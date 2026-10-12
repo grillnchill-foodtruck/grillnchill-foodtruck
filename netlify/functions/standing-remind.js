@@ -123,6 +123,16 @@ exports.handler = async () => {
       if (!rec) continue;
       geprueft++;
 
+      // Vergangenen Termin auf den naechsten nachziehen (siehe unten, warum
+      // das nicht mehr direkt nach dem Versand passiert).
+      if (!rec.paused && (!rec.nextRun || new Date(rec.nextRun).getTime() <= Date.now())) {
+        const neu = naechsterTermin(Number(rec.weekday), rec.time, rec.skipUntil);
+        if (neu !== rec.nextRun) {
+          rec.nextRun = neu;
+          try { await s.setJSON(b.key, rec); } catch (e) {}
+        }
+      }
+
       // Ohne ausdrückliche Zustimmung wird nichts verschickt.
       if (rec.remind !== true) continue;
       if (rec.paused) continue;
@@ -137,11 +147,13 @@ exports.handler = async () => {
       const ok = await sendeMail(apiKey, sender, senderName, rec.email,
         `Morgen ${tag}: deine Bestellung liegt bereit`, html);
       if (ok) {
-        // WICHTIG: nextRun auf den FOLGETERMIN setzen. Ohne das bleibt der
-        // Termin auf dem vergangenen Datum stehen, der Vergleich mit "morgen"
-        // trifft nie wieder – die Erinnerung kaeme genau einmal und nie mehr.
+        // nextRun bleibt bewusst auf dem Termin von morgen stehen. Frueher
+        // sprang er hier schon auf die Folgewoche - dann setzte "Diese Woche
+        // aussetzen" aus genau dieser Mail (skipUntil = nextRun) die FALSCHE
+        // Woche aus, und der Tagesplan fuer das Team zaehlte den Kunden fuer
+        // morgen mit. Doppelte Mails verhindert lastRemindedFor; nach dem
+        // Termin zieht der Lauf am Folgetag nextRun nach (oben).
         rec.lastRemindedFor = rec.nextRun;
-        rec.nextRun = naechsterTermin(rec.weekday, rec.time, rec.nextRun);
         await s.setJSON(b.key, rec);
         gesendet++;
       }

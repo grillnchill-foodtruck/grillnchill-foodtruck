@@ -9,6 +9,19 @@
  *        → Team setzt Status (alle Rollen); Push an den Kunden, falls abonniert
  *   POST { action:'subscribe', reference, k, subscription }
  *        → Kunde abonniert Push für genau diese Bestellung (am Datensatz gespeichert)
+ *   POST { action:'set', teamToken, reference, state }
+ *        → wie oben, angemeldet über ein gekoppeltes Team-Gerät (lib/team-device.js)
+ *   POST { action:'live', reference, k, token, lang? }   → { ok:true }
+ *        → Live-Activity-Push-Token der App merken (rec.liveTokens, max. 3)
+ *   POST { action:'live_end', reference, k, token }      → { ok:true }
+ *        → diesen Token wieder vergessen
+ *   POST { action:'arrived', reference, k }              → { ok:true, first }
+ *        → Gast meldet "Ich bin da": rec.arrivedAt (nur beim ersten Mal),
+ *          Protokoll und Push an alle Team-Geräte. Nur solange die Bestellung
+ *          nicht abgeholt/geliefert ist (sonst 409 { error:'order_final' }).
+ *
+ * Nach jedem 'set' bekommt jede gemerkte Live Activity ein APNs-Update
+ * (lib/apns.js); die Antwort meldet in "live", wie viele angekommen sind.
  *
  * Der Status-Key ist ableitbar (sha256(ref|STATUS_UPDATE_SECRET), 20 Zeichen) –
  * keine Speicheränderung nötig, nicht erratbar, gilt genau für eine Bestellung.
@@ -22,6 +35,9 @@ const webpush = require('web-push');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { sendeApns } = require('./lib/apns');
+const { pruefeTeamToken } = require('./lib/team-device');
+const { sendeTeamPush } = require('./lib/team-push');
 
 const STATES = ['confirmed', 'preparing', 'ready_for_pickup', 'on_the_way', 'picked_up', 'delivered'];
 const PUSH_TEXT = {
@@ -119,7 +135,76 @@ function publicStatus(rec, ref) {
     items,
     total: typeof o.total === 'number' ? o.total : rec.total || null,
     completed: rec.status === 'completed',
+    arrivedAt: rec.arrivedAt || null,
   };
+}
+
+/* ---------- Live Activity in der iOS-App ----------
+   Die App meldet je Bestellung bis zu drei Push-Tokens (action 'live').
+   Nach jedem Statuswechsel geht an jeden ein APNs-Update, bei abgeholt/
+   geliefert das Ende. Ein Hinweis mit Ton nur bei den drei Momenten, die
+   der Gast mitbekommen soll. */
+const LIVE_TOPIC = 'de.grillnchillfoodtruck.app.push-type.liveactivity';
+const FINAL_STATES = ['picked_up', 'delivered'];
+const LIVE_ALERT_STATES = ['preparing', 'ready_for_pickup', 'on_the_way'];
+
+function liveTokenListe(rec) {
+  return Array.isArray(rec && rec.liveTokens)
+    ? rec.liveTokens.filter(x => x && typeof x.t === 'string' && x.t)
+    : [];
+}
+
+function livePayload(rec, state) {
+  const jetzt = Date.now();
+  const sek = Math.floor(jetzt / 1000);
+  const ende = FINAL_STATES.includes(state);
+  const aps = {
+    timestamp: sek,
+    event: ende ? 'end' : 'update',
+    'content-state': {
+      state,
+      mode: (rec.order && rec.order.mode) === 'delivery' ? 'delivery' : 'pickup',
+      updatedAt: jetzt,
+    },
+  };
+  if (ende) aps['dismissal-date'] = sek + 900;
+  if (LIVE_ALERT_STATES.includes(state)) {
+    const pl = PUSH_TEXT[rec.pushLang] || PUSH_TEXT.de;
+    // Bei Live Activities steht der Ton im alert-Objekt (Apple-Format)
+    aps.alert = {
+      title: pl[state].title,
+      body: pl[state].body,
+      sound: state === 'preparing' ? 'sizzle.caf' : 'default',
+    };
+  }
+  return { aps };
+}
+
+/* An alle gemerkten Tokens senden. Wirft nie.
+   tote = Tokens, die Apple auf beiden Hosts ablehnt (410 oder BadDeviceToken). */
+async function sendeLiveUpdates(rec, state) {
+  const liste = liveTokenListe(rec);
+  if (!liste.length) return { gesendet: 0, tote: [] };
+  try {
+    const payload = livePayload(rec, state);
+    const ergebnisse = await Promise.all(liste.map(x => sendeApns({
+      token: x.t,
+      topic: LIVE_TOPIC,
+      pushType: 'liveactivity',
+      payload,
+      priority: 10,
+    })));
+    let gesendet = 0;
+    const tote = [];
+    ergebnisse.forEach((r, i) => {
+      if (r.ok) gesendet++;
+      else if (r.status === 410 || r.reason === 'BadDeviceToken') tote.push(liste[i].t);
+    });
+    return { gesendet, tote };
+  } catch (e) {
+    console.error('order-status live:', e && e.message);
+    return { gesendet: 0, tote: [] };
+  }
 }
 
 exports.handler = async (event) => {
@@ -159,11 +244,51 @@ exports.handler = async (event) => {
     return json(200, { ok: true });
   }
 
+  if (input.action === 'live' || input.action === 'live_end') {
+    if (input.k !== statusKey(ref)) return json(403, { error: 'forbidden' });
+    const t = String(input.token || '').trim().toLowerCase();
+    if (!/^[0-9a-f]{16,512}$/.test(t)) return json(400, { error: 'bad_token' });
+    let liste = liveTokenListe(rec).filter(x => x.t !== t);
+    if (input.action === 'live') {
+      liste.push({ t, at: new Date().toISOString() });
+      liste = liste.slice(-3);
+      if (input.lang === 'de' || input.lang === 'en' || input.lang === 'tr') rec.pushLang = input.lang;
+    }
+    rec.liveTokens = liste;
+    await s.setJSON(key, rec);
+    return json(200, { ok: true });
+  }
+
+  if (input.action === 'arrived') {
+    if (input.k !== statusKey(ref)) return json(403, { error: 'forbidden' });
+    if (FINAL_STATES.includes(rec.fstate)) return json(409, { error: 'order_final' });
+    if (rec.arrivedAt) return json(200, { ok: true, first: false });
+    rec.arrivedAt = new Date().toISOString();
+    await s.setJSON(key, rec);
+    const vorname = String((rec.order && rec.order.name) || '').trim().split(/\s+/)[0].slice(0, 30);
+    await auditLog({ role: 'gast', name: 'Gast' }, 'Gast angekommen', '#' + ref + (vorname ? ' · ' + vorname : ''));
+    await sendeTeamPush({
+      title: 'Gast ist da',
+      body: '#' + ref.slice(-4) + (vorname ? ' · ' + vorname : ''),
+      url: '/admin.html?tab=orders',
+    });
+    return json(200, { ok: true, first: true });
+  }
+
   if (input.action === 'set') {
     // Team (alle Rollen) – oder interner Aufruf über das Status-Secret (Mail-Links)
     let who = null;
     if (input.secret && input.secret === (process.env.STATUS_UPDATE_SECRET || '__none__')) {
       who = { role: 'system', name: 'Status-Mail-Link' };
+    } else if (input.teamToken) {
+      // Gekoppeltes Team-Geraet (Apple Watch, Widget). Fehlversuche zaehlen
+      // in die Bremse, ein Erfolg setzt sie bewusst nicht zurueck: wer ein
+      // Geraet hat, soll damit nicht die Sperre fuers Passwort-Raten loeschen.
+      const gesperrt = await pruefeSperre(event);
+      if (gesperrt) return gesperrt;
+      const dev = await pruefeTeamToken(input.teamToken);
+      if (dev) who = { role: dev.role, name: dev.name, geraet: dev.device || 'Team-Gerät' };
+      else await meldeErgebnis(event, false);
     } else {
       // Bremse gegen Durchprobieren – nur hier, der Zweig oben laeuft ueber
       // das System-Secret der Status-Mails und darf nicht mitgezaehlt werden.
@@ -180,7 +305,10 @@ exports.handler = async (event) => {
     if (!rec.fstateAt.confirmed) rec.fstateAt.confirmed = rec.completedAt || rec.createdAt || new Date().toISOString();
     rec.fstateAt[state] = new Date().toISOString();
     await s.setJSON(key, rec);
-    await auditLog(who, 'Bestellstatus', '#' + ref + ' → ' + state);
+    await auditLog(who, 'Bestellstatus', '#' + ref + ' → ' + state + (who.geraet ? ' · über ' + who.geraet : ''));
+
+    // Live Activities laufen parallel zu Web-Push und Mail; Ergebnis erst am Ende
+    const liveLauf = sendeLiveUpdates(rec, state);
 
     // Push an den Kunden – nur wenn diese Bestellung abonniert wurde
     let pushed = false;
@@ -225,7 +353,19 @@ exports.handler = async (event) => {
         } catch (e) {}
       }
     }
-    return json(200, { ok: true, state, pushed, mailed });
+    // Live-Activity-Ergebnis einsammeln, tote Tokens am frisch gelesenen
+    // Datensatz austragen (dazwischen kann die App einen neuen gemeldet haben)
+    let live = 0;
+    try {
+      const lr = await liveLauf;
+      live = lr.gesendet;
+      if (lr.tote.length) {
+        const frisch = (await s.get(key, { type: 'json' })) || rec;
+        frisch.liveTokens = liveTokenListe(frisch).filter(x => !lr.tote.includes(x.t));
+        await s.setJSON(key, frisch);
+      }
+    } catch (e) {}
+    return json(200, { ok: true, state, pushed, mailed, live });
   }
 
   return json(400, { error: 'unknown_action' });

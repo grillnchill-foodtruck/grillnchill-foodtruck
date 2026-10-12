@@ -101,10 +101,34 @@ function pruefeDownloadToken(token) {
   } catch (e) { return null; }
 }
 
+/* Stempel wie im Client (index.html): 10 Stempel, je 10 € Umsatz auf dem Weg
+   zu 100 €. Werte aus speisekarte.js, Rueckfall auf die heutigen Zahlen. */
+let SK = null;
+try { SK = require('../../../speisekarte.js'); } catch (e) {}
+const STEMPEL_ZIEL = (SK && SK.LOYALTY_GOAL_EUR) || 100;
+const STEMPEL_ANZAHL = (SK && SK.LOYALTY_STAMPS) || 10;
+function stempelVon(rec) {
+  const cent = Math.round(Math.max(0, Number(rec.spent) || 0) * 100);
+  const proStempelCent = Math.round((STEMPEL_ZIEL / STEMPEL_ANZAHL) * 100);
+  return Math.min(STEMPEL_ANZAHL, Math.floor(cent / proStempelCent));
+}
+
 const LEVEL_NAMES = ['Grill Rookie', 'Bun Boss', 'Patty Pro', 'Sauce Sensei', 'Cheese Melter', 'Flame Rider', 'Ember Elite', 'Grill Guru', 'Street Legende', 'King of Chill'];
 function levelVon(rec) {
   const lv = Math.min(10, 1 + (rec.cards || 0));
   return { level: lv, name: LEVEL_NAMES[lv - 1] };
+}
+
+/* Stempel-Feld. Bei 0 Stempeln ohne changeMessage: dann wurde die Karte
+   gerade voll und beginnt von vorn (oder es ist die erste Karte). Die
+   Nachricht zum neuen Bonus kommt schon ueber das Feld 'boni', ein
+   "Neuer Stempel: 0/10" daneben waere falsch. */
+function stempelFeld(rec) {
+  const n = stempelVon(rec);
+  const feld = { key: 'stempel', label: 'STEMPEL', value: n + '/' + STEMPEL_ANZAHL,
+    textAlignment: 'PKTextAlignmentRight' };
+  if (n > 0) feld.changeMessage = 'Neuer Stempel: %@';
+  return feld;
 }
 
 function passJson(rec, emailHash) {
@@ -133,8 +157,15 @@ function passJson(rec, emailHash) {
       messageEncoding: 'iso-8859-1',
       altText: 'Am Truck vorzeigen',
     }],
+    /* changeMessage: aendert sich der Wert eines Feldes, zeigt iOS den Text als
+       Mitteilung auf dem Sperrbildschirm (%@ = neuer Wert). Die Mitteilung
+       kommt mit dem Pass-Abruf nach dem Push aus lib/wallet-sync.js.
+       Feldgrenze Store-Karte mit QR-Code: 1 primaeres Feld und hoechstens
+       4 sekundaere plus Zusatzfelder zusammen. Belegt: level, next, name,
+       stempel = 4. Ein weiteres Feld waere nicht mehr erlaubt. */
     storeCard: {
-      primaryFields: [{ key: 'boni', label: '5-€-BONI', value: rec.rewards || 0 }],
+      primaryFields: [{ key: 'boni', label: '5-€-BONI', value: rec.rewards || 0,
+        changeMessage: '5-€-Boni auf deiner Karte: %@' }],   // neutral: aendert sich auch beim Einloesen am Truck
       secondaryFields: [
         { key: 'level', label: 'LEVEL', value: level + ' · ' + name },
         { key: 'next', label: 'BIS ZUM NÄCHSTEN BONUS', value: bisBonus.toFixed(2).replace('.', ',') + ' €',
@@ -142,6 +173,7 @@ function passJson(rec, emailHash) {
       ],
       auxiliaryFields: [
         { key: 'name', label: 'KONTO', value: rec.name || rec.email || '' },
+        stempelFeld(rec),
       ],
       backFields: [
         { key: 'info', label: 'So funktioniert es',
@@ -202,5 +234,5 @@ function bauePass(rec, emailHash) {
 
 module.exports = {
   konfiguriert, verfuegbar, laden, bauePass, serialFuer, authTokenFuer,
-  downloadToken, pruefeDownloadToken, passTypeId, teamId,
+  downloadToken, pruefeDownloadToken, passTypeId, teamId, passJson, stempelVon,
 };

@@ -54,6 +54,12 @@
   .icon-btn:active{transform:scale(.94)}
   .icon-btn svg{width:17px;height:17px}
   .icon-btn.spin svg{animation:spin .7s linear infinite}
+  /* Link im Kopf (Cockpit): am Handy nur das Symbol, ab 560px mit Beschriftung */
+  .hdr-link{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;text-decoration:none}
+  .hdr-link span{display:none;font-size:.82rem;font-weight:700}
+  @media (min-width:560px){ .hdr-link{width:auto;padding:0 .8rem} .hdr-link span{display:inline} }
+  /* Anmeldezeile einzeilig halten, sonst waechst der Kopf mit jedem Symbol */
+  .hdr .brand small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @keyframes spin{to{transform:rotate(360deg)}}
 
   /* ============ STATUS-TICKET (Signature) ============ */
@@ -304,6 +310,10 @@
   .bdg.pending{color:var(--amber);border-color:rgba(255,176,32,.5);background:rgba(255,176,32,.08)}
   .bdg.abandoned{color:var(--faint);text-decoration:line-through}
   .bdg.refund{color:#8FB7E8;border-color:rgba(143,183,232,.45)}
+  /* Gast hat "Ich bin da" gemeldet: kraeftige Plakette und ruhige Randmarke.
+     Bewusst ohne Animation, die Karten werden staendig neu gezeichnet. */
+  .bdg.arrived{color:#221A00;background:var(--amber);border-color:var(--amber)}
+  .ord.arrived{border-color:rgba(255,176,32,.7);box-shadow:inset 3px 0 0 var(--amber)}
   .ord-actions{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.7rem;padding-top:.7rem;border-top:1px solid #201B14}
   .abtn{flex:1;min-width:120px;padding:.55rem .6rem;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--cream);font-size:.76rem;font-weight:700;cursor:pointer}
   .abtn:active{transform:scale(.97)}
@@ -353,6 +363,13 @@
   .inv-dl:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
   @media (prefers-reduced-motion:reduce){ .inv-dl{transition:none} .inv-dl:active{transform:none} }
   .team-row:last-child{border-bottom:none}
+  /* Kopplungscode fuer Team-Geraete (Apple Watch, Widget) */
+  .dev-code{margin-top:.9rem;padding:1rem;border:1px dashed var(--border-hi);border-radius:var(--r-md);background:var(--card2);text-align:center}
+  .dev-code-num{font-family:var(--mono);font-size:2.4rem;font-weight:800;letter-spacing:.12em;line-height:1.1;color:var(--cream);font-variant-numeric:tabular-nums}
+  .dev-code-exp{font-family:var(--mono);font-size:.78rem;color:var(--dim);margin:.35rem 0 .55rem}
+  .dev-code.abgelaufen .dev-code-num{color:var(--faint);text-decoration:line-through}
+  .dev-code.abgelaufen .dev-code-exp{color:var(--amber)}
+  #devCard .sec{margin-top:1.2rem}
   .team-row .tn{font-weight:700}
   .team-row small{color:var(--faint);font-family:var(--mono);font-size:.66rem;display:block}
   .tabpane{animation:fadein .22s ease-out}
@@ -476,7 +493,10 @@
       grid-template-columns:minmax(0,1fr) 22rem;gap:1rem;align-items:start}
     #pane-team>.card:nth-child(1){grid-column:1;grid-row:1}
     #pane-team>.card:nth-child(2){grid-column:2;grid-row:1}
-    #pane-team>.card:nth-child(3){grid-column:1;grid-row:2}
+    /* Geraete koppeln steht im Markup vor dem Protokoll (am Handy darueber),
+       am Desktop rechts unter "Mitarbeiter anlegen". */
+    #pane-team>#devCard{grid-column:2;grid-row:2}
+    #pane-team>.card:nth-child(4){grid-column:1;grid-row:2}
     #teamList{max-width:46rem}
     /* Im Protokoll wuerde die 560px-Regel Name und Detailtext auseinanderreissen. */
     #auditOut .team-row>div:last-child{display:block;justify-content:flex-start}
@@ -527,6 +547,9 @@
         <div class="display">ADMIN</div>
         <small>Grill'n Chill · Bielefeld</small>
       </div>
+      <a class="icon-btn hdr-link" href="/cockpit.html" aria-label="Cockpit öffnen" title="Cockpit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14l4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg><span>Cockpit</span>
+      </a>
       <a class="icon-btn" href="/dienstplan" aria-label="Dienstplan öffnen" title="Dienstplan" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       </a>
@@ -887,6 +910,22 @@
           </select>
         </div>
         <button class="btn" id="tmAddBtn">Zugang anlegen</button>
+      </div>
+      <div class="card" id="devCard">
+        <h2>Geräte koppeln (Apple Watch und Widget)</h2>
+        <p class="hint" style="margin-bottom:.9rem;">Ein gekoppeltes Gerät sieht die Bestellungen und darf den Bestellstatus setzen, ohne Passwort. Ein Code gilt 10 Minuten und nur einmal.</p>
+        <button class="btn" id="devCodeBtn" type="button">Kopplungscode erzeugen</button>
+        <div class="dev-code hidden" id="devCodeBox">
+          <div class="dev-code-num" id="devCode" aria-live="polite"></div>
+          <div class="dev-code-exp" id="devCodeExp"></div>
+          <p class="hint" style="margin:0 auto;">In der Grill'n Chill App (ab Version 1.2) unter Konto &gt; App-Einstellungen &gt; Team-Gerät koppeln eingeben.</p>
+        </div>
+        <div class="sec"><h3>Gekoppelte Geräte</h3><span class="count" id="devCount"></span></div>
+        <div id="devList"><p class="empty">Geräte werden geladen …</p></div>
+        <div class="sec"><h3>Abzeichen der Kundenkonten</h3></div>
+        <p class="hint" id="statsHint" style="margin-bottom:.7rem;">Neue Bestellungen zählen automatisch. Einmalig lassen sich die Bestellungen der letzten 90 Tage nachtragen, damit Stammgäste ihre Abzeichen gleich sehen. Am besten außerhalb der Öffnungszeiten.</p>
+        <button class="btn-ghost" id="statsBtn" type="button">Abzeichen aus bisherigen Bestellungen aufbauen</button>
+        <p class="hint" id="statsStand" aria-live="polite" style="margin-top:.5rem;"></p>
       </div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;">
@@ -1296,7 +1335,7 @@ function resetPanelState(){
   catSeq++; vSeq++; invSeq++; bakSeq++; auditSeq++; revSeq++;
   ordLoadUi(false); ordStamp(null); revBusy(false);
   ['ordersOut','invList','bakList','vList','vPurchases','cateringOut','statsOut',
-   'teamList','auditOut','scanResult'].forEach(id=>{
+   'teamList','auditOut','scanResult','devList'].forEach(id=>{
     const el=$(id); if(el){ el.innerHTML=''; listBusy(el,false); }
   });
   // Zurueck auf den ersten Reiter, damit niemand auf einem fremden landet.
@@ -1304,6 +1343,7 @@ function resetPanelState(){
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t===ersterTab?'true':'false'));
   document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('hidden', p.id!=='pane-today'));
   try{ stopScan(); }catch(e){}
+  try{ devReset(); }catch(e){}
 }
 function showLogin(){
   $('panelView').classList.add('hidden');
@@ -2055,7 +2095,10 @@ function renderOrders(){
     const items=(o.items||[]).map(it=>
       '<li><span class="q">'+esc2(it.qty)+'×</span><span class="nm">'+esc2(it.name)+'</span><span class="pr">'+euro(it.total)+'</span></li>'
     ).join('');
+    // "Gast ist da": nur solange die Bestellung nicht abgeholt/geliefert ist
+    const angekommen=!!r.arrivedAt && !['picked_up','delivered'].includes(r.fstate) && !['cancelled','refunded'].includes(r.status);
     const badges=[
+      angekommen ? '<span class="bdg arrived">Gast ist da · '+esc2(ordTime(r.arrivedAt).t)+'</span>' : '',
       o.mode==='delivery' ? '<span class="bdg delivery">Lieferung</span>' : '<span class="bdg">Abholung</span>',
       o.isPreorder||o.scheduledFor ? '<span class="bdg pre">Vorbestellung</span>' : '',
       o.payment==='sumup' ? '<span class="bdg online">Online bezahlt</span>' : '<span class="bdg">Bar/EC vor Ort</span>',
@@ -2076,7 +2119,7 @@ function renderOrders(){
       (o.deliveryFee>0)?('Liefergebühr: <b>'+euro(o.deliveryFee)+'</b>'):'',
       (o.tip>0)?('Trinkgeld: <b>'+euro(o.tip)+'</b>'):'',
     ].filter(Boolean).join(' · ');
-    return '<div class="ord" data-ref="'+esc2(r.reference)+'"'+(PENDING.has(r.reference)?' aria-busy="true"':'')+'>'
+    return '<div class="ord'+(angekommen?' arrived':'')+'" data-ref="'+esc2(r.reference)+'"'+(PENDING.has(r.reference)?' aria-busy="true"':'')+'>'
       +'<div class="ord-head" data-toggle>'
       +'<div class="ord-when">'+when.d+'<br>'+when.t+'</div>'
       +'<div class="ord-main"><div class="ord-name">'+esc2(o.name||'–')+'</div>'
@@ -3014,6 +3057,8 @@ async function loadTeam(){
   const adminOpt=document.querySelector('#tmRole option[value="admin"]');
   if(adminOpt) adminOpt.hidden = currentRole!=='superadmin';
   loadAudit();
+  loadDevices();
+  statsStatus();
   let r;
   try{ r=await teamApi({action:'list'}); }catch(e){ r={ok:false,d:{}}; }
   teamLoaded=true;
@@ -3099,6 +3144,164 @@ $('tmAddBtn').addEventListener('click',async()=>{
     ()=>{ toast(name+' angelegt','ok'); $('tmName').value=''; $('tmPw').value=''; loadTeam(); },
     r=>r.d.hint||r.d.error||'Anlegen fehlgeschlagen');
 });
+
+/* ---------------- Team-Geräte koppeln (Apple Watch, Widget) ----------------
+   Server: netlify/functions/team-device.js. Der Code gilt 10 Minuten und nur
+   einmal. Solange er angezeigt wird, schaut die Liste alle 8 s nach, ob ein
+   Gerät dazugekommen ist, und blendet den verbrauchten Code dann aus. */
+let devSeq=0, devUhr=null, devPoll=null, devAnzahl=-1;
+async function devApi(payload){
+  const res=await fetch('/.netlify/functions/team-device',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:currentPw,...payload})
+  });
+  const d=await res.json().catch(()=>({}));
+  return {ok:res.ok,status:res.status,res,d};
+}
+function devFehler(r, sonst){
+  if(r && sperreGemeldet(r.res)) return;
+  if(r && r.status===401) toast('Anmeldung abgelaufen. Bitte neu anmelden.','err');
+  else if(r && r.status===403) toast('Nur Admins können Geräte koppeln.','err');
+  else toast(sonst,'err');
+}
+function devCodeStopp(){
+  clearInterval(devUhr); devUhr=null;
+  clearInterval(devPoll); devPoll=null;
+}
+function devReset(){
+  devCodeStopp(); devSeq++; devAnzahl=-1;
+  const box=$('devCodeBox');
+  if(box){ box.classList.add('hidden'); box.classList.remove('abgelaufen'); }
+  if($('devCode')) $('devCode').textContent='';
+  if($('devCodeExp')) $('devCodeExp').textContent='';
+  if($('devCount')) $('devCount').textContent='';
+}
+function devCodeZeigen(code, expiresAt){
+  devCodeStopp();
+  const box=$('devCodeBox');
+  const c=String(code);
+  box.classList.remove('hidden','abgelaufen');
+  $('devCode').textContent=c.slice(0,3)+' '+c.slice(3);
+  const ende=new Date(expiresAt).getTime()||(Date.now()+10*60*1000);
+  const tick=()=>{
+    const rest=Math.max(0,Math.round((ende-Date.now())/1000));
+    if(!rest){
+      devCodeStopp();
+      box.classList.add('abgelaufen');
+      $('devCodeExp').textContent='Abgelaufen. Bitte einen neuen Code erzeugen.';
+      return;
+    }
+    $('devCodeExp').textContent='Gültig noch '+Math.floor(rest/60)+':'+String(rest%60).padStart(2,'0')+' Min';
+  };
+  tick();
+  devUhr=setInterval(tick,1000);
+  devPoll=setInterval(()=>{
+    if(document.hidden || $('pane-team').classList.contains('hidden')) return;
+    loadDevices(true);
+  },8000);
+}
+function devZeit(iso){
+  if(!iso) return 'nie';
+  const w=ordTime(iso);
+  return w.d+' '+w.t;
+}
+async function loadDevices(silent){
+  const seq=++devSeq;
+  const el=$('devList');
+  if(!silent) listBusy(el,true);
+  let r=null;
+  try{ r=await devApi({action:'list'}); }catch(e){ r=null; }
+  if(seq!==devSeq) return;
+  listBusy(el,false);
+  if(!r || !r.ok){
+    if(silent) return;
+    if(r && sperreGemeldet(r.res,'devList')) return;
+    if(el.querySelector('.team-row')) toast('Geräte konnten nicht geladen werden','err');
+    else el.innerHTML='<p class="empty" style="color:var(--red);">Geräte konnten nicht geladen werden.</p>';
+    return;
+  }
+  const list=r.d.devices||[];
+  // Neues Gerät, während ein Code läuft: der Code ist verbraucht
+  if(devUhr && devAnzahl>=0 && list.length>devAnzahl){
+    devCodeStopp();
+    $('devCodeBox').classList.add('hidden');
+    toast('Gerät gekoppelt: '+(list[0].device||'Gerät'),'ok');
+  }
+  devAnzahl=list.length;
+  $('devCount').textContent=list.length?String(list.length):'';
+  el.innerHTML=list.length
+    ? list.map(dv=>'<div class="team-row"><div><span class="tn">'+esc2(dv.device||'Gerät')+'</span>'
+        +'<small>'+esc2(dv.name||'')+' · zuletzt aktiv '+esc2(devZeit(dv.lastSeen))+'</small></div>'
+        +'<div style="display:flex;gap:.4rem;flex-wrap:wrap;">'
+        +'<button class="btn-ghost" data-dev-revoke="'+esc2(dv.id)+'" data-dev-label="'+esc2(dv.device||'Gerät')+'">Entkoppeln</button>'
+        +'</div></div>').join('')
+    : '<p class="empty">Noch kein Gerät gekoppelt.</p>';
+}
+$('devCodeBtn').addEventListener('click',()=>withBusy($('devCodeBtn'),async()=>{
+  let r;
+  try{ r=await devApi({action:'create'}); }
+  catch(e){ toast('Netzwerkfehler. Bitte erneut versuchen.','err'); return; }
+  if(!r.ok || !r.d.code){ devFehler(r,'Code konnte nicht erzeugt werden'); return; }
+  if(devAnzahl<0) await loadDevices(true);
+  devCodeZeigen(r.d.code, r.d.expiresAt);
+}));
+document.addEventListener('click',async(e)=>{
+  const b=e.target.closest('[data-dev-revoke]');
+  if(!b) return;
+  const label=b.dataset.devLabel||'Gerät';
+  if(!confirm('„'+label+'" entkoppeln?\n\nDas Gerät verliert sofort den Zugriff auf Bestellungen und Bestellstatus. Für einen neuen Zugang braucht es wieder einen Kopplungscode.')) return;
+  await withBusy(b, async()=>{
+    let r;
+    try{ r=await devApi({action:'revoke',id:b.dataset.devRevoke}); }
+    catch(err){ toast('Netzwerkfehler. Bitte erneut versuchen.','err'); return; }
+    if(r.ok || r.status===404){
+      toast(r.ok?'Gerät entkoppelt':'Gerät war schon entkoppelt','ok');
+      await loadDevices();
+    }
+    else devFehler(r,'Entkoppeln fehlgeschlagen');
+  });
+});
+
+/* ---------------- Abzeichen nachtragen (stats-backfill.js) ----------------
+   Einmaliger Lauf in Abschnitten: so lange mit nextCursor weiterrufen, bis er
+   null ist. Ein zweiter Lauf wuerde aeltere, live gezaehlte Bestellungen
+   verlieren (Archiv haelt 90 Tage); der Server verweigert ihn ohne force. */
+async function statsApi(payload){
+  const res=await fetch('/.netlify/functions/stats-backfill',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:currentPw,...payload})
+  });
+  return {ok:res.ok,status:res.status,res,d:await res.json().catch(()=>({}))};
+}
+function statsStand(t){ if($('statsStand')) $('statsStand').textContent=t||''; }
+async function statsStatus(){
+  try{
+    const r=await statsApi({status:true});
+    const m=r.ok&&r.d.meta;
+    if(m&&m.finishedAt){
+      statsStand('Schon aufgebaut am '+new Date(m.finishedAt).toLocaleDateString('de-DE')+': '+(m.customers||0)+' Kunden, '+(m.counted||0)+' Bestellungen.');
+      $('statsBtn').hidden=true;
+    }
+  }catch(e){}
+}
+$('statsBtn').addEventListener('click',()=>withBusy($('statsBtn'),async()=>{
+  if(!confirm('Abzeichen jetzt aus den Bestellungen der letzten 90 Tage aufbauen?\n\nDas geht nur einmal und dauert ein paar Sekunden.')) return;
+  let cursor=null, runden=0;
+  do{
+    let r;
+    try{ r=await statsApi(cursor?{cursor}:{}); }
+    catch(e){ toast('Netzwerkfehler. Bitte erneut versuchen.','err'); return; }
+    if(sperreGemeldet(r.res)) return;
+    if(r.status===409&&r.d.error==='already_done'){ toast('Die Abzeichen wurden schon aufgebaut.','ok'); await statsStatus(); return; }
+    if(r.status===401){ toast('Anmeldung abgelaufen. Bitte neu anmelden.','err'); return; }
+    if(r.status===403){ toast('Nur Admins können das.','err'); return; }
+    if(!r.ok){ toast('Aufbau abgebrochen. Bitte erneut versuchen.','err'); return; }
+    cursor=r.d.nextCursor||null;
+    statsStand(Math.max(0,(r.d.total||0)-(r.d.remaining||0))+' von '+(r.d.total||0)+' Bestellungen geprüft …');
+  }while(cursor && ++runden<200);
+  toast('Abzeichen aufgebaut','ok');
+  await statsStatus();
+}));
 
 /* Neuladen behaelt das Protokoll (gedimmt); ein Fehler ersetzt es nicht,
    solange schon Eintraege da sind. Nur die juengste Antwort zeichnet. */

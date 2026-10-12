@@ -131,6 +131,7 @@ var STR = {
     auto: 'Diese Seite aktualisiert sich automatisch.', clock: ' Uhr',
     offline: 'Verbindung gerade nicht möglich. Wir versuchen es weiter.',
     pushBlocked: 'Mitteilungen sind in den Einstellungen blockiert.',
+    arrive: 'Schon am Truck? Sag Kubi Bescheid.', arriveBtn: 'Bin da', arrived: 'Kubi weiß Bescheid. Bis gleich.',
     steps: {
       pickup: [
         { id: 'confirmed', t: 'Bestellung bestätigt' },
@@ -156,6 +157,7 @@ var STR = {
     auto: 'This page refreshes automatically.', clock: '',
     offline: "Can't connect right now. We'll keep trying.",
     pushBlocked: 'Notifications are blocked in your settings.',
+    arrive: 'Already at the truck? Let Kubi know.', arriveBtn: 'I\'m here', arrived: 'Kubi knows you\'re here. See you in a moment.',
     steps: {
       pickup: [
         { id: 'confirmed', t: 'Order confirmed' },
@@ -181,6 +183,7 @@ var STR = {
     auto: 'Bu sayfa otomatik olarak yenilenir.', clock: '',
     offline: 'Şu an bağlantı kurulamıyor. Denemeye devam ediyoruz.',
     pushBlocked: 'Bildirimler ayarlarında engellenmiş.',
+    arrive: 'Truck\'ın yanında mısın? Kubi\'ye haber ver.', arriveBtn: 'Geldim', arrived: 'Kubi haberdar. Birazdan görüşürüz.',
     steps: {
       pickup: [
         { id: 'confirmed', t: 'Sipariş onaylandı' },
@@ -271,6 +274,31 @@ function pushHtml(isFinal) {
     + '<button class="btn" id="pushBtn" type="button">' + T.enable + '</button>'
     + '<p class="pushnote" id="pushNote" aria-live="polite"></p></div>';
 }
+/* "Bin da": nur bei Abholung, solange die Bestellung laeuft. Meldet Kubi per
+   Team-Mitteilung, dass der Gast am Truck steht (wie die App am Truck). */
+function arriveHtml(isFinal) {
+  if (isFinal || DATA.mode !== 'pickup') return '';
+  if (DATA.arrivedAt) return '<div class="card pushcard arrivecard"><p>' + T.arrived + '</p></div>';
+  return '<div class="card pushcard arrivecard"><p id="arrTxt" aria-live="polite">' + T.arrive + '</p>'
+    + '<button class="btn" id="arrBtn" type="button">' + T.arriveBtn + '</button></div>';
+}
+function bindArrive() {
+  var b = document.getElementById('arrBtn');
+  if (b) b.addEventListener('click', function () {
+    withBusy(b, function () {
+      return fetch('/.netlify/functions/order-status', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'arrived', reference: REF, k: KEY }),
+      }).then(function (r) { return r.ok; }).catch(function () { return false; });
+    }).then(function (ok) {
+      if (!ok) { setConn(true); return; }
+      DATA.arrivedAt = new Date().toISOString();
+      var t = document.getElementById('arrTxt');
+      if (t) t.textContent = T.arrived;
+      b.remove();
+    });
+  });
+}
 function bindPush() {
   var pb = document.getElementById('pushBtn');
   if (pb) pb.addEventListener('click', enablePush);
@@ -304,6 +332,7 @@ function renderFull() {
   }
   html += '</div></div>';
 
+  html += arriveHtml(isFinal);
   html += pushHtml(isFinal);
 
   if (DATA.items && DATA.items.length) {
@@ -323,6 +352,7 @@ function renderFull() {
   el.innerHTML = html;
   el.setAttribute('aria-busy', 'false');
   bindPush();
+  bindArrive();
   SHOWN = { mode: DATA.mode, state: DATA.state };
 }
 
@@ -350,7 +380,9 @@ function updateSteps() {
   var dot = nodes[idx].querySelector('.dot');
   if (dot) { dot.classList.add('lift'); void dot.offsetWidth; dot.classList.remove('lift'); }
 
-  var pc = el.querySelector('.pushcard');
+  var ac = el.querySelector('.arrivecard');
+  if (isFinal && ac) ac.remove();
+  var pc = el.querySelector('.pushcard:not(.arrivecard)');
   if (isFinal && pc) { pc.remove(); }
   else if (!isFinal && !pc) {
     var ph = pushHtml(false), tc = document.getElementById('tlCard');

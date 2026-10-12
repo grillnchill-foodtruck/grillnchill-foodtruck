@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GNC Cockpit">
+<title>Grill'n Chill Cockpit</title>
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/bowlby-one-latin-400-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-400-normal.woff2" crossorigin>
+<style>
+  /* Selbst gehostete Schriften, wie auf der Hauptseite */
+  @font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/inter-latin-500-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/inter-latin-600-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/inter-latin-700-normal.woff2')format('woff2')}
+
+  /* Token-Schicht nach shadcn/ui, belegt mit den Grill'n Chill-Farben.
+     Bewusst nur ein dunkles Thema: das ist die Marke. */
+  :root{
+    --background:#0A0A0A;
+    --foreground:#F5E9D0;
+    --card:#141414;
+    --card-foreground:#F5E9D0;
+    --popover:#1C1C1C;
+    --muted:#1C1C1C;
+    --muted-foreground:#9A8E7A;
+    --primary:#E85A24;
+    --primary-solid:#CC4715;      /* Flaeche unter weisser Schrift (Kontrast 4,7:1) */
+    --primary-bright:#FF7A3D;     /* Schrift und Akzente auf Dunkel */
+    --primary-foreground:#FFFFFF;
+    --border:#2A2520;
+    --input:#706250;              /* Feldrand mit 3:1 zur Karte */
+    --ring:#FF7A3D;
+    --success:#6DBE45;
+    --warning:#FFC93C;
+    --destructive:#E04848;
+    --destructive-text:#F07070;   /* Fehlertext auf getoenter Flaeche */
+    --radius:14px;
+    --font-display:'Bowlby One', Impact, 'Arial Black', sans-serif;
+    --font-sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    --ease:cubic-bezier(.2,.8,.2,1);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;color-scheme:dark}
+  body{
+    margin:0;min-height:100dvh;background:var(--background);color:var(--foreground);
+    font-family:var(--font-sans);font-size:16px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  }
+  h1,h2,h3,p,ul,ol{margin:0}
+  ul,ol{padding:0;list-style:none}
+  button,input{font:inherit;color:inherit}
+  button{-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+  :focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+  .display{font-family:var(--font-display);font-weight:400;letter-spacing:.01em;line-height:1.05}
+  .num{font-variant-numeric:tabular-nums}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  /* ================= Kopfzeile ================= */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    background:rgba(10,10,10,.86);backdrop-filter:saturate(1.2) blur(12px);-webkit-backdrop-filter:saturate(1.2) blur(12px);
+    border-bottom:1px solid var(--border);padding-top:env(safe-area-inset-top);
+  }
+  .topbar-inner{
+    max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;
+    padding:10px max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 auto}
+  .brand img{width:40px;height:40px;border-radius:10px;flex:none}
+  .brand-text{min-width:0}
+  .brand h1{font-size:1.5rem}
+  .brand .date{color:var(--muted-foreground);font-size:.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .status-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .live{display:inline-flex;align-items:center;gap:8px;font-size:.875rem;color:var(--muted-foreground);white-space:nowrap}
+  .live .dot{width:10px;height:10px;border-radius:50%;background:var(--success);flex:none;animation:pulse 2.4s ease-out infinite}
+  .live.is-loading .dot{background:var(--muted-foreground);animation:none}
+  .live.is-stale .dot{background:var(--warning);animation:none}
+  .live.is-stale{color:var(--warning)}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(109,190,69,.55)}
+    70%{box-shadow:0 0 0 8px rgba(109,190,69,0)}
+    100%{box-shadow:0 0 0 0 rgba(109,190,69,0)}
+  }
+  .actions{display:flex;align-items:center;gap:8px;flex:none}
+  @media (max-width:699px){
+    /* Schmal: Titel und Knoepfe in einer Zeile, der Live-Status darunter */
+    .brand{flex:1 1 0}
+    .brand img{display:none}
+    .status-row{order:3;flex-basis:100%}
+    .brand h1{font-size:1.25rem}
+  }
+
+  /* ================= Knoepfe und Links ================= */
+  .icon-btn{
+    position:relative;width:44px;height:44px;display:inline-grid;place-items:center;flex:none;
+    border-radius:calc(var(--radius) - 4px);border:1px solid var(--border);background:var(--card);color:var(--foreground);
+    cursor:pointer;transition:border-color .15s,background-color .15s;
+  }
+  .icon-btn:hover{border-color:var(--input)}
+  .icon-btn svg{width:18px;height:18px}
+  /* Eigenstaendiger Link: kleine Pille mit Rand statt Unterstreichung */
+  .pill-link{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;
+    border:1px solid var(--input);border-radius:999px;color:var(--foreground);text-decoration:none;
+    font-size:.875rem;font-weight:600;white-space:nowrap;transition:border-color .15s,color .15s;
+  }
+  .pill-link:hover{border-color:var(--primary-bright);color:var(--primary-bright)}
+  .pill-link svg{width:14px;height:14px}
+  .pill-link.pill-sm{align-self:flex-start}
+  .btn{
+    position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    min-height:44px;padding:0 18px;border-radius:calc(var(--radius) - 4px);border:1px solid transparent;
+    font-weight:600;font-size:.9375rem;cursor:pointer;white-space:nowrap;
+    transition:background-color .15s,border-color .15s,transform .1s;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--primary-solid);color:var(--primary-foreground)}
+  .btn-primary:hover{background:#B83E10}
+  .btn-secondary{background:var(--muted);border-color:var(--input);color:var(--foreground)}
+  .btn-secondary:hover{border-color:var(--primary-bright)}
+  .btn-block{width:100%;min-height:48px}
+  /* Beschaeftigt: Breite bleibt, Beschriftung wird unsichtbar, Kreisel erscheint */
+  .is-busy{cursor:progress!important}
+  .is-busy > :not(.spinner){visibility:hidden}
+  .is-busy > .spinner{position:absolute;inset:0;margin:auto;border-color:var(--busy-ink,currentColor);border-right-color:transparent}
+  .spinner{
+    display:inline-block;width:18px;height:18px;border-radius:50%;flex:none;
+    border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ================= Badge ================= */
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;
+    font-size:.8125rem;font-weight:600;line-height:1.35;border:1px solid transparent;white-space:nowrap;
+  }
+  .badge svg{width:14px;height:14px;flex:none}
+  .badge-success{background:rgba(109,190,69,.13);color:var(--success);border-color:rgba(109,190,69,.35)}
+  .badge-destructive{background:rgba(224,72,72,.14);color:var(--destructive-text);border-color:rgba(224,72,72,.4)}
+  .badge-warning{background:rgba(255,201,60,.12);color:var(--warning);border-color:rgba(255,201,60,.35)}
+  .badge-muted{background:var(--muted);color:var(--muted-foreground);border-color:var(--border)}
+
+  /* ================= Card ================= */
+  .card{
+    background:var(--card);color:var(--card-foreground);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0;
+    transition:border-color .2s,box-shadow .2s;
+  }
+  .card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
+  .card-title{font-size:.9375rem;font-weight:600;line-height:1.3;letter-spacing:-.005em}
+  .card-description{color:var(--muted-foreground);font-size:.875rem;line-height:1.45}
+  .card-content{display:flex;flex-direction:column;gap:12px;flex:1}
+  .sub-title{font-size:.8125rem;font-weight:600;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
+
+  .kpi-value{
+    font-family:var(--font-display);font-weight:400;font-variant-numeric:tabular-nums;
+    font-size:clamp(2.5rem,1.6rem + 2.4vw,3.5rem);line-height:1;white-space:nowrap;overflow:hidden;
+    padding-bottom:2px;
+  }
+  .kpi-value.is-hot{color:var(--primary-bright)}
+  .kpi-sm{font-size:2.25rem}
+
+  /* ================= Skeleton (nur beim ersten Laden) ================= */
+  .skeleton{
+    display:block;border-radius:calc(var(--radius) - 6px);
+    background:linear-gradient(90deg,#1C1C1C 0%,#2A2622 50%,#1C1C1C 100%);background-size:200% 100%;
+    animation:shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
+  .sk-kpi{height:52px;width:62%}
+  .sk-line{height:14px;width:85%}
+  .sk-bar{height:34px;width:100%}
+  .skeleton-list{display:flex;flex-direction:column;gap:12px}
+  .card:not(.is-loading) .skeleton,.card:not(.is-loading) .skeleton-list{display:none}
+  .card.is-loading .when-ready{display:none!important}
+
+  /* ================= Raster ================= */
+  .page{
+    max-width:1280px;margin:0 auto;
+    padding:16px max(16px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  }
+  .grid{
+    display:grid;gap:16px;grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"rev" "ord" "open" "pause" "wait" "top";
+  }
+  #cardRev{grid-area:rev} #cardOrd{grid-area:ord} #cardOpen{grid-area:open}
+  #cardTop{grid-area:top} #cardWait{grid-area:wait} #cardPause{grid-area:pause}
+  @media (min-width:700px){
+    .grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"rev rev" "ord open" "pause wait" "top top"}
+  }
+  @media (min-width:1024px){
+    .page{padding-top:20px}
+    .grid{gap:20px;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);grid-template-areas:"rev ord open" "top wait pause"}
+  }
+  @media (max-width:699px){
+    .card{padding:16px}
+  }
+
+  /* ================= Bestellungen: Aufteilung ================= */
+  .split{display:flex;height:10px;border-radius:999px;overflow:hidden;background:var(--muted);gap:2px}
+  .split span{display:block;height:100%;width:0;transition:width .5s var(--ease)}
+  .split-a,.swatch-a{background:var(--primary)}
+  .split-b,.swatch-b{background:var(--foreground)}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:.875rem;color:var(--muted-foreground)}
+  .legend li{display:inline-flex;align-items:center;gap:8px}
+  .legend strong{color:var(--foreground);font-weight:700}
+  .swatch{width:10px;height:10px;border-radius:3px;flex:none}
+
+  /* ================= Renner der Woche ================= */
+  .bars{display:flex;flex-direction:column;gap:12px;counter-reset:rang}
+  .bar-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 10px;align-items:baseline}
+  .bar-rank{color:var(--muted-foreground);font-size:.8125rem;font-variant-numeric:tabular-nums;min-width:1.2rem}
+  .bar-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-val{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .bar-val small{font-weight:500;color:var(--muted-foreground);font-size:.8125rem}
+  .bar-track{grid-column:1 / -1;height:10px;border-radius:999px;background:var(--muted);overflow:hidden}
+  .bar-fill{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--primary-solid),var(--primary-bright));transition:width .6s var(--ease)}
+  .bar-row:not(:first-child) .bar-fill{background:var(--primary-solid)}
+  .empty{color:var(--muted-foreground);font-size:.9375rem;padding:8px 0}
+
+  /* ================= Switch ================= */
+  .switch-row{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:56px;
+    padding:10px 14px;background:var(--muted);border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);
+    text-align:left;cursor:pointer;transition:border-color .15s,background-color .15s;
+  }
+  .switch-row:hover{border-color:var(--input)}
+  .switch-text{display:flex;flex-direction:column;min-width:0}
+  .switch-label{font-weight:600;line-height:1.3}
+  .switch-desc{font-size:.8125rem;color:var(--muted-foreground);line-height:1.4}
+  .switch-track{
+    position:relative;flex:none;width:52px;height:30px;border-radius:999px;
+    background:#2A2520;border:1px solid var(--input);transition:background-color .2s,border-color .2s;
+  }
+  .switch-thumb{
+    position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
+    background:var(--foreground);box-shadow:0 1px 3px rgba(0,0,0,.45);transition:transform .22s var(--ease);
+  }
+  .switch-row[aria-checked="true"] .switch-track{background:var(--primary);border-color:var(--primary)}
+  .switch-row[aria-checked="true"] .switch-thumb{transform:translateX(22px);background:#fff}
+  .switch-success[aria-checked="true"] .switch-track{background:var(--success);border-color:var(--success)}
+  .switch-lg{min-height:72px;padding:14px 16px}
+  .switch-lg .switch-label{font-size:1.125rem}
+  .switch-lg .switch-desc{font-size:.875rem}
+  .switch-lg .switch-track{width:64px;height:36px}
+  .switch-lg .switch-thumb{width:28px;height:28px}
+  .switch-lg[aria-checked="true"] .switch-thumb{transform:translateX(28px)}
+  .switch-row[aria-busy="true"]{cursor:progress}
+  .switch-row[aria-busy="true"] .switch-thumb::after{
+    content:"";position:absolute;inset:4px;border-radius:50%;
+    border:2px solid var(--primary-solid);border-right-color:transparent;animation:spin .7s linear infinite;
+  }
+  .switch-row[aria-disabled="true"]:not([aria-busy="true"]){opacity:.5;cursor:not-allowed}
+  .switch-group{display:flex;flex-direction:column;gap:10px}
+
+  .card.is-paused{border-color:rgba(224,72,72,.65);box-shadow:inset 0 0 0 1px rgba(224,72,72,.25)}
+  .card.is-paused .switch-lg{border-color:rgba(224,72,72,.5);background:rgba(224,72,72,.08)}
+  .note{font-size:.875rem;border-radius:calc(var(--radius) - 4px);padding:10px 12px;display:flex;gap:8px;align-items:flex-start}
+  .note svg{width:16px;height:16px;flex:none;margin-top:2px}
+  .note-warning{background:rgba(255,201,60,.1);color:var(--warning);border:1px solid rgba(255,201,60,.3)}
+
+  /* ================= Eingaben ================= */
+  .label{font-size:.875rem;font-weight:600}
+  .input{
+    width:100%;height:48px;padding:0 14px;border-radius:calc(var(--radius) - 4px);
+    border:1px solid var(--input);background:var(--background);color:var(--foreground);font-size:16px;
+  }
+  .input::placeholder{color:#7C705E}
+  .input:focus-visible{outline:2px solid var(--ring);outline-offset:1px;border-color:var(--ring)}
+  .input[aria-invalid="true"]{border-color:var(--destructive)}
+  .msg-form{display:flex;flex-direction:column;gap:6px}
+  .msg-row{display:flex;gap:8px}
+  .msg-row .input{flex:1;min-width:0}
+  .msg-row .btn{flex:none}
+
+  /* ================= Slider ================= */
+  .range{
+    -webkit-appearance:none;appearance:none;width:100%;height:44px;margin:0;background:transparent;cursor:pointer;
+    --fill:0%;touch-action:pan-y;
+  }
+  .range:disabled{opacity:.5;cursor:not-allowed}
+  .range::-webkit-slider-runnable-track{
+    height:10px;border-radius:999px;border:1px solid var(--input);
+    background:linear-gradient(to right,var(--primary) 0,var(--primary) var(--fill),#2A2520 var(--fill),#2A2520 100%);
+  }
+  .range::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:30px;height:30px;margin-top:-11px;border-radius:50%;
+    background:var(--foreground);border:4px solid var(--primary);box-shadow:0 2px 8px rgba(0,0,0,.55);
+    transition:box-shadow .15s;
+  }
+  .range::-moz-range-track{height:10px;border-radius:999px;border:1px solid var(--input);background:#2A2520}
+  .range::-moz-range-progress{height:10px;border-radius:999px;background:var(--primary)}
+  .range::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--foreground);border:4px solid var(--primary)}
+  .range:focus-visible{outline:none}
+  .range:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px rgba(255,122,61,.5)}
+  .range:focus-visible::-moz-range-thumb{box-shadow:0 0 0 4px rgba(255,122,61,.5)}
+  .ticks{display:flex;justify-content:space-between;padding:0 6px;margin-top:-4px;font-size:.75rem;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+  .hint{font-size:.8125rem;color:var(--muted-foreground)}
+  .saving{display:inline-flex;align-items:center;gap:8px;font-size:.8125rem;color:var(--primary-bright);font-weight:600}
+  .saving .spinner{width:14px;height:14px}
+
+  /* ================= Anmeldung ================= */
+  .login{min-height:100dvh;display:grid;place-items:center;padding:24px 16px}
+  .login-card{width:100%;max-width:420px;gap:20px;padding:28px 24px}
+  .login-head{display:flex;align-items:center;gap:14px}
+  .login-head img{width:56px;height:56px;border-radius:14px;flex:none}
+  .login-title{font-size:1.75rem}
+  .stack{display:flex;flex-direction:column;gap:14px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .pw-row{position:relative}
+  .pw-row .input{padding-right:52px}
+  .pw-eye{
+    position:absolute;top:2px;right:2px;width:44px;height:44px;display:grid;place-items:center;
+    background:transparent;border:0;border-radius:calc(var(--radius) - 6px);color:var(--muted-foreground);cursor:pointer;
+  }
+  .pw-eye svg{width:18px;height:18px}
+  .pw-eye[aria-pressed="true"]{color:var(--primary-bright)}
+  .field-error{color:var(--destructive-text);font-size:.875rem}
+  .check-row{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:6px 0;cursor:pointer}
+  .check-row input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--primary);flex:none}
+  .check-row small{display:block;color:var(--muted-foreground);font-size:.8125rem}
+  .shake{animation:shake .35s}
+  @keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+
+  /* ================= Toast ================= */
+  .toast{
+    position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));z-index:50;
+    transform:translate(-50%,16px);opacity:0;pointer-events:none;
+    width:max-content;max-width:min(calc(100vw - 32px),480px);
+    background:var(--popover);color:var(--foreground);border:1px solid var(--border);border-left:4px solid var(--muted-foreground);
+    border-radius:calc(var(--radius) - 2px);padding:12px 16px;font-size:.9375rem;font-weight:500;
+    box-shadow:0 12px 32px rgba(0,0,0,.55);transition:opacity .2s,transform .2s var(--ease);
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .toast.ok{border-left-color:var(--success)}
+  .toast.err{border-left-color:var(--destructive)}
+
+  /* Weniger Bewegung, wenn das Geraet darum bittet. Der Kreisel dreht weiter,
+     er ist die einzige Rueckmeldung beim Speichern. */
+  @media (prefers-reduced-motion: reduce){
+    *:not(.spinner),*:not(.spinner)::before,*:not(.spinner)::after{
+      animation-duration:.01ms!important;animation-iteration-count:1!important;
+      transition-duration:.01ms!important;scroll-behavior:auto!important;
+    }
+    .switch-row[aria-busy="true"] .switch-thumb::after{animation-duration:.7s!important;animation-iteration-count:infinite!important}
+    .live .dot{animation:none}
+    .skeleton{animation:none}
+  }
+  .kpi-value.is-hidden-value { font-size: 1.35rem; color: var(--muted-foreground); letter-spacing: 0; }
+</style>
+</head>
+<body>
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ================= Anmeldung ================= -->
+<main id="loginView" class="login" hidden>
+  <section class="card login-card" id="loginCard" aria-labelledby="loginTitle">
+    <div class="login-head">
+      <img src="logo.png" alt="" width="56" height="56">
+      <div>
+        <h1 class="display login-title" id="loginTitle">Cockpit</h1>
+        <p class="card-description">Gleiche Anmeldung wie im Admin-Tool.</p>
+      </div>
+    </div>
+    <form id="loginForm" class="stack" novalidate>
+      <div class="field">
+        <label class="label" for="pw">Passwort</label>
+        <div class="pw-row">
+          <input class="input" type="password" id="pw" name="password" autocomplete="current-password"
+                 autocapitalize="off" spellcheck="false" aria-describedby="pwError">
+          <button type="button" class="pw-eye" id="pwEye" aria-label="Passwort anzeigen" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <p class="field-error" id="pwError" hidden></p>
+      </div>
+      <label class="check-row">
+        <input type="checkbox" id="pwStay">
+        <span>Angemeldet bleiben<small>30 Tage, nur auf diesem Gerät</small></span>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" id="loginBtn"><span>Anmelden</span></button>
+    </form>
+  </section>
+</main>
+
+<!-- ================= Cockpit ================= -->
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <img src="logo.png" alt="" width="40" height="40">
+        <div class="brand-text">
+          <h1 class="display">Cockpit</h1>
+          <p class="date" id="todayLabel"></p>
+        </div>
+      </div>
+      <div class="status-row">
+        <p class="live is-loading" id="live"><span class="dot" aria-hidden="true"></span><span id="liveText">Wird geladen</span></p>
+        <span class="badge badge-warning" id="staleBadge" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+          Keine Verbindung
+        </span>
+      </div>
+      <div class="actions">
+        <button type="button" class="icon-btn" id="refreshBtn" aria-label="Jetzt aktualisieren" title="Jetzt aktualisieren">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        </button>
+        <a class="pill-link" href="/admin.html">Admin</a>
+        <button type="button" class="icon-btn" id="logoutBtn" aria-label="Abmelden" title="Abmelden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="grid">
+
+      <!-- Umsatz heute -->
+      <section class="card is-loading" id="cardRev" aria-labelledby="hRev" aria-busy="true">
+        <div class="card-header">
+          <h2 class="card-title" id="hRev">Umsatz heute</h2>
+          <span class="badge" id="revBadge" hidden></span>
+        </div>
+        <div class="card-content">
+          <span class="skeleton sk-kpi" aria-hidden="true"></span>
+          <p class="kpi-value num when-ready" id="revValue"></p>
+          <span class="skeleton sk-line" aria-hidden="true"></span>
+          <p class="card-description when-ready" id="revDesc"></p>
+        </div>
+      </section>
+
+      <!-- Bestellungen heute -->
+      <section class="card is-loading" id="cardOrd" aria-labelledby="hOrd" aria-busy="true">
+        <div class="card-header">
+          <h2 class="card-title" id="hOrd">Bestellungen heute</h2>
+          <span class="badge" id="ordBadge" hidden></span>
+        </div>
+        <div class="card-content">
+          <span class="skeleton sk-kpi" aria-hidden="true"></span>
+          <p class="kpi-value num when-ready" id="ordValue"></p>
+          <span class="skeleton sk-line" aria-hidden="true"></span>
+          <div class="when-ready">
+            <div class="split" aria-hidden="true"><span class="split-a" id="splitPickup"></span><span class="split-b" id="splitDelivery"></span></div>
+            <ul class="legend">
+              <li><span class="swatch swatch-a" aria-hidden="true"></span>Abholung <strong class="num" id="ordPickup">0</strong></li>
+              <li><span class="swatch swatch-b" aria-hidden="true"></span>Lieferung <strong class="num" id="ordDelivery">0</strong></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Offen gerade -->
+      <section class="card is-loading" id="cardOpen" aria-labelledby="hOpen" aria-busy="true">
+        <div class="card-header">
+          <h2 class="card-title" id="hOpen">Offen gerade</h2>
+          <span class="badge" id="openBadge" hidden></span>
+        </div>
+        <div class="card-content">
+          <span class="skeleton sk-kpi" aria-hidden="true"></span>
+          <p class="kpi-value num when-ready" id="openValue"></p>
+          <p class="card-description">Heute bestellt, noch nicht abgeholt oder geliefert.</p>
+          <a class="pill-link pill-sm" href="/admin.html?tab=orders">Zu den Bestellungen</a>
+        </div>
+      </section>
+
+      <!-- Renner der Woche -->
+      <section class="card is-loading" id="cardTop" aria-labelledby="hTop" aria-busy="true">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title" id="hTop">Renner der Woche</h2>
+            <p class="card-description">Meistbestellt in den letzten 7 Tagen, nach Stückzahl.</p>
+          </div>
+        </div>
+        <div class="card-content">
+          <div class="skeleton-list" aria-hidden="true">
+            <span class="skeleton sk-bar"></span><span class="skeleton sk-bar"></span><span class="skeleton sk-bar"></span>
+            <span class="skeleton sk-bar"></span><span class="skeleton sk-bar"></span>
+          </div>
+          <ol class="bars when-ready" id="topList"></ol>
+          <p class="empty when-ready" id="topEmpty" hidden>Noch keine Bestellungen in den letzten 7 Tagen.</p>
+        </div>
+      </section>
+
+      <!-- Wartezeit -->
+      <section class="card is-loading" id="cardWait" aria-labelledby="hWait" aria-busy="true">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title" id="hWait">Wartezeit</h2>
+            <p class="card-description" id="waitDesc">Keine Anzeige für Kunden.</p>
+          </div>
+          <span class="saving" id="waitSaving" hidden><span class="spinner" aria-hidden="true"></span>Speichert</span>
+        </div>
+        <div class="card-content">
+          <p class="kpi-value kpi-sm num" id="waitValue" aria-hidden="true">Aus</p>
+          <label class="label" for="waitRange">Wartezeit einstellen</label>
+          <input class="range" type="range" id="waitRange" min="0" max="60" step="5" value="0"
+                 aria-valuetext="keine Anzeige" aria-describedby="waitHint" disabled>
+          <div class="ticks" aria-hidden="true"><span>Aus</span><span>15</span><span>30</span><span>45</span><span>60</span></div>
+          <p class="hint" id="waitHint">Loslassen speichert sofort.</p>
+        </div>
+      </section>
+
+      <!-- Pause und Bestellarten -->
+      <section class="card is-loading" id="cardPause" aria-labelledby="hPause" aria-busy="true">
+        <div class="card-header">
+          <h2 class="card-title" id="hPause">Pause</h2>
+          <span class="badge" id="shopBadge" hidden></span>
+        </div>
+        <div class="card-content">
+          <button type="button" class="switch-row switch-lg" id="swPause" role="switch" aria-checked="false"
+                  aria-labelledby="lblPause" aria-describedby="descPause" aria-disabled="true">
+            <span class="switch-text">
+              <span class="switch-label" id="lblPause">Bestellungen pausieren</span>
+              <span class="switch-desc" id="descPause" data-an="An. Kunden können gerade nicht bestellen." data-aus="Aus. Bestellungen laufen.">Aus. Bestellungen laufen.</span>
+            </span>
+            <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          </button>
+          <form class="msg-form" id="pauseMsgForm" hidden>
+            <label class="label" for="pauseMsg">Hinweis für Kunden (optional)</label>
+            <div class="msg-row">
+              <input class="input" id="pauseMsg" maxlength="200" autocomplete="off"
+                     placeholder="z. B. Gleich wieder da, ab 18 Uhr geht es weiter">
+              <button type="submit" class="btn btn-secondary" id="pauseMsgSave"><span>Speichern</span></button>
+            </div>
+          </form>
+          <h3 class="sub-title">Bestellarten heute</h3>
+          <div class="switch-group">
+            <button type="button" class="switch-row switch-success" id="swDelivery" role="switch" aria-checked="true"
+                    aria-labelledby="lblDelivery" aria-describedby="descDelivery" aria-disabled="true">
+              <span class="switch-text">
+                <span class="switch-label" id="lblDelivery">Lieferung</span>
+                <span class="switch-desc" id="descDelivery" data-an="An. Wird angeboten." data-aus="Aus. Heute keine Lieferung.">An. Wird angeboten.</span>
+              </span>
+              <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </button>
+            <button type="button" class="switch-row switch-success" id="swPickup" role="switch" aria-checked="true"
+                    aria-labelledby="lblPickup" aria-describedby="descPickup" aria-disabled="true">
+              <span class="switch-text">
+                <span class="switch-label" id="lblPickup">Abholung</span>
+                <span class="switch-desc" id="descPickup" data-an="An. Wird angeboten." data-aus="Aus. Heute keine Abholung.">An. Wird angeboten.</span>
+              </span>
+              <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+            </button>
+          </div>
+          <p class="note note-warning" id="bothOff" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+            <span>Lieferung und Abholung sind aus. Kunden können nicht bestellen.</span>
+          </p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* Gleicher Speicher wie admin.html, damit eine Anmeldung fuer beide gilt:
+     sessionStorage[PW_KEY]        Passwort fuer diesen Tab (wie im Admin-Tool)
+     localStorage[PW_KEY + '_p']   { t: Sitzungs-Token, exp } fuer "Angemeldet bleiben",
+                                   nie das Passwort (siehe lib/admin-sitzung.js) */
+  var PW_KEY = 'gnc_admin_pw';
+  var DATA_URL = '/.netlify/functions/cockpit-data';
+  var STATUS_URL = '/shop-status';
+  var TEAM_URL = '/.netlify/functions/team';
+  var REFRESH_MS = 30000;
+  var TZ = 'Europe/Berlin';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fmtEUR = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+  var fmtZeit = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+  var fmtTag = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
+  var fmtWochentag = new Intl.DateTimeFormat('de-DE', { weekday: 'long', timeZone: 'UTC' });
+
+  var ICON = {
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>',
+    flat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+    warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>'
+  };
+
+  var cred = '';              // Passwort oder Sitzungs-Token
+  var daten = null;           // letzter guter Stand vom Server
+  var laedt = false;
+  var timer = null;
+  var letzterVersuch = 0;
+  var gestoert = false;
+  var speicherKette = Promise.resolve();
+  var speichert = { pause: false, delivery: false, pickup: false, wait: false, msg: false };
+  var msgGeaendert = false;
+
+  /* ---------------- Toast ---------------- */
+  function toast(text, art) {
+    var t = $('toast');
+    t.textContent = text;
+    t.className = 'toast show' + (art ? ' ' + art : '');
+    clearTimeout(t._t);
+    t._t = setTimeout(function () { t.className = 'toast' + (art ? ' ' + art : ''); }, art === 'err' ? 4500 : 2800);
+  }
+
+  /* ---------------- Beschaeftigt-Knopf ----------------
+     Breite bleibt, Kreisel statt Beschriftung, aria-busy. Kein disabled,
+     damit der Fokus beim Tippen mit der Tastatur nicht verloren geht;
+     doppelte Ausloesung verhindert der Aufrufer ueber is-busy. */
+  function busy(btn, an) {
+    if (!btn) return;
+    if (an) {
+      if (btn.classList.contains('is-busy')) return;
+      btn.style.setProperty('--busy-ink', getComputedStyle(btn).color);
+      btn.classList.add('is-busy');
+      btn.setAttribute('aria-busy', 'true');
+      btn.setAttribute('aria-disabled', 'true');
+      var sp = document.createElement('span');
+      sp.className = 'spinner';
+      sp.setAttribute('aria-hidden', 'true');
+      btn.appendChild(sp);
+      return;
+    }
+    btn.classList.remove('is-busy');
+    btn.removeAttribute('aria-busy');
+    btn.removeAttribute('aria-disabled');
+    btn.style.removeProperty('--busy-ink');
+    var s = btn.querySelector(':scope > .spinner');
+    if (s) s.remove();
+  }
+  var istBusy = function (btn) { return btn.classList.contains('is-busy'); };
+
+  function wartezeitText(sek) {
+    var s = Math.max(1, Number(sek) || 900);
+    if (s < 60) return s + ' Sekunden';
+    var m = Math.ceil(s / 60);
+    return m + (m === 1 ? ' Minute' : ' Minuten');
+  }
+  function stumm() { var e = new Error(''); e.stumm = true; return e; }
+
+  /* ---------------- Anmeldung aus dem Speicher ----------------
+     Reihenfolge wie im Admin-Tool: erst der Tab, dann "angemeldet bleiben".
+     Das alte Format mit Passwort (Feld pw) wird einmal gelesen und sofort
+     verworfen, genau wie admin.html es tut. */
+  function gemerkteAnmeldung() {
+    var s = null;
+    try { s = sessionStorage.getItem(PW_KEY); } catch (e) {}
+    if (s) return s;
+    try {
+      var p = JSON.parse(localStorage.getItem(PW_KEY + '_p') || 'null');
+      if (p && p.t && p.exp > Date.now()) return p.t;
+      if (p && p.pw && p.exp > Date.now()) { localStorage.removeItem(PW_KEY + '_p'); return p.pw; }
+      if (p) localStorage.removeItem(PW_KEY + '_p');
+    } catch (e) {}
+    return '';
+  }
+
+  /* ---------------- Ansichten ---------------- */
+  var KARTEN = ['cardRev', 'cardOrd', 'cardOpen', 'cardTop', 'cardWait', 'cardPause'];
+  var SCHALTER = ['swPause', 'swDelivery', 'swPickup'];
+
+  function zeigeLogin() {
+    $('app').hidden = true;
+    $('loginView').hidden = false;
+    $('pw').value = '';
+    feldFehler('');
+    try { $('pw').focus({ preventScroll: true }); } catch (e) {}
+  }
+  function zeigeCockpit() {
+    $('loginView').hidden = true;
+    $('app').hidden = false;
+  }
+
+  function steuerungAktiv(an) {
+    SCHALTER.forEach(function (id) {
+      if (an) $(id).removeAttribute('aria-disabled'); else $(id).setAttribute('aria-disabled', 'true');
+    });
+    $('waitRange').disabled = !an;
+  }
+
+  /* Alles leeren: das Tablet am Truck teilen sich mehrere Leute. */
+  function zuruecksetzen() {
+    clearTimeout(timer); timer = null;
+    clearTimeout(warteTimer); warteTimer = null;
+    daten = null; gestoert = false; msgGeaendert = false; warteWartend = null;
+    KARTEN.forEach(function (id) { $(id).classList.add('is-loading'); $(id).setAttribute('aria-busy', 'true'); });
+    ['revValue', 'revDesc', 'ordValue', 'openValue'].forEach(function (id) { $(id).textContent = ''; });
+    ['revBadge', 'ordBadge', 'openBadge', 'shopBadge', 'staleBadge'].forEach(function (id) { $(id).hidden = true; });
+    $('topList').textContent = '';
+    $('topEmpty').hidden = true;
+    $('pauseMsg').value = '';
+    $('pauseMsgForm').hidden = true;
+    $('bothOff').hidden = true;
+    $('cardPause').classList.remove('is-paused');
+    setzeSchalter($('swPause'), false);
+    setzeSchalter($('swDelivery'), true);
+    setzeSchalter($('swPickup'), true);
+    $('waitRange').value = 0;
+    maleWarte(0);
+    steuerungAktiv(false);
+    setzeLive('loading');
+    $('todayLabel').textContent = fmtTag.format(new Date());
+  }
+
+  function setzeLive(zustand) {
+    var live = $('live');
+    live.classList.toggle('is-loading', zustand === 'loading');
+    live.classList.toggle('is-stale', zustand === 'stale');
+    var stand = daten && daten.updatedAt ? fmtZeit.format(new Date(daten.updatedAt)) : '';
+    if (zustand === 'loading') $('liveText').textContent = 'Wird geladen';
+    else if (zustand === 'stale') $('liveText').textContent = stand ? 'Stand ' + stand : 'Noch keine Daten';
+    else $('liveText').textContent = 'aktualisiert ' + stand;
+  }
+
+  /* ---------------- Daten holen ---------------- */
+  async function laden(manuell) {
+    if (!cred || laedt) return;
+    laedt = true;
+    letzterVersuch = Date.now();
+    var credBeimStart = cred;
+    var btn = $('refreshBtn');
+    if (manuell) busy(btn, true);
+    try {
+      var res = await fetch(DATA_URL, {
+        method: 'POST', cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: cred }),
+      });
+      if (cred !== credBeimStart) return;          // inzwischen abgemeldet
+      if (res.status === 401) { abmelden('Anmeldung abgelaufen. Bitte neu anmelden.', false); return; }
+      if (res.status === 429) {
+        var dz = await res.json().catch(function () { return {}; });
+        stoerung('Zu viele Fehlversuche. Bitte in ' + wartezeitText(dz.retryAfter || res.headers.get('Retry-After')) + ' erneut versuchen.');
+        return;
+      }
+      var d = await res.json().catch(function () { return null; });
+      if (!res.ok || !d || !d.ok) throw new Error('lesefehler');
+      if (cred !== credBeimStart) return;
+      var warGestoert = gestoert;
+      daten = d;
+      gestoert = false;
+      zeichne(d);
+      if (warGestoert) toast('Verbindung wieder da.', 'ok');
+    } catch (e) {
+      if (cred === credBeimStart) stoerung();
+    } finally {
+      laedt = false;
+      if (manuell) busy(btn, false);
+    }
+  }
+
+  /* Fehler beim Auffrischen: alten Stand stehen lassen, Hinweis zeigen. */
+  function stoerung(text) {
+    var neu = !gestoert;
+    gestoert = true;
+    $('staleBadge').hidden = false;
+    setzeLive('stale');
+    if (text) toast(text, 'err');
+    else if (neu) toast(daten ? 'Keine Verbindung. Die Zahlen zeigen den letzten Stand.' : 'Zahlen konnten nicht geladen werden. Neuer Versuch in 30 Sekunden.', 'err');
+  }
+
+  function planen() {
+    clearTimeout(timer); timer = null;
+    if (!cred || document.hidden) return;
+    timer = setTimeout(function () {
+      timer = null;
+      laden(false).then(planen);
+    }, REFRESH_MS);
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (!cred) return;
+    if (document.hidden) { clearTimeout(timer); timer = null; return; }
+    if (Date.now() - letzterVersuch >= REFRESH_MS - 2000) laden(false).then(planen);
+    else planen();
+  });
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted && cred) laden(false).then(planen);
+  });
+
+  /* ---------------- Zeichnen ---------------- */
+  function zeichne(d) {
+    var upd = new Date(d.updatedAt || Date.now());
+    $('todayLabel').textContent = fmtTag.format(upd);
+    $('staleBadge').hidden = true;
+    setzeLive('ok');
+    KARTEN.forEach(function (id) { $(id).classList.remove('is-loading'); $(id).removeAttribute('aria-busy'); });
+
+    var t = d.today || {};
+    var lw = d.sameDayLastWeek || {};
+    var umsatz = Number(t.revenue) || 0;
+
+    // Umsatz (nur Inhaber; Mitarbeiter sehen einen Hinweis statt Zahlen)
+    var tagName = lw.date ? fmtWochentag.format(new Date(lw.date + 'T12:00:00Z')) : '';
+    if (d.owner === false) {
+      $('revValue').textContent = 'Nur für Kubi';
+      $('revValue').classList.add('is-hidden-value');
+      $('revBadge').hidden = true;
+      $('revDesc').textContent = 'Den Umsatz sieht nur der Inhaber mit dem Hauptpasswort.';
+    } else {
+      $('revValue').classList.remove('is-hidden-value');
+      setzeZahl($('revValue'), fmtEUR.format(umsatz));
+      deltaProzent($('revBadge'), umsatz, Number(lw.revenueSoFar) || 0);
+      $('revDesc').textContent = (tagName ? 'Letzten ' + tagName : 'Vorwoche') + ' bis ' + fmtZeit.format(upd) + ': '
+        + fmtEUR.format(Number(lw.revenueSoFar) || 0) + ', ganzer Tag ' + fmtEUR.format(Number(lw.revenue) || 0) + '.';
+    }
+
+    // Bestellungen
+    var anzahl = Number(t.orders) || 0;
+    var abh = Number(t.pickup) || 0;
+    var lief = Number(t.delivery) || 0;
+    setzeZahl($('ordValue'), String(anzahl));
+    deltaAbsolut($('ordBadge'), anzahl, Number(lw.ordersSoFar) || 0);
+    $('ordPickup').textContent = abh;
+    $('ordDelivery').textContent = lief;
+    var summe = abh + lief;
+    $('splitPickup').style.width = summe ? (abh / summe * 100) + '%' : '0%';
+    $('splitDelivery').style.width = summe ? (lief / summe * 100) + '%' : '0%';
+
+    // Offen
+    var offen = Number(d.open) || 0;
+    setzeZahl($('openValue'), String(offen));
+    $('openValue').classList.toggle('is-hot', offen > 0);
+    if (anzahl > 0 && offen === 0) badge($('openBadge'), 'success', 'check', 'Alles raus');
+    else $('openBadge').hidden = true;
+
+    zeichneRenner(Array.isArray(d.top7d) ? d.top7d : []);
+
+    steuerungAktiv(true);
+    zeichneStatus(d.status || {});
+  }
+
+  function badge(el, art, icon, text) {
+    el.className = 'badge badge-' + art;
+    el.textContent = '';
+    if (icon) el.insertAdjacentHTML('beforeend', ICON[icon]);
+    el.appendChild(document.createTextNode(text));
+    el.hidden = false;
+  }
+  /* Vergleich mit dem gleichen Wochentag letzte Woche bis zur gleichen
+     Uhrzeit. Pfeil und Vorzeichen stehen im Text, nicht nur in der Farbe. */
+  function deltaProzent(el, jetzt, vorher) {
+    if (vorher <= 0 && jetzt <= 0) { el.hidden = true; return; }
+    if (vorher <= 0) { badge(el, 'success', 'up', 'Mehr als Vorwoche'); return; }
+    var p = Math.round((jetzt - vorher) / vorher * 100);
+    if (p === 0) badge(el, 'muted', 'flat', 'Wie Vorwoche');
+    else if (p > 0) badge(el, 'success', 'up', '+' + p + ' % zur Vorwoche');
+    else badge(el, 'destructive', 'down', '-' + Math.abs(p) + ' % zur Vorwoche');
+  }
+  function deltaAbsolut(el, jetzt, vorher) {
+    if (vorher <= 0 && jetzt <= 0) { el.hidden = true; return; }
+    var diff = jetzt - vorher;
+    if (diff === 0) badge(el, 'muted', 'flat', 'Wie Vorwoche');
+    else if (diff > 0) badge(el, 'success', 'up', '+' + diff + ' zur Vorwoche');
+    else badge(el, 'destructive', 'down', '-' + Math.abs(diff) + ' zur Vorwoche');
+  }
+
+  /* Grosse Zahl: so lange verkleinern, bis sie in die Karte passt. */
+  function setzeZahl(el, text) {
+    el.textContent = text;
+    passe(el);
+  }
+  function passe(el) {
+    if (!el || !el.offsetParent) return;
+    el.style.fontSize = '';
+    var groesse = parseFloat(getComputedStyle(el).fontSize) || 40;
+    var n = 0;
+    while (el.scrollWidth > el.clientWidth + 1 && groesse > 20 && n < 30) {
+      groesse -= 2; n++;
+      el.style.fontSize = groesse + 'px';
+    }
+  }
+  function passeAlle() { ['revValue', 'ordValue', 'openValue'].forEach(function (id) { passe($(id)); }); }
+  var passeT = null;
+  window.addEventListener('resize', function () { clearTimeout(passeT); passeT = setTimeout(passeAlle, 120); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(passeAlle);
+
+  /* Renner der Woche: Balken relativ zum Spitzenreiter, Wert steht daneben. */
+  function zeichneRenner(liste) {
+    var ol = $('topList');
+    ol.textContent = '';
+    $('topEmpty').hidden = liste.length > 0;
+    if (!liste.length) return;
+    var max = Math.max.apply(null, liste.map(function (x) { return Number(x.qty) || 0; }).concat([1]));
+    var fuellungen = [];
+    liste.forEach(function (x, i) {
+      var qty = Number(x.qty) || 0;
+      var li = document.createElement('li');
+      li.className = 'bar-row';
+      var rang = document.createElement('span');
+      rang.className = 'bar-rank';
+      rang.setAttribute('aria-hidden', 'true');
+      rang.textContent = (i + 1) + '.';
+      var name = document.createElement('span');
+      name.className = 'bar-name';
+      name.textContent = String(x.name || '');
+      name.title = String(x.name || '');
+      var wert = document.createElement('span');
+      wert.className = 'bar-val';
+      wert.appendChild(document.createTextNode(String(qty) + ' '));
+      var einheit = document.createElement('small');
+      einheit.textContent = 'Stück';
+      wert.appendChild(einheit);
+      var spur = document.createElement('span');
+      spur.className = 'bar-track';
+      spur.setAttribute('aria-hidden', 'true');
+      var fuellung = document.createElement('span');
+      fuellung.className = 'bar-fill';
+      spur.appendChild(fuellung);
+      li.append(rang, name, wert, spur);
+      ol.appendChild(li);
+      fuellungen.push([fuellung, Math.max(2, qty / max * 100)]);
+    });
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        fuellungen.forEach(function (f) { f[0].style.width = f[1] + '%'; });
+      });
+    });
+  }
+
+  /* ---------------- Laden-Status in die Bedienelemente ---------------- */
+  function setzeSchalter(btn, an) {
+    btn.setAttribute('aria-checked', an ? 'true' : 'false');
+    var d = btn.querySelector('.switch-desc');
+    if (d && d.dataset.an) d.textContent = an ? d.dataset.an : d.dataset.aus;
+  }
+  var istAn = function (id) { return $(id).getAttribute('aria-checked') === 'true'; };
+
+  /* Karte "Pause" aus den aktuellen Schalterstellungen ableiten. */
+  function maleLaden() {
+    var pausiert = istAn('swPause');
+    var lief = istAn('swDelivery');
+    var abh = istAn('swPickup');
+    $('cardPause').classList.toggle('is-paused', pausiert);
+    $('pauseMsgForm').hidden = !pausiert;
+    $('bothOff').hidden = pausiert || lief || abh;
+    var b = $('shopBadge');
+    if (pausiert) badge(b, 'destructive', 'pause', 'Pausiert');
+    else if (!lief && !abh) badge(b, 'warning', 'warn', 'Keine Bestellart');
+    else if (!lief) badge(b, 'warning', null, 'Nur Abholung');
+    else if (!abh) badge(b, 'warning', null, 'Nur Lieferung');
+    else badge(b, 'success', 'check', 'Offen');
+    maleMsgKnopf();
+  }
+
+  /* Status vom Server eintragen. Was gerade gespeichert oder gezogen wird,
+     bleibt unangetastet, sonst springt es unter dem Finger zurueck. */
+  function zeichneStatus(st) {
+    if (daten) {
+      daten.status = {
+        paused: !!st.paused,
+        pauseMessage: typeof st.pauseMessage === 'string' ? st.pauseMessage : '',
+        waitTime: parseInt(st.waitTime, 10) || 0,
+        deliveryOff: !!st.deliveryOff,
+        pickupOff: !!st.pickupOff,
+      };
+    }
+    if (!speichert.pause) setzeSchalter($('swPause'), !!st.paused);
+    if (!speichert.delivery) setzeSchalter($('swDelivery'), !st.deliveryOff);
+    if (!speichert.pickup) setzeSchalter($('swPickup'), !st.pickupOff);
+    var msg = $('pauseMsg');
+    if (!speichert.msg && !msgGeaendert && document.activeElement !== msg) msg.value = st.pauseMessage || '';
+    if (!speichert.wait && !ziehen && !warteTimer) {
+      warteBestaetigt = parseInt(st.waitTime, 10) || 0;
+      $('waitRange').value = Math.min(60, warteBestaetigt);
+      maleWarte(warteBestaetigt);
+    }
+    maleLaden();
+  }
+
+  /* ---------------- Speichern ----------------
+     Immer erst den aktuellen Stand holen und ihn vollstaendig zurueckschicken,
+     nur mit der einen Aenderung. Sonst gingen Ausverkauft-Liste und Special
+     verloren, die das Cockpit gar nicht kennt. Klappt das Lesen nicht, wird
+     nichts geschickt. Speichervorgaenge laufen nacheinander, damit sich zwei
+     schnelle Aenderungen nicht gegenseitig ueberschreiben. */
+  function speichern(aenderung) {
+    var lauf = speicherKette.then(function () { return speichernJetzt(aenderung); });
+    speicherKette = lauf.catch(function () {});
+    return lauf;
+  }
+  async function speichernJetzt(aenderung) {
+    var mit = cred;
+    if (!mit) throw stumm();
+    var s = null;
+    try {
+      var r1 = await fetch(STATUS_URL, { cache: 'no-store' });
+      if (r1.ok) s = await r1.json();
+    } catch (e) { s = null; }
+    if (!s || typeof s !== 'object') throw new Error('Aktueller Stand nicht lesbar. Nichts geändert.');
+    var payload = {
+      password: mit,
+      paused: !!s.paused,
+      pauseMessage: typeof s.pauseMessage === 'string' ? s.pauseMessage : '',
+      deliveryOff: !!s.deliveryOff,
+      pickupOff: !!s.pickupOff,
+      soldOut: Array.isArray(s.soldOut) ? s.soldOut : [],
+      waitTime: parseInt(s.waitTime, 10) || 0,
+      special: (s.special && s.special.id) ? { id: s.special.id, note: s.special.note || '' } : null,
+    };
+    Object.keys(aenderung).forEach(function (k) { payload[k] = aenderung[k]; });
+    var r2;
+    try {
+      r2 = await fetch(STATUS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (e) {
+      throw new Error('Keine Verbindung. Nicht gespeichert.');
+    }
+    if (r2.status === 401) {
+      if (cred === mit) abmelden('Anmeldung abgelaufen. Bitte neu anmelden.', false);
+      throw stumm();
+    }
+    if (r2.status === 429) {
+      var dz = await r2.json().catch(function () { return {}; });
+      throw new Error('Zu viele Fehlversuche. Bitte in ' + wartezeitText(dz.retryAfter || r2.headers.get('Retry-After')) + ' erneut versuchen.');
+    }
+    var d = await r2.json().catch(function () { return {}; });
+    if (!r2.ok || !d.ok || !d.status) throw new Error('Nicht gespeichert. Bitte erneut versuchen.');
+    return d.status;
+  }
+
+  /* Schalter: sofort umlegen, speichern, bei Fehler zuruecklegen. */
+  function schalter(id, schluessel, feld, umgekehrt, texte) {
+    var btn = $(id);
+    btn.addEventListener('click', async function () {
+      if (!daten || speichert[schluessel] || btn.getAttribute('aria-disabled') === 'true') return;
+      var vorher = istAn(id);
+      var an = !vorher;
+      setzeSchalter(btn, an);
+      maleLaden();
+      speichert[schluessel] = true;
+      btn.setAttribute('aria-busy', 'true');
+      try {
+        var aenderung = {};
+        aenderung[feld] = umgekehrt ? !an : an;
+        var st = await speichern(aenderung);
+        zeichneStatus(st);
+        setzeSchalter(btn, umgekehrt ? !st[feld] : !!st[feld]);
+        maleLaden();
+        toast(an ? texte[0] : texte[1], 'ok');
+      } catch (e) {
+        setzeSchalter(btn, vorher);
+        maleLaden();
+        if (!e.stumm) toast(e.message || 'Nicht gespeichert.', 'err');
+      } finally {
+        speichert[schluessel] = false;
+        btn.removeAttribute('aria-busy');
+      }
+    });
+  }
+  schalter('swPause', 'pause', 'paused', false,
+    ['Pause an. Kunden können gerade nicht bestellen.', 'Pause aus. Bestellungen laufen wieder.']);
+  schalter('swDelivery', 'delivery', 'deliveryOff', true,
+    ['Lieferung ist wieder an.', 'Lieferung ist heute aus.']);
+  schalter('swPickup', 'pickup', 'pickupOff', true,
+    ['Abholung ist wieder an.', 'Abholung ist heute aus.']);
+
+  /* Hinweis zur Pause */
+  function maleMsgKnopf() {
+    var gespeichert = (daten && daten.status && daten.status.pauseMessage) || '';
+    var btn = $('pauseMsgSave');
+    if (!istBusy(btn)) {
+      if ($('pauseMsg').value.trim() === gespeichert) btn.setAttribute('aria-disabled', 'true');
+      else btn.removeAttribute('aria-disabled');
+    }
+  }
+  $('pauseMsg').addEventListener('input', function () { msgGeaendert = true; maleMsgKnopf(); });
+  $('pauseMsgForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var btn = $('pauseMsgSave');
+    if (!daten || speichert.msg || istBusy(btn)) return;
+    var text = $('pauseMsg').value.trim().slice(0, 200);
+    if (text === ((daten.status && daten.status.pauseMessage) || '')) { msgGeaendert = false; return; }
+    speichert.msg = true;
+    busy(btn, true);
+    try {
+      var st = await speichern({ pauseMessage: text });
+      msgGeaendert = false;
+      speichert.msg = false;
+      zeichneStatus(st);
+      toast(text ? 'Hinweis gespeichert.' : 'Hinweis entfernt.', 'ok');
+    } catch (err) {
+      if (!err.stumm) toast(err.message || 'Nicht gespeichert.', 'err');
+    } finally {
+      speichert.msg = false;
+      busy(btn, false);
+      maleMsgKnopf();
+    }
+  });
+
+  /* ---------------- Wartezeit ----------------
+     Ziehen zeigt den Wert sofort, gespeichert wird beim Loslassen. Mit den
+     Pfeiltasten erst nach einer kurzen Pause, sonst ginge jeder Schritt
+     einzeln raus. Waehrend gespeichert wird, merkt sich die Seite nur den
+     neuesten Wert und schickt ihn danach. */
+  var range = $('waitRange');
+  var ziehen = false;
+  var perTaste = false;
+  var warteTimer = null;
+  var warteBestaetigt = 0;
+  var warteWartend = null;
+
+  function maleWarte(v) {
+    var w = Math.max(0, parseInt(v, 10) || 0);
+    $('waitValue').textContent = w ? w + ' Min' : 'Aus';
+    $('waitDesc').textContent = w ? 'Kunden sehen etwa ' + w + ' Minuten Wartezeit.' : 'Keine Anzeige für Kunden.';
+    range.setAttribute('aria-valuetext', w ? w + ' Minuten' : 'keine Anzeige');
+    range.style.setProperty('--fill', (Math.min(60, w) / 60 * 100) + '%');
+  }
+  function warteSpeichert(an) {
+    $('waitSaving').hidden = !an;
+    if (an) range.setAttribute('aria-busy', 'true'); else range.removeAttribute('aria-busy');
+  }
+  range.addEventListener('pointerdown', function () { ziehen = true; perTaste = false; });
+  window.addEventListener('pointerup', function () { ziehen = false; });
+  window.addEventListener('pointercancel', function () { ziehen = false; });
+  range.addEventListener('keydown', function () { perTaste = true; });
+  range.addEventListener('input', function () { maleWarte(range.value); });
+  range.addEventListener('change', function () {
+    ziehen = false;
+    clearTimeout(warteTimer);
+    warteTimer = setTimeout(function () { warteTimer = null; warteSichern(); }, perTaste ? 700 : 150);
+  });
+
+  async function warteSichern() {
+    if (!daten) return;
+    var wert = parseInt(range.value, 10) || 0;
+    if (speichert.wait) { warteWartend = wert; return; }
+    if (wert === warteBestaetigt) { maleWarte(wert); return; }
+    speichert.wait = true;
+    warteSpeichert(true);
+    try {
+      var st = await speichern({ waitTime: wert });
+      warteBestaetigt = parseInt(st.waitTime, 10) || 0;
+      zeichneStatus(st);
+      toast(warteBestaetigt ? 'Wartezeit: etwa ' + warteBestaetigt + ' Minuten.' : 'Wartezeit wird nicht mehr angezeigt.', 'ok');
+    } catch (e) {
+      warteWartend = null;
+      range.value = Math.min(60, warteBestaetigt);
+      maleWarte(warteBestaetigt);
+      if (!e.stumm) toast(e.message || 'Nicht gespeichert.', 'err');
+    } finally {
+      speichert.wait = false;
+      warteSpeichert(false);
+      if (warteWartend !== null) {
+        var naechster = warteWartend;
+        warteWartend = null;
+        if (naechster !== warteBestaetigt) { range.value = naechster; warteSichern(); }
+      }
+    }
+  }
+
+  /* ---------------- Anmelden und Abmelden ---------------- */
+  function feldFehler(text) {
+    var p = $('pwError');
+    p.textContent = text;
+    p.hidden = !text;
+    if (text) $('pw').setAttribute('aria-invalid', 'true'); else $('pw').removeAttribute('aria-invalid');
+  }
+  function schuetteln() {
+    var c = $('loginCard');
+    c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake');
+  }
+
+  /* "Angemeldet bleiben" wie im Admin-Tool: der Server gibt einen
+     Sitzungs-Token, nur der wird gemerkt. */
+  async function merken(pw) {
+    try {
+      if ($('pwStay').checked) {
+        var r = await fetch(TEAM_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw, action: 'sitzung' }),
+        });
+        var d = await r.json().catch(function () { return {}; });
+        if (d && d.ok && d.token) {
+          localStorage.setItem(PW_KEY + '_p', JSON.stringify({ t: d.token, exp: new Date(d.exp).getTime() }));
+        } else {
+          localStorage.removeItem(PW_KEY + '_p');
+          toast('Angemeldet. "Angemeldet bleiben" hat diesmal nicht geklappt.');
+        }
+      } else {
+        localStorage.removeItem(PW_KEY + '_p');
+      }
+    } catch (e) {
+      try { localStorage.removeItem(PW_KEY + '_p'); } catch (e2) {}
+    }
+  }
+
+  var meldetAn = false;
+  $('loginForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var btn = $('loginBtn');
+    if (meldetAn || istBusy(btn)) return;
+    var pw = $('pw').value.trim();
+    if (!pw) { feldFehler('Bitte Passwort eingeben.'); schuetteln(); $('pw').focus(); return; }
+    feldFehler('');
+    meldetAn = true;
+    busy(btn, true);
+    try {
+      var res = await fetch(DATA_URL, {
+        method: 'POST', cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw }),
+      });
+      if (res.status === 401) { feldFehler('Passwort falsch.'); schuetteln(); $('pw').focus(); return; }
+      if (res.status === 429) {
+        var dz = await res.json().catch(function () { return {}; });
+        feldFehler('Zu viele Fehlversuche. Bitte in ' + wartezeitText(dz.retryAfter || res.headers.get('Retry-After')) + ' erneut versuchen.');
+        return;
+      }
+      var d = await res.json().catch(function () { return null; });
+      // Geprueft wird vor allem anderen: 200 oder ein Lesefehler danach heisst,
+      // das Passwort stimmt. Alles andere ist eine Stoerung.
+      var angemeldet = (res.ok && d && d.ok) || (res.status === 500 && d && d.error === 'read_failed');
+      if (!angemeldet) { feldFehler('Server gerade nicht erreichbar. Bitte erneut versuchen.'); return; }
+      cred = pw;
+      try { sessionStorage.setItem(PW_KEY, pw); } catch (e2) {}
+      await merken(pw);
+      zuruecksetzen();
+      zeigeCockpit();
+      letzterVersuch = Date.now();
+      if (res.ok) { daten = d; zeichne(d); } else { stoerung(); }
+      planen();
+    } catch (err) {
+      feldFehler('Keine Verbindung. Bitte erneut versuchen.');
+    } finally {
+      meldetAn = false;
+      busy(btn, false);
+    }
+  });
+
+  $('pwEye').addEventListener('click', function () {
+    var f = $('pw');
+    var zeigen = f.type === 'password';
+    f.type = zeigen ? 'text' : 'password';
+    this.setAttribute('aria-pressed', zeigen ? 'true' : 'false');
+    this.setAttribute('aria-label', zeigen ? 'Passwort verbergen' : 'Passwort anzeigen');
+  });
+
+  /* Abmelden wie im Admin-Tool: gemerkte Sitzung auch serverseitig
+     entwerten. Bei abgelaufener Anmeldung (serverAuch = false) nur den
+     Speicher dieses Browsers leeren. */
+  function abmelden(text, serverAuch) {
+    var g = null;
+    try { g = JSON.parse(localStorage.getItem(PW_KEY + '_p') || 'null'); } catch (e) {}
+    if (serverAuch && g && g.t) {
+      fetch(TEAM_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: g.t, action: 'abmelden' }),
+      }).catch(function () {});
+    }
+    try { sessionStorage.removeItem(PW_KEY); } catch (e) {}
+    try { if (serverAuch || (g && g.t === cred)) localStorage.removeItem(PW_KEY + '_p'); } catch (e) {}
+    cred = '';
+    zuruecksetzen();
+    zeigeLogin();
+    if (text) toast(text, 'err');
+  }
+  $('logoutBtn').addEventListener('click', function () { abmelden('', true); });
+  $('refreshBtn').addEventListener('click', function () {
+    if (istBusy(this) || laedt) return;
+    laden(true).then(planen);
+  });
+
+  /* ---------------- Start ---------------- */
+  cred = gemerkteAnmeldung();
+  if (cred) {
+    zuruecksetzen();
+    zeigeCockpit();
+    laden(false).then(planen);
+  } else {
+    zuruecksetzen();
+    zeigeLogin();
+  }
+})();
+</script>
+</body>
+</html>

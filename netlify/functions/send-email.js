@@ -252,35 +252,21 @@ function blobStore(name) {
 const RETARGET_DELAY_DAYS = 7;
 const ORDER_RETENTION_DAYS = 90;
 
-// Bestell-Alarm: Push an alle Team-Geräte (Kanal admin:, siehe push-subscribe.js)
+// Bestell-Alarm: Push an alle Team-Geräte (Kanal admin:, siehe push-subscribe.js).
+// Die Abos liegen im Store "push-subs"; frueher las der Alarm nur "push" und kam
+// deshalb nicht an. lib/team-push.js liest beide Stores und sendet je Geraet einmal.
 async function sendOrderAlertPush(order) {
   try {
-    const pub = process.env.VAPID_PUBLIC_KEY, priv = process.env.VAPID_PRIVATE_KEY;
-    if (!pub || !priv) return;
-    const webpush = require('web-push');
-    webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:info@grillnchill-foodtruck.de', pub, priv);
-    const s = blobStore('push');
-    const { blobs } = await s.list({ prefix: 'admin:' });
-    if (!blobs.length) return;
+    const { sendeTeamPush } = require('./lib/team-push');
     const mode = order.mode === 'delivery' ? 'Lieferung' : 'Abholung';
     const pre = (order.isPreorder || order.scheduledFor) ? ' · VORBESTELLUNG' : '';
     const total = typeof order.total === 'number' ? order.total.toFixed(2).replace('.', ',') + ' €' : '';
-    const payload = JSON.stringify({
+    await sendeTeamPush({
       title: 'Neue Bestellung ' + (total ? '· ' + total : ''),
       body: '#' + (order.reference || '') + ' · ' + (order.name || '') + ' · ' + mode + pre,
       url: '/admin.html?tab=orders',
+      ttl: 1800,
     });
-    await Promise.all(blobs.map(async (b) => {
-      try {
-        const sub = await s.get(b.key, { type: 'json' });
-        if (!sub) return;
-        await webpush.sendNotification(sub, payload, { TTL: 1800 });
-      } catch (err) {
-        if (err && (err.statusCode === 404 || err.statusCode === 410)) {
-          try { await s.delete(b.key); } catch (e2) {}
-        }
-      }
-    }));
   } catch (e) {}
 }
 async function afterOrderHooks(order, verified) {
@@ -416,6 +402,12 @@ async function afterOrderHooks(order, verified) {
                    && JSON.stringify(order.cartSnapshot).length < 6000) ? order.cartSnapshot : null,
           };
           cust.orders = [entry, ...(cust.orders || [])].slice(0, 5);
+        } catch (e) {}
+        // Jahres-Statistik und Abzeichen fuers "Burger-Jahr" (lib/abzeichen.js,
+        // dieselbe Funktion nutzt stats-backfill.js). Eigener try-Block: ein
+        // Fehler hier darf die Bestellung nie aufhalten. Testbestellungen zaehlen nicht.
+        try {
+          if (!order.isTest) require('./lib/abzeichen').addOrderToStats(cust, order, new Date());
         } catch (e) {}
         cust.walletStand = Date.now();   // Handy-Wallets: "es gibt was Neues"
         await custS.setJSON(ckey2, cust);

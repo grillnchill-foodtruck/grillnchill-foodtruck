@@ -991,6 +991,19 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .acc-push-btn:hover { border-color: var(--color-orange); }
 .acc-push-btn:active { transform: scale(.97); }
 .acc-push-btn[disabled] { opacity: .6; cursor: default; }
+/* Team-Kopplung (App ab Build 7): zugeklappt, damit Gaeste nicht darueber stolpern */
+.team-box { margin: 1rem 0 0; border-top: 1px solid var(--color-border); padding-top: .8rem; }
+.team-box summary { cursor: pointer; font-size: .76rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .05em; min-height: 44px; display: flex; align-items: center; }
+.team-box summary::-webkit-details-marker { display: none; }
+.team-box summary::after { content: ''; width: 7px; height: 7px; margin-left: .5rem; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .2s var(--ease-out); }
+.team-box[open] summary::after { transform: rotate(-135deg) translateY(-1px); }
+.team-hint { margin: 0 0 .6rem; font-size: .8rem; color: var(--color-cream-dim); line-height: 1.5; }
+.team-ok { margin: 0 0 .35rem; font-size: .86rem; color: var(--color-success, #6DBE45); font-weight: 700; }
+.team-row { display: flex; gap: .5rem; align-items: stretch; flex-wrap: wrap; }
+.team-row .form-input { flex: 1; min-width: 8rem; letter-spacing: .25em; font-family: ui-monospace, Menlo, monospace; text-align: center; }
+.team-row .mini-btn { min-height: 44px; }
+.team-err { margin: .5rem 0 0; font-size: .8rem; color: #ff8a6b; }
+@media (prefers-reduced-motion: reduce) { .team-box summary::after { transition: none; } }
 .nav-burger span {
   display: block; width: 22px; height: 2px;
   background: var(--color-cream); transition: transform .25s var(--ease-out), opacity .15s ease;
@@ -2403,6 +2416,46 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .standing-remind input { accent-color: var(--color-orange); width: 17px; height: 17px; flex: none; }
 .standing-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
 .standing-actions .mini-btn { font-size: 0.74rem; padding: 0.4rem 0.7rem; min-height: 34px; }
+/* Zeitfenster der Dauerbestellung: Wochentage und 15-Minuten-Fenster als
+   Chips. Mindestens 44px Tippflaeche, Auswahl ueber aria-pressed, Fokusring
+   kommt aus der globalen :focus-visible-Regel. */
+.so-pick { display: grid; gap: 0.45rem; }
+.so-pick-label { font-size: 0.74rem; font-weight: 700; color: var(--color-cream-dim); margin-top: 0.15rem; }
+.so-days { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.35rem; }
+.so-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.9rem, 1fr)); gap: 0.4rem; }
+.so-slots .skel { height: 50px; }
+.so-chip {
+  min-height: 44px; min-width: 44px;
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--color-border-bright);
+  background: var(--color-bg);
+  color: var(--color-cream-dim);
+  border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 0.86rem; font-weight: 700; line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s, transform .12s ease-out;
+}
+.so-chip small { font-size: 0.66rem; font-weight: 600; color: var(--color-text-muted); }
+.so-chip.is-few small { color: var(--color-orange-bright); }
+.so-chip[aria-pressed="true"] {
+  border-color: var(--color-orange);
+  background: rgba(232, 90, 36, 0.14);
+  color: var(--color-cream);
+  box-shadow: inset 0 0 0 1px var(--color-orange);
+}
+.so-chip[aria-pressed="true"] small { color: var(--color-orange-bright); }
+.so-chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.so-chip:active:not(:disabled) { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) { .so-chip:hover:not(:disabled) { border-color: var(--color-orange); } }
+@media (prefers-reduced-motion: reduce) { .so-chip:active:not(:disabled) { transform: none; } }
+.so-note { font-size: 0.76rem; color: var(--color-cream-dim); margin: 0; line-height: 1.45; }
+.so-note.is-warn { color: var(--color-orange-bright); }
+.so-pick .mini-btn { justify-self: start; min-height: 44px; }
+.so-edit { border-top: 1px solid var(--color-border); margin-top: 0.65rem; padding-top: 0.65rem; display: grid; gap: 0.5rem; }
+.so-edit .standing-actions { margin-top: 0; }
+.so-edit .standing-actions .mini-btn { min-height: 44px; }
 
 .login-weg { position: relative; }
 /* "Zuletzt genutzt": kleiner Hinweis-Chip auf dem Anmeldeweg vom letzten Mal.
@@ -6578,6 +6631,8 @@ body.onb-lock { overflow: hidden; }
      damit die Anzeige im Warenkorb und der belastete Betrag nicht auseinanderlaufen
      koennen. Preise ausschliesslich dort aendern. -->
 <script src="speisekarte.js"></script>
+<!-- Abzeichen und Jahresrueckblick im Konto (laedt nach dem Aufbau) -->
+<script src="burger-jahr.js" defer></script>
 <script>
 /* Sicherung gegen "t is not defined": garantiert eine globale t()-Funktion,
    falls i18n.js nicht/zu spaet geladen hat. Ueberschreibt die echte t() nie
@@ -6968,6 +7023,7 @@ function accSettingsHtml() {
     ${pushHtml}
     <p style="margin:0 0 .35rem;font-size:.76rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">${t('acc.set_pay')}</p>
     <p style="margin:0;font-size:.82rem;color:var(--color-cream-dim);line-height:1.55;">${t('acc.set_pay_info')}</p>
+    ${typeof teamHtml === 'function' ? teamHtml() : ''}
     ${(typeof onbEnabled === 'function' && onbEnabled()) ? `<button type="button" class="mini-btn" style="margin-top:1rem;" onclick="closeAccountOverlay(); setTimeout(function () { gncOnbOpen({ replay: true }); }, 260);">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>
       <span>${t('onb.replay')}</span>
@@ -7282,6 +7338,7 @@ function renderAccProfile(el) {
       ${loyLine}
       <p style="font-size:0.7rem;color:var(--color-text-muted);margin:0.5rem 0 0;">${p.level ? `<span style="display:block;color:var(--color-orange-bright);font-weight:700;font-size:0.8rem;margin-bottom:0.35rem;">${t('acc.level')} ${p.level} · ${escG(p.levelName || '')}</span>` : ''}${t('acc.loyalty_sync')}</p>
     </div>
+    <div id="accBadges" class="acc-badges"></div>
     ${p.qrToken ? `
     <div style="background:var(--color-bg-elev);border:1px solid var(--color-border);border-radius:12px;padding:0.8rem 0.9rem;margin-bottom:0.9rem;">
       <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.25rem;">${t('acc.qr_title')}</div>
@@ -7388,6 +7445,22 @@ ${voll ? `    <div style="margin-bottom:0.3rem;font-weight:700;font-size:0.85rem
   renderWalletBtns();
   renderStanding();
   if (accountLoggedIn()) loadStanding();
+  gncJahrRender();
+}
+/* Abzeichen und "Dein Burger-Jahr" (burger-jahr.js, laedt mit defer nach) */
+var gncJahrReady = false;
+function gncJahrRender() {
+  var box = document.getElementById('accBadges');
+  if (!box) return;
+  if (!window.GNCJahr) { document.addEventListener('DOMContentLoaded', gncJahrRender, { once: true }); return; }
+  if (!gncJahrReady) {
+    gncJahrReady = true;
+    GNCJahr.init({
+      getAccount: function () { return (ACCOUNT && ACCOUNT.token) ? { email: ACCOUNT.email, token: ACCOUNT.token } : null; },
+      lang: function () { return currentLang; },
+    });
+  }
+  GNCJahr.renderBadges(box);
 }
 function openQrZoom() {
   const src = document.querySelector('#accQr svg');
@@ -7587,6 +7660,14 @@ async function accSaveBiz(nurKennzeichen, btn) {
    Warenkorb – und auch die nur, wenn der Kunde sie ausdrücklich einschaltet. */
 let STANDING = [];
 const WOCHENTAGE = ['so','mo','di','mi','do','fr','sa'];
+const SO_TAGE = [1, 2, 3, 4, 5, 6];
+const SO_MITTAG_BIS = 15 * 60;   // bis 14:45 sofort sichtbar, spaetere Fenster auf Wunsch
+let soFormOffen = false;
+const soNeu = { tag: SO_TAGE.includes(new Date().getDay()) ? new Date().getDay() : 1,
+                zeit: null, alle: false, voll: null, frei: null };
+let soEdit = null;               // { id, zweck: 'move'|'resume', tag, zeit, alle, voll, frei, hinweis }
+const soSlotDaten = {};          // 'tag|mode' -> { status: 'laedt'|'ok'|'fehler', nr, at, slots }
+let soSlotNr = 0;
 
 async function standingApi(action, body) {
   if (!accountLoggedIn()) return { ok: false, d: {} };
@@ -7635,12 +7716,31 @@ function renderStanding() {
       <div class="standing-actions">
         <button type="button" class="mini-btn" onclick="standingFill('${o.id}')">${t('so.order_now')}</button>
         ${o.paused
-          ? `<button type="button" class="mini-btn" onclick="standingSet('${o.id}','resume')">${t('so.resume')}</button>`
-          : `<button type="button" class="mini-btn" onclick="standingSet('${o.id}','pause')">${t('so.pause')}</button>`}
-        <button type="button" class="mini-btn mini-btn-danger" onclick="standingSet('${o.id}','delete')">${t('a11y.delete')}</button>
+          ? `<button type="button" class="mini-btn" onclick="standingSet('${o.id}','resume',this)">${t('so.resume')}</button>`
+          : `<button type="button" class="mini-btn" onclick="standingSet('${o.id}','pause',this)">${t('so.pause')}</button>`}
+        <button type="button" class="mini-btn" aria-expanded="${!!(soEdit && soEdit.id === o.id)}"
+                aria-controls="soEditBox-${o.id}" onclick="soEditAuf('${o.id}')">${t('so.change_slot')}</button>
+        <button type="button" class="mini-btn mini-btn-danger" onclick="standingSet('${o.id}','delete',this)">${t('a11y.delete')}</button>
       </div>
+      ${soEdit && soEdit.id === o.id ? `
+      <div class="so-edit" id="soEditBox-${o.id}">
+        ${soEdit.hinweis ? `<p class="so-note is-warn">${t(soEdit.hinweis)}</p>` : ''}
+        <div id="soEditPicker" class="so-pick">${soPickerHtml('edit')}</div>
+        <div class="standing-actions">
+          <button type="button" class="mini-btn" onclick="soEditSpeichern(this)">${t(soEdit.zweck === 'resume' ? 'so.resume' : 'so.save_slot')}</button>
+          <button type="button" class="mini-btn" onclick="soEditZu('${o.id}')">${t('so.cancel')}</button>
+        </div>
+      </div>` : ''}
     </div>`;
   }).join('');
+
+  // Eingaben im offenen Formular ueberleben das Neuzeichnen
+  const vorher = {
+    name: document.getElementById('soName')?.value,
+    quelle: document.getElementById('soSource')?.value,
+    remind: document.getElementById('soRemind')?.checked,
+  };
+  if (STANDING.length >= 3) soFormOffen = false;
 
   box.innerHTML = `
     <div style="margin:1.2rem 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('so.title')}</div>
@@ -7649,23 +7749,238 @@ function renderStanding() {
       ? `<div aria-hidden="true"><div class="skel" style="height:56px;margin:0 0 0.5rem;"></div><div class="skel" style="height:56px;margin:0 0 0.5rem;"></div></div>`
       : (liste || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.5rem;">${t('so.empty')}</p>`)}
     ${STANDING.length < 3 ? `
-      <button type="button" class="btn btn-secondary btn-block" id="soToggle"
-              style="margin-top:0.6rem;" onclick="toggleStandingForm()">${t('so.add')}</button>
-      <div id="soForm" hidden style="display:grid;gap:0.55rem;margin-top:0.7rem;">
+      <button type="button" class="btn btn-secondary btn-block" id="soToggle" aria-controls="soForm"
+              aria-expanded="${soFormOffen}" style="margin-top:0.6rem;" onclick="toggleStandingForm()">${t(soFormOffen ? 'so.cancel' : 'so.add')}</button>
+      <div id="soForm" ${soFormOffen ? '' : 'hidden'} style="display:grid;gap:0.55rem;margin-top:0.7rem;">
         <input type="text" id="soName" class="form-input" maxlength="32" placeholder="${t('so.name_ph')}">
         <select id="soSource" class="form-input">${standingSourceOptions()}</select>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
-          <select id="soDay" class="form-input">${
-            [1,2,3,4,5,6,0].map(n => `<option value="${n}">${standingDayLabel(n)}</option>`).join('')}</select>
-          <input type="time" id="soTime" class="form-input" value="12:30">
-        </div>
+        <div id="soPicker" class="so-pick">${soFormOffen ? soPickerHtml('neu') : ''}</div>
+        <p class="field-note" style="margin:0;">${t('so.slot_hint')}</p>
         <label class="standing-remind">
           <input type="checkbox" id="soRemind">
           <span>${t('so.remind_optin')}</span>
         </label>
-        <button class="btn btn-primary" type="button" onclick="standingCreate(this)">${t('so.save')}</button>
+        <button class="btn btn-primary" type="button" id="soSave" onclick="standingCreate(this)">${t('so.save')}</button>
       </div>`
       : ''}`;
+
+  if (soFormOffen) {
+    const n = document.getElementById('soName'), q = document.getElementById('soSource'), m = document.getElementById('soRemind');
+    if (n && vorher.name != null) n.value = vorher.name;
+    if (q && vorher.quelle != null && [...q.options].some(x => x.value === vorher.quelle)) q.value = vorher.quelle;
+    if (m && vorher.remind != null) m.checked = vorher.remind;
+  }
+}
+
+/* Zeitfenster -----------------------------------------------------------------
+   Die Reihe belegt ein festes 15-Minuten-Fenster. Je Fenster gibt es nur
+   wenige Plaetze; die Belegung liefert der Server (action 'slots', ohne
+   Anmeldung, nur Zahlen). Sonntag ist Ruhetag (HOURS[0] = null), deshalb
+   gibt es nur Mo bis Sa. Massgeblich bleibt der Server: krumme Zeiten lehnt
+   er mit 'bad_slot' ab, volle Fenster mit 'slot_full' samt freien Vorschlaegen.
+   Zwei Auswahlen koennen offen sein: 'neu' (Formular) und 'edit' (Fenster
+   einer bestehenden Reihe aendern oder beim Fortsetzen neu waehlen). */
+/* Zustand der Zeitfenster-Auswahl: siehe "Zeitfenster" unter renderStanding(). */
+
+function soMin(z) {
+  const m = /^(\d{2}):(\d{2})$/.exec(String(z || ''));
+  return m ? Number(m[1]) * 60 + Number(m[2]) : -1;
+}
+const soImRaster = (z) => soMin(z) >= 0 && soMin(z) % 15 === 0;
+function soKtx(ziel) { return ziel === 'edit' ? soEdit : soNeu; }
+function soModus(ziel) {
+  if (ziel === 'edit') {
+    const o = soEdit && STANDING.find(x => x.id === soEdit.id);
+    return o && o.mode === 'delivery' ? 'delivery' : 'pickup';
+  }
+  return checkoutMode === 'delivery' ? 'delivery' : 'pickup';
+}
+function soSlotsVergessen() { Object.keys(soSlotDaten).forEach(k => { delete soSlotDaten[k]; }); }
+
+async function soSlotsLaden(tag, mode, neu) {
+  const k = tag + '|' + mode;
+  const alt = soSlotDaten[k];
+  if (!neu && alt && (alt.status === 'laedt' || (alt.status === 'ok' && Date.now() - alt.at < 60000))) return;
+  const nr = ++soSlotNr;
+  soSlotDaten[k] = { status: 'laedt', nr };
+  soPickerZeichnen();
+  let ergebnis = { status: 'fehler', nr };
+  try {
+    const res = await fetch('/.netlify/functions/standing-orders', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'slots', weekday: tag, mode }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok && d.ok && Array.isArray(d.slots)) {
+      ergebnis = { status: 'ok', nr, at: Date.now(),
+        slots: d.slots.filter(s => s && soImRaster(s.time))
+          .map(s => ({ time: s.time, free: Math.max(0, parseInt(s.free, 10) || 0) })) };
+    }
+  } catch (e) {}
+  // Eine spaetere Anfrage fuer denselben Tag hat Vorrang
+  if (!soSlotDaten[k] || soSlotDaten[k].nr !== nr) return;
+  soSlotDaten[k] = ergebnis;
+  soPickerZeichnen();
+}
+
+function soPickerHtml(ziel) {
+  const c = soKtx(ziel);
+  if (!c) return '';
+  const mode = soModus(ziel);
+  const tage = SO_TAGE.map(n => `<button type="button" class="so-chip" data-k="tag${n}"
+      aria-pressed="${c.tag === n}" onclick="soTag('${ziel}', ${n})">${standingDayLabel(n)}</button>`).join('');
+  return `
+    <div class="so-pick-label" id="soLblTag-${ziel}">${t('so.weekday')}</div>
+    <div class="so-days" role="group" aria-labelledby="soLblTag-${ziel}">${tage}</div>
+    <div class="so-pick-label" id="soLblZeit-${ziel}">${t('so.slot')}</div>
+    ${soVollHtml(ziel, c)}
+    ${soSlotsHtml(ziel, c, mode)}`;
+}
+
+/* Nach 'slot_full': Hinweis plus die freien Fenster in der Naehe als Chips. */
+function soVollHtml(ziel, c) {
+  if (!c.voll) return '';
+  const frei = (c.frei || []).filter(soImRaster);
+  if (!frei.length) return `<p class="so-note is-warn">${t('so.full_none')}</p>`;
+  return `<p class="so-note is-warn" id="soVoll-${ziel}">${escG(t('so.full_note').replace('{time}', c.voll))}</p>
+    <div class="so-slots" role="group" aria-labelledby="soVoll-${ziel}">${frei.map(z =>
+      `<button type="button" class="so-chip" data-k="frei${z}" aria-pressed="false"
+         onclick="soZeit('${ziel}','${z}')">${z}</button>`).join('')}</div>`;
+}
+
+function soSlotsHtml(ziel, c, mode) {
+  const d = soSlotDaten[c.tag + '|' + mode];
+  if (!d) queueMicrotask(() => soSlotsLaden(c.tag, mode));
+  if (!d || d.status === 'laedt') {
+    return `<div class="so-slots" aria-hidden="true">${'<div class="skel"></div>'.repeat(4)}</div>
+      <p class="sr-only" role="status">${t('so.slots_loading')}</p>`;
+  }
+  if (d.status === 'fehler') {
+    return `<p class="so-note is-warn">${t('so.slots_error')}</p>
+      <button type="button" class="mini-btn" onclick="soSlotsLaden(${c.tag}, '${mode}', true)">${t('so.retry')}</button>`;
+  }
+  if (!d.slots.length) return `<p class="so-note">${t('so.day_closed')}</p>`;
+
+  // Beim Aendern belegt die eigene (aktive) Reihe ihr Fenster selbst mit
+  const o = ziel === 'edit' ? STANDING.find(x => x.id === c.id) : null;
+  const eigen = o && !o.paused && Number(o.weekday) === c.tag ? o.time : null;
+  const frueh = d.slots.filter(s => soMin(s.time) < SO_MITTAG_BIS);
+  const immerAlle = frueh.length < 4
+    || (c.zeit && soMin(c.zeit) >= SO_MITTAG_BIS)
+    || !frueh.some(s => s.free > 0 || s.time === eigen);
+  const liste = (c.alle || immerAlle) ? d.slots : frueh;
+  const chips = liste.map(s => {
+    const istEigen = s.time === eigen;
+    const voll = !istEigen && s.free <= 0;
+    const unter = istEigen ? t('so.slot_current')
+      : (voll ? t('so.slot_full') : t('so.slot_free').replace('{n}', s.free));
+    return `<button type="button" class="so-chip${!istEigen && !voll && s.free <= 2 ? ' is-few' : ''}"
+        data-k="z${s.time}" aria-pressed="${c.zeit === s.time}"${voll ? ' disabled' : ''}
+        onclick="soZeit('${ziel}','${s.time}')">${s.time}<small>${unter}</small></button>`;
+  }).join('');
+  const umschalter = !immerAlle && frueh.length < d.slots.length
+    ? `<button type="button" class="mini-btn" aria-expanded="${!!c.alle}" onclick="soAlle('${ziel}')">${
+        t(c.alle ? 'so.less_times' : 'so.more_times')}</button>`
+    : '';
+  return `<div class="so-slots" role="group" aria-labelledby="soLblZeit-${ziel}">${chips}</div>${umschalter}`;
+}
+
+/* Nur die Auswahl neu zeichnen, nicht das ganze Formular: Name, Quelle und
+   Haken bleiben stehen, der Tastaturfokus wandert auf denselben Chip. */
+function soPickerZeichnen() {
+  [['neu', 'soPicker'], ['edit', 'soEditPicker']].forEach(([ziel, id]) => {
+    const box = document.getElementById(id);
+    if (!box || !soKtx(ziel)) return;
+    if (ziel === 'neu' && !soFormOffen) return;
+    const a = document.activeElement;
+    let k = a && box.contains(a) && a.dataset ? a.dataset.k : null;
+    box.innerHTML = soPickerHtml(ziel);
+    if (k) {
+      if (k.startsWith('frei')) k = 'z' + k.slice(4);
+      const el = box.querySelector(`[data-k="${k}"]`);
+      if (el && !el.disabled) el.focus({ preventScroll: true });
+    }
+  });
+}
+
+function soTag(ziel, n) {
+  const c = soKtx(ziel);
+  if (!c || !SO_TAGE.includes(n)) return;
+  if (c.tag !== n) Object.assign(c, { tag: n, zeit: null, alle: false, voll: null, frei: null });
+  soPickerZeichnen();
+  soSlotsLaden(n, soModus(ziel));
+}
+function soZeit(ziel, z) {
+  const c = soKtx(ziel);
+  if (!c || !soImRaster(z)) return;
+  Object.assign(c, { zeit: z, voll: null, frei: null });
+  if (soMin(z) >= SO_MITTAG_BIS) c.alle = true;
+  soPickerZeichnen();
+}
+function soAlle(ziel) {
+  const c = soKtx(ziel);
+  if (!c) return;
+  c.alle = !c.alle;
+  soPickerZeichnen();
+}
+
+/* Antwort 'slot_full' oder 'bad_slot' in der Auswahl sichtbar machen.
+   Gibt false zurueck, wenn es ein anderer Fehler war. */
+function soFehler(ziel, r, btn) {
+  const c = soKtx(ziel);
+  const e = r && r.d && r.d.error;
+  if (!c || (e !== 'slot_full' && e !== 'bad_slot')) return false;
+  const gewuenscht = c.zeit;
+  c.zeit = null;
+  if (e === 'slot_full') {
+    c.voll = gewuenscht || '';
+    c.frei = (Array.isArray(r.d.free) ? r.d.free : []).filter(soImRaster).slice(0, 4);
+    if (c.frei.some(z => soMin(z) >= SO_MITTAG_BIS)) c.alle = true;
+  } else { c.voll = null; c.frei = null; }
+  soSlotsLaden(c.tag, soModus(ziel), true);
+  flashAccMsg(e === 'bad_slot' ? t('so.bad_slot')
+    : (c.frei.length ? t('so.full_note').replace('{time}', c.voll) : t('so.full_none')), btn);
+  return true;
+}
+
+/* Fenster einer bestehenden Reihe aendern ('move') oder beim Fortsetzen neu
+   waehlen ('resume', wenn das alte Fenster voll ist oder nicht ins Raster passt). */
+function soEditAuf(id, zweck, extra) {
+  const o = STANDING.find(x => x.id === id);
+  if (!o) return;
+  if (!zweck && soEdit && soEdit.id === id) { soEditZu(id); return; }
+  const tag = SO_TAGE.includes(Number(o.weekday)) ? Number(o.weekday) : SO_TAGE[0];
+  const zeit = zweck === 'resume' || tag !== Number(o.weekday) || !soImRaster(o.time) ? null : o.time;
+  soEdit = Object.assign({ id, zweck: zweck || 'move', tag, zeit, alle: false, voll: null, frei: null, hinweis: null }, extra || {});
+  if (soEdit.zeit && soMin(soEdit.zeit) >= SO_MITTAG_BIS) soEdit.alle = true;
+  renderStanding();
+  soSlotsLaden(soEdit.tag, soModus('edit'), true);
+  const box = document.getElementById('soEditPicker');
+  const ziel = box && (box.querySelector('[aria-pressed="true"]') || box.querySelector('.so-chip'));
+  if (ziel) ziel.focus();
+}
+function soEditZu(id) {
+  soEdit = null;
+  renderStanding();
+  const knopf = id && document.querySelector(`[aria-controls="soEditBox-${id}"]`);
+  if (knopf) knopf.focus();
+}
+async function soEditSpeichern(btn) {
+  const c = soEdit;
+  if (!c) return;
+  if (!c.zeit) { flashAccMsg(t('so.pick_time'), btn); return; }
+  return withBusy(btn, async () => {
+    let r;
+    try {
+      r = await standingApi(c.zweck === 'resume' ? 'resume' : 'move', { id: c.id, weekday: c.tag, time: c.zeit });
+    } catch (e) { flashAccMsg(t('acc.err_network'), btn); return; }
+    if (r.ok) {
+      showSavedToast(t(c.zweck === 'resume' ? 'so.resumed' : 'so.slot_saved'));
+      soEdit = null;
+      soSlotsVergessen();
+      loadStanding();
+    } else if (!soFehler('edit', r, btn)) flashAccMsg(accErrText(r), btn);
+  });
 }
 
 /* Quelle der Reihe: der aktuelle Warenkorb oder eine der letzten Bestellungen.
@@ -7692,8 +8007,16 @@ function toggleStandingForm() {
   const f = document.getElementById('soForm');
   const b = document.getElementById('soToggle');
   if (!f) return;
-  f.hidden = !f.hidden;
-  if (b) b.textContent = f.hidden ? t('so.add') : t('so.cancel');
+  soFormOffen = !soFormOffen;
+  f.hidden = !soFormOffen;
+  if (b) {
+    b.textContent = soFormOffen ? t('so.cancel') : t('so.add');
+    b.setAttribute('aria-expanded', String(soFormOffen));
+  }
+  if (soFormOffen) {
+    soPickerZeichnen();
+    soSlotsLaden(soNeu.tag, soModus('neu'));
+  }
 }
 
 function itemsAusKorb(korb) {
@@ -7717,29 +8040,55 @@ async function standingCreate(btn) {
   }
   const items = itemsAusKorb(korb);
   if (!items.length) { flashAccMsg(t('so.need_cart'), btn); return; }
+  // Kein stilles 12:30 mehr: ohne gewaehltes Zeitfenster wird nichts angelegt
+  if (!soNeu.zeit) { flashAccMsg(t('so.pick_time'), btn); return; }
   // Nicht idempotent: ein Doppeltipp waeren zwei Dauerbestellungen
   return withBusy(btn, async () => {
     let r;
     try {
       r = await standingApi('create', {
         name: (document.getElementById('soName')?.value || '').trim(),
-        weekday: Number(document.getElementById('soDay').value),
-        time: document.getElementById('soTime').value || '12:30',
-        mode: checkoutMode,
+        weekday: soNeu.tag,
+        time: soNeu.zeit,
+        mode: soModus('neu'),
         items,
         // Erinnerung nur, wenn ausdrücklich angehakt
         remind: !!document.getElementById('soRemind')?.checked,
       });
     } catch (e) { flashAccMsg(t('acc.err_network'), btn); return; }
-    if (r.ok) { showSavedToast(t('so.saved')); loadStanding(); }
-    else flashAccMsg(r.d && r.d.hint ? r.d.hint : t('acc.error'), btn);
+    if (r.ok) {
+      showSavedToast(t('so.saved'));
+      soFormOffen = false;
+      Object.assign(soNeu, { zeit: null, alle: false, voll: null, frei: null });
+      soSlotsVergessen();
+      loadStanding();
+    }
+    else if (!soFehler('neu', r, btn)) flashAccMsg(r.d && r.d.hint ? r.d.hint : t('acc.error'), btn);
   });
 }
 
-async function standingSet(id, action) {
+async function standingSet(id, action, btn) {
   if (action === 'delete' && !confirm(t('so.delete_confirm'))) return;
-  const r = await standingApi(action, { id });
-  if (r.ok) loadStanding();
+  let r;
+  try { r = await standingApi(action, { id }); }
+  catch (e) { flashAccMsg(t('acc.err_network'), btn); return; }
+  if (r.ok) {
+    if (soEdit && soEdit.id === id) soEdit = null;
+    soSlotsVergessen();   // Pausieren, Fortsetzen und Loeschen aendern die Belegung
+    loadStanding();
+    return;
+  }
+  const e = r.d && r.d.error;
+  if (action === 'resume' && (e === 'slot_full' || e === 'bad_slot')) {
+    // Altes Fenster voll oder (Altbestand) nicht im Raster: neues waehlen lassen
+    const o = STANDING.find(x => x.id === id);
+    soEditAuf(id, 'resume', e === 'slot_full'
+      ? { voll: (o && o.time) || '', frei: (Array.isArray(r.d.free) ? r.d.free : []).filter(soImRaster).slice(0, 4),
+          hinweis: 'so.pick_new' }
+      : { hinweis: 'so.pick_new' });
+    return;
+  }
+  flashAccMsg(accErrText(r), btn);
 }
 async function standingRemind(id, an) {
   const r = await standingApi('remind', { id, remind: !!an });
@@ -7952,14 +8301,11 @@ function accShareRef() {
   if (!p || !p.refCode) return;
   const text = t('acc.ref_share_text').replace('{code}', p.refCode);
   const url = 'https://grillnchill-foodtruck.de';
-  if (navigator.share) {
-    navigator.share({ title: "Grill'n Chill", text, url }).catch(() => {});
-  } else {
-    // Dieselbe Kopierhilfe wie beim Gruppenlink – damit auch hier ein
-    // Rueckfall greift, wenn die Zwischenablage sich verweigert.
-    inZwischenablage(text + ' ' + url)
-      .then(done => flashAccMsgOk(done ? t('acc.ref_copied') : p.refCode));
-  }
+  // App: Teilen-Blatt der iOS-App (WhatsApp, Instagram, Snapchat, Nachrichten ...),
+  // Browser: Web Share, sonst Zwischenablage wie beim Gruppenlink
+  gncShareLink({ url, title: "Grill'n Chill", text }).then(how => {
+    if (how === 'copied' || how === 'none') flashAccMsgOk(how === 'copied' ? t('acc.ref_copied') : p.refCode);
+  });
 }
 function loadMap() {
   const box = document.getElementById('mapConsent');
@@ -8113,7 +8459,11 @@ function commitOrderSuccess(order, cartSnapshot) {
     if (order && order.loyaltyApplied) consumeLoyaltyReward();
   }
   if (order) incrementCustomerOrderCount(order.email, order.phone);
-  if (order && typeof saveActiveOrder === 'function') { saveActiveOrder(order); if (typeof gncWatchSync === 'function') gncWatchSync(); }
+  if (order && typeof saveActiveOrder === 'function') {
+    saveActiveOrder(order);
+    if (typeof gncWatchSync === 'function') gncWatchSync();
+    if (typeof gncLiveStart === 'function') gncLiveStart();   // Live-Aktivitaet und "Bin da" (App ab Build 7)
+  }
 }
 
 /* Stempelkarte fürs Warenkorb-Panel */
@@ -12319,6 +12669,10 @@ async function renderGroupHost(preloaded, refresh) {
   }
   const link = groupLink(g.id);
   const wa = 'https://wa.me/?text=' + encodeURIComponent(t('grp.share_text').replace('{host}', g.host) + ' ' + link);
+  grpShare = { url: link, text: t('grp.share_text').replace('{host}', g.host) };
+  // Teilen-Knopf, wo es ein Teilen-Blatt gibt (App, iMessage, Handy-Browser); WhatsApp bleibt als Direktweg
+  const canShare = GNC_IMESSAGE || gncHas('gncShare') || !!navigator.share;
+  const shareBtn = canShare ? `<button type="button" class="btn btn-primary btn-block grp-share-btn" style="margin-bottom:${GNC_IMESSAGE ? '1.2rem' : '0.6rem'};" onclick="shareGroupLink(this)">${t(GNC_IMESSAGE ? 'grp.send_chat' : 'grp.share')}</button>` : '';
   const total = (g.contributions || []).reduce((s2, c) => s2 + (c.total || 0), 0);
   const rows = (g.contributions || []).map(c =>
     `<div style="padding:0.55rem 0;border-bottom:1px solid var(--color-border);">
@@ -12331,7 +12685,8 @@ async function renderGroupHost(preloaded, refresh) {
       <input type="text" class="form-input" readonly value="${link}" id="grpLinkField" style="font-size:0.8rem;flex:1;">
       <button class="btn btn-secondary" style="flex:none;padding:0.7rem 1rem;" onclick="copyGroupLink(this)">${t('grp.copy')}</button>
     </div>
-    <a href="${wa}" target="_blank" rel="noopener" class="btn btn-primary btn-block" style="text-align:center;text-decoration:none;margin-bottom:1.2rem;">${t('grp.whatsapp')}</a>
+    ${shareBtn}
+    ${GNC_IMESSAGE ? '' : `<a href="${wa}" target="_blank" rel="noopener" class="btn ${canShare ? 'btn-secondary' : 'btn-primary'} btn-block" style="text-align:center;text-decoration:none;margin-bottom:1.2rem;">${t('grp.whatsapp')}</a>`}
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.3rem;">
       <strong style="font-size:0.9rem;">${t('grp.list_title').replace('{n}', (g.contributions || []).length)}</strong>
       <button onclick="refreshGroupHost(this)" style="background:none;border:none;color:var(--color-orange-bright);font-weight:700;font-size:0.8rem;cursor:pointer;">${t('grp.refresh')}</button>
@@ -13831,6 +14186,7 @@ function gncWatchSync(force) {
   var l = {};
   keys.forEach(function (k) { l[k] = t('watch.' + k); });
   l.today = t('co.today'); l.tomorrow = t('co.tomorrow'); l.wd = wd.join(',');
+  l.again = t('watch.again');
   var snap = {
     v: 1, lang: currentLang, days: days,
     paused: !!SHOP_STATUS.paused, pauseMsg: SHOP_STATUS.pauseMessage || '',
@@ -13841,6 +14197,7 @@ function gncWatchSync(force) {
         : t('watch.loy_rest').replace('{rest}', euroKurz(rest)).replace('{amount}', euroKurz(LOYALTY_REWARD)),
     },
     order: getActiveOrder(), l: l,
+    last: typeof gncLastOrderSummary === 'function' ? gncLastOrderSummary() : null,   // Siri "mein Uebliches" und Widget
   };
   var sig = JSON.stringify(snap);
   if (!force && sig === watchSig) return;
@@ -13852,6 +14209,164 @@ if (GNC_WATCH) {
   setTimeout(gncWatchSync, 1500);
   setInterval(gncWatchSync, 60000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) gncWatchSync(); });
+}
+
+/* ====================================================================
+   APP 1.2 (BUILD 7): Live-Status, "Bin da", Haptik, Teilen, Team-Kopplung,
+   Siri-/Widget-Deep-Links. Alles nur mit den Nachrichten der iOS-App
+   (window.webkit.messageHandlers.*); ohne App greifen Web-Rueckfaelle.
+   ==================================================================== */
+function gncHas(name) { try { return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[name]); } catch (e) { return false; } }
+function gncPost(name, body) { try { window.webkit.messageHandlers[name].postMessage(body); return true; } catch (e) { return false; } }
+var GNC_IMESSAGE = !!window.gncIMessage || /[?&]imessage=1/.test(location.search);
+
+/* ---- Teilen: iMessage-App > natives Teilen-Blatt > Web Share > Zwischenablage ---- */
+async function gncShareLink(o) {
+  o = o || {};
+  if (GNC_IMESSAGE && gncHas('gncIMessage')) { gncPost('gncIMessage', { url: o.url, title: o.title || '', text: o.text || '' }); return 'imessage'; }
+  if (gncHas('gncShare')) { gncPost('gncShare', { url: o.url, title: o.title || "Grill'n Chill", text: o.text || '' }); return 'native'; }
+  if (navigator.share) { try { await navigator.share({ title: o.title || "Grill'n Chill", text: o.text || '', url: o.url }); return 'web'; } catch (e) { if (e && e.name === 'AbortError') return 'abort'; } }
+  var ok = typeof inZwischenablage === 'function' ? await inZwischenablage((o.text ? o.text + ' ' : '') + o.url) : false;
+  return ok ? 'copied' : 'none';
+}
+
+/* ---- Deep-Links von Siri und Widgets: ?reorder=1 bzw. window.gncDeepLink('reorder'|'menu') ---- */
+window.gncDeepLink = function (name) {
+  if (name === 'reorder' && typeof getLastOrder === 'function' && getLastOrder()) { repeatLastOrder(); return; }
+  if (typeof gncGoView === 'function') gncGoView('menu');
+};
+(function () {
+  if (!/[?&]reorder=1/.test(location.search)) return;
+  try { history.replaceState(null, '', location.pathname + '?app=1'); } catch (e) {}
+  setTimeout(function () { window.gncDeepLink('reorder'); }, 600);
+})();
+
+/* ---- Laufende Bestellung: Live-Aktivitaet, "Bin da", Brutzel-Haptik ---- */
+function gncLiveLabels() {
+  var l = {};
+  ['st_confirmed', 'st_preparing', 'st_ready', 'st_way', 'st_done'].forEach(function (k) { l[k] = t('watch.' + k); });
+  return l;
+}
+function gncLiveStart() {
+  var a = getActiveOrder();
+  if (!a) return;
+  if (gncHas('gncLive')) gncPost('gncLive', { action: 'start', ref: a.ref, k: a.k, mode: a.mode, state: 'confirmed', labels: gncLiveLabels(), lang: currentLang });
+  if (a.mode === 'pickup' && gncHas('gncArrival')) gncPost('gncArrival', { action: 'arm', ref: a.ref, k: a.k, lang: currentLang });
+  gncTrackStart();
+}
+var gncTrack = { t: 0, state: '', ref: '' };
+function gncTrackStart() {
+  if (!APP_FORCED || gncTrack.t) return;
+  gncTrackTick();
+  gncTrack.t = setInterval(gncTrackTick, 20000);
+}
+function gncTrackStop() { if (gncTrack.t) clearInterval(gncTrack.t); gncTrack.t = 0; }
+async function gncTrackTick() {
+  if (document.hidden) return;
+  var a = getActiveOrder();
+  if (!a) { gncTrackStop(); return; }
+  try {
+    var r = await fetch('/.netlify/functions/order-status?ref=' + encodeURIComponent(a.ref) + '&k=' + encodeURIComponent(a.k), { cache: 'no-store' });
+    if (!r.ok) { if (r.status === 404 || r.status === 403) { gncTrackStop(); } return; }
+    var d = await r.json();
+    var st = d && d.state;
+    if (!st) return;
+    if (gncTrack.ref !== a.ref) { gncTrack.ref = a.ref; gncTrack.state = ''; }
+    if (st !== gncTrack.state) {
+      var first = !gncTrack.state;
+      gncTrack.state = st;
+      var fin = st === 'picked_up' || st === 'delivered';
+      if (gncHas('gncLive')) gncPost('gncLive', { action: fin ? 'end' : 'update', ref: a.ref, state: st });
+      if (!first && st === 'preparing' && gncHas('gncHaptic')) gncPost('gncHaptic', { pattern: 'sizzle' });
+      if (fin) {
+        if (gncHas('gncArrival')) gncPost('gncArrival', { action: 'cancel' });
+        try { localStorage.removeItem(ACTIVE_ORDER_KEY); } catch (e) {}
+        gncTrackStop();
+        if (typeof gncWatchSync === 'function') gncWatchSync(true);
+      }
+    }
+  } catch (e) {}
+}
+if (APP_FORCED) {
+  setTimeout(function () { if (getActiveOrder()) gncTrackStart(); }, 2500);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && getActiveOrder()) { gncTrackStart(); gncTrackTick(); } });
+}
+
+/* ---- Letzte Bestellung als Text fuer Siri, Widget und Uhr ---- */
+function gncLastOrderSummary() {
+  var last = typeof getLastOrder === 'function' ? getLastOrder() : null;
+  if (!last) return null;
+  var parts = [], total = 0;
+  Object.keys(last).forEach(function (key) {
+    var e = last[key];
+    var m = e && MENU.find(function (x) { return x.id === e.menuId; });
+    if (!m) return;
+    parts.push((e.qty || 1) + 'x ' + m.name);
+    total += SK.einzelpreis(e) * (e.qty || 1);
+  });
+  if (!parts.length) return null;
+  return { text: parts.slice(0, 4).join(', ') + (parts.length > 4 ? ' ...' : ''), total: total ? formatPrice(total) : '' };
+}
+
+/* ---- Gruppenbestellung teilen: direkt in WhatsApp, Snapchat, Instagram,
+   Nachrichten usw. ueber das Teilen-Blatt; in der iMessage-App als Nachricht
+   in den Chat ---- */
+var grpShare = null;
+function shareGroupLink(btn) {
+  if (!grpShare) return;
+  return withBusy(btn, function () {
+    return gncShareLink({ url: grpShare.url, title: "Grill'n Chill", text: grpShare.text }).then(function (how) {
+      if (how === 'copied' && btn) { var v = btn.textContent; btn.textContent = t('grp.copied'); setTimeout(function () { btn.textContent = v; }, 1600); }
+    });
+  });
+}
+// Die iMessage-App oeffnet ?app=1&imessage=1#grp: gleich die Gruppenbestellung zeigen
+(function () {
+  if (!GNC_IMESSAGE || location.hash !== '#grp' || /[?&]g=/.test(location.search)) return;
+  setTimeout(function () { try { openGroupOverlay(); } catch (e) {} }, 500);
+})();
+
+/* ---- Team-Kopplung (Kubis Uhr und Cockpit-Widget) ---- */
+var TEAM_KEY = 'gnc_team_v1';
+function teamState() { try { return JSON.parse(localStorage.getItem(TEAM_KEY) || 'null'); } catch (e) { return null; } }
+function teamEnabled() { return APP_FORCED && GNC_APP_BUILD >= 7 && gncHas('gncTeam'); }
+function teamHtml() {
+  if (!teamEnabled()) return '';
+  var st = teamState(), inner;
+  if (st) {
+    inner = '<p class="team-ok">' + escG(t('team.coupled').replace('{name}', st.name || 'Team')) + '</p>' +
+      '<p class="team-hint">' + escG(t('team.coupled_hint')) + '</p>' +
+      '<div class="team-row"><a class="mini-btn" href="/cockpit.html">' + escG(t('team.cockpit')) + '</a>' +
+      '<button type="button" class="mini-btn" onclick="teamUncouple()">' + escG(t('team.uncouple')) + '</button></div>';
+  } else {
+    inner = '<p class="team-hint" id="teamHint">' + escG(t('team.hint')) + '</p>' +
+      '<div class="team-row"><input id="teamCode" class="form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" aria-describedby="teamHint" aria-label="' + escG(t('team.code')) + '">' +
+      '<button type="button" class="mini-btn" onclick="teamCouple(this)">' + escG(t('team.couple')) + '</button></div>' +
+      '<p id="teamErr" class="team-err" role="alert" hidden></p>';
+  }
+  // Fuer Kubi und das Team; Gaeste sehen nur eine zugeklappte Zeile
+  return '<details class="team-box"' + (st ? ' open' : '') + '><summary>' + escG(t('team.title')) + '</summary>' + inner + '</details>';
+}
+async function teamCouple(btn) {
+  var f = document.getElementById('teamCode'), err = document.getElementById('teamErr');
+  var code = String((f && f.value) || '').replace(/\D/g, '');
+  if (code.length !== 6) { if (err) { err.hidden = false; err.textContent = t('team.err_code'); } return; }
+  return withBusy(btn, async function () {
+    try {
+      var r = await fetch('/.netlify/functions/team-device', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'redeem', code: code, device: 'iPhone-App' }) });
+      var d = await r.json().catch(function () { return {}; });
+      if (!r.ok || !d.token) { if (err) { err.hidden = false; err.textContent = t(r.status === 429 ? 'team.err_wait' : 'team.err_code'); } return; }
+      gncPost('gncTeam', { token: d.token, name: d.name || '' });
+      try { localStorage.setItem(TEAM_KEY, JSON.stringify({ name: d.name || '', at: Date.now() })); } catch (e) {}
+      if (typeof renderAccount === 'function') renderAccount();
+    } catch (e) { if (err) { err.hidden = false; err.textContent = t('acc.err_network'); } }
+  });
+}
+function teamUncouple() {
+  gncPost('gncTeam', { clear: true });
+  try { localStorage.removeItem(TEAM_KEY); } catch (e) {}
+  if (typeof renderAccount === 'function') renderAccount();
 }
 
 /* ====================================================================
@@ -13872,7 +14387,7 @@ var ONB_KEY = 'gnc_onb_v1';
 // alte App (1.0.1, Build 5) und der Browser zeigen deshalb keine Einfuehrung.
 var GNC_APP_BUILD = Number(window.gncAppBuild || 0);
 var ONB_MIN_BUILD = 6;
-function onbEnabled() { return !!APP_FORCED && GNC_APP_BUILD >= ONB_MIN_BUILD; }
+function onbEnabled() { return !!APP_FORCED && GNC_APP_BUILD >= ONB_MIN_BUILD && !GNC_IMESSAGE; }
 var ONB_IC = {
   flame: '<path d="M12 22c4 0 7-2.7 7-6.6 0-3.1-1.8-5.4-3.6-7.2-.3 1.7-1.2 2.9-2.4 3.4.3-3.4-1.4-6.6-4.5-8.6.3 3-1.3 5-2.8 6.9C4.7 11.4 5 13.4 5 15.4 5 19.3 8 22 12 22z"/><path d="M12 22c-1.7 0-3-1.2-3-2.8 0-1.8 1.4-2.9 3-4.7 1.6 1.8 3 2.9 3 4.7 0 1.6-1.3 2.8-3 2.8z"/>',
   order: '<path d="M4 11c0-4 3.6-6.5 8-6.5S20 7 20 11"/><path d="M3.5 14.5h17"/><path d="M4 18c1.5 1.6 4.5 2.5 8 2.5s6.5-.9 8-2.5"/>',
@@ -13881,6 +14396,11 @@ var ONB_IC = {
   glass: '<rect x="3" y="15" width="18" height="6" rx="3"/><path d="M7 18h.01M12 18h.01M17 18h.01"/><path d="M5 11h14M8 7h8"/>',
   watch: '<rect x="6.5" y="6" width="11" height="12" rx="3"/><path d="M9 6l.6-3h4.8l.6 3M9 18l.6 3h4.8l.6-3"/><path d="M12 9.5V12l1.6 1"/>',
   ticket: '<path d="M4 7.5h16v3a1.5 1.5 0 0 0 0 3v3H4v-3a1.5 1.5 0 0 0 0-3z"/><path d="M14 7.5v9" stroke-dasharray="1.6 1.8"/>',
+  island: '<rect x="3" y="8.5" width="18" height="7" rx="3.5"/><circle cx="16.5" cy="12" r="1.3"/><path d="M7 12h5"/>',
+  widget: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="16" height="7" rx="2"/>',
+  share: '<path d="M12 3.5v11"/><path d="M8 7.5l4-4 4 4"/><path d="M6.5 11H6a1.5 1.5 0 0 0-1.5 1.5V19A1.5 1.5 0 0 0 6 20.5h12a1.5 1.5 0 0 0 1.5-1.5v-6.5A1.5 1.5 0 0 0 18 11h-.5"/>',
+  medal: '<circle cx="12" cy="15" r="5.5"/><path d="M8.6 10.7L6.5 3.5h4l1.5 4M15.4 10.7l2.1-7.2h-4L12 7.5"/><path d="M12 12.5l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2-1.45-1.4 2-.3z"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   hand: '<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-.8a6 6 0 0 1-4.8-2.4L4.3 15a1.5 1.5 0 0 1 2.3-1.9L9 15"/>',
 };
 // Neuheiten mit Version; when() blendet aus, was auf diesem Geraet nicht gilt
@@ -13889,7 +14409,14 @@ var ONB_FEATURES = [
   { since: 2, id: 'glass', icon: 'glass', title: 'onb.f_glass_title', text: 'onb.f_glass_text', when: function () { return ntbOn; } },
   { since: 2, id: 'watch', icon: 'watch', title: 'onb.f_watch_title', text: 'onb.f_watch_text', when: function () { return GNC_WATCH; } },
   { since: 2, id: 'voucher', icon: 'ticket', title: 'onb.f_voucher_title', text: 'onb.f_voucher_text' },
+  // App 1.2 (Build 7): erst mit dem Update sichtbar, auch was auf der Website mitkommt
+  { since: 3, id: 'live', icon: 'island', title: 'onb.f_live_title', text: 'onb.f_live_text', when: onbB7 },
+  { since: 3, id: 'widgets', icon: 'widget', title: 'onb.f_widgets_title', text: 'onb.f_widgets_text', when: onbB7 },
+  { since: 3, id: 'share', icon: 'share', title: 'onb.f_share_title', text: 'onb.f_share_text', when: onbB7 },
+  { since: 3, id: 'badges', icon: 'medal', title: 'onb.f_badges_title', text: 'onb.f_badges_text', when: onbB7 },
+  { since: 3, id: 'slots', icon: 'clock', title: 'onb.f_slots_title', text: 'onb.f_slots_text', when: onbB7 },
 ];
+function onbB7() { return GNC_APP_BUILD >= 7; }
 function onbState() { try { return JSON.parse(localStorage.getItem(ONB_KEY) || 'null') || {}; } catch (e) { return {}; } }
 function onbAvailable() { return ONB_FEATURES.filter(function (f) { return !f.when || f.when(); }); }
 function onbNews() { var seen = onbState().seen || []; return onbAvailable().filter(function (f) { return seen.indexOf(f.id) < 0; }); }
@@ -13923,7 +14450,8 @@ function onbSlides(role) {
       { icon: 'order', eyebrow: t('onb.n2_eyebrow'), title: t('onb.n2_title'),
         steps: [t('onb.n2_s1'), t('onb.n2_s2'), t('onb.n2_s3')], push: true },
       { icon: 'gift', eyebrow: t('onb.n3_eyebrow'), title: t('onb.n3_title'),
-        perks: [t('onb.n3_p1'), t('onb.n3_p2').replace('{goal}', goal).replace('{reward}', reward), t('onb.n3_p3'), t('onb.n3_p4').replace('{reward}', reward)] },
+        perks: [t('onb.n3_p1'), t('onb.n3_p2').replace('{goal}', goal).replace('{reward}', reward), t('onb.n3_p3'), t('onb.n3_p4').replace('{reward}', reward)]
+          .concat(onbB7() ? [t('onb.n3_p5')] : []) },
     ].concat(w ? [{ icon: w.icon, eyebrow: t('onb.n3_eyebrow'), title: t(w.title), text: t(w.text) }] : []).concat([
       { icon: 'swipe', eyebrow: t('onb.n4_eyebrow'), title: t('onb.f_swipe_title'), text: t('onb.f_swipe_text'), demo: true, last: true },
     ]);

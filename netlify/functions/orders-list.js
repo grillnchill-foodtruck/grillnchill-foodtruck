@@ -4,7 +4,20 @@
  * Bestell-Archiv fürs Admin-Tool (Tab "Bestellungen").
  *
  *   GET /.netlify/functions/orders-list?password=...&days=30
- *   → { orders: [ { reference, status, createdAt, completedAt, order:{...} } ] }
+ *   → { orders: [ { reference, status, fstate, createdAt, completedAt, payStatus,
+ *                   arrivedAt?, order:{...} } ], days }
+ *
+ * Anmeldung, eins von beiden:
+ *   password=<Passwort oder Sitzungs-Token>      Admin-Tool (wie bisher)
+ *   teamToken=<Token>                            gekoppeltes Team-Gerät
+ *     oder als Header  X-GNC-Team-Token: <Token>  (bevorzugt, landet in keinem
+ *     URL-Protokoll). Token aus team-device.js (action 'redeem').
+ * Ist ein Team-Token da, gilt nur er. Fehlversuche zählen in die Bremse,
+ * ein Erfolg setzt sie nicht zurück. Die App soll nach 401 nicht weiter
+ * abfragen (Gerät entkoppelt), sonst sperrt sie ihre IP.
+ *
+ * arrivedAt: Zeitpunkt, zu dem der Gast "Ich bin da" gemeldet hat
+ * (order-status.js, action 'arrived'). Fehlt, solange niemand da ist.
  *
  * status: completed (abgeschlossen & benachrichtigt) · pending (Online-Zahlung
  * offen, wird alle 15 Min. abgeglichen) · abandoned (Zahlungsabbruch).
@@ -17,7 +30,7 @@ const { getStore } = require('@netlify/blobs');
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, X-GNC-Team-Token',
 };
 const json = (statusCode, data) => ({
   statusCode,
@@ -39,6 +52,7 @@ function store() {
 const _teamCrypto = require('crypto');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { pruefeTeamToken } = require('./lib/team-device');
 function _teamStore() {
   const opts = { name: 'team', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -71,8 +85,16 @@ exports.handler = async (event) => {
   // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
   const gesperrt = await pruefeSperre(event);
   if (gesperrt) return gesperrt;
-  const who = await authRole(await passwortAusSitzung(p.password));
-  await meldeErgebnis(event, !!who);
+  const h = event.headers || {};
+  const teamToken = h['x-gnc-team-token'] || h['X-GNC-Team-Token'] || p.teamToken || '';
+  let who = null;
+  if (teamToken) {
+    who = await pruefeTeamToken(teamToken);
+    if (!who) await meldeErgebnis(event, false);
+  } else {
+    who = await authRole(await passwortAusSitzung(p.password));
+    await meldeErgebnis(event, !!who);
+  }
   if (!who) return json(401, { error: 'unauthorized' });
 
   const days = Math.min(parseInt(p.days || '30', 10) || 30, 90);
@@ -100,6 +122,7 @@ exports.handler = async (event) => {
         createdAt: rec.createdAt || null,
         completedAt: rec.completedAt || null,
         payStatus: rec.payStatus || null,
+        ...(rec.arrivedAt ? { arrivedAt: rec.arrivedAt } : {}),
         order: rec.order || null,
       });
     }

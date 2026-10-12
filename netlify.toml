@@ -54,6 +54,12 @@
   to     = "/admin.html"
   status = 200
 
+# Live-Cockpit fuer Kubi (iPad/Tablet, gleiche Anmeldung wie das Admin-Tool)
+[[redirects]]
+  from   = "/cockpit"
+  to     = "/cockpit.html"
+  status = 200
+
 # Dienstplan (Personalplanung, gleiche Anmeldung wie das Admin-Tool)
 [[redirects]]
   from   = "/dienstplan"
@@ -219,6 +225,13 @@
 
 [[headers]]
   for = "/admin.html"
+  [headers.values]
+    X-Robots-Tag    = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    Cache-Control   = "no-store"
+
+[[headers]]
+  for = "/cockpit.html"
   [headers.values]
     X-Robots-Tag    = "noindex, nofollow"
     X-Frame-Options = "DENY"

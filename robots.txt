@@ -6,6 +6,8 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin.html
+Disallow: /cockpit
+Disallow: /cockpit.html
 Disallow: /.netlify/
 
 # --- KI-Suchmaschinen & AI-Assistenten (explizit erlaubt) ---
