@@ -101,8 +101,14 @@ async function placesRequest(apiKey, placeId, lang, fieldMask) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = (data && data.error && data.error.message) ? data.error.message : ('HTTP ' + res.status);
-    throw new Error(msg);
+    const err = (data && data.error) || {};
+    const msg = err.message ? err.message : ('HTTP ' + res.status);
+    // Grund als Kategorie mitgeben (z. B. API_KEY_SERVICE_BLOCKED, BILLING_DISABLED,
+    // API_KEY_IP_ADDRESS_BLOCKED). Keine Schluessel, keine Projektnummern.
+    const reasons = (Array.isArray(err.details) ? err.details : []).map(d => d && d.reason).filter(Boolean);
+    const e = new Error(msg);
+    e.diag = { http: res.status, status: err.status || null, reason: reasons[0] || null };
+    throw e;
   }
   return data;
 }
@@ -169,7 +175,9 @@ exports.handler = async (event) => {
     return json(200, { rating, total, reviews, lang, cached: false, fetchedAt: new Date(jetzt).toISOString() }, clientCache);
   } catch (e) {
     // Google-Fehler → falls vorhanden veralteten Cache liefern, sonst null.
-    if (cached) return ausCache(cached, { stale: true, error: String(e.message || e) });
-    return json(200, { rating: null, total: null, reviews: [], lang, error: String(e.message || e) });
+    const diag = e.diag || null;
+    console.error('google-reviews: Google lehnt ab', JSON.stringify(diag));
+    if (cached) return ausCache(cached, { stale: true, error: String(e.message || e), diag });
+    return json(200, { rating: null, total: null, reviews: [], lang, error: String(e.message || e), diag });
   }
 };
