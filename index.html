@@ -122,7 +122,7 @@
   "aggregateRating": {
     "@type": "AggregateRating",
     "ratingValue": "5.0",
-    "reviewCount": "246",
+    "reviewCount": "255",
     "bestRating": "5"
   },
   "openingHoursSpecification": [
@@ -3830,6 +3830,10 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   width: 22px;
   border-radius: 4px;
 }
+.reviews-dots.viele { gap: 0.4rem; flex-wrap: wrap; }
+.reviews-dots.viele .reviews-dot { width: 6px; height: 6px; }
+.reviews-dots.viele .reviews-dot.active { width: 16px; border-radius: 3px; }
+.reviews-dots.viele .reviews-dot::before { inset: -18px -4px; }
 .reviews-google-btn {
   display: inline-flex;
   align-items: center;
@@ -5794,7 +5798,7 @@ body.onb-lock { overflow: hidden; }
       <div class="hero-content">
         <div class="hero-rating">
           <span class="stars" id="heroStars">★★★★★</span>
-          <span><strong id="heroRatingValue" style="color: var(--color-cream);">5.0</strong> · <span id="heroReviewsText" data-i18n="hero.reviews">246 Bewertungen auf Google</span></span>
+          <span><strong id="heroRatingValue" style="color: var(--color-cream);">5.0</strong> · <span id="heroReviewsText" data-i18n="hero.reviews">255 Bewertungen auf Google</span></span>
         </div>
         <h1>
           <span data-i18n="hero.h1a">Halal Burger in Bielefeld</span><br />
@@ -5992,7 +5996,7 @@ body.onb-lock { overflow: hidden; }
           </div>
           <div class="story-stat">
             <div class="story-stat-num" id="storyRatingNum">5,0★</div>
-            <div class="story-stat-label" id="storyRatingLabel" data-i18n="story.stat3">Bei 246 Bewertungen</div>
+            <div class="story-stat-label" id="storyRatingLabel" data-i18n="story.stat3">Bei 255 Bewertungen</div>
           </div>
           <div class="story-stat">
             <div class="story-stat-num">100%</div>
@@ -6018,7 +6022,7 @@ body.onb-lock { overflow: hidden; }
   <div class="container">
     <div class="section-header reveal">
       <h2 class="section-title" data-i18n="reviews.title">Was unsere Kunden sagen</h2>
-      <p class="section-subtitle"><span style="color: var(--color-yellow); letter-spacing: 2px;" id="reviewsStars">★★★★★</span> <span data-i18n="reviews.subtitle" id="reviewsSubtitle">5,0 bei 246 Bewertungen auf Google</span></p>
+      <p class="section-subtitle"><span style="color: var(--color-yellow); letter-spacing: 2px;" id="reviewsStars">★★★★★</span> <span data-i18n="reviews.subtitle" id="reviewsSubtitle">5,0 bei 255 Bewertungen auf Google</span></p>
     </div>
     <div class="reviews-carousel reveal">
       <button class="reviews-nav prev" onclick="moveReview(-1)" aria-label="Vorherige Bewertung" data-i18n-aria="a11y.prev_review">‹</button>
@@ -8596,7 +8600,7 @@ function cardVisual(item) {
 // Fallback = aktuelle Werte; werden beim Laden ggf. durch Live-Daten ersetzt.
 // REVIEWS_MIN_TOTAL = manuell gepflegter Mindestwert: Die Places-API hinkt der
 // öffentlichen Maps-Zahl oft einige Tage hinterher – angezeigt wird nie weniger.
-const REVIEWS_MIN_TOTAL = 246;
+const REVIEWS_MIN_TOTAL = 255;
 let GOOGLE_REVIEWS = { rating: 5.0, total: REVIEWS_MIN_TOTAL };
 function updateHeroReviews() {
   const r = GOOGLE_REVIEWS || {};
@@ -13281,6 +13285,160 @@ initTurnstile();
 // date = Veroeffentlichung laut Google (naeherungsweise), steuert „Neu"-Marke + Monatsangabe.
 const REVIEWS = [
   {
+    name: 'I like Tea', stars: 5, date: '2026-10-08',
+    de: "Netter Besitzer, guter Service! Der Chili-Cheeseburger war richtig lecker und schön scharf und saftig! Gerne wieder!",
+    en: "Friendly owner, great service! The chili cheeseburger was really tasty, nice and spicy and juicy! Happy to come back!",
+    tr: "Güler yüzlü işletme sahibi, iyi hizmet! Chili cheeseburger gerçekten çok lezzetliydi, güzel acı ve sulu! Yine gelirim!",
+    it: "Proprietario gentile, ottimo servizio! Il chili cheeseburger era buonissimo, bello piccante e succoso! Ci torno volentieri!",
+    es: "Dueño amable, ¡buen servicio! La chili cheeseburger estaba riquísima, bien picante y jugosa. ¡Volveré con gusto!",
+    pt: "Dono simpático, bom serviço! O chili cheeseburger estava mesmo delicioso, bem picante e suculento! Volto com gosto!",
+    fr: "Patron sympa, bon service ! Le chili cheeseburger était vraiment délicieux, bien relevé et juteux ! Avec plaisir la prochaine fois !",
+    nl: "Vriendelijke eigenaar, goede service! De chili-cheeseburger was echt lekker, lekker pittig en sappig! Graag weer!"
+  },
+  {
+    name: 'Maurice R.', stars: 5, date: '2026-10-07',
+    de: "Top Essen, top Dame da im Wagen, super freundlich und hilft gerne weiter. Immer wieder gerne",
+    en: "Top food, top lady in the truck, super friendly and always happy to help. Any time again",
+    tr: "Yemekler harika, araçtaki hanımefendi harika, çok güler yüzlü ve seve seve yardımcı oluyor. Her zaman tekrar gelirim",
+    it: "Cibo top, signora nel furgone top, gentilissima e sempre disponibile. Ci torno sempre volentieri",
+    es: "Comida top, la señora del food truck top, muy amable y siempre dispuesta a ayudar. Siempre repetiré con gusto",
+    pt: "Comida top, a senhora da carrinha top, super simpática e sempre pronta a ajudar. Volto sempre com gosto",
+    fr: "Bouffe au top, la dame du camion au top, super aimable et toujours prête à aider. Toujours avec plaisir",
+    nl: "Top eten, top dame in de wagen, superaardig en helpt graag verder. Altijd weer graag"
+  },
+  {
+    name: 'Murat C.', stars: 5, date: '2026-10-06',
+    de: "Wir brauchen mehr Standorte von diesem Burger.",
+    en: "We need more locations of this burger.",
+    tr: "Bu burgerden daha fazla şubeye ihtiyacımız var.",
+    it: "Ci servono più punti vendita di questo burger.",
+    es: "Necesitamos más puntos de venta de esta hamburguesa.",
+    pt: "Precisamos de mais pontos de venda deste hambúrguer.",
+    fr: "Il nous faut plus d'emplacements pour ce burger.",
+    nl: "We hebben meer locaties van deze burger nodig."
+  },
+  {
+    name: 'Spex O.', stars: 5, date: '2026-10-05',
+    de: "Wenn ich mir meine letzte Mahlzeit aussuchen könnte, wäre es definitiv der Kubi Spezial",
+    en: "If I could choose my last meal, it would definitely be the Kubis Special",
+    tr: "Son yemeğimi seçebilseydim, kesinlikle Kubis Special olurdu",
+    it: "Se potessi scegliere il mio ultimo pasto, sarebbe sicuramente il Kubis Special",
+    es: "Si pudiera elegir mi última comida, sin duda sería el Kubis Special",
+    pt: "Se pudesse escolher a minha última refeição, seria sem dúvida o Kubis Special",
+    fr: "Si je pouvais choisir mon dernier repas, ce serait sans hésiter le Kubis Special",
+    nl: "Als ik mijn laatste maaltijd mocht kiezen, zou het zeker de Kubis Special zijn"
+  },
+  {
+    name: 'Eren G.', stars: 5, date: '2026-10-04',
+    de: "Mit Abstand der beste Burger, den ich jemals gegessen habe.",
+    en: "By far the best burger I've ever eaten.",
+    tr: "Açık ara bugüne kadar yediğim en iyi burger.",
+    it: "Di gran lunga il miglior burger che abbia mai mangiato.",
+    es: "Con diferencia, la mejor hamburguesa que he comido nunca.",
+    pt: "De longe o melhor hambúrguer que alguma vez comi.",
+    fr: "De loin le meilleur burger que j'aie jamais mangé.",
+    nl: "Veruit de beste burger die ik ooit heb gegeten."
+  },
+  {
+    name: 'S. A.', stars: 5, date: '2026-09-22',
+    de: "Habe heute online mal ein Burger-Menü bestellt. Super netter Service und der Burger 1A+. Bei den Pommes ist noch etwas Luft nach oben.",
+    en: "Ordered a burger meal online today. Super friendly service and the burger was top-notch. The fries still have a little room for improvement.",
+    tr: "Bugün online bir burger menü sipariş ettim. Süper güler yüzlü hizmet ve burger birinci sınıf. Patateslerde hâlâ biraz gelişme payı var.",
+    it: "Oggi ho ordinato online un menu burger. Servizio super gentile e burger di prima classe. Sulle patatine c'è ancora un po' da migliorare.",
+    es: "Hoy pedí un menú de hamburguesa online. Servicio súper amable y la hamburguesa de diez. Las patatas aún tienen margen de mejora.",
+    pt: "Hoje encomendei online um menu de hambúrguer. Serviço super simpático e o hambúrguer de primeira. As batatas ainda têm alguma margem para melhorar.",
+    fr: "J'ai commandé un menu burger en ligne aujourd'hui. Service super sympa et burger de première classe. Pour les frites, il y a encore une petite marge de progrès.",
+    nl: "Vandaag online een burgermenu besteld. Superaardige service en de burger was top. Bij de friet is nog wat ruimte voor verbetering."
+  },
+  {
+    name: 'Holger A.', stars: 5, date: '2026-09-15',
+    de: "Die Burger sind total lecker und mit einer Pommes dazu komplett satt, und ich esse gerne viel. Weiter so, ihr seid spitze! VG Holger",
+    en: "The burgers are really delicious, and with fries on the side you're completely full, and I like to eat a lot. Keep it up, you're great! Cheers, Holger",
+    tr: "Burgerler çok lezzetli ve yanında patatesle tamamen doyuyorsunuz, üstelik ben çok yemeyi severim. Böyle devam edin, harikasınız! Selamlar, Holger",
+    it: "I burger sono buonissimi e con una porzione di patatine si è completamente sazi, e io mangio parecchio. Continuate così, siete fantastici! Saluti, Holger",
+    es: "Las hamburguesas están riquísimas y con unas patatas acabas totalmente lleno, y eso que yo como mucho. ¡Seguid así, sois geniales! Saludos, Holger",
+    pt: "Os hambúrgueres são deliciosos e com umas batatas fica-se completamente satisfeito, e eu gosto de comer bem. Continuem assim, são fantásticos! Cumprimentos, Holger",
+    fr: "Les burgers sont vraiment délicieux et avec une portion de frites on est complètement rassasié, et pourtant je mange beaucoup. Continuez comme ça, vous êtes au top ! Bien à vous, Holger",
+    nl: "De burgers zijn superlekker en met een portie friet erbij zit je helemaal vol, en ik eet graag veel. Ga zo door, jullie zijn top! Groeten, Holger"
+  },
+  {
+    name: 'Berkay K.', stars: 5, date: '2026-09-04',
+    de: "Immer sehr frisch und lecker und top Preise",
+    en: "Always very fresh and tasty, and great prices",
+    tr: "Her zaman çok taze ve lezzetli, fiyatlar da harika",
+    it: "Sempre freschissimo e buonissimo, e prezzi top",
+    es: "Siempre muy fresco y rico, y precios estupendos",
+    pt: "Sempre muito fresco e saboroso, e preços top",
+    fr: "Toujours très frais et délicieux, et des prix au top",
+    nl: "Altijd heel vers en lekker, en topprijzen"
+  },
+  {
+    name: 'Andre C.', stars: 5, date: '2026-08-28',
+    de: "Super sympathischer Mitarbeiter, Essen schmeckt sehr frisch und super lecker 😁",
+    en: "Super friendly staff member, the food tastes very fresh and super delicious 😁",
+    tr: "Çok sempatik bir çalışan, yemekler çok taze ve süper lezzetli 😁",
+    it: "Addetto simpaticissimo, il cibo è freschissimo e super buono 😁",
+    es: "Un empleado muy majo, la comida sabe muy fresca y riquísima 😁",
+    pt: "Funcionário super simpático, a comida sabe muito fresca e super deliciosa 😁",
+    fr: "Employé super sympa, la nourriture est très fraîche et super bonne 😁",
+    nl: "Supersympathieke medewerker, het eten smaakt heel vers en superlekker 😁"
+  },
+  {
+    name: 'Cemal Z.', stars: 5, date: '2026-08-27',
+    de: "Maximales Essen, kann ich nur weiterempfehlen 👍",
+    en: "Maximum food, I can only recommend it 👍",
+    tr: "Doyurucu yemek, herkese tavsiye ederim 👍",
+    it: "Cibo al massimo, non posso che consigliarlo 👍",
+    es: "Comida al máximo, no puedo más que recomendarlo 👍",
+    pt: "Comida ao máximo, só posso recomendar 👍",
+    fr: "Bouffe au max, je ne peux que recommander 👍",
+    nl: "Maximaal eten, kan ik alleen maar aanraden 👍"
+  },
+  {
+    name: 'Farhad R.', stars: 5, date: '2026-08-22',
+    de: "Das war mit Abstand der beste Burger, den ich in meinem Leben gegessen habe. Vom Brot bis hin zur Tomate einfach alles sehr frisch und lecker.",
+    en: "That was by far the best burger I've eaten in my life. From the bun to the tomato, simply everything very fresh and tasty.",
+    tr: "Hayatımda yediğim açık ara en iyi burgerdi. Ekmeğinden domatesine kadar her şey çok taze ve lezzetliydi.",
+    it: "È stato di gran lunga il miglior burger che abbia mangiato in vita mia. Dal pane al pomodoro, tutto freschissimo e buonissimo.",
+    es: "Fue con diferencia la mejor hamburguesa que he comido en mi vida. Desde el pan hasta el tomate, todo muy fresco y rico.",
+    pt: "Foi de longe o melhor hambúrguer que comi na minha vida. Do pão ao tomate, simplesmente tudo muito fresco e saboroso.",
+    fr: "C'était de loin le meilleur burger de ma vie. Du pain jusqu'à la tomate, tout était très frais et délicieux.",
+    nl: "Dat was veruit de beste burger die ik in mijn leven heb gegeten. Van het broodje tot de tomaat gewoon alles heel vers en lekker."
+  },
+  {
+    name: 'Simon S.', stars: 5, date: '2026-08-20',
+    de: "Lohnt sich komplett! Brutaler Burger, an den Basics erkennt man's: also Cheeseburger bestellt, alles komplett frisch vor mir geschnippelt, geiles Brötchen und Kartenzahlung ging beim Foodtruck auch noch! Sehr freundlicher Meister!",
+    en: "Totally worth it! A brutally good burger, you can tell by the basics: so I ordered a cheeseburger, everything chopped completely fresh in front of me, awesome bun, and card payment worked at the food truck too! Very friendly guy!",
+    tr: "Kesinlikle değer! Müthiş bir burger, temelden belli oluyor: cheeseburger sipariş ettim, her şey gözümün önünde taptaze doğrandı, harika bir ekmek ve food truck'ta kartla ödeme de yapılabiliyor! Çok güler yüzlü usta!",
+    it: "Ne vale assolutamente la pena! Burger pazzesco, si capisce dalle basi: ho preso un cheeseburger, tutto tagliato fresco davanti a me, panino fantastico e al food truck si paga pure con la carta! Gentilissimo!",
+    es: "¡Merece totalmente la pena! Una hamburguesa brutal, se nota en lo básico: pedí una cheeseburger, todo cortado al momento delante de mí, un pan genial y en el food truck se puede pagar con tarjeta. ¡Un tío muy amable!",
+    pt: "Vale mesmo a pena! Hambúrguer brutal, nota-se pelo básico: pedi um cheeseburger, tudo cortado na hora à minha frente, pão espetacular e ainda deu para pagar com cartão no food truck! Muito simpático!",
+    fr: "Ça vaut complètement le coup ! Un burger de malade, ça se voit sur les bases : j'ai pris un cheeseburger, tout coupé frais devant moi, pain génial et en plus on peut payer par carte au food truck ! Très sympa !",
+    nl: "Helemaal de moeite waard! Bizar goede burger, aan de basis zie je het: dus een cheeseburger besteld, alles vers voor mijn neus gesneden, geweldig broodje en pinnen ging bij de foodtruck ook nog! Zeer vriendelijke kerel!"
+  },
+  {
+    name: 'Sandra R.', stars: 5, date: '2026-08-18',
+    de: "Die 20 km Anfahrt haben sich echt gelohnt! Mega leckere Burger, richtig geile SüKa-Pommes und vor allem super nette Jungs :-)",
+    en: "The 20 km drive was really worth it! Mega tasty burgers, seriously great sweet potato fries and above all super nice guys :-)",
+    tr: "20 km'lik yol gerçekten değdi! Çok lezzetli burgerler, harika tatlı patates kızartması ve hepsinden önemlisi çok tatlı çocuklar :-)",
+    it: "I 20 km di strada ne sono valsi davvero la pena! Burger buonissimi, patatine di patata dolce fantastiche e soprattutto ragazzi simpaticissimi :-)",
+    es: "¡Los 20 km de viaje merecieron mucho la pena! Hamburguesas buenísimas, unas patatas de boniato geniales y, sobre todo, unos chicos majísimos :-)",
+    pt: "Os 20 km de viagem valeram mesmo a pena! Hambúrgueres super deliciosos, batatas-doces fritas espetaculares e, acima de tudo, uns rapazes super simpáticos :-)",
+    fr: "Les 20 km de route valaient vraiment le coup ! Burgers méga bons, frites de patate douce géniales et surtout des gars super sympas :-)",
+    nl: "De 20 km rijden was echt de moeite waard! Megalekkere burgers, echt geweldige zoete-aardappelfriet en vooral superaardige jongens :-)"
+  },
+  {
+    name: 'Evghenii R.', stars: 5, date: '2026-08-17',
+    de: "Ich habe 3 verschiedene Burger bestellt und die waren alle Weltklasse 👍🏽 Mich hat das Fleisch sehr überzeugt, sehr frisch, lecker und vor allem warm.",
+    en: "I ordered 3 different burgers and they were all world-class 👍🏽 The meat really won me over: very fresh, tasty and, above all, hot.",
+    tr: "3 farklı burger sipariş ettim ve hepsi dünya klasındaydı 👍🏽 Et beni çok etkiledi: çok taze, lezzetli ve hepsinden önemlisi sıcacık.",
+    it: "Ho ordinato 3 burger diversi ed erano tutti di livello mondiale 👍🏽 La carne mi ha convinto tantissimo: freschissima, buonissima e soprattutto calda.",
+    es: "Pedí 3 hamburguesas distintas y todas eran de primera clase 👍🏽 La carne me convenció muchísimo: muy fresca, rica y, sobre todo, caliente.",
+    pt: "Encomendei 3 hambúrgueres diferentes e eram todos de classe mundial 👍🏽 A carne convenceu-me muito: muito fresca, saborosa e sobretudo quente.",
+    fr: "J'ai commandé 3 burgers différents et ils étaient tous de classe mondiale 👍🏽 La viande m'a vraiment convaincu : très fraîche, savoureuse et surtout bien chaude.",
+    nl: "Ik heb 3 verschillende burgers besteld en ze waren allemaal wereldklasse 👍🏽 Het vlees heeft me echt overtuigd: heel vers, lekker en vooral warm."
+  },
+  {
     name: 'Heike S.', stars: 5, date: '2026-09-09',
     de: "Herzlich, zuvorkommend und SOOOOO LECKER",
     en: "Warm, attentive and SOOOOO DELICIOUS",
@@ -13387,7 +13545,7 @@ let reviewAutoStopped = false;   // sobald jemand selbst gewischt hat, laeuft ni
 let LIVE_REVIEWS = {};           // je Sprache: Rezensionen direkt von Google (serverseitig 24h gecached)
 const LIVE_REVIEWS_LOADING = {};
 const REVIEW_NEW_DAYS = 30;      // so lange traegt eine Rezension die „Neu"-Marke
-const REVIEWS_MAX_CARDS = 10;
+const REVIEWS_MAX_CARDS = 24;     // neue kommen vorne dazu, die bisherigen bleiben dahinter sichtbar
 
 function reviewText(r) {
   return r[currentLang] || (currentLang !== 'tr' && r.en) || r.de; // Neue Sprachen (it/es/pt/fr) fallen auf EN zurück
@@ -13426,6 +13584,7 @@ function renderReviews() {
   if (currentReview >= list.length) currentReview = 0;
   track.innerHTML = '';
   dots.innerHTML = '';
+  dots.classList.toggle('viele', list.length > 12);   // kleinere Punkte, damit die Reihe aufs Handy passt
   const neuLabel = escHtml(t('reviews.new') || 'Neu');
   list.forEach((r, i) => {
     const initial = String(r.name || '?').charAt(0).toUpperCase();

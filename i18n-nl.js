@@ -83,7 +83,7 @@ I18N.nl = {
     "franchise.lead": "We groeien stap voor stap – en staan open voor samenwerkingen: eventpartnerschappen, locatie-ideeën, samenwerking met lokale bedrijven en verenigingen. Vertel ons wat je in gedachten hebt.",
     "franchise.p1_t": "Bewezen verdienmodel", "franchise.p1_d": "Calculeerbare inkoopkosten, aantrekkelijke marges per burger en een duidelijk pad naar winstgevendheid – zonder commissies van bezorgdiensten.",
     "franchise.p2_t": "Turnkey-concept", "franchise.p2_d": "Van truckdesign tot menukaart en leveranciers, marketing en dit bestelplatform – je start met een compleet systeem.",
-    "franchise.p3_t": "Sterk, halal-gecertificeerd merk", "franchise.p3_d": "5.0★ uit 246 reviews, duidelijke positionering en een groeiende vaste klantenkring – je neemt een merk met substantie over.",
+    "franchise.p3_t": "Sterk, halal-gecertificeerd merk", "franchise.p3_d": "5.0★ uit 255 reviews, duidelijke positionering en een groeiende vaste klantenkring – je neemt een merk met substantie over.",
     "franchise.p4_t": "Persoonlijke begeleiding", "franchise.p4_d": "We delen onze knowhow uit concept en realisatie en ondersteunen je bij het opbouwen van je eigen locatie.",
     "franchise.cta_p": "Klinkt als jouw ondernemerstoekomst? Laten we dan praten – vrijblijvend en vertrouwelijk.",
     "franchise.cta_btn": "Neem contact op",

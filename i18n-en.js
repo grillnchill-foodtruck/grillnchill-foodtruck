@@ -83,7 +83,7 @@ I18N.en = {
     "franchise.lead": "We are growing step by step – and open to collaborations: event partnerships, location ideas, cooperation with local companies and clubs. Tell us what you have in mind.",
     "franchise.p1_t": "Proven earnings model", "franchise.p1_d": "Calculable cost of goods, attractive margins per burger and a clear path to profitability – without delivery-service commissions.",
     "franchise.p2_t": "Turnkey concept", "franchise.p2_d": "From truck design to the menu and suppliers, marketing and this ordering platform – you start with a complete system.",
-    "franchise.p3_t": "Strong, halal-certified brand", "franchise.p3_d": "5.0★ from 246 reviews, clear positioning and a growing regular-customer base – you take over a brand with substance.",
+    "franchise.p3_t": "Strong, halal-certified brand", "franchise.p3_d": "5.0★ from 255 reviews, clear positioning and a growing regular-customer base – you take over a brand with substance.",
     "franchise.p4_t": "Personal guidance", "franchise.p4_d": "We share our know-how from concept and realization and support you in building your own location.",
     "franchise.cta_p": "Sounds like your entrepreneurial future? Then let's talk – with no obligation and in confidence.",
     "franchise.cta_btn": "Get in touch",

@@ -159,6 +159,12 @@
   to     = "/.netlify/functions/retarget-optout"
   status = 200
 
+# Google-Bewertungen: jeden Morgen frisch holen (04:20 UTC), statt auf den
+# ersten Besucher nach Ablauf der 24 h zu warten. Meldet per Telegram, wenn
+# Google den Abruf verweigert (höchstens einmal pro Woche).
+[functions."google-reviews-daily"]
+  schedule = "20 4 * * *"
+
 # Zahlungs-Abgleich: Sicherheitsnetz hinter dem Realtime-Webhook (alle 5 Min.)
 [functions."orders-reconcile"]
   schedule = "*/5 * * * *"
