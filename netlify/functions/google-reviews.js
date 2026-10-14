@@ -113,22 +113,65 @@ async function placesRequest(apiKey, placeId, lang, fieldMask) {
   return data;
 }
 
+// Zweiter Weg zum Ort: Textsuche statt fester Place-ID. Hilft, wenn Google die
+// ID geaendert hat oder der Detail-Abruf fuer diese ID verweigert wird.
+async function searchPlace(apiKey, lang) {
+  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': 'places.id,places.displayName,places.rating,places.userRatingCount,places.reviews',
+    },
+    body: JSON.stringify({ textQuery: "Grill'n Chill Foodtruck Bielefeld", languageCode: lang, maxResultCount: 3 }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = (data && data.error) || {};
+    const e = new Error(err.message || ('HTTP ' + res.status));
+    e.diag = { http: res.status, status: err.status || null };
+    throw e;
+  }
+  const treffer = (data.places || []).find(p => /grill.?n.?chill/i.test((p.displayName && p.displayName.text) || '')) || null;
+  return treffer;
+}
+
 async function fetchFromGoogle(apiKey, placeId, lang) {
   // Places API (New): Resource-Name = places/<PLACE_ID>, Felder via Field-Mask-Header.
-  let data;
+  let data, ueber = 'details', detailFehler = null;
   try {
     data = await placesRequest(apiKey, placeId, lang, 'rating,userRatingCount,reviews');
   } catch (e) {
+    detailFehler = e;
     // Sollten Rezensionen mal nicht abrufbar sein (Feld/SKU gesperrt), duerfen
     // Sterne + Anzahl trotzdem nicht veralten → zweiter Versuch ohne reviews.
-    data = await placesRequest(apiKey, placeId, lang, 'rating,userRatingCount');
-    data.reviews = [];
+    try {
+      data = await placesRequest(apiKey, placeId, lang, 'rating,userRatingCount');
+      data.reviews = [];
+    } catch (e2) { data = null; }
+  }
+  if (!data) {
+    // Detail-Abruf fuer diese ID verweigert: Ort per Textsuche finden
+    let treffer = null;
+    try { treffer = await searchPlace(apiKey, lang); }
+    catch (e3) {
+      const e = new Error((detailFehler && detailFehler.message) || e3.message);
+      e.diag = { details: detailFehler && detailFehler.diag, suche: e3.diag || { error: String(e3.message) } };
+      throw e;
+    }
+    if (!treffer) {
+      const e = new Error('Ort per Textsuche nicht gefunden');
+      e.diag = { details: detailFehler && detailFehler.diag, suche: 'kein Treffer' };
+      throw e;
+    }
+    data = treffer;
+    ueber = 'suche' + (treffer.id && treffer.id !== placeId ? ':neue-id:' + treffer.id : ':gleiche-id');
   }
   const rating = typeof data.rating === 'number' ? data.rating : null;
   const total = typeof data.userRatingCount === 'number' ? data.userRatingCount : null;
   if (rating == null || total == null) throw new Error('Antwort ohne rating/userRatingCount');
   const reviews = Array.isArray(data.reviews) ? data.reviews.map(mapReview).filter(Boolean).slice(0, 5) : [];
-  return { rating, total, reviews };
+  return { rating, total, reviews, ueber };
 }
 
 exports.handler = async (event) => {
@@ -169,10 +212,10 @@ exports.handler = async (event) => {
 
   // 3) Cache abgelaufen/leer → bei Google nachfragen.
   try {
-    const { rating, total, reviews } = await fetchFromGoogle(apiKey, placeId, lang);
+    const { rating, total, reviews, ueber } = await fetchFromGoogle(apiKey, placeId, lang);
     const jetzt = Date.now();
-    try { await store().setJSON(KEY_PREFIX + lang, { rating, total, reviews, fetchedAt: jetzt }); } catch (e) { /* ignore */ }
-    return json(200, { rating, total, reviews, lang, cached: false, fetchedAt: new Date(jetzt).toISOString() }, clientCache);
+    try { await store().setJSON(KEY_PREFIX + lang, { rating, total, reviews, fetchedAt: jetzt, ueber }); } catch (e) { /* ignore */ }
+    return json(200, { rating, total, reviews, lang, cached: false, fetchedAt: new Date(jetzt).toISOString(), ueber }, clientCache);
   } catch (e) {
     // Google-Fehler → falls vorhanden veralteten Cache liefern, sonst null.
     const diag = e.diag || null;
