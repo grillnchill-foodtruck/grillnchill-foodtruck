@@ -157,6 +157,7 @@ async function holeNeu(apiKey, placeId, lang) {
     try {
       data = await placesRequest(apiKey, placeId, lang, 'rating,userRatingCount');
       data.reviews = [];
+      ueber = 'details-ohne-rezensionen';
     } catch (e2) { data = null; }
   }
   if (!data) {
@@ -179,6 +180,8 @@ async function holeNeu(apiKey, placeId, lang) {
     rating: typeof data.rating === 'number' ? data.rating : null,
     total: typeof data.userRatingCount === 'number' ? data.userRatingCount : null,
     reviews: Array.isArray(data.reviews) ? data.reviews.map(ausNeu).filter(Boolean) : [],
+    roh: Array.isArray(data.reviews) ? data.reviews.length : null,   // so viele kamen von Google, vor dem Filter
+    rezensionenFehler: detailFehler ? (detailFehler.diag || { error: String(detailFehler.message) }) : null,
     ueber,
   };
 }
@@ -202,6 +205,7 @@ async function holeNeuesteLegacy(apiKey, placeId, lang) {
     rating: typeof d.result.rating === 'number' ? d.result.rating : null,
     total: typeof d.result.user_ratings_total === 'number' ? d.result.user_ratings_total : null,
     reviews: Array.isArray(d.result.reviews) ? d.result.reviews.map(ausLegacy).filter(Boolean) : [],
+    roh: Array.isArray(d.result.reviews) ? d.result.reviews.length : null,
   };
 }
 
@@ -251,7 +255,15 @@ async function aktualisiere(lang) {
   const archivAlt = await leseJson(ARCHIV_PREFIX + lang);
   const reviews = mischeArchiv(archivAlt && archivAlt.reviews, [...(l ? l.reviews : []), ...(n ? n.reviews : [])]);
   const jetzt = Date.now();
-  const quellen = { neu: n ? 'ok' : 'fehler', neueste: l ? 'ok' : (legacy.reason && legacy.reason.diag && legacy.reason.diag.status) || 'fehler' };
+  // Nur Kategorien und Zahlen: welcher Weg geklappt hat und wie viele Rezensionen
+  // Google roh geliefert hat. Hilft, wenn die Zahl stimmt, die Liste aber leer bleibt.
+  const quellen = {
+    neu: n ? 'ok' : 'fehler',
+    neuRoh: n ? n.roh : null,
+    neuOhneRezensionen: n && n.rezensionenFehler ? n.rezensionenFehler : undefined,
+    neueste: l ? 'ok' : (legacy.reason && legacy.reason.diag && legacy.reason.diag.status) || 'fehler',
+    neuesteRoh: l ? l.roh : null,
+  };
   await schreibeJson(ARCHIV_PREFIX + lang, { reviews, aktualisiert: jetzt });
   const daten = { rating, total, reviews, fetchedAt: jetzt, ueber: n ? n.ueber : 'legacy', quellen };
   await schreibeJson(KEY_PREFIX + lang, daten);

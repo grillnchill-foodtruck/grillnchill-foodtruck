@@ -31,6 +31,9 @@
 const g = require('./lib/google-bewertungen');
 
 const RETRY_PAUSE_MS = 60 * 60 * 1000;
+// ?auffrischen=1 holt sofort neu, auch bei frischem Cache. Für alle Besucher
+// zusammen höchstens alle 6 Stunden, damit niemand Google-Kosten erzeugen kann.
+const ZWANG_PAUSE_MS = 6 * 60 * 60 * 1000;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -64,19 +67,22 @@ exports.handler = async (event) => {
   const fresh = cached && (Date.now() - cached.fetchedAt < g.CACHE_TTL_MS);
   const ausCache = (c, extra) => json(200, {
     rating: c.rating, total: c.total, reviews: Array.isArray(c.reviews) ? c.reviews : [],
-    lang, cached: true, fetchedAt: new Date(c.fetchedAt).toISOString(), ...(extra || {}),
+    lang, cached: true, fetchedAt: new Date(c.fetchedAt).toISOString(),
+    ueber: c.ueber || null, quellen: c.quellen || null, ...(extra || {}),
   }, clientCache);
 
   // 1) Frischer Cache → direkt ausliefern, kein Google-Aufruf.
   // "fetchedAt" steht mit in der Antwort: so lässt sich von außen mit einem
   // einzigen Aufruf prüfen, ob die tägliche Auffrischung läuft.
-  if (fresh) return ausCache(cached);
+  const status = await g.leseStatus();
+  const zwang = q.auffrischen === '1' && !(status.letzterZwang && Date.now() - status.letzterZwang < ZWANG_PAUSE_MS);
+  if (zwang) await g.schreibeStatus({ letzterZwang: Date.now() });
+  if (fresh && !zwang) return ausCache(cached);
 
   // 2) Gerade erst fehlgeschlagen → Google nicht bei jedem Besucher erneut fragen.
   //    Ausnahme: Seitdem wurde der Schlüssel getauscht, dann sofort neu versuchen.
-  const status = await g.leseStatus();
   const marke = g.schluesselMarke();
-  const kuerzlich = status.letzterVersuch && (Date.now() - status.letzterVersuch < RETRY_PAUSE_MS) && status.schluessel === marke;
+  const kuerzlich = !zwang && status.letzterVersuch && (Date.now() - status.letzterVersuch < RETRY_PAUSE_MS) && status.schluessel === marke;
   if (kuerzlich && status.fehlerSeit) {
     const extra = { stale: true, error: status.letzterFehler || null, diag: status.diag || null, fehlerSeit: new Date(status.fehlerSeit).toISOString() };
     if (cached) return ausCache(cached, extra);
