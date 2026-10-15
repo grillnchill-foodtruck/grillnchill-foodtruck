@@ -73,8 +73,10 @@ exports.handler = async (event) => {
   if (fresh) return ausCache(cached);
 
   // 2) Gerade erst fehlgeschlagen → Google nicht bei jedem Besucher erneut fragen.
+  //    Ausnahme: Seitdem wurde der Schlüssel getauscht, dann sofort neu versuchen.
   const status = await g.leseStatus();
-  const kuerzlich = status.letzterVersuch && (Date.now() - status.letzterVersuch < RETRY_PAUSE_MS);
+  const marke = g.schluesselMarke();
+  const kuerzlich = status.letzterVersuch && (Date.now() - status.letzterVersuch < RETRY_PAUSE_MS) && status.schluessel === marke;
   if (kuerzlich && status.fehlerSeit) {
     const extra = { stale: true, error: status.letzterFehler || null, diag: status.diag || null, fehlerSeit: new Date(status.fehlerSeit).toISOString() };
     if (cached) return ausCache(cached, extra);
@@ -84,7 +86,7 @@ exports.handler = async (event) => {
   // 3) Cache abgelaufen/leer → bei Google nachfragen.
   try {
     const d = await g.aktualisiere(lang);
-    await g.schreibeStatus({ letzterVersuch: Date.now(), letzterErfolg: d.fetchedAt, fehlerSeit: null, letzterFehler: null, diag: null });
+    await g.schreibeStatus({ letzterVersuch: Date.now(), letzterErfolg: d.fetchedAt, fehlerSeit: null, letzterFehler: null, diag: null, schluessel: marke });
     return json(200, {
       rating: d.rating, total: d.total, reviews: d.reviews, lang, cached: false,
       fetchedAt: new Date(d.fetchedAt).toISOString(), ueber: d.ueber, quellen: d.quellen,
@@ -94,7 +96,7 @@ exports.handler = async (event) => {
     const diag = e.diag || null;
     console.error('google-reviews: Google lehnt ab', JSON.stringify(diag));
     const jetzt = Date.now();
-    await g.schreibeStatus({ letzterVersuch: jetzt, fehlerSeit: status.fehlerSeit || jetzt, letzterFehler: String(e.message || e), diag });
+    await g.schreibeStatus({ letzterVersuch: jetzt, fehlerSeit: status.fehlerSeit || jetzt, letzterFehler: String(e.message || e), diag, schluessel: marke });
     if (cached) return ausCache(cached, { stale: true, error: String(e.message || e), diag });
     return json(200, { rating: null, total: null, reviews: [], lang, error: String(e.message || e), diag });
   }

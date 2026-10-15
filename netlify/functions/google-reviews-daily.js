@@ -28,7 +28,7 @@ exports.handler = async () => {
     const diag = e.diag || null;
     const fehlerSeit = status.fehlerSeit || jetzt;
     console.error('google-reviews-daily: Google lehnt ab', JSON.stringify(diag));
-    const neu = { letzterVersuch: jetzt, fehlerSeit, letzterFehler: String(e.message || e), diag };
+    const neu = { letzterVersuch: jetzt, fehlerSeit, letzterFehler: String(e.message || e), diag, schluessel: g.schluesselMarke() };
     if (!status.gemeldetAm || jetzt - status.gemeldetAm > g.MELDE_PAUSE_MS) {
       const cache = await g.leseCache('de');
       const grund = (diag && diag.neu && (diag.neu.details ? diag.neu.details.status : diag.neu.status)) || (diag && diag.status) || 'unbekannt';
@@ -54,7 +54,7 @@ exports.handler = async () => {
   if (status.fehlerSeit && status.gemeldetAm) {
     await g.melde('✅ <b>Google-Bewertungen</b> laufen wieder: ' + erste.total + ' Bewertungen, ' + erste.rating.toFixed(1).replace('.', ',') + ' Sterne.');
   }
-  await g.schreibeStatus({ letzterVersuch: jetzt, letzterErfolg: erste.fetchedAt, fehlerSeit: null, letzterFehler: null, diag: null, gemeldetAm: null, quellen: erste.quellen });
+  await g.schreibeStatus({ letzterVersuch: jetzt, letzterErfolg: erste.fetchedAt, fehlerSeit: null, letzterFehler: null, diag: null, gemeldetAm: null, quellen: erste.quellen, schluessel: g.schluesselMarke() });
   console.log('google-reviews-daily: ok', JSON.stringify({ ergebnis, quellen: erste.quellen }));
   return { statusCode: 200, body: JSON.stringify({ ok: true, ergebnis, quellen: erste.quellen }) };
 };

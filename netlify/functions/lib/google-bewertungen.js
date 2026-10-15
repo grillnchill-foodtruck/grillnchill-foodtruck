@@ -21,6 +21,7 @@
  * ----------------------------------------------------------------------------
  */
 
+const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 
 const STORE_NAME = 'google-reviews';
@@ -257,6 +258,14 @@ async function aktualisiere(lang) {
   return daten;
 }
 
+// Wiedererkennungsmarke des aktuellen Schlüssels (gekürzter Hash). Steht nur
+// im Status-Blob und wird nie ausgeliefert. Wechselt der Schlüssel, endet die
+// Pause nach einem Fehlschlag sofort.
+function schluesselMarke() {
+  const k = process.env.GOOGLE_PLACES_API_KEY;
+  return k ? crypto.createHash('sha256').update(k).digest('hex').slice(0, 16) : null;
+}
+
 async function melde(text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chat = process.env.TELEGRAM_CHAT_ID;
@@ -273,5 +282,5 @@ async function melde(text) {
 
 module.exports = {
   LANGS, CACHE_TTL_MS, MELDE_PAUSE_MS,
-  leseCache, leseStatus, schreibeStatus, aktualisiere, melde, kurzName, mischeArchiv,
+  leseCache, leseStatus, schreibeStatus, aktualisiere, melde, kurzName, mischeArchiv, schluesselMarke,
 };
