@@ -176,12 +176,25 @@ async function holeNeu(apiKey, placeId, lang) {
     data = treffer;
     ueber = 'suche' + (treffer.id && treffer.id !== placeId ? ':neue-id:' + treffer.id : ':gleiche-id');
   }
+  // Feldnamen der Antwort (keine Inhalte), um zu sehen, was Google weglässt
+  const felder = Object.keys(data || {}).sort();
+  // Detail-Abruf ohne Rezensionen, obwohl angefragt: Google lässt das Feld bei
+  // manchen Projekten still weg. Dann die Textsuche fragen, die liefert sie mit.
+  let sucheRoh;
+  if (!Array.isArray(data.reviews) && ueber === 'details') {
+    try {
+      const t = await searchPlace(apiKey, lang);
+      sucheRoh = t && Array.isArray(t.reviews) ? t.reviews.length : null;
+      if (sucheRoh) { data.reviews = t.reviews; ueber = 'details+suche'; }
+    } catch (e) { sucheRoh = (e.diag && e.diag.status) || 'fehler'; }
+  }
   return {
     rating: typeof data.rating === 'number' ? data.rating : null,
     total: typeof data.userRatingCount === 'number' ? data.userRatingCount : null,
     reviews: Array.isArray(data.reviews) ? data.reviews.map(ausNeu).filter(Boolean) : [],
     roh: Array.isArray(data.reviews) ? data.reviews.length : null,   // so viele kamen von Google, vor dem Filter
     rezensionenFehler: detailFehler ? (detailFehler.diag || { error: String(detailFehler.message) }) : null,
+    felder, sucheRoh,
     ueber,
   };
 }
@@ -260,6 +273,8 @@ async function aktualisiere(lang) {
   const quellen = {
     neu: n ? 'ok' : 'fehler',
     neuRoh: n ? n.roh : null,
+    neuFelder: n ? n.felder : null,
+    sucheRoh: n ? n.sucheRoh : undefined,
     neuOhneRezensionen: n && n.rezensionenFehler ? n.rezensionenFehler : undefined,
     neueste: l ? 'ok' : (legacy.reason && legacy.reason.diag && legacy.reason.diag.status) || 'fehler',
     neuesteRoh: l ? l.roh : null,

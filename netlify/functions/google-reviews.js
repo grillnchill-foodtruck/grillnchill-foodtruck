@@ -34,6 +34,8 @@ const RETRY_PAUSE_MS = 60 * 60 * 1000;
 // ?auffrischen=1 holt sofort neu, auch bei frischem Cache. Für alle Besucher
 // zusammen höchstens alle 6 Stunden, damit niemand Google-Kosten erzeugen kann.
 const ZWANG_PAUSE_MS = 6 * 60 * 60 * 1000;
+// Neuer Code-Stand hebt die Pause einmal auf (zum Prüfen direkt nach dem Deploy).
+const ZWANG_STAND = '2026-10-15b';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -75,8 +77,8 @@ exports.handler = async (event) => {
   // "fetchedAt" steht mit in der Antwort: so lässt sich von außen mit einem
   // einzigen Aufruf prüfen, ob die tägliche Auffrischung läuft.
   const status = await g.leseStatus();
-  const zwang = q.auffrischen === '1' && !(status.letzterZwang && Date.now() - status.letzterZwang < ZWANG_PAUSE_MS);
-  if (zwang) await g.schreibeStatus({ letzterZwang: Date.now() });
+  const zwang = q.auffrischen === '1' && (status.zwangStand !== ZWANG_STAND || !(status.letzterZwang && Date.now() - status.letzterZwang < ZWANG_PAUSE_MS));
+  if (zwang) await g.schreibeStatus({ letzterZwang: Date.now(), zwangStand: ZWANG_STAND });
   if (fresh && !zwang) return ausCache(cached);
 
   // 2) Gerade erst fehlgeschlagen → Google nicht bei jedem Besucher erneut fragen.
