@@ -35,7 +35,7 @@ const RETRY_PAUSE_MS = 60 * 60 * 1000;
 // zusammen höchstens alle 6 Stunden, damit niemand Google-Kosten erzeugen kann.
 const ZWANG_PAUSE_MS = 6 * 60 * 60 * 1000;
 // Neuer Code-Stand hebt die Pause einmal auf (zum Prüfen direkt nach dem Deploy).
-const ZWANG_STAND = '2026-10-15b';
+const ZWANG_STAND = '2026-10-15c';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
