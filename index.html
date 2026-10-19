@@ -2961,6 +2961,13 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   transition: filter .15s;
 }
 .loyalty-redeem:hover { filter: brightness(1.05); }
+/* Menü aufs Haus und 5-€-Bonus können untereinander stehen */
+.loyalty-card .loyalty-reward-hint + .loyalty-redeem { margin-top: 0.5rem; }
+.loyalty-card .loyalty-redeem + .loyalty-hint,
+.loyalty-card .loyalty-applied + .loyalty-hint { margin-top: 0.4rem; }
+.loyalty-card .loyalty-hint + .loyalty-reward-hint,
+.loyalty-card .loyalty-hint + .loyalty-redeem,
+.loyalty-card .loyalty-redeem + .loyalty-reward-hint { margin-top: 0.6rem; }
 .loyalty-applied {
   display: flex;
   align-items: center;
@@ -7255,7 +7262,7 @@ async function socialLoginFinish(anbieter, idToken, name) {
   let localLoyalty = null;
   try {
     const raw = JSON.parse(localStorage.getItem(LOYALTY_KEY) || 'null');
-    if (raw) localLoyalty = { spent: Number(raw.spent) || 0, rewards: raw.rewardAvailable ? 1 : 0 };
+    if (raw) localLoyalty = { spent: Number(raw.spent) || 0, rewards: raw.rewardAvailable ? 1 : 0, menus: Number(raw.menus) || 0 };
   } catch (e) {}
   accShowSigningIn();   // Ausweis ist da: ab hier sichtbar warten, Formular nicht mehr klickbar
   const fertig = () => { const b = document.getElementById('accountBody'); if (b) b.removeAttribute('aria-busy'); };
@@ -7299,7 +7306,7 @@ async function accVerify(btn) {
   let localLoyalty = null;
   try {
     const raw = JSON.parse(localStorage.getItem(LOYALTY_KEY) || 'null');
-    if (raw) localLoyalty = { spent: Number(raw.spent) || 0, rewards: raw.rewardAvailable ? 1 : 0 };
+    if (raw) localLoyalty = { spent: Number(raw.spent) || 0, rewards: raw.rewardAvailable ? 1 : 0, menus: Number(raw.menus) || 0 };
   } catch (e) {}
   return withBusy(btn, async () => {
     feld.disabled = true;
@@ -7350,13 +7357,15 @@ function flashAccMsg(msg, anchor) {
 }
 function renderAccProfile(el) {
   const p = ACCOUNT.profile;
-  const L = p.loyalty || { spent: 0, rewards: 0, goal: 100, stamps: 10 };
+  const L = p.loyalty || { spent: 0, rewards: 0, menus: 0, goal: 100, stamps: 10 };
   const per = L.goal / L.stamps;
   const filled = Math.min(L.stamps, Math.floor(L.spent / per));
   const dots = Array.from({ length: L.stamps }, (_, i) => `<span class="loyalty-stamp${i < filled ? ' filled' : ''}"></span>`).join('');
-  const loyLine = (L.rewards > 0)
-    ? `<div class="loyalty-reward-hint" style="margin-top:0.4rem;">${t('acc.reward_ready').replace('{n}', L.rewards).replace('{amount}', formatPrice(5))}</div>`
-    : `<div class="loyalty-hint" style="margin-top:0.4rem;">${t('loyalty.hint').replace('{n}', formatPrice(Math.max(0, L.goal - L.spent))).replace('{amount}', formatPrice(5))}</div>`;
+  const loyTeile = [];
+  if ((L.menus || 0) > 0) loyTeile.push(`<div class="loyalty-reward-hint" style="margin-top:0.4rem;">${t('acc.menu_ready').replace('{n}', L.menus)}</div>`);
+  if ((L.rewards || 0) > 0) loyTeile.push(`<div class="loyalty-reward-hint" style="margin-top:0.4rem;">${t('acc.reward_ready').replace('{n}', L.rewards).replace('{amount}', formatPrice(5))}</div>`);
+  loyTeile.push(`<div class="loyalty-hint" style="margin-top:0.4rem;">${t('loyalty.hint').replace('{n}', formatPrice(Math.max(0, L.goal - L.spent))).replace('{amount}', formatPrice(5))}</div>`);
+  const loyLine = loyTeile.join('');
   const addr = (p.addresses || []).map((a, i) => {
     // Wird diese Adresse gerade umbenannt, steht statt der Zeile ein Eingabefeld
     // mit den beiden Vorschlaegen.
@@ -8389,20 +8398,25 @@ function accFillAddress(i) {
   if (typeof onAddressChange === 'function') onAddressChange();
 }
 
+/* Treue-Stand: spent = Kartenstand, menus = Menüs aufs Haus (volle Karte,
+   seit Oktober 2026), bonus = 5-€-Boni (Geburtstag, Empfehlung, alte Karten).
+   Lokal (ohne Konto) gab es immer höchstens einen 5-€-Bonus (rewardAvailable). */
 function getLoyalty() {
   // Eingeloggt: Server-Stempelkarte ist die Wahrheit (geräteübergreifend)
   if (typeof ACCOUNT !== 'undefined' && ACCOUNT && ACCOUNT.profile && ACCOUNT.profile.loyalty) {
     const L = ACCOUNT.profile.loyalty;
-    return { spent: Number(L.spent) || 0, rewardAvailable: (L.rewards || 0) > 0 };
+    return { spent: Number(L.spent) || 0, menus: Number(L.menus) || 0, bonus: Number(L.rewards) || 0, konto: true };
   }
   try {
     const o = JSON.parse(localStorage.getItem(LOYALTY_KEY) || 'null');
-    if (o && typeof o === 'object') return { spent: Number(o.spent) || 0, rewardAvailable: !!o.rewardAvailable };
+    if (o && typeof o === 'object') return { spent: Number(o.spent) || 0, menus: Number(o.menus) || 0, bonus: o.rewardAvailable ? 1 : 0, konto: false };
   } catch (e) {}
-  return { spent: 0, rewardAvailable: false };
+  return { spent: 0, menus: 0, bonus: 0, konto: false };
 }
-function saveLoyalty(o) { try { localStorage.setItem(LOYALTY_KEY, JSON.stringify(o)); } catch (e) {} }
-function loyaltyRewardAvailable() { return getLoyalty().rewardAvailable; }
+function saveLoyalty(l) {
+  try { localStorage.setItem(LOYALTY_KEY, JSON.stringify({ spent: l.spent, menus: l.menus || 0, rewardAvailable: (l.bonus || 0) > 0 })); } catch (e) {}
+}
+function loyaltyRewardAvailable() { const l = getLoyalty(); return l.menus > 0 || l.bonus > 0; }
 // Umsatz einer Bestellung auf den Treue-Fortschritt anrechnen (Warenwert vor Rabatt/Gebühr/Trinkgeld).
 function addLoyaltySpend(amount) {
   const amt = Number(amount);
@@ -8410,25 +8424,36 @@ function addLoyaltySpend(amount) {
   const l = getLoyalty();
   l.spent += amt;
   while (l.spent >= LOYALTY_GOAL_EUR) {
-    l.rewardAvailable = true;
+    l.menus = (l.menus || 0) + 1;   // volle Karte = Menü aufs Haus (einlösbar mit Konto)
     l.spent -= LOYALTY_GOAL_EUR; // Rest auf die nächste Karte übertragen
   }
   saveLoyalty(l);
 }
+// Nur ohne Konto: den lokalen 5-€-Bonus abziehen. Menüs löst nur das Konto ein,
+// mit Konto zieht der Server ab.
 function consumeLoyaltyReward() {
   const l = getLoyalty();
-  l.rewardAvailable = false;
+  l.bonus = 0;
   saveLoyalty(l);
   loyaltyApplied = false;
 }
 function loyaltyDiscount() {
-  if (testPromoApplied) return 0;
-  if (!loyaltyApplied || !loyaltyRewardAvailable()) return 0;
+  if (testPromoApplied || !loyaltyApplied) return 0;
+  const l = getLoyalty();
+  if (loyaltyKind === 'menu') {
+    if (!accountLoggedIn() || l.menus < 1) return 0;
+    return SK.gratisMenuWert(cart);   // 0, solange kein berechtigtes Menü im Warenkorb liegt
+  }
+  if (l.bonus < 1) return 0;
   if (cartSubtotal() < LOYALTY_MIN_ORDER) return 0;
   return LOYALTY_REWARD;
 }
-function applyLoyaltyReward() {
+function loyaltyLineLabel(kind) {
+  return t(kind === 'menu' ? 'loyalty.menu_line' : 'loyalty.line');
+}
+function applyLoyaltyReward(kind) {
   if (!loyaltyRewardAvailable()) return;
+  loyaltyKind = kind === 'menu' ? 'menu' : 'bonus';
   loyaltyApplied = true;
   promoApplied = false;      // Treuebonus, Promo & Gutschein schließen sich gegenseitig aus
   testPromoApplied = false; testOrderCode = '';
@@ -8518,7 +8543,7 @@ function commitOrderSuccess(order, cartSnapshot) {
     setTimeout(refreshAccount, 5000);
   } else {
     if (order) addLoyaltySpend(order.subtotal); // Umsatz (Warenwert) auf Treue-Fortschritt anrechnen
-    if (order && order.loyaltyApplied) consumeLoyaltyReward();
+    if (order && order.loyaltyApplied && order.loyaltyType !== 'menu') consumeLoyaltyReward();
   }
   if (order) incrementCustomerOrderCount(order.email, order.phone);
   if (order && typeof saveActiveOrder === 'function') {
@@ -8537,20 +8562,39 @@ function loyaltyCardHtml() {
   const remaining = Math.max(0, LOYALTY_GOAL_EUR - l.spent);
   const dots = Array.from({ length: LOYALTY_STAMPS }, (_, i) =>
     `<span class="loyalty-stamp${i < filled ? ' filled' : ''}"></span>`).join('');
-  let action = '';
-  if (l.rewardAvailable) {
-    if (loyaltyApplied && loyaltyDiscount() > 0) {
-      action = `<div class="loyalty-applied"><span>${t('loyalty.applied').replace('{amount}', formatPrice(LOYALTY_REWARD))}</span><button type="button" onclick="removeLoyaltyReward()">${t('promo.remove')}</button></div>`;
-    } else if (sub < LOYALTY_MIN_ORDER) {
-      action = `<div class="loyalty-reward-hint">${t('loyalty.reward_min').replace('{amount}', formatPrice(LOYALTY_REWARD)).replace('{min}', formatPrice(LOYALTY_MIN_ORDER))}</div>`;
-    } else {
-      action = `<button type="button" class="loyalty-redeem" onclick="applyLoyaltyReward()">${t('loyalty.redeem').replace('{amount}', formatPrice(LOYALTY_REWARD))}</button>`;
-    }
+  const aktiv = loyaltyDiscount();
+  const teile = [];
+  if (loyaltyApplied && aktiv > 0) {
+    const label = loyaltyKind === 'menu' ? t('loyalty.menu_applied') : t('loyalty.applied');
+    teile.push(`<div class="loyalty-applied"><span>${label.replace('{amount}', formatPrice(aktiv))}</span><button type="button" onclick="removeLoyaltyReward()">${t('promo.remove')}</button></div>`);
+    if (loyaltyKind === 'menu') teile.push(`<div class="loyalty-hint">${t('loyalty.menu_terms')}</div>`);
   } else {
-    action = `<div class="loyalty-hint">${t('loyalty.hint').replace('{n}', formatPrice(remaining)).replace('{amount}', formatPrice(LOYALTY_REWARD))}</div>`;
+    // Menü aufs Haus: nur mit Konto, nur wenn ein berechtigtes Menü im Warenkorb liegt
+    if (l.menus > 0) {
+      const menuWert = SK.gratisMenuWert(cart);
+      if (!accountLoggedIn()) {
+        teile.push(`<div class="loyalty-reward-hint">${t('loyalty.menu_login')}</div>
+          <button type="button" class="loyalty-redeem" onclick="openAccountOverlay('kompakt')">${t('loyalty.menu_login_btn')}</button>`);
+      } else if (!menuWert) {
+        teile.push(`<div class="loyalty-reward-hint">${t('loyalty.menu_need')}</div>`);
+      } else {
+        teile.push(`<button type="button" class="loyalty-redeem" onclick="applyLoyaltyReward('menu')">${t('loyalty.menu_redeem').replace('{amount}', formatPrice(menuWert))}</button>
+          <div class="loyalty-hint">${t('loyalty.menu_terms')}</div>`);
+      }
+    }
+    // 5-€-Bonus (Geburtstag, Empfehlung, alte Karte)
+    if (l.bonus > 0) {
+      if (sub < LOYALTY_MIN_ORDER) {
+        teile.push(`<div class="loyalty-reward-hint">${t('loyalty.reward_min').replace('{amount}', formatPrice(LOYALTY_REWARD)).replace('{min}', formatPrice(LOYALTY_MIN_ORDER))}</div>`);
+      } else {
+        teile.push(`<button type="button" class="loyalty-redeem" onclick="applyLoyaltyReward('bonus')">${t('loyalty.redeem').replace('{amount}', formatPrice(LOYALTY_REWARD))}</button>`);
+      }
+    }
+    if (!teile.length) teile.push(`<div class="loyalty-hint">${t('loyalty.hint').replace('{n}', formatPrice(remaining)).replace('{amount}', formatPrice(LOYALTY_REWARD))}</div>`);
   }
+  const action = teile.join('');
   return `
-    <div class="loyalty-card${l.rewardAvailable ? ' has-reward' : ''}">
+    <div class="loyalty-card${(l.menus > 0 || l.bonus > 0) ? ' has-reward' : ''}">
       <div class="loyalty-card-head">
         <span class="loyalty-title">${t('loyalty.title')}</span>
         <span class="loyalty-count">${formatPrice(l.spent)} / ${formatPrice(LOYALTY_GOAL_EUR)}</span>
@@ -8567,7 +8611,8 @@ let checkoutStep = 'cart';
 let showPromoField = false; // Gutschein-Eingabefeld im Warenkorb (Standard: eingeklappt)
 let lastCompletedOrder = null; // Daten der zuletzt erfolgreich abgeschlossenen Bestellung (für Bestätigungsseite)
 let promoApplied = false;
-let loyaltyApplied = false;     // Treuebonus auf diese Bestellung angewendet
+let loyaltyApplied = false;     // Treue auf diese Bestellung angewendet
+let loyaltyKind = 'bonus';      // 'menu' = Menü aufs Haus, 'bonus' = 5-€-Bonus
 let testPromoApplied = false;  // 🔧 Test-Code aktiv (setzt Gesamtbetrag auf 1 €)
 // Der eingetippte Test-Code. Wird beim Absenden mitgeschickt, damit der
 // Server den 1-€-Betrag gegen seine eigene Variable pruefen kann – im
@@ -10554,7 +10599,7 @@ function renderCart() {
       <div class="success-card">
         ${o.reference ? `<div class="success-row"><span class="label">${t('co.s_order_no')}</span><span class="value">#${escHtml(o.reference)}</span></div>` : ''}
         <div class="success-row"><span class="label">${t('co.s_payment')}</span><span class="value">${paidOnline ? t('co.s_pay_online') : t('co.s_pay_onsite')}</span></div>
-        ${o.loyaltyDiscount > 0 ? `<div class="success-row"><span class="label">${t('loyalty.line')}</span><span class="value">− ${formatPrice(o.loyaltyDiscount)}</span></div>` : ''}
+        ${o.loyaltyDiscount > 0 ? `<div class="success-row"><span class="label">${loyaltyLineLabel(o.loyaltyType)}</span><span class="value">− ${formatPrice(o.loyaltyDiscount)}</span></div>` : ''}
         ${o.tip > 0 ? `<div class="success-row"><span class="label">${t('co.s_tip')}</span><span class="value">${formatPrice(o.tip)}</span></div>` : ''}
         ${o.total != null ? `<div class="success-row"><span class="label">${t('co.s_total')}</span><span class="value">${formatPrice(o.total)}</span></div>` : ''}
         ${o.isPreorder && o.scheduledFor ? `<div class="success-row"><span class="label">${t('co.preorder_slot')}</span><span class="value">${escHtml(o.scheduledFor)}</span></div>` : ''}
@@ -10892,7 +10937,7 @@ function renderCart() {
         ` : ''}
         ${loyDisc > 0 ? `
           <div class="cart-summary-row discount">
-            <span>${t('loyalty.line')}</span>
+            <span>${loyaltyLineLabel(loyaltyKind)}</span>
             <span>− ${formatPrice(loyDisc)}</span>
           </div>
         ` : ''}
@@ -11123,7 +11168,7 @@ function renderCart() {
           ` : ''}
           ${loyaltyDiscount() > 0 ? `
             <div class="cart-summary-row discount">
-              <span>${t('loyalty.line')}</span><span>− ${formatPrice(loyaltyDiscount())}</span>
+              <span>${loyaltyLineLabel(loyaltyKind)}</span><span>− ${formatPrice(loyaltyDiscount())}</span>
             </div>
           ` : ''}
           ${checkoutMode === 'delivery' ? `
@@ -11561,8 +11606,16 @@ async function submitOrder(e) {
   const sub = cartSubtotal();
   const disc = effectivePromo && sub >= PROMO_MIN_ORDER ? promoDiscountFor(sub) : 0;
   const vDisc = voucherDiscount();
-  // Treuebonus (lokal): nur wenn verfügbar, angewendet, kein Test, Mindestwert erreicht
-  const loyDisc = (loyaltyApplied && loyaltyRewardAvailable() && !testPromoApplied && sub >= LOYALTY_MIN_ORDER) ? LOYALTY_REWARD : 0;
+  // Treue: 5-€-Bonus oder Menü aufs Haus (Regeln in loyaltyDiscount)
+  const loyDisc = loyaltyDiscount();
+  // Das Menü aufs Haus hängt am Konto. Mit einer anderen E-Mail fände der
+  // Server es nicht und berechnete den vollen Preis.
+  if (loyDisc > 0 && loyaltyKind === 'menu'
+      && String(email).trim().toLowerCase() !== String(ACCOUNT.email || '').trim().toLowerCase()) {
+    releaseCheckout();
+    flashCartNotice(t('loyalty.menu_email').replace('{email}', ACCOUNT.email));
+    return;
+  }
   const fee = (checkoutMode === 'delivery' && deliveryZone) ? deliveryZone.fee : 0;
   // Trinkgeld nur bei Online-Zahlung, auf Warenwert (sub - disc - loyDisc)
   const tip = (pay === 'sumup' && !testPromoApplied && tipPercent > 0)
@@ -11614,6 +11667,10 @@ async function submitOrder(e) {
     discount: disc + vDisc,
     loyaltyDiscount: loyDisc,
     loyaltyApplied: loyDisc > 0,
+    loyaltyType: loyDisc > 0 ? loyaltyKind : null,
+    // Nur für das Menü aufs Haus: der Server prüft damit, dass das Konto
+    // wirklich angemeldet ist, und entfernt den Token danach aus der Bestellung.
+    kontoToken: (loyDisc > 0 && loyaltyKind === 'menu' && ACCOUNT) ? ACCOUNT.token : undefined,
     deliveryFee: fee,
     tip,
     total,
@@ -11920,7 +11977,7 @@ function buildWhatsAppMessage(o, sumupPending, statusLinks) {
 
   m += `\n*Zwischensumme:* ${formatPrice(o.subtotal)}\n`;
   if (o.discount > 0) m += `*Rabatt:* -${formatPrice(o.discount)}\n`;
-  if (o.loyaltyDiscount > 0) m += `*Treuebonus:* -${formatPrice(o.loyaltyDiscount)}\n`;
+  if (o.loyaltyDiscount > 0) m += `*${o.loyaltyType === 'menu' ? 'Menü aufs Haus' : 'Treuebonus'}:* -${formatPrice(o.loyaltyDiscount)}\n`;
   if (o.deliveryFee > 0) m += `*Liefergebühr:* ${formatPrice(o.deliveryFee)}\n`;
   if (o.tip > 0) m += `*Trinkgeld:* ${formatPrice(o.tip)} 💛\n`;
   m += `*Gesamt: ${formatPrice(o.total)}*`;
@@ -12406,7 +12463,7 @@ const LEGAL = {
       einlösbar, kann von jedem Kunden bis zu dreimal eingelöst werden (Zuordnung über die
       bei der Bestellung angegebene E-Mail-Adresse) und gilt ab dem 20.07.2026 bis auf Widerruf.
       Aktionscodes sind nicht mit anderen Rabatten (persönliche Gutscheine, Wertgutscheine,
-      Treuebonus) kombinierbar; eine Barauszahlung ist ausgeschlossen. Die zeitlich befristete
+      Prämien aus dem Treueprogramm) kombinierbar; eine Barauszahlung ist ausgeschlossen. Die zeitlich befristete
       WM-Aktion (gestaffelter Rabatt) endete am 20.07.2026.</p>
       <p>Weitere Aktionscodes (z.&nbsp;B. aus Aushängen, Flyern, E-Mails oder Push-Nachrichten)
       gelten mit den Bedingungen, die beim Einlösen im Warenkorb angezeigt werden: Wert,
@@ -12421,21 +12478,34 @@ const LEGAL = {
       und – sofern nicht anders angegeben – ab einem Bestellwert von 15,00&nbsp;€. Sie sind nur
       online einlösbar, einmalig gültig, nicht übertragbar und vom Weiterverkauf ausgeschlossen.
       Eine Barauszahlung oder die Auszahlung eines Restguthabens ist nicht möglich. Pro Bestellung
-      kann nur ein Rabatt (Aktionscode, Gutschein oder Treuebonus) eingelöst werden.</p>
+      kann nur ein Rabatt (Aktionscode, Gutschein oder Treueprämie) eingelöst werden.</p>
       <p>Über unsere Website gekaufte <strong>Wertgutscheine</strong> gelten ab dem Kaufdatum
       3&nbsp;Jahre und sind online ab einem Bestellwert in Höhe des Gutscheinwerts einlösbar.
       Der Gutschein-Code wird nach Zahlungseingang automatisch per E-Mail an die beim Kauf
       angegebene Adresse versendet. Eine Barauszahlung ist ausgeschlossen; das gesetzliche
       Widerrufsrecht für Verbraucher bleibt unberührt und erlischt mit vollständiger Einlösung.</p>
-      <h4>§ 9 Treuebonus</h4>
-      <p>Ab 100,00&nbsp;€ kumuliertem Bestellwert über diese Website schenken wir dir 5,00&nbsp;€
-      Rabatt auf eine folgende Bestellung ab 15,00&nbsp;€ Bestellwert.
-      <strong>Mit Kundenkonto</strong> wird der Zählerstand deiner E-Mail-Adresse zugeordnet und
-      bleibt dir auch bei einem Geräte- oder Browserwechsel erhalten.
-      <strong>Ohne Kundenkonto</strong> wird er nur lokal in deinem Browser gespeichert und ist an
-      Gerät und Browser gebunden; beim Löschen der Browserdaten oder einem Gerätewechsel kann der
-      Stand dann verfallen – ein Ersatz oder eine Barauszahlung ist in diesem Fall ausgeschlossen. Der Treuebonus ist nicht mit Aktionscodes oder
-      Gutscheinen kombinierbar.</p>
+      <h4>§ 9 Treueprogramm (Stempelkarte)</h4>
+      <p>Mit jeder Bestellung über diese Website oder unsere App sammelst du Umsatz auf deiner
+      Stempelkarte; maßgeblich ist der Warenwert vor Rabatten, Liefergebühr und Trinkgeld.
+      Einkäufe am Truck schreiben wir nach Vorzeigen deines Kunden-QR-Codes gut. Je
+      100,00&nbsp;€ kumuliertem Warenwert ist eine Stempelkarte voll, und du erhältst ein
+      <strong>Menü aufs Haus</strong>. Es umfasst einen Burger deiner Wahl mit einfachem Patty,
+      Pommes, ein Getränk und einen Dip (Grundmenü); ausgenommen ist der Kubis&nbsp;Special.
+      Aufpreise für Extras, etwa Double Patty oder Süßkartoffelpommes, zahlst du wie gewohnt.
+      Pro Bestellung kann ein Menü aufs Haus eingelöst werden.</p>
+      <p>Online ist das Menü aufs Haus nur mit Kundenkonto einlösbar, und zwar bei einer
+      Bestellung mit der E-Mail-Adresse des Kontos; am Truck lösen wir es nach Vorzeigen des
+      Kunden-QR-Codes ein. <strong>Mit Kundenkonto</strong> wird der Zählerstand deiner
+      E-Mail-Adresse zugeordnet und bleibt dir auch bei einem Geräte- oder Browserwechsel
+      erhalten. <strong>Ohne Kundenkonto</strong> wird er nur lokal in deinem Browser
+      gespeichert und ist an Gerät und Browser gebunden; beim Anlegen eines Kontos übernehmen
+      wir ihn einmalig. Beim Löschen der Browserdaten oder einem Gerätewechsel ohne Konto kann
+      der Stand verfallen; ein Ersatz oder eine Barauszahlung ist in diesem Fall ausgeschlossen.</p>
+      <p>Bis zum 19.10.2026 gab es für eine volle Stempelkarte 5,00&nbsp;€ Rabatt. Bereits
+      erworbene 5-€-Boni bleiben gültig, ebenso die 5-€-Boni zum Geburtstag und für
+      Empfehlungen (§&nbsp;15). Sie sind ab einem Bestellwert von 15,00&nbsp;€ einlösbar.
+      Prämien aus dem Treueprogramm sind nicht übertragbar, nicht mit Aktionscodes oder
+      Gutscheinen kombinierbar und werden nicht bar ausgezahlt.</p>
       <h4>§ 10 Verfügbarkeit &amp; Öffnungszeiten</h4>
       <p>Es gelten die auf der Website angezeigten Öffnungszeiten. Einzelne Produkte können
       tagesbedingt ausverkauft sein; ebenso können wir die Online-Bestellannahme vorübergehend
@@ -12474,15 +12544,15 @@ const LEGAL = {
       jeweiligen Bestellung zugeordnet. Im Konto werden zudem die letzten fünf Bestellungen
       (Datum, Summe, Warenkorb) für die Funktion „Nochmal bestellen" gespeichert. Bei
       freiwillig hinterlegtem Geburtstag (Tag und Monat) schreiben wir am Geburtstag
-      einmal jährlich einen Treuebonus von 5,00&nbsp;€ gut. Kontoinhaber erhalten einen
+      einmal jährlich einen Bonus von 5,00&nbsp;€ gut. Kontoinhaber erhalten einen
       persönlichen Empfehlungs-Code: Neukunden sparen damit 5,00&nbsp;€ auf ihre erste
       Online-Bestellung ab 15,00&nbsp;€ Bestellwert; der Werbende erhält je erfolgreicher
-      Erstbestellung 5,00&nbsp;€ Treuebonus (max. zehn Prämien je Konto, keine
+      Erstbestellung einen Bonus von 5,00&nbsp;€ (max. zehn Prämien je Konto, keine
       Eigenwerbung, Zuordnung über die E-Mail-Adresse). Missbrauch führt zum Ausschluss
       vom Programm. Das Konto kann jederzeit direkt im Konto-Bereich („Konto löschen")
       oder formlos per E-Mail an info@grillnchill-foodtruck.de gelöscht werden; damit
       verfallen auch Stempelkarten-Guthaben und Empfehlungs-Code.</p>
-      <p style="color: var(--color-text-muted); font-size: 0.8rem;">Stand: September 2026</p>
+      <p style="color: var(--color-text-muted); font-size: 0.8rem;">Stand: 20. Oktober 2026</p>
     `,
   },
   widerruf: {
@@ -12516,10 +12586,10 @@ const LEGAL = {
       Tracking- oder Werbe-Cookies</strong> – deshalb siehst du bei uns auch keinen Cookie-Banner.
       Unsere Besucher-Statistik arbeitet komplett anonym und ohne Cookies.</p>
       <p>Für den Betrieb nutzen wir den lokalen Speicher deines Browsers (localStorage), z.&nbsp;B.
-      für deinen Warenkorb, deine Spracheinstellung, den Treuebonus-Zähler und deine
+      für deinen Warenkorb, deine Spracheinstellung, den Stand deiner Stempelkarte und deine
       Push-Einstellung. Diese Daten bleiben auf deinem Gerät und werden nicht zu Werbezwecken
       ausgewertet. Du kannst sie jederzeit über die Einstellungen deines Browsers löschen –
-      dabei gehen Warenkorb und Treuebonus-Stand verloren.</p>
+      dabei gehen Warenkorb und Stempelkarten-Stand verloren.</p>
       <p>Die Karte laden wir erst, wenn du auf „Karte laden" klickst – vorher wird nichts an Google
       übertragen. Öffnest du den Anmeldebereich, laden wir die Anmelde-Skripte von Apple bzw.
       Google; diese Anbieter können auf ihren eigenen Domains Cookies einsetzen. Beim
@@ -14452,8 +14522,9 @@ function gncWatchSync(force) {
     paused: !!SHOP_STATUS.paused, pauseMsg: SHOP_STATUS.pauseMessage || '',
     wait: SHOP_STATUS.waitTime || 0, deliveryOff: !!SHOP_STATUS.deliveryOff, pickupOff: !!SHOP_STATUS.pickupOff,
     loyalty: {
-      spent: Math.round(L.spent * 100) / 100, goal: LOYALTY_GOAL_EUR, reward: L.rewardAvailable ? 1 : 0,
-      text: L.rewardAvailable ? t('watch.loy_ready').replace('{amount}', euroKurz(LOYALTY_REWARD))
+      spent: Math.round(L.spent * 100) / 100, goal: LOYALTY_GOAL_EUR, reward: (L.menus > 0 || L.bonus > 0) ? 1 : 0,
+      text: L.menus > 0 ? t('watch.loy_ready_menu')
+        : L.bonus > 0 ? t('watch.loy_ready').replace('{amount}', euroKurz(LOYALTY_REWARD))
         : t('watch.loy_rest').replace('{rest}', euroKurz(rest)).replace('{amount}', euroKurz(LOYALTY_REWARD)),
     },
     order: getActiveOrder(), l: l,
@@ -14761,7 +14832,7 @@ function onbPending() {
   return onbNews().length > 0;
 }
 function onbRole() {
-  var known = (typeof accountLoggedIn === 'function' && accountLoggedIn()) || !!getLastOrder() || getLoyalty().spent > 0 || getLoyalty().rewardAvailable || !!loadCustomerData();
+  var known = (typeof accountLoggedIn === 'function' && accountLoggedIn()) || !!getLastOrder() || getLoyalty().spent > 0 || loyaltyRewardAvailable() || !!loadCustomerData();
   return known ? 'stamm' : 'neu';
 }
 function onbFirstName() {

@@ -104,17 +104,21 @@ function buildGoogleSaveUrl(rec, custId) {
     accountId: rec.email,
     barcode: { type: 'QR_CODE', value: 'GNCQR:' + rec.qrToken, alternateText: 'Am Truck vorzeigen' },
     loyaltyPoints: {
-      label: '5-€-Boni',
-      balance: { int: rec.rewards || 0 },
+      label: 'Menüs aufs Haus',
+      balance: { int: rec.menus || 0 },
     },
     secondaryLoyaltyPoints: {
       label: 'Level',
       balance: { string: custLevel(rec).level + ' · ' + custLevel(rec).levelName },
     },
     textModulesData: [{
-      header: 'Bis zum nächsten Bonus',
+      header: 'Bis zum Menü aufs Haus',
       body: (Math.max(0, Math.round((100 - (rec.spent || 0)) * 100) / 100)).toFixed(2).replace('.', ',') + ' € Umsatz',
       id: 'to_next',
+    }, {
+      header: '5-€-Boni',
+      body: String(rec.rewards || 0) + ' (Geburtstag, Empfehlung)',
+      id: 'boni5',
     }],
   };
 

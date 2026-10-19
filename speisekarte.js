@@ -138,10 +138,17 @@
   /* ==================================================================
      TREUE, LIEFERZONEN, TRINKGELD, TESTBESTELLUNG
      ================================================================== */
-  const LOYALTY_GOAL_EUR = 100;     // € Gesamtumsatz bis zum Treuebonus (über mehrere Bestellungen)
-  const LOYALTY_REWARD = 5.00;      // € Treuebonus
-  const LOYALTY_MIN_ORDER = 15.00;  // ab diesem Bestellwert einlösbar
+  const LOYALTY_GOAL_EUR = 100;     // € Gesamtumsatz bis zur vollen Stempelkarte (über mehrere Bestellungen)
   const LOYALTY_STAMPS = 10;        // Stempel auf der Karte (1 Stempel = 10 € Umsatz)
+  // Volle Stempelkarte = ein Menü aufs Haus (seit Oktober 2026, vorher 5 €).
+  // Gratis ist das Grundmenü: Burger mit einfachem Patty, Pommes, Getränk, Dip.
+  // Double Patty und den Süßkartoffel-Aufpreis zahlt der Gast. Kubis Special
+  // ist ausgenommen. Online nur mit Kundenkonto einlösbar, am Truck per Scan.
+  const LOYALTY_MENU_EXCLUDE_IDS = ['kubis'];
+  // 5-€-Bonus: gibt es weiter zum Geburtstag, für Empfehlungen und für Karten,
+  // die vor der Umstellung voll wurden.
+  const LOYALTY_REWARD = 5.00;      // € Bonus
+  const LOYALTY_MIN_ORDER = 15.00;  // ab diesem Bestellwert ist der 5-€-Bonus einlösbar
 
   // Lieferzonen nach Luftlinien-km
   const DELIVERY_ZONES = [
@@ -176,6 +183,30 @@
       if (side) p += side.surcharge;
     }
     return p;
+  }
+
+  /**
+   * Welche Warenkorb-Zeile geht als Menü aufs Haus? Die teuerste berechtigte:
+   * ein Burger als Menü, nicht Kubis Special. Gratis ist der Grundpreis
+   * (Burger + Menü-Aufschlag); Double Patty und Beilagen-Aufpreis bleiben.
+   * Liefert { key, wert } oder null.
+   */
+  function gratisMenuZeile(cart) {
+    if (!cart || typeof cart !== 'object') return null;
+    let beste = null;
+    Object.keys(cart).forEach(key => {
+      const entry = cart[key];
+      if (!entry || !entry.isMenu || !(entry.qty > 0)) return;
+      const item = MENU.find(m => m.id === entry.menuId);
+      if (!item || item.cat !== 'burger' || LOYALTY_MENU_EXCLUDE_IDS.indexOf(item.id) !== -1) return;
+      const wert = item.price + MENU_SURCHARGE;
+      if (!beste || wert > beste.wert) beste = { key, wert };
+    });
+    return beste;
+  }
+  function gratisMenuWert(cart) {
+    const z = gratisMenuZeile(cart);
+    return z ? z.wert : 0;
   }
 
   /** Warenwert des gesamten Warenkorbs (vor Rabatt, Gebühr, Trinkgeld). */
@@ -217,8 +248,8 @@
     PROMO_CODE, PROMO_TIERS, PROMO_MIN_ORDER, PROMO_VALID_UNTIL, PROMO_VALID_UNTIL_LABEL,
     GRILL5_START, GRILL5_UNTIL,
     promoActive, grill5Active, adCode, promoTierPercent, promoDiscountFor,
-    LOYALTY_GOAL_EUR, LOYALTY_REWARD, LOYALTY_MIN_ORDER, LOYALTY_STAMPS,
+    LOYALTY_GOAL_EUR, LOYALTY_REWARD, LOYALTY_MIN_ORDER, LOYALTY_STAMPS, LOYALTY_MENU_EXCLUDE_IDS,
     DELIVERY_ZONES, MAX_DELIVERY_KM, TIP_PERCENTS, TEST_TOTAL,
-    einzelpreis, warenwert, trinkgeldBetrag, gesamtbetrag,
+    einzelpreis, warenwert, trinkgeldBetrag, gesamtbetrag, gratisMenuZeile, gratisMenuWert,
   };
 });

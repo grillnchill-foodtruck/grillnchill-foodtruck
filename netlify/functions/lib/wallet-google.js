@@ -68,15 +68,19 @@ async function aktualisiereGoogleKarte(rec, custId, holen) {
     const issuer = process.env.GOOGLE_WALLET_ISSUER_ID;
     const level = Math.min(10, 1 + (rec.cards || 0));
     const patch = {
-      loyaltyPoints: { label: '5-€-Boni', balance: { int: rec.rewards || 0 } },
+      loyaltyPoints: { label: 'Menüs aufs Haus', balance: { int: rec.menus || 0 } },
       secondaryLoyaltyPoints: {
         label: 'Level',
         balance: { string: level + ' · ' + LEVEL_NAMES[level - 1] },
       },
       textModulesData: [{
-        header: 'Bis zum nächsten Bonus',
+        header: 'Bis zum Menü aufs Haus',
         body: (Math.max(0, Math.round((100 - (rec.spent || 0)) * 100) / 100)).toFixed(2).replace('.', ',') + ' € Umsatz',
         id: 'to_next',
+      }, {
+        header: '5-€-Boni',
+        body: String(rec.rewards || 0) + ' (Geburtstag, Empfehlung)',
+        id: 'boni5',
       }],
     };
     const token = await zugangsToken(holen);

@@ -121,7 +121,7 @@ function levelVon(rec) {
 
 /* Stempel-Feld. Bei 0 Stempeln ohne changeMessage: dann wurde die Karte
    gerade voll und beginnt von vorn (oder es ist die erste Karte). Die
-   Nachricht zum neuen Bonus kommt schon ueber das Feld 'boni', ein
+   Nachricht zum neuen Menü kommt schon ueber das Feld 'boni', ein
    "Neuer Stempel: 0/10" daneben waere falsch. */
 function stempelFeld(rec) {
   const n = stempelVon(rec);
@@ -129,6 +129,17 @@ function stempelFeld(rec) {
     textAlignment: 'PKTextAlignmentRight' };
   if (n > 0) feld.changeMessage = 'Neuer Stempel: %@';
   return feld;
+}
+
+/* Prämien auf der Karte als kurzer Text: Menüs aufs Haus (volle Karte) und
+   5-€-Boni (Geburtstag, Empfehlung, alte Karten). Beides passt in das eine
+   primäre Feld; ein zusätzliches Feld erlaubt Apple hier nicht mehr. */
+function praemienText(rec) {
+  const m = rec.menus || 0, b = rec.rewards || 0;
+  const teile = [];
+  if (m) teile.push(m + (m === 1 ? ' Menü' : ' Menüs'));
+  if (b) teile.push(b + '× 5 €');
+  return teile.length ? teile.join(' + ') : '0';
 }
 
 function passJson(rec, emailHash) {
@@ -164,11 +175,11 @@ function passJson(rec, emailHash) {
        4 sekundaere plus Zusatzfelder zusammen. Belegt: level, next, name,
        stempel = 4. Ein weiteres Feld waere nicht mehr erlaubt. */
     storeCard: {
-      primaryFields: [{ key: 'boni', label: '5-€-BONI', value: rec.rewards || 0,
-        changeMessage: '5-€-Boni auf deiner Karte: %@' }],   // neutral: aendert sich auch beim Einloesen am Truck
+      primaryFields: [{ key: 'boni', label: 'PRÄMIEN', value: praemienText(rec),
+        changeMessage: 'Prämien auf deiner Karte: %@' }],   // neutral: aendert sich auch beim Einloesen am Truck
       secondaryFields: [
         { key: 'level', label: 'LEVEL', value: level + ' · ' + name },
-        { key: 'next', label: 'BIS ZUM NÄCHSTEN BONUS', value: bisBonus.toFixed(2).replace('.', ',') + ' €',
+        { key: 'next', label: 'BIS ZUM MENÜ AUFS HAUS', value: bisBonus.toFixed(2).replace('.', ',') + ' €',
           textAlignment: 'PKTextAlignmentRight' },
       ],
       auxiliaryFields: [
@@ -177,7 +188,7 @@ function passJson(rec, emailHash) {
       ],
       backFields: [
         { key: 'info', label: 'So funktioniert es',
-          value: 'Code am Truck vorzeigen – wir schreiben deinen Einkauf gut und lösen Boni direkt ein. Je 100 € Umsatz gibt es 5 € Bonus.' },
+          value: 'Code am Truck vorzeigen: Wir schreiben deinen Einkauf gut und lösen Prämien direkt ein. Je 100 € Umsatz gibt es ein Menü aufs Haus (Grundmenü mit einfachem Patty, Kubis Special ausgenommen).' },
         { key: 'standort', label: 'Standort',
           value: "Grill'n Chill Foodtruck\nGütersloher Str. 122, 33649 Bielefeld\ngrillnchill-foodtruck.de" },
       ],

@@ -63,6 +63,27 @@ const { buildInvoicePdf, buildInvoiceXml, trinkgeldImVat } = require('./lib/invo
 const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
 const { codeSchluessel } = require('./lib/gutschein-code');
 
+/* Speisekarte: nur für die Anzeige, welches Menü aufs Haus geht. Fehlt sie,
+   steht im Ticket eben nur „Menü aufs Haus“ ohne Namen. */
+let SK = null;
+try { SK = require('../../speisekarte.js'); } catch (e) { SK = null; }
+
+// Volle Stempelkarte = Menü aufs Haus (loyaltyType 'menu'), sonst 5-€-Bonus.
+function gratisMenuName(order) {
+  try {
+    const korb = order && order.cartSnapshot;
+    const z = SK && SK.gratisMenuZeile(korb);
+    if (!z) return '';
+    const item = SK.MENU.find(m => m.id === korb[z.key].menuId);
+    return item ? item.name + '-Menü' : '';
+  } catch (e) { return ''; }
+}
+function treueLabel(order) {
+  if (!order || order.loyaltyType !== 'menu') return 'Treuebonus';
+  const n = gratisMenuName(order);
+  return 'Menü aufs Haus' + (n ? ' (' + n + ')' : '');
+}
+
 /* Fortlaufende Rechnungsnummer. § 14 Abs. 4 Nr. 4 UStG verlangt eine
    einmalig vergebene, fortlaufende Nummer. Wir zaehlen je Jahr hoch:
    GNC-2026-0001. Der Zaehler liegt im Blob-Store, damit er auch ueber
@@ -148,7 +169,7 @@ function buildInvoiceBlock(order) {
     const code = (order.promo && order.promo.code) || order.voucherCode;
     abzuege += abzug(code ? `Rabatt (Code ${esc(code)})` : 'Rabatt', z(order.discount));
   }
-  if (z(order.loyaltyDiscount) > 0) abzuege += abzug('Treuebonus', z(order.loyaltyDiscount));
+  if (z(order.loyaltyDiscount) > 0) abzuege += abzug(esc(treueLabel(order)), z(order.loyaltyDiscount));
   if (z(order.deliveryFee) > 0) {
     abzuege += `
     <tr>
@@ -269,7 +290,7 @@ async function sendOrderAlertPush(order) {
     });
   } catch (e) {}
 }
-async function afterOrderHooks(order, verified) {
+async function afterOrderHooks(order, verified, treueFreigabe) {
   // verified === true  -> Aufruf ist an einen echten Zahlungseingang gebunden
   //   (SumUp-Webhook / Reconcile nach PAID) bzw. der interne Schutz ist nicht aktiv.
   //   Nur dann werden Treue-/Umsatz-/Referral-Gutschriften gebucht (Schutz gegen
@@ -280,12 +301,22 @@ async function afterOrderHooks(order, verified) {
   //    Bei Online-Zahlung existiert bereits ein "pending"-Eintrag aus sumup-checkout,
   //    der hier auf "completed" gehoben wird (inkl. checkoutId).
   let alreadyAccrued = false; // S5: pro Bestellung nur EINMAL gutschreiben (gegen Doppelbuchung durch Webhook+Reconcile)
+  // Treue einlösen ist vom Gutschreiben getrennt: Abziehen schadet nur dem
+  // Kunden selbst und braucht deshalb keinen verifizierten Zahlungseingang.
+  // Vorher hing es mit an „verified“; bei Bar-/EC-Bestellungen blieb ein
+  // eingelöster Bonus dadurch stehen und ließ sich erneut nutzen. Diese
+  // Funktion läuft erst nach abgeschlossener Bestellung (bei Online-Zahlung
+  // nach der Zahlung). Pro Bestellung genau einmal (treueEingeloest).
+  const treueArt = (typeof order.loyaltyDiscount === 'number' && order.loyaltyDiscount > 0)
+    ? (order.loyaltyType === 'menu' ? 'menu' : 'bonus') : null;
+  let einloesenJetzt = false;
   try {
     if (order.reference) {
       const os = blobStore('orders');
       const key = 'o:' + String(order.reference).replace(/[^A-Za-z0-9-]/g, '').slice(0, 60);
       const existing = await os.get(key, { type: 'json' });
       alreadyAccrued = !!(existing && existing.accrued);
+      einloesenJetzt = !!(treueArt && order.email && !(existing && existing.treueEingeloest));
       const raw = JSON.stringify(order);
       await os.setJSON(key, {
         status: 'completed',
@@ -295,6 +326,8 @@ async function afterOrderHooks(order, verified) {
         createdAt: (existing && existing.createdAt) || new Date().toISOString(),
         completedAt: new Date().toISOString(),
         checkoutId: (existing && existing.checkoutId) || null,
+        treueFreigabe: (existing && existing.treueFreigabe) || treueFreigabe || null,
+        treueEingeloest: (existing && existing.treueEingeloest) || (einloesenJetzt ? treueArt : null),
         order: raw.length < 60000 ? order : { reference: order.reference, name: order.name, total: order.total, note: 'Bestellung zu groß für Archiv-Detail' },
         fstate: 'confirmed',
         fstateAt: { confirmed: new Date().toISOString() },
@@ -355,14 +388,13 @@ async function afterOrderHooks(order, verified) {
         }
 
         cust.spent = Math.round(((cust.spent || 0) + Math.max(0, base)) * 100) / 100;
-        if (typeof order.loyaltyDiscount === 'number' && order.loyaltyDiscount > 0) {
-          cust.rewards = Math.max(0, (cust.rewards || 0) - 1);
-        }
+        // (Einlösen eines Bonus/Menüs: eigener Block weiter unten)
         let levelUpTo = 0;
         while (cust.spent >= 100) {
-          cust.rewards = (cust.rewards || 0) + 1;
+          // Volle Karte = ein Menü aufs Haus (seit Oktober 2026; vorher 5 €,
+          // ab Level 6 doppelt). Level und Abzeichen bleiben als Status.
+          cust.menus = (cust.menus || 0) + 1;
           cust.cards = (cust.cards || 0) + 1;
-          if (cust.cards >= 5) cust.rewards += 1; // ab Level 6: Doppel-Bonus je voller Karte (10 €)
           levelUpTo = Math.min(10, 1 + cust.cards);
           cust.spent = Math.round((cust.spent - 100) * 100) / 100;
         }
@@ -375,7 +407,7 @@ async function afterOrderHooks(order, verified) {
               const crown = levelUpTo >= 10 ? '\u{1F451} ' : '\u{1F3C6} ';
               await fetch('https://api.telegram.org/bot' + tgToken + '/sendMessage', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: tgChat, text: crown + (cust.name || cust.email) + ' ist jetzt Level ' + levelUpTo + ' \u00b7 ' + LN[levelUpTo - 1] + '! Ab Level 6 gibt es 10 \u20ac je voller Karte.' + (levelUpTo >= 10 ? ' Zeit f\u00fcr die Kr\u00f6nung!' : '') }),
+                body: JSON.stringify({ chat_id: tgChat, text: crown + (cust.name || cust.email) + ' ist jetzt Level ' + levelUpTo + ' \u00b7 ' + LN[levelUpTo - 1] + '!' + (levelUpTo >= 10 ? ' Zeit f\u00fcr die Kr\u00f6nung!' : '') }),
               });
             }
           } catch (e) {}
@@ -416,6 +448,26 @@ async function afterOrderHooks(order, verified) {
           const { aktualisiereWallets } = require('./lib/wallet-sync');
           await aktualisiereWallets(ckey2.slice(2), cust);
         } catch (e) {}
+      } catch (e) {}
+    }
+
+    // Treue einlösen (siehe treueArt oben). Gäste ohne Konto haben keinen
+    // Datensatz, ihr 5-€-Bonus lebt im Browser und wird dort abgezogen.
+    if (einloesenJetzt) {
+      try {
+        const custS = blobStore('customers');
+        const ck = 'c:' + crypto.createHash('sha256').update(String(order.email).trim().toLowerCase()).digest('hex');
+        const cust = await custS.get(ck, { type: 'json' });
+        if (cust) {
+          if (treueArt === 'menu') cust.menus = Math.max(0, (cust.menus || 0) - 1);
+          else cust.rewards = Math.max(0, (cust.rewards || 0) - 1);
+          cust.walletStand = Date.now();
+          await custS.setJSON(ck, cust);
+          try {
+            const { aktualisiereWallets } = require('./lib/wallet-sync');
+            await aktualisiereWallets(ck.slice(2), cust);
+          } catch (e) {}
+        }
       } catch (e) {}
     }
 
@@ -585,7 +637,7 @@ function buildOrderConfirmationEmail(order) {
            <td style="padding:8px 14px;text-align:right;color:#E85A24;">−${formatPrice(order.discount)}</td></tr>`
     : '';
   const loyaltyRow = order.loyaltyDiscount > 0
-    ? `<tr><td style="padding:8px 14px;color:#E85A24;">Treuebonus</td>
+    ? `<tr><td style="padding:8px 14px;color:#E85A24;">${esc(treueLabel(order))}</td>
            <td style="padding:8px 14px;text-align:right;color:#E85A24;">−${formatPrice(order.loyaltyDiscount)}</td></tr>`
     : '';
   const feeRow = order.deliveryFee > 0
@@ -835,7 +887,7 @@ function buildOwnerNotificationEmail(order, statusUpdateBaseUrl, statusToken) {
       ✉️ <a href="mailto:${esc(order.email)}" style="color:#FFC93C;text-decoration:none;">${esc(order.email)}</a>
     </p>
     ${order.customerOrderNo ? `<p style="margin:0 0 16px;"><span style="display:inline-block;background:#0A0A0A;border:1px solid #2A2520;border-radius:6px;padding:6px 12px;color:#FFC93C;font-size:13px;font-weight:700;">Stammkunden-Zähler: ${order.customerOrderNo}. Bestellung <span style="color:#888;font-weight:400;">(geräte-lokal gezählt)</span></span></p>` : ''}
-    ${order.loyaltyProgress ? `<p style="margin:0 0 16px;"><span style="display:inline-block;background:#0A0A0A;border:1px solid #2A2520;border-radius:6px;padding:6px 12px;color:#6DBE45;font-size:13px;font-weight:700;">Treuekarte: ${formatPrice(order.loyaltyProgress.spent)} / ${formatPrice(order.loyaltyProgress.goal)}${order.loyaltyProgress.earned > 0 ? ' &middot; <span style="color:#FFC93C;">★ Treuebonus erreicht!</span>' : ''}${order.loyaltyProgress.applied && order.loyaltyDiscount ? ` &middot; <span style="color:#FFC93C;">Bonus eingelöst (−${formatPrice(order.loyaltyDiscount)})</span>` : ''} <span style="color:#888;font-weight:400;">(geräte-lokal)</span></span></p>` : ''}
+    ${order.loyaltyProgress ? `<p style="margin:0 0 16px;"><span style="display:inline-block;background:#0A0A0A;border:1px solid #2A2520;border-radius:6px;padding:6px 12px;color:#6DBE45;font-size:13px;font-weight:700;">Treuekarte: ${formatPrice(order.loyaltyProgress.spent)} / ${formatPrice(order.loyaltyProgress.goal)}${order.loyaltyProgress.earned > 0 ? ' &middot; <span style="color:#FFC93C;">★ Menü aufs Haus erreicht!</span>' : ''}${order.loyaltyProgress.applied && order.loyaltyDiscount ? ` &middot; <span style="color:#FFC93C;">${order.loyaltyType === 'menu' ? 'Menü aufs Haus eingelöst' : 'Bonus eingelöst'} (−${formatPrice(order.loyaltyDiscount)})</span>` : ''} <span style="color:#888;font-weight:400;">(geräte-lokal)</span></span></p>` : ''}
 
     <div style="background:#0A0A0A;padding:14px 16px;border-radius:8px;margin:16px 0;border-left:4px solid ${order.mode === 'delivery' ? '#E85A24' : '#6DBE45'};">
       <strong style="color:#F5E9D0;">${order.mode === 'delivery' ? '🛵 LIEFERUNG' : '🚶 ABHOLUNG'}</strong>
@@ -853,7 +905,7 @@ function buildOwnerNotificationEmail(order, statusUpdateBaseUrl, statusToken) {
 
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;background:#0A0A0A;border-radius:8px;color:#ccc;">
       ${itemsHtml.replace(/border-bottom:1px solid #eee/g, 'border-bottom:1px solid #2A2520')}
-      ${order.loyaltyDiscount > 0 ? `<tr><td style="padding:8px 12px;color:#6DBE45;">Treuebonus</td>
+      ${order.loyaltyDiscount > 0 ? `<tr><td style="padding:8px 12px;color:#6DBE45;">${order.loyaltyType === 'menu' ? '🎁 ' : ''}${esc(treueLabel(order))}</td>
           <td style="padding:8px 12px;text-align:right;color:#6DBE45;">−${formatPrice(order.loyaltyDiscount)}</td></tr>` : ''}
       ${order.tip > 0 ? `<tr><td style="padding:8px 12px;color:#FFC93C;">Trinkgeld</td>
           <td style="padding:8px 12px;text-align:right;color:#FFC93C;">${formatPrice(order.tip)}</td></tr>` : ''}
@@ -1065,7 +1117,7 @@ async function sendTelegram(order) {
     const pl = order.promo && order.promo.code ? ` (${order.promo.code}${order.promo.pct ? ' −' + order.promo.pct + '%' : ''})` : '';
     L.push(`Rabatt${pl}: -${formatPrice(order.discount)}`);
   }
-  if (order.loyaltyDiscount > 0) L.push(`Treuebonus: -${formatPrice(order.loyaltyDiscount)}`);
+  if (order.loyaltyDiscount > 0) L.push(`${order.loyaltyType === 'menu' ? '🎁 <b>' + e(treueLabel(order)) + '</b>' : 'Treuebonus'}: -${formatPrice(order.loyaltyDiscount)}`);
   if (order.tip > 0) L.push(`Trinkgeld: ${formatPrice(order.tip)}`);
   L.push(`<b>Gesamt: ${formatPrice(order.total)}</b>`);
   L.push(`Zahlung: ${order.payment === 'sumup' ? (order.paymentPending ? 'Online (ausstehend)' : 'Online bezahlt') : 'Bar/EC vor Ort'}`);
@@ -1073,8 +1125,8 @@ async function sendTelegram(order) {
   if (order.customerOrderNo) L.push(`Stammkunden-Zähler: ${order.customerOrderNo}. Bestellung`);
   if (order.loyaltyProgress) {
     let lp = `Treuekarte: ${formatPrice(order.loyaltyProgress.spent)} / ${formatPrice(order.loyaltyProgress.goal)}`;
-    if (order.loyaltyProgress.earned > 0) lp += ' · Treuebonus erreicht!';
-    if (order.loyaltyProgress.applied && order.loyaltyDiscount) lp += ` · Bonus eingelöst (−${formatPrice(order.loyaltyDiscount)})`;
+    if (order.loyaltyProgress.earned > 0) lp += ' · Menü aufs Haus erreicht!';
+    if (order.loyaltyProgress.applied && order.loyaltyDiscount) lp += ` · ${order.loyaltyType === 'menu' ? 'Menü aufs Haus' : 'Bonus'} eingelöst (−${formatPrice(order.loyaltyDiscount)})`;
     L.push(lp);
   }
   try {
@@ -1332,8 +1384,10 @@ exports.handler = async (event) => {
      auf dem Ticket, das am Truck abkassiert wird. Bei Online-Zahlungen hat
      sumup-checkout schon korrigiert; dann findet der zweite Lauf nichts mehr.
      Bricht nie ab – siehe lib/preisberechnung.js. */
+  let treueFreigabe = null;
   if (type === 'order_confirmation' || type === 'owner_notification') {
-    await pruefeUndKorrigiere(order);
+    const preis = await pruefeUndKorrigiere(order);
+    treueFreigabe = (preis && preis.treueFreigabe) || null;
   }
 
   try {
@@ -1398,6 +1452,7 @@ exports.handler = async (event) => {
               subtotal: order.subtotal ?? null,
               discount: order.discount || 0,
               loyaltyDiscount: order.loyaltyDiscount || 0,
+              loyaltyType: order.loyaltyType || null,
               deliveryFee: order.deliveryFee || 0,
               promo: order.promo || null,
               voucherCode: order.voucherCode || null,
@@ -1463,7 +1518,7 @@ exports.handler = async (event) => {
         || (typeof input.internalSecret === 'string' && input.internalSecret === INTERNAL_SECRET)
         || (trustCash && order && order.payment && order.payment !== 'sumup');
 
-      await afterOrderHooks(order, verified);
+      await afterOrderHooks(order, verified, treueFreigabe);
 
       return json(200, { sent: 2, type, statusLinks, statusUrl: order.reference ? statusPageUrl(order.reference) : null });
     }

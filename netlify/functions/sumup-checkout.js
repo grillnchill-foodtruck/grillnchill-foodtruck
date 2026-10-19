@@ -208,11 +208,13 @@ exports.handler = async (event) => {
       amount = orderTotal;
     }
   }
+  let treueFreigabe = null;   // geprüfte Treue-Art, kommt ins Archiv (siehe preisberechnung.js)
   if (input.order && typeof input.order === 'object') {
     // Schreibt den geprüften Betrag in input.order zurück, damit Archiv,
     // Ticket und Mail dieselbe Zahl zeigen wie die Belastung.
     const preis = await pruefeUndKorrigiere(input.order);
     if (preis && preis.sicher) amount = preis.betrag;
+    if (preis && preis.treueFreigabe) treueFreigabe = preis.treueFreigabe;
   }
   if (isNaN(amount) || amount < 1.0 || amount > 500.0) {
     return json(400, { error: 'Amount out of bounds', hint: 'Betrag muss zwischen 1 und 500 € liegen' });
@@ -297,6 +299,7 @@ exports.handler = async (event) => {
             status: 'pending',
             createdAt: new Date().toISOString(),
             checkoutId: (data && data.id) || null,
+            treueFreigabe,
             order,
           });
         }

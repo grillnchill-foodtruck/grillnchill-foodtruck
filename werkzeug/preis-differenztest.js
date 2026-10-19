@@ -65,13 +65,32 @@ if (von < 0 || bis < 0) {
 }
 const FRONTEND_QUELLE = html.slice(von, bis);
 
+/* Die Treue-Regel steht seit dem Menü aufs Haus (Oktober 2026) in einer
+   eigenen Funktion loyaltyDiscount(). Auch die wird echt aus index.html
+   geschnitten, nicht nachgebaut. */
+const TREUE_ANFANG = 'function loyaltyDiscount() {';
+const TREUE_ENDE = '\nfunction loyaltyLineLabel';
+const tv = html.indexOf(TREUE_ANFANG), tb = html.indexOf(TREUE_ENDE, tv);
+if (tv < 0 || tb < 0) {
+  console.error('FEHLER: loyaltyDiscount() in index.html nicht gefunden. Test nachziehen.');
+  process.exit(2);
+}
+const TREUE_QUELLE = html.slice(tv, tb);
+const baueTreueRegel = new Function('z', `
+  const { testPromoApplied, loyaltyApplied, loyaltyKind, getLoyalty, accountLoggedIn,
+          SK, cart, cartSubtotal, LOYALTY_MIN_ORDER, LOYALTY_REWARD } = z;
+  ${TREUE_QUELLE}
+  return loyaltyDiscount;
+`);
+
 /* Der Ausschnitt greift auf Zustand der Seite zu (cart, voucherApplied, …).
    Der wird hier gestellt, sonst unverändert ausgeführt. */
 const frontendRechnung = new Function('zustand', `
   const { cartSubtotal, promoDiscountFor, voucherDiscount, loyaltyRewardAvailable,
           SK, PROMO_MIN_ORDER, LOYALTY_MIN_ORDER, LOYALTY_REWARD, TEST_TOTAL,
           effectivePromo, testPromoApplied, loyaltyApplied, checkoutMode,
-          deliveryZone, pay, tipPercent } = zustand;
+          deliveryZone, pay, tipPercent, loyaltyDiscount, loyaltyKind, email, ACCOUNT,
+          releaseCheckout, flashCartNotice, t } = zustand;
 ${FRONTEND_QUELLE}
   return { sub, disc, vDisc, loyDisc, fee, tip, total };
 `);
@@ -116,8 +135,27 @@ function baueWarenkorb() {
 --------------------------------------------------------------------------- */
 const preis = require(path.join(WURZEL, 'netlify/functions/lib/preisberechnung.js'));
 
+/* Ein angemeldetes Konto mit einem offenen Menü aufs Haus. Der Token hat die
+   Form, die account.js ausgibt (48 Hex-Zeichen). */
+const MENU_KONTO = { mail: 'menu@example.com', token: 'a1'.repeat(24) };
+function menuKontoDatensatz(menus) {
+  return { email: MENU_KONTO.mail, menus, rewards: 0, tokens: { [MENU_KONTO.token]: new Date().toISOString() } };
+}
+
 function frontendZustand(cart, fall) {
+  const loyaltyDiscount = baueTreueRegel({
+    testPromoApplied: false, loyaltyApplied: fall.treue, loyaltyKind: fall.art,
+    getLoyalty: () => fall.art === 'menu' ? { spent: 0, menus: 1, bonus: 0, konto: true } : { spent: 0, menus: 0, bonus: 1, konto: false },
+    accountLoggedIn: () => fall.art === 'menu',
+    SK, cart, cartSubtotal: () => SK.warenwert(cart),
+    LOYALTY_MIN_ORDER: SK.LOYALTY_MIN_ORDER, LOYALTY_REWARD: SK.LOYALTY_REWARD,
+  });
   return {
+    loyaltyDiscount,
+    loyaltyKind: fall.art,
+    email: fall.art === 'menu' ? MENU_KONTO.mail : '',
+    ACCOUNT: fall.art === 'menu' ? { email: MENU_KONTO.mail, token: MENU_KONTO.token } : null,
+    releaseCheckout() {}, flashCartNotice() {}, t: (k) => k,
     SK,
     cartSubtotal: () => SK.warenwert(cart),
     promoDiscountFor: SK.promoDiscountFor,
@@ -143,6 +181,7 @@ async function einDurchgang(nr) {
     promo: false,                                  // WM-Aktion ist abgelaufen
     vDisc: 0,                                      // Gutscheine: eigener Test unten
     treue: zufall() < 0.3,
+    art: zufall() < 0.5 ? 'menu' : 'bonus',
     treueVerfuegbar: true,
     modus: zufall() < 0.5 ? 'delivery' : 'pickup',
     zone: wahl(SK.DELIVERY_ZONES),
@@ -162,15 +201,21 @@ async function einDurchgang(nr) {
     discount: f.disc + f.vDisc,
     loyaltyDiscount: f.loyDisc,
     loyaltyApplied: f.loyDisc > 0,
+    loyaltyType: f.loyDisc > 0 ? fall.art : null,
+    kontoToken: f.loyDisc > 0 && fall.art === 'menu' ? MENU_KONTO.token : undefined,
     deliveryFee: f.fee,
     tip: f.tip,
     total: f.total,
     promo: null,
     voucherCode: null,
-    email: '',            // ohne Konto -> Treuebonus wird durchgelassen
+    // 5-€-Bonus: Gast ohne Konto -> wird durchgelassen. Menü: angemeldetes Konto.
+    email: fall.art === 'menu' ? MENU_KONTO.mail : '',
   };
 
+  // Für das Menü braucht der Server den Kundendatensatz mit gültigem Token
+  speicher = fall.art === 'menu' ? speicherMit({ [MENU_KONTO.mail]: menuKontoDatensatz(1) }) : LEERER_SPEICHER;
   const p = await preis.betragErmitteln(order);
+  speicher = LEERER_SPEICHER;
   const abweichung = Math.abs(p.betrag - f.total);
   return { nr, cart, fall, f, p, abweichung, ok: p.sicher && abweichung < 0.005 };
 }
@@ -217,6 +262,58 @@ async function angriffe() {
     });
   }
   return ergebnisse;
+}
+
+function speicherMit(konten, archiv) {
+  const crypto = require('crypto');
+  return {
+    async get(key) {
+      for (const [mail, rec] of Object.entries(konten)) {
+        if (key === 'c:' + crypto.createHash('sha256').update(mail).digest('hex')) return rec;
+      }
+      if (archiv && archiv[key]) return archiv[key];
+      return null;
+    },
+    async setJSON() {}, async delete() {}, async list() { return { blobs: [] }; },
+  };
+}
+
+/* Menü aufs Haus: nur mit gültiger Anmeldung und offenem Menü auf dem Konto.
+   Warenkorb: Cheeseburger-Menü (13,50 €) und Kubis Special einzeln (11,00 €).
+   Gratis ist der Grundpreis des Menüs: 8,50 € + 5,00 € = 13,50 €. */
+async function menupruefung() {
+  const cart = {
+    a: { menuId: 'cheese', qty: 1, double: false, isMenu: true, side: 'pommes', drink: 'fritz-kola', dip: 'dip-mayo' },
+    b: { menuId: 'kubis', qty: 1, double: false, isMenu: false },
+  };
+  const echt = SK.warenwert(cart);
+  const gratis = SK.gratisMenuWert(cart);
+  const nurKubis = { a: { menuId: 'kubis', qty: 1, isMenu: true, side: 'pommes', drink: 'fritz-kola', dip: 'dip-mayo' } };
+  const mitExtras = { a: { menuId: 'cheese', qty: 1, double: true, isMenu: true, side: 'spommes', drink: 'fritz-kola', dip: 'dip-mayo' } };
+  const tok = MENU_KONTO.token, mail = MENU_KONTO.mail;
+  const faelle = [
+    ['Konto mit Menü, gültige Anmeldung',   { [mail]: menuKontoDatensatz(1) }, null, cart, tok, echt - gratis],
+    ['Konto mit Menü, falscher Token',      { [mail]: menuKontoDatensatz(1) }, null, cart, 'b2'.repeat(24), echt],
+    ['Konto mit Menü, ohne Token',          { [mail]: menuKontoDatensatz(1) }, null, cart, undefined, echt],
+    ['Konto ohne offenes Menü',             { [mail]: menuKontoDatensatz(0) }, null, cart, tok, echt],
+    ['Gast ohne Konto',                     {}, null, cart, tok, echt],
+    ['Nur Kubis Special im Korb',           { [mail]: menuKontoDatensatz(1) }, null, nurKubis, tok, SK.warenwert(nurKubis)],
+    ['Double Patty + Süßkartoffel zahlt Gast', { [mail]: menuKontoDatensatz(1) }, null, mitExtras, tok, SK.DOUBLE_PATTY_PRICE + 1.00],
+    ['2. Lauf nach Einlösung (Archiv)',     { [mail]: menuKontoDatensatz(0) }, { 'o:GNC-MENU': { treueEingeloest: 'menu' } }, cart, undefined, echt - gratis],
+  ];
+  const out = [];
+  for (const [was, konten, archiv, korb, token, erwartet] of faelle) {
+    speicher = speicherMit(konten, archiv);
+    const w = SK.warenwert(korb), g = SK.gratisMenuWert(korb);
+    const p = await preis.betragErmitteln({
+      reference: 'GNC-MENU', mode: 'pickup', payment: 'cash', cartSnapshot: korb,
+      subtotal: w, discount: 0, loyaltyDiscount: g, loyaltyApplied: true, loyaltyType: 'menu',
+      kontoToken: token, deliveryFee: 0, tip: 0, total: Math.max(0, w - g), email: mail,
+    });
+    out.push({ was, belastet: p.betrag, erwartet, ok: Math.abs(p.betrag - erwartet) < 0.005 });
+  }
+  speicher = LEERER_SPEICHER;
+  return out;
 }
 
 /* Mit Kundendatensatz kann der Server den Treuebonus wirklich pruefen.
@@ -356,6 +453,14 @@ async function ausfallsicherheit() {
   }
   const tpFehler = tp.filter(a => !a.ok).length;
 
+  console.log('\n2c) MENÜ AUFS HAUS gegen Konto und Anmeldung\n');
+  const mp = await menupruefung();
+  for (const a of mp) {
+    console.log('   ' + a.was.padEnd(42) + 'belastet ' + a.belastet.toFixed(2)
+      + ' € (soll ' + a.erwartet.toFixed(2) + ')  ' + (a.ok ? '✅' : '❌'));
+  }
+  const mpFehler = mp.filter(a => !a.ok).length;
+
   console.log('\n3) TESTBESTELLUNG mit gültigem Code\n');
   const t = await testbestellung();
   console.log('   mit gueltigem Code:  Warenkorb 55,00 € -> belastet ' + t.betrag.toFixed(2)
@@ -371,7 +476,7 @@ async function ausfallsicherheit() {
   }
   const afFehler = af.filter(a => !a.ok).length;
 
-  const gesamt = fehler + angFehler + tpFehler + (t.ok ? 0 : 1) + afFehler;
+  const gesamt = fehler + angFehler + tpFehler + mpFehler + (t.ok ? 0 : 1) + afFehler;
   console.log('\n' + '─'.repeat(74));
   console.log(gesamt === 0
     ? 'ERGEBNIS: ✅ Alles deckungsgleich, alle Manipulationen abgewehrt, kein Abbruchrisiko.'

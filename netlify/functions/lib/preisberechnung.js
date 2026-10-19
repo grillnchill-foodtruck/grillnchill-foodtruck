@@ -24,7 +24,8 @@
  *   Warenwert       aus dem Warenkorb, mit derselben Funktion wie im Browser
  *   Aktionsrabatt   aus der Staffel; nur wenn die Aktion wirklich läuft
  *   Gutschein       aus dem Gutschein-Speicher, nie aus der Anfrage
- *   Treuebonus      gegen den Kundendatensatz; ohne Konto hart begrenzt
+ *   Treuebonus      5-€-Bonus gegen den Kundendatensatz, ohne Konto auf 5 €
+ *                   begrenzt; Menü aufs Haus nur mit gültiger Konto-Anmeldung
  *   Liefergebühr    nur die drei Beträge, die es laut Zonen gibt
  *   Trinkgeld       nur die Stufen, die es gibt, und nie negativ
  *   Testbestellung  nur gegen den serverseitigen Code (TEST_ORDER_CODE)
@@ -54,6 +55,7 @@
 
 const { getStore } = require('@netlify/blobs');
 const { codeNormalisieren } = require('./gutschein-code');
+const { tokenGueltig } = require('./kunden-token');
 
 /* Die Speisekarte liegt im Repo-Root und wird von index.html genauso geladen.
    Sollte sie wider Erwarten nicht mitgebündelt sein, darf das den Checkout
@@ -148,30 +150,73 @@ async function gutscheinRabatt(code, warenwert, modus, imApp) {
 }
 
 /* ---------------------------------------------------------------------------
-   Treuebonus. Ohne Konto lebt die Stempelkarte nur im Browser – dort ist sie
-   nicht prüfbar. Deshalb: gegen den Kundendatensatz prüfen, wenn es einen
-   gibt, sonst auf den einen möglichen Bonus begrenzen. Der Schaden ist damit
-   auch im ungünstigsten Fall auf 5 € gedeckelt, und kein ehrlicher Gast
-   verliert seinen Bonus.
---------------------------------------------------------------------------- */
-async function treueRabatt(order, warenwert) {
-  if (!SK) return 0;
-  if (!order.loyaltyApplied && !zahl(order.loyaltyDiscount)) return 0;
-  if (warenwert < SK.LOYALTY_MIN_ORDER) return 0;
-  const gewuenscht = Math.min(zahl(order.loyaltyDiscount) || SK.LOYALTY_REWARD, SK.LOYALTY_REWARD);
-  if (gewuenscht <= 0) return 0;
+   Treue. Zwei Arten, pro Bestellung höchstens eine:
 
-  const mail = String(order.email || '').trim().toLowerCase();
-  if (!mail) return gewuenscht;
+   5-€-Bonus (Geburtstag, Empfehlung, alte Karten). Ohne Konto lebt die
+   Stempelkarte nur im Browser und ist nicht prüfbar. Deshalb: gegen den
+   Kundendatensatz prüfen, wenn es einen gibt, sonst auf den einen möglichen
+   Bonus begrenzen. Der Schaden bleibt so auf 5 € gedeckelt.
+
+   Menü aufs Haus (volle Stempelkarte). Fast dreimal so viel wert, deshalb
+   strenger: nur mit gültigem Anmelde-Token des Kontos, dem die E-Mail der
+   Bestellung gehört, und nur, solange dort ein Menü offen ist. Gratis ist
+   der Grundpreis der teuersten berechtigten Menü-Zeile (speisekarte.js).
+
+   Wurde die Treue für DIESE Bestellung schon geprüft oder eingelöst, steht
+   das im Bestell-Archiv (treueFreigabe / treueEingeloest). Spätere Läufe
+   (SumUp-Webhook, Rückkehr des Kunden) gelten dann ohne erneute Prüfung,
+   sonst sähe der zweite Lauf nach dem Abbuchen „kein Menü mehr“ und meldete
+   eine falsche Preisabweichung.
+--------------------------------------------------------------------------- */
+function kundenSchluessel(mail) {
+  const crypto = require('crypto');
+  return 'c:' + crypto.createHash('sha256').update(mail).digest('hex');
+}
+
+async function schonFreigegeben(order, art) {
+  const ref = String(order.reference || '').replace(/[^A-Za-z0-9-]/g, '');
+  if (!ref) return false;
   try {
-    const crypto = require('crypto');
-    const key = 'c:' + crypto.createHash('sha256').update(mail).digest('hex');
-    const rec = await store('customers').get(key, { type: 'json' });
+    const os = store('orders');
+    for (const key of ['o:' + ref, 'o:' + ref.slice(0, 60)]) {
+      const rec = await os.get(key, { type: 'json' });
+      if (rec && (rec.treueFreigabe === art || rec.treueEingeloest === art)) return true;
+    }
+  } catch (e) { /* ohne Archiv: normal prüfen */ }
+  return false;
+}
+
+async function treueRabatt(order, warenwert, korb) {
+  if (!SK) return { betrag: 0, art: null };
+  if (!order.loyaltyApplied && !zahl(order.loyaltyDiscount)) return { betrag: 0, art: null };
+  const mail = String(order.email || '').trim().toLowerCase();
+
+  if (order.loyaltyType === 'menu') {
+    const wert = SK.gratisMenuWert(korb);
+    if (!wert || !mail) return { betrag: 0, art: null };
+    if (await schonFreigegeben(order, 'menu')) return { betrag: wert, art: 'menu' };
+    try {
+      const rec = await store('customers').get(kundenSchluessel(mail), { type: 'json' });
+      const ok = !!rec && tokenGueltig(rec, order.kontoToken) && (rec.menus || 0) >= 1;
+      return ok ? { betrag: wert, art: 'menu' } : { betrag: 0, art: null };
+    } catch (e) {
+      // Speicher nicht erreichbar: nur durchlassen, wenn überhaupt ein Token mitkam
+      return order.kontoToken ? { betrag: wert, art: 'menu' } : { betrag: 0, art: null };
+    }
+  }
+
+  if (warenwert < SK.LOYALTY_MIN_ORDER) return { betrag: 0, art: null };
+  const gewuenscht = Math.min(zahl(order.loyaltyDiscount) || SK.LOYALTY_REWARD, SK.LOYALTY_REWARD);
+  if (gewuenscht <= 0) return { betrag: 0, art: null };
+  if (!mail) return { betrag: gewuenscht, art: 'bonus' };
+  if (await schonFreigegeben(order, 'bonus')) return { betrag: gewuenscht, art: 'bonus' };
+  try {
+    const rec = await store('customers').get(kundenSchluessel(mail), { type: 'json' });
     // Kein Datensatz -> Gast ohne Konto, Stempelkarte nur lokal. Durchlassen.
-    if (!rec) return gewuenscht;
-    return (rec.rewards || 0) >= 1 ? gewuenscht : 0;
+    if (!rec) return { betrag: gewuenscht, art: 'bonus' };
+    return (rec.rewards || 0) >= 1 ? { betrag: gewuenscht, art: 'bonus' } : { betrag: 0, art: null };
   } catch (e) {
-    return gewuenscht;   // Speicherproblem darf keinen Bonus schlucken
+    return { betrag: gewuenscht, art: 'bonus' };   // Speicherproblem darf keinen Bonus schlucken
   }
 }
 
@@ -254,8 +299,9 @@ async function betragErmitteln(order) {
     }
   }
 
-  // --- Treuebonus ---------------------------------------------------------
-  const treue = await treueRabatt(order, warenwert);
+  // --- Treue (5-€-Bonus oder Menü aufs Haus) ------------------------------
+  const treueErgebnis = await treueRabatt(order, warenwert, korb);
+  const treue = treueErgebnis.betrag;
 
   // --- Liefergebühr: nur bekannte Beträge ---------------------------------
   // Die Zone hängt an der Entfernung zur Adresse; die kann der Server hier
@@ -293,6 +339,9 @@ async function betragErmitteln(order) {
     gutscheinRabatt: runde(gutschein), treueRabatt: runde(treue),
     liefergebuehr: runde(gebuehr), trinkgeld: runde(trinkgeld),
   };
+  // Geprüfte Treue-Art. Der Aufrufer legt sie im Bestell-Archiv ab (nicht in
+  // der Bestellung selbst, die kommt aus dem Browser).
+  ergebnis.treueFreigabe = treue > 0 ? treueErgebnis.art : null;
   return ergebnis;
 }
 
@@ -362,7 +411,16 @@ async function pruefeUndKorrigiere(order) {
     order.isTest = false;
     order.testCode = null;
   }
-  if (order && typeof order === 'object') delete order.testCode;
+  if (order && typeof order === 'object') {
+    delete order.testCode;
+    // Der Anmelde-Token hat seinen Zweck erfüllt. Er darf nicht ins Archiv,
+    // in Mails oder ins Admin-Tool wandern.
+    delete order.kontoToken;
+    // Treue nicht bestätigt (z. B. Menü ohne gültige Anmeldung): Art löschen,
+    // damit niemand am Truck ein Menü aufs Haus ausgibt, das nicht bezahlt ist.
+    if (p && p.sicher && !p.treueFreigabe) { order.loyaltyType = null; order.loyaltyApplied = false; }
+    if (p && p.sicher && p.treueFreigabe) order.loyaltyType = p.treueFreigabe;
+  }
   return p;
 }
 

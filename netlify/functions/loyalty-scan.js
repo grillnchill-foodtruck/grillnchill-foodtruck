@@ -5,10 +5,13 @@
  *
  *   POST { password, action:'lookup', token }           → Karte anzeigen
  *   POST { password, action:'credit', token, amount }   → Vor-Ort-Umsatz gutschreiben
- *   POST { password, action:'redeem', token }           → 1 Treuebonus (5 €) einlösen
+ *   POST { password, action:'redeem', token, kind }     → kind 'menu': 1 Menü aufs Haus,
+ *                                                         sonst 1 Bonus (5 €) einlösen
  *
  * Punkte-Logik identisch zur Online-Stempelkarte (send-email-Accrual):
- * je volle 100 € Umsatz → 1 Bonus; 'spent' trägt den Rest weiter.
+ * je volle 100 € Umsatz → 1 Menü aufs Haus (rec.menus); 'spent' trägt den
+ * Rest weiter. 5-€-Boni (rec.rewards) kommen von Geburtstag, Empfehlung und
+ * Karten, die vor der Umstellung im Oktober 2026 voll wurden.
  * Jede Aktion landet namentlich im Audit-Log.
  * ----------------------------------------------------------------------------
  */
@@ -85,6 +88,7 @@ function cardView(rec) {
     })(rec.email),
     spent: Math.round((rec.spent || 0) * 100) / 100,
     rewards: rec.rewards || 0,
+    menus: rec.menus || 0,
     birthday: rec.birthday || '',   // damit das Team den aktuellen Tag sieht
     toNext: Math.max(0, Math.round((100 - (rec.spent || 0)) * 100) / 100),
     ...custLevel(rec),
@@ -127,9 +131,8 @@ exports.handler = async (event) => {
     let earned = 0;
     let levelUpTo = 0;
     while (rec.spent >= 100) {
-      rec.rewards = (rec.rewards || 0) + 1;
+      rec.menus = (rec.menus || 0) + 1;   // volle Karte = ein Menü aufs Haus
       rec.cards = (rec.cards || 0) + 1;
-      if (rec.cards >= 5) { rec.rewards += 1; earned++; } // ab Level 6: Doppel-Bonus (10 €/Karte)
       levelUpTo = Math.min(10, 1 + rec.cards);
       rec.spent = Math.round((rec.spent - 100) * 100) / 100;
       earned++;
@@ -153,17 +156,25 @@ exports.handler = async (event) => {
       const { aktualisiereWallets } = require('./lib/wallet-sync');
       await aktualisiereWallets(idx.key.slice(2), rec);
     } catch (e) {}
-    await auditLog(who, 'Vor-Ort-Umsatz ' + amount.toFixed(2) + ' € für ' + (rec.email || '?') + (earned ? ' (+' + earned + ' Bonus)' : ''));
+    await auditLog(who, 'Vor-Ort-Umsatz ' + amount.toFixed(2) + ' € für ' + (rec.email || '?') + (earned ? ' (+' + earned + ' Menü aufs Haus)' : ''));
     return json(200, { ok: true, earned, card: cardView(rec) });
   }
 
-  // Guthaben direkt korrigieren: Boni (je 5 €) und/oder Kartenstand setzen.
+  // Guthaben direkt korrigieren: Menüs aufs Haus, Boni (je 5 €) und/oder Kartenstand setzen.
   // Nur für Admins – Personal soll Umsätze buchen, nicht Guthaben frei ändern.
   if (input.action === 'adjust') {
     if (who.role !== 'admin') return json(403, { error: 'forbidden', hint: 'Nur Admins dürfen Guthaben ändern' });
-    const before = { rewards: rec.rewards || 0, spent: Math.round((rec.spent || 0) * 100) / 100 };
+    const before = { rewards: rec.rewards || 0, menus: rec.menus || 0, spent: Math.round((rec.spent || 0) * 100) / 100 };
     const parts = [];
 
+    if (input.menus !== undefined && input.menus !== null && input.menus !== '') {
+      const mn = Math.round(Number(input.menus));
+      if (!isFinite(mn) || mn < 0 || mn > 50) {
+        return json(400, { error: 'bad_menus', hint: 'Menüs zwischen 0 und 50' });
+      }
+      rec.menus = mn;
+      if (mn !== before.menus) parts.push('Menüs ' + before.menus + ' → ' + mn);
+    }
     if (input.rewards !== undefined && input.rewards !== null && input.rewards !== '') {
       const rw = Math.round(Number(input.rewards));
       if (!isFinite(rw) || rw < 0 || rw > 100) {
@@ -218,15 +229,22 @@ exports.handler = async (event) => {
   }
 
   if (input.action === 'redeem') {
-    if ((rec.rewards || 0) < 1) return json(409, { error: 'no_rewards', hint: 'Kein Bonus auf der Karte' });
-    rec.rewards = rec.rewards - 1;
+    const menu = input.kind === 'menu';
+    if (menu) {
+      if ((rec.menus || 0) < 1) return json(409, { error: 'no_menus', hint: 'Kein Menü aufs Haus auf der Karte' });
+      rec.menus = rec.menus - 1;
+    } else {
+      if ((rec.rewards || 0) < 1) return json(409, { error: 'no_rewards', hint: 'Kein Bonus auf der Karte' });
+      rec.rewards = rec.rewards - 1;
+    }
     rec.walletStand = Date.now();   // Handy-Wallets: "es gibt was Neues"
     await s.setJSON(idx.key, rec);
     try {
       const { aktualisiereWallets } = require('./lib/wallet-sync');
       await aktualisiereWallets(idx.key.slice(2), rec);
     } catch (e) {}
-    await auditLog(who, '5-€-Bonus eingelöst für ' + (rec.email || '?') + ' (Rest: ' + rec.rewards + ')');
+    await auditLog(who, (menu ? 'Menü aufs Haus' : '5-€-Bonus') + ' eingelöst für ' + (rec.email || '?')
+      + ' (Rest: ' + (menu ? rec.menus + ' Menüs' : rec.rewards + ' Boni') + ')');
     return json(200, { ok: true, card: cardView(rec) });
   }
 

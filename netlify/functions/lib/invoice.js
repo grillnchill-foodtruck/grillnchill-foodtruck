@@ -171,7 +171,7 @@ function buildInvoicePdf(order) {
         const code = (order.promo && order.promo.code) || order.voucherCode;
         summe(code ? `Rabatt (Code ${code})` : 'Rabatt', '- ' + eur(order.discount), false, '#3D6B34');
       }
-      if (z(order.loyaltyDiscount) > 0) summe('Treuebonus', '- ' + eur(order.loyaltyDiscount), false, '#3D6B34');
+      if (z(order.loyaltyDiscount) > 0) summe(order.loyaltyType === 'menu' ? 'Menü aufs Haus' : 'Treuebonus', '- ' + eur(order.loyaltyDiscount), false, '#3D6B34');
       if (z(order.deliveryFee) > 0) summe('Liefergebühr', eur(order.deliveryFee));
 
       (order.vat || []).forEach((v) => {
@@ -511,6 +511,7 @@ async function ergaenzeAusBestellung(rec, ordersStore) {
       subtotal: nimm('subtotal', null),
       discount: nimm('discount', 0),
       loyaltyDiscount: nimm('loyaltyDiscount', 0),
+      loyaltyType: nimm('loyaltyType', null),
       deliveryFee: nimm('deliveryFee', 0),
       promo: nimm('promo', null),
       voucherCode: nimm('voucherCode', null),

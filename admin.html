@@ -1756,27 +1756,31 @@ function renderScanCard(){
   const c=scanCard;
   scanSetResult('<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding: .9rem 1rem;">'
     +'<div style="font-weight:700;">'+esc2(c.name||'Kunde')+'</div>'
-    +'<div class="hint">'+esc2(c.emailMasked||'')+(c.level?(' · <span style="color:'+(c.level>=10?'#E6C15A':'var(--ember-hi)')+';font-weight:700;">'+(c.level>=10?'\u{1F451} ':'')+'Level '+c.level+' – '+esc2(c.levelName||'')+(c.level>=6?' · 10 €/Karte':'')+'</span>'):'')+'</div>'
+    +'<div class="hint">'+esc2(c.emailMasked||'')+(c.level?(' · <span style="color:'+(c.level>=10?'#E6C15A':'var(--ember-hi)')+';font-weight:700;">'+(c.level>=10?'\u{1F451} ':'')+'Level '+c.level+' – '+esc2(c.levelName||'')+'</span>'):'')+'</div>'
     +'<div style="display:flex;gap:1.2rem;margin:.6rem 0;">'
-    +'<div><div style="font-size:1.3rem;font-weight:700;color:var(--ember-hi);">'+(c.rewards||0)+'</div><div class="hint">Boni (je 5 €)</div></div>'
-    +'<div><div style="font-size:1.3rem;font-weight:700;">'+(c.spent||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</div><div class="hint">noch '+(c.toNext||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+' bis zum Bonus</div></div>'
+    +'<div><div style="font-size:1.3rem;font-weight:700;color:var(--ember-hi);">'+(c.menus||0)+'</div><div class="hint">Menüs aufs Haus</div></div>'
+    +((c.rewards||0)>0?'<div><div style="font-size:1.3rem;font-weight:700;">'+(c.rewards||0)+'</div><div class="hint">Boni (je 5 €)</div></div>':'')
+    +'<div><div style="font-size:1.3rem;font-weight:700;">'+(c.spent||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</div><div class="hint">noch '+(c.toNext||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+' bis zum Menü</div></div>'
     +'</div>'
     +'<div style="display:flex;gap:.5rem;align-items:stretch;margin-bottom:.5rem;">'
     +'<input type="number" id="scanAmount" min="0.5" max="500" step="0.5" placeholder="Betrag €" style="flex:1;">'
     +'<button type="button" class="abtn" id="scanCredit">Gutschreiben</button>'
     +'</div>'
     +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;">'
-    +'<button type="button" class="abtn" id="scanRedeem"'+((c.rewards||0)<1?' disabled':'')+'>5-€-Bonus einlösen</button>'
+    +'<button type="button" class="abtn" id="scanRedeemMenu"'+((c.menus||0)<1?' disabled':'')+'>Menü aufs Haus einlösen</button>'
+    +((c.rewards||0)>0?'<button type="button" class="abtn" id="scanRedeem">5-€-Bonus einlösen</button>':'')
     +'<button type="button" class="abtn" id="scanAgain">Neu scannen</button>'
     +'</div>'
     // Guthaben korrigieren – nur für Admins, eingeklappt damit es nicht im Weg steht
     +(istAdmin()
       ? '<details class="scan-adjust"><summary>Guthaben korrigieren</summary>'
-        +'<p class="hint" style="margin:.5rem 0 .6rem;">Nur für Korrekturen. Aktuell: '+(c.rewards||0)+' Boni ('
+        +'<p class="hint" style="margin:.5rem 0 .6rem;">Nur für Korrekturen. Aktuell: '+(c.menus||0)+' Menüs aufs Haus · '+(c.rewards||0)+' Boni ('
         +((c.rewards||0)*5).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+') · Kartenstand '
         +(c.spent||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'.</p>'
         +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;">'
-        +'<label style="flex:1;min-width:120px;"><span class="hint">Boni (Anzahl)</span>'
+        +'<label style="flex:1;min-width:120px;"><span class="hint">Menüs aufs Haus</span>'
+        +'<input type="number" id="scanAdjMenus" min="0" max="50" step="1" placeholder="'+(c.menus||0)+'" style="width:100%;"></label>'
+        +'<label style="flex:1;min-width:120px;"><span class="hint">5-€-Boni (Anzahl)</span>'
         +'<input type="number" id="scanAdjRewards" min="0" max="100" step="1" placeholder="'+(c.rewards||0)+'" style="width:100%;"></label>'
         +'<label style="flex:1;min-width:120px;"><span class="hint">Kartenstand €</span>'
         +'<input type="number" id="scanAdjSpent" min="0" max="99.99" step="0.5" placeholder="'+(c.spent||0)+'" style="width:100%;"></label>'
@@ -1786,7 +1790,8 @@ function renderScanCard(){
       : '')
     +'</div>');
   $('scanCredit').addEventListener('click',e=>scanAction('credit',e.currentTarget));
-  $('scanRedeem').addEventListener('click',e=>scanAction('redeem',e.currentTarget));
+  $('scanRedeemMenu').addEventListener('click',e=>scanAction('redeem',e.currentTarget,'menu'));
+  if($('scanRedeem')) $('scanRedeem').addEventListener('click',e=>scanAction('redeem',e.currentTarget,'bonus'));
   $('scanAgain').addEventListener('click',()=>{ scanCard=null; scanToken=null; scanSetResult(''); startScan(); });
   if($('scanAdjGo')) $('scanAdjGo').addEventListener('click',e=>scanAdjust(e.currentTarget));
 }
@@ -1823,25 +1828,33 @@ const eur=n=>Number(n||0).toLocaleString('de-DE',{style:'currency',currency:'EUR
    Bestaetigung eingeschlossen). Sonst konnte ein zweiter Tipp waehrend des
    Wartens doppelt gutschreiben. */
 let scanActing=false;
-async function scanAction(action, btn){
+async function scanAction(action, btn, kind){
   if(scanActing) return;
   scanActing=true;
-  try{ await scanActionRun(action, btn); } finally{ scanActing=false; }
+  try{ await scanActionRun(action, btn, kind); } finally{ scanActing=false; }
 }
-async function scanActionRun(action, btn){
+async function scanActionRun(action, btn, kind){
   const body={password:currentPw,action,token:scanToken};
+  if(action==='redeem') body.kind=kind==='menu'?'menu':'bonus';
   const cust=(scanCard&&scanCard.name)||'Kunde';
   if(action==='credit'){
     body.amount=parseFloat(($('scanAmount').value||'').replace(',','.'));
     if(!isFinite(body.amount)){ toast('Betrag eingeben'); return; }
     const ok=await confirmBooking({
       title:'Umsatz gutschreiben?', customer:cust, amount:'+ '+eur(body.amount),
-      note:'Wird auf die Stempelkarte gebucht. Ab 100 € gibt es automatisch einen Bonus.',
+      note:'Wird auf die Stempelkarte gebucht. Ab 100 € gibt es automatisch ein Menü aufs Haus.',
       okLabel:'Gutschreiben',
     });
     if(!ok) return;
   }
-  if(action==='redeem'){
+  if(action==='redeem' && kind==='menu'){
+    const ok=await confirmBooking({
+      title:'Menü aufs Haus einlösen?', customer:cust, amount:'1 Menü aufs Haus', negative:true,
+      note:'Gratis ist das Grundmenü: jeder Burger außer Kubis Special, einfaches Patty, Pommes, Getränk, Dip. Double Patty und Süßkartoffelpommes kosten den normalen Aufpreis. Verbleibend danach: '+(Math.max(0,(scanCard&&scanCard.menus||0)-1))+'.',
+      okLabel:'Einlösen',
+    });
+    if(!ok) return;
+  } else if(action==='redeem'){
     const ok=await confirmBooking({
       title:'Bonus einlösen?', customer:cust, amount:'− '+eur(5), negative:true,
       note:'Ein 5-€-Bonus wird von der Karte abgezogen. Verbleibend danach: '+(Math.max(0,(scanCard&&scanCard.rewards||0)-1))+'.',
@@ -1855,7 +1868,7 @@ async function scanActionRun(action, btn){
     const d=await res.json().catch(()=>({}));
     if(!res.ok){ toast(d.hint||d.error||'Fehler','err'); return; }
     scanCard=d.card; renderScanCard();
-    toast(action==='credit'?('Gutgeschrieben'+(d.earned?' · +'+d.earned+' Bonus!':'')):'Bonus eingelöst');
+    toast(action==='credit'?('Gutgeschrieben'+(d.earned?' · +'+d.earned+' Menü aufs Haus':'')):(kind==='menu'?'Menü aufs Haus eingelöst':'Bonus eingelöst'));
     if(navigator.vibrate) navigator.vibrate(18);
   }catch(e){ toast('Netzwerkfehler','err'); }
   finally{ gncBusy(btn,false); }
@@ -1869,11 +1882,17 @@ async function scanAdjust(btn){
 }
 async function scanAdjustRun(btn){
   const rwRaw=($('scanAdjRewards').value||'').trim();
+  const mnRaw=(($('scanAdjMenus')||{}).value||'').trim();
   const spRaw=($('scanAdjSpent').value||'').replace(',','.').trim();
   const bdRaw=(($('scanAdjBday')||{}).value||'').trim();
-  if(rwRaw===''&&spRaw===''&&bdRaw===''){ toast('Nichts zu ändern'); return; }
+  if(rwRaw===''&&mnRaw===''&&spRaw===''&&bdRaw===''){ toast('Nichts zu ändern'); return; }
   const cust=(scanCard&&scanCard.name)||'Kunde';
   const lines=[];
+  if(mnRaw!==''){
+    const mn=parseInt(mnRaw,10);
+    if(!isFinite(mn)||mn<0||mn>50){ toast('Menü-Anzahl prüfen (0 bis 50)'); return; }
+    lines.push('Menüs aufs Haus: '+(scanCard.menus||0)+' → '+mn);
+  }
   if(rwRaw!==''){
     const rw=parseInt(rwRaw,10);
     if(!isFinite(rw)||rw<0){ toast('Boni-Anzahl prüfen'); return; }
@@ -1896,6 +1915,7 @@ async function scanAdjustRun(btn){
   if(!ok) return;
   const body={password:currentPw,action:'adjust',token:scanToken};
   if(rwRaw!=='') body.rewards=parseInt(rwRaw,10);
+  if(mnRaw!=='') body.menus=parseInt(mnRaw,10);
   if(spRaw!=='') body.spent=parseFloat(spRaw);
   if(bdRaw!=='') body.birthday=bdRaw;
   gncBusy(btn,true);
@@ -2115,7 +2135,7 @@ function renderOrders(){
       o.scheduledFor?('Wunschzeit: <b>'+esc2(o.scheduledFor)+'</b>'):'',
       o.note?('Notiz: <b>'+esc2(o.note)+'</b>'):'',
       (o.discount>0)?('Rabatt'+(o.promo&&o.promo.code?(' ('+esc2(o.promo.code)+')'):'')+': <b>− '+euro(o.discount)+'</b>'):'',
-      (o.loyaltyDiscount>0)?('Treuebonus: <b>− '+euro(o.loyaltyDiscount)+'</b>'):'',
+      (o.loyaltyDiscount>0)?((o.loyaltyType==='menu'?'🎁 Menü aufs Haus':'Treuebonus')+': <b>− '+euro(o.loyaltyDiscount)+'</b>'):'',
       (o.deliveryFee>0)?('Liefergebühr: <b>'+euro(o.deliveryFee)+'</b>'):'',
       (o.tip>0)?('Trinkgeld: <b>'+euro(o.tip)+'</b>'):'',
     ].filter(Boolean).join(' · ');

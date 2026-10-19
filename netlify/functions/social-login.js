@@ -97,11 +97,16 @@ exports.handler = async (event) => {
 
     // Einmalige Übernahme der lokalen Stempelkarte – wie in account.js
     if (!rec.merged && input.localLoyalty && typeof input.localLoyalty === 'object') {
-      const ls = Math.max(0, Math.min(500, parseFloat(input.localLoyalty.spent) || 0));
-      const lr = Math.max(0, Math.min(10, parseInt(input.localLoyalty.rewards, 10) || 0));
+      // Der Browser-Stand ist nicht prüfbar. Deshalb eng begrenzt: Kartenstand
+      // unter 100 € (lokal läuft die Karte ohnehin bei 100 € über), höchstens
+      // ein Menü aufs Haus und ein 5-€-Bonus (lokal gab es nie mehr als einen).
+      const ls = Math.max(0, Math.min(99.99, parseFloat(input.localLoyalty.spent) || 0));
+      const lr = Math.max(0, Math.min(1, parseInt(input.localLoyalty.rewards, 10) || 0));
+      const lm = Math.max(0, Math.min(1, parseInt(input.localLoyalty.menus, 10) || 0));
       rec.spent = (rec.spent || 0) + ls;
       rec.rewards = (rec.rewards || 0) + lr;
-      while (rec.spent >= LOYALTY_GOAL) { rec.rewards += 1; rec.spent -= LOYALTY_GOAL; }
+      rec.menus = (rec.menus || 0) + lm;
+      while (rec.spent >= LOYALTY_GOAL) { rec.menus += 1; rec.cards = (rec.cards || 0) + 1; rec.spent = Math.round((rec.spent - LOYALTY_GOAL) * 100) / 100; }
       rec.merged = true;
     }
 

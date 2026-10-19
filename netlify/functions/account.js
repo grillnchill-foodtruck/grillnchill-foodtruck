@@ -11,7 +11,7 @@
  *     logout       { email, token }           → { ok }
  *
  * Store 'customers', Key c:<sha256(email)>:
- *   { email, name, phone, addresses[≤3], spent, rewards, merged,
+ *   { email, name, phone, addresses[≤3], spent, rewards (5-€-Boni), menus (Menüs aufs Haus), merged,
  *     tokens{tok:ts, ≤5}, login{codeHash,exp,tries}, createdAt, lastOrderAt }
  *
  * Die Stempelkarte (spent/rewards) wird serverseitig in send-email.js bei jeder
@@ -129,7 +129,8 @@ function publicProfile(rec) {
     addresses: rec.addresses || [],
     loyalty: {
       spent: Math.round((rec.spent || 0) * 100) / 100,
-      rewards: rec.rewards || 0,
+      rewards: rec.rewards || 0,     // 5-€-Boni (Geburtstag, Empfehlung, alte Karten)
+      menus: rec.menus || 0,         // Menüs aufs Haus (volle Stempelkarte)
       goal: LOYALTY_GOAL,
       reward: 5,
       stamps: 10,
@@ -224,11 +225,16 @@ exports.handler = async (event) => {
       delete rec.login;
       // Einmalige Übernahme der lokalen Stempelkarte (Browser-Guthaben mitnehmen)
       if (!rec.merged && input.localLoyalty && typeof input.localLoyalty === 'object') {
-        const ls = Math.max(0, Math.min(500, parseFloat(input.localLoyalty.spent) || 0));
-        const lr = Math.max(0, Math.min(10, parseInt(input.localLoyalty.rewards, 10) || 0));
+        // Der Browser-Stand ist nicht prüfbar. Deshalb eng begrenzt: Kartenstand
+        // unter 100 € (lokal läuft die Karte ohnehin bei 100 € über), höchstens
+        // ein Menü aufs Haus und ein 5-€-Bonus (lokal gab es nie mehr als einen).
+        const ls = Math.max(0, Math.min(99.99, parseFloat(input.localLoyalty.spent) || 0));
+        const lr = Math.max(0, Math.min(1, parseInt(input.localLoyalty.rewards, 10) || 0));
+        const lm = Math.max(0, Math.min(1, parseInt(input.localLoyalty.menus, 10) || 0));
         rec.spent = (rec.spent || 0) + ls;
         rec.rewards = (rec.rewards || 0) + lr;
-        while (rec.spent >= LOYALTY_GOAL) { rec.rewards += 1; rec.spent -= LOYALTY_GOAL; }
+        rec.menus = (rec.menus || 0) + lm;
+        while (rec.spent >= LOYALTY_GOAL) { rec.menus += 1; rec.cards = (rec.cards || 0) + 1; rec.spent = Math.round((rec.spent - LOYALTY_GOAL) * 100) / 100; }
         rec.merged = true;
       }
       const token = crypto.randomBytes(24).toString('hex');
