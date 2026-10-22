@@ -131,16 +131,7 @@ function stempelFeld(rec) {
   return feld;
 }
 
-/* Prämien auf der Karte als kurzer Text: Menüs aufs Haus (volle Karte) und
-   5-€-Boni (Geburtstag, Empfehlung, alte Karten). Beides passt in das eine
-   primäre Feld; ein zusätzliches Feld erlaubt Apple hier nicht mehr. */
-function praemienText(rec) {
-  const m = rec.menus || 0, b = rec.rewards || 0;
-  const teile = [];
-  if (m) teile.push(m + (m === 1 ? ' Menü' : ' Menüs'));
-  if (b) teile.push(b + '× 5 €');
-  return teile.length ? teile.join(' + ') : '0';
-}
+const praemie = require('./praemie-texte');
 
 function passJson(rec, emailHash) {
   const { level, name } = levelVon(rec);
@@ -175,8 +166,10 @@ function passJson(rec, emailHash) {
        4 sekundaere plus Zusatzfelder zusammen. Belegt: level, next, name,
        stempel = 4. Ein weiteres Feld waere nicht mehr erlaubt. */
     storeCard: {
-      primaryFields: [{ key: 'boni', label: 'PRÄMIEN', value: praemienText(rec),
-        changeMessage: 'Prämien auf deiner Karte: %@' }],   // neutral: aendert sich auch beim Einloesen am Truck
+      // Neuer Schlüssel 'menus' (vorher 'boni'): beim einmaligen Auffrischen aller
+      // Karten gibt es so keine Sperrbildschirm-Mitteilung, erst bei echten Änderungen.
+      primaryFields: [{ key: 'menus', label: 'MENÜS AUFS HAUS', value: rec.menus || 0,
+        changeMessage: 'Menüs aufs Haus auf deiner Karte: %@' }],   // neutral: aendert sich auch beim Einloesen am Truck
       secondaryFields: [
         { key: 'level', label: 'LEVEL', value: level + ' · ' + name },
         { key: 'next', label: 'BIS ZUM MENÜ AUFS HAUS', value: bisBonus.toFixed(2).replace('.', ',') + ' €',
@@ -187,8 +180,10 @@ function passJson(rec, emailHash) {
         stempelFeld(rec),
       ],
       backFields: [
+        { key: 'menue', label: 'Menü aufs Haus', value: praemie.MENUE_TEXT },
         { key: 'info', label: 'So funktioniert es',
-          value: 'Code am Truck vorzeigen: Wir schreiben deinen Einkauf gut und lösen Prämien direkt ein. Je 100 € Umsatz gibt es ein Menü aufs Haus (Grundmenü mit einfachem Patty, Kubis Special ausgenommen).' },
+          value: 'Code am Truck vorzeigen: Wir schreiben deinen Einkauf gut und lösen dein Menü aufs Haus direkt ein. Online geht es im Warenkorb, angemeldet mit deinem Konto.' },
+        ...(praemie.boniText(rec) ? [{ key: 'boni5', label: '5-€-Boni', value: praemie.boniText(rec) }] : []),
         { key: 'standort', label: 'Standort',
           value: "Grill'n Chill Foodtruck\nGütersloher Str. 122, 33649 Bielefeld\ngrillnchill-foodtruck.de" },
       ],

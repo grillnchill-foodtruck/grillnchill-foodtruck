@@ -29,6 +29,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { tokenGueltig } = require('./lib/kunden-token');
 const applePass = require('./lib/apple-pass');
+const praemie = require('./lib/praemie-texte');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -111,15 +112,7 @@ function buildGoogleSaveUrl(rec, custId) {
       label: 'Level',
       balance: { string: custLevel(rec).level + ' · ' + custLevel(rec).levelName },
     },
-    textModulesData: [{
-      header: 'Bis zum Menü aufs Haus',
-      body: (Math.max(0, Math.round((100 - (rec.spent || 0)) * 100) / 100)).toFixed(2).replace('.', ',') + ' € Umsatz',
-      id: 'to_next',
-    }, {
-      header: '5-€-Boni',
-      body: String(rec.rewards || 0) + ' (Geburtstag, Empfehlung)',
-      id: 'boni5',
-    }],
+    textModulesData: praemie.googleTextModule(rec),
   };
 
   const now = Math.floor(Date.now() / 1000);

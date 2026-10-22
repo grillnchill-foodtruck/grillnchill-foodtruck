@@ -56,6 +56,8 @@ async function zugangsToken(holen) {
   return tokenCache.wert;
 }
 
+const praemie = require('./praemie-texte');
+
 const LEVEL_NAMES = ['Grill Rookie', 'Bun Boss', 'Patty Pro', 'Sauce Sensei', 'Cheese Melter', 'Flame Rider', 'Ember Elite', 'Grill Guru', 'Street Legende', 'King of Chill'];
 
 /**
@@ -73,15 +75,7 @@ async function aktualisiereGoogleKarte(rec, custId, holen) {
         label: 'Level',
         balance: { string: level + ' · ' + LEVEL_NAMES[level - 1] },
       },
-      textModulesData: [{
-        header: 'Bis zum Menü aufs Haus',
-        body: (Math.max(0, Math.round((100 - (rec.spent || 0)) * 100) / 100)).toFixed(2).replace('.', ',') + ' € Umsatz',
-        id: 'to_next',
-      }, {
-        header: '5-€-Boni',
-        body: String(rec.rewards || 0) + ' (Geburtstag, Empfehlung)',
-        id: 'boni5',
-      }],
+      textModulesData: praemie.googleTextModule(rec),
     };
     const token = await zugangsToken(holen);
     // Beide moeglichen Objekt-IDs versuchen: die normale Karte und - ab der
