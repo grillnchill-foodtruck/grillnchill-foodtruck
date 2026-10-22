@@ -1015,6 +1015,10 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .gw-btn img { height: 48px; width: auto; display: block; }
 .gw-btn:focus-visible { outline: 2px solid var(--color-orange-bright); outline-offset: 3px; }
 .gw-btn.is-busy > img { visibility: visible; opacity: 0.45; }   /* beim Warten bleibt der Knopf sichtbar */
+/* Apple verbietet ein abgedunkeltes Abzeichen und alles, was darüber liegt:
+   volle Deckkraft, der Ladering sitzt unter dem Abzeichen außerhalb des Freiraums. */
+.aw-btn.is-busy > img { opacity: 1; }
+.aw-btn .busy-spin { top: calc(100% + 10px); margin-top: 0; }
 .team-err { margin: .5rem 0 0; font-size: .8rem; color: #ff8a6b; }
 @media (prefers-reduced-motion: reduce) { .team-box summary::after { transition: none; } }
 .nav-burger span {
@@ -7582,7 +7586,10 @@ async function renderWalletBtns() {
     // Sprachdateien liegen in img/google-wallet/ (aus Googles Paket add-to-wallet-svg).
     const gwSprache = ['de', 'en', 'tr', 'it', 'es', 'pt', 'fr', 'nl'].indexOf(currentLang) !== -1 ? currentLang : 'en';
     if (d.google && !istIOS) btns.push('<button type="button" class="gw-btn" onclick="addToWallet(\'google\', this)" aria-label="' + t('acc.wallet_google') + '"><img src="img/google-wallet/' + gwSprache + '.svg" alt="" width="174" height="48"></button>');
-    if (d.apple && !istAndroid) btns.push('<button type="button" class="mini-btn" onclick="addToWallet(\'apple\', this)">' + t('acc.wallet_apple') + '</button>');
+    // Apple ebenso: offizielles Abzeichen aus Apples Paket (Add-to-Apple-Wallet.zip,
+    // Lizenz von Kubis Entwicklerkonto angenommen), Fassung mit grauer Kontur für
+    // dunklen Grund, unverändert, nie abgedunkelt.
+    if (d.apple && !istAndroid) btns.push('<button type="button" class="gw-btn aw-btn" onclick="addToWallet(\'apple\', this)" aria-label="' + t('acc.wallet_apple') + '"><img src="img/apple-wallet/' + gwSprache + '.svg" alt="" width="153" height="48"></button>');
     if (btns.length) { row.innerHTML = btns.join(''); row.style.display = 'flex'; }
   } catch (e) {}
 }
