@@ -2971,6 +2971,45 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   transition: filter .15s;
 }
 .loyalty-redeem:hover { filter: brightness(1.05); }
+/* Menü aufs Haus: Hinweis im ersten Warenkorb-Schritt */
+.menu-wartet { display: flex; gap: 0.75rem; align-items: flex-start; margin: 0.9rem 0 0.4rem; padding: 0.8rem 0.9rem; border: 1px solid var(--color-yellow); background: rgba(255, 201, 60, 0.07); border-radius: var(--radius-md); }
+.mw-icon { width: 36px; height: 36px; flex: none; border-radius: 50%; background: rgba(255, 201, 60, 0.16); color: var(--color-yellow); display: inline-flex; align-items: center; justify-content: center; }
+.mw-icon svg { width: 20px; height: 20px; }
+.mw-text { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.mw-text strong { color: var(--color-cream); font-size: 0.92rem; }
+.mw-text > span { color: var(--color-cream-dim); font-size: 0.82rem; line-height: 1.45; }
+.mw-akt { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.45rem; }
+.loyalty-card .mw-akt { margin-top: 0.5rem; }
+/* Mini-Erklärung „Wie geht das?“: drei Schritte, jederzeit schließbar */
+.mw-ov { position: fixed; inset: 0; z-index: 10005; display: none; align-items: flex-end; justify-content: center; padding: 16px; background: rgba(8, 7, 5, 0.72); }
+.mw-ov.offen { display: flex; }
+@media (min-width: 640px) { .mw-ov { align-items: center; } }
+.mw-box { position: relative; width: min(420px, 100%); background: var(--color-bg-elev); border: 1px solid var(--color-border); border-radius: 20px; padding: 1.25rem 1.25rem 1rem; color: var(--color-cream); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); animation: mwRein 0.22s var(--ease-out); }
+@keyframes mwRein { from { transform: translateY(16px); opacity: 0; } }
+.mw-zu { position: absolute; top: 0.5rem; right: 0.5rem; width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; color: var(--color-cream-dim); font-size: 1.5rem; line-height: 1; cursor: pointer; }
+.mw-zu:hover { color: var(--color-cream); }
+.mw-schritt { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-orange-bright); font-weight: 700; }
+.mw-box h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; line-height: 1.3; margin: 0.25rem 2.6rem 0.9rem 0; }
+.mw-bild { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-md); min-height: 112px; display: flex; align-items: center; justify-content: center; padding: 1rem; margin-bottom: 0.9rem; }
+.mw-chips { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; justify-content: center; }
+.mw-chip { width: 46px; height: 46px; border-radius: 50%; background: rgba(232, 90, 36, 0.14); border: 1px solid rgba(255, 122, 61, 0.4); color: var(--color-orange-bright); display: inline-flex; align-items: center; justify-content: center; }
+.mw-chip svg { width: 24px; height: 24px; }
+.mw-plus { color: var(--color-cream-dim); font-weight: 700; }
+.mw-demo { position: relative; width: 100%; max-width: 300px; }
+.mw-demo .loyalty-redeem { pointer-events: none; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 0.7rem; padding-right: 0.7rem; }
+.mw-tipp { position: absolute; right: 16%; top: 58%; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); animation: mwTipp 1.6s ease-out infinite; pointer-events: none; }
+@keyframes mwTipp { 0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); } 60% { transform: scale(1); box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); } 100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); } }
+.mw-qr { width: 58px; height: 58px; border-radius: 12px; background: #fff; color: #0A0A0A; display: inline-flex; align-items: center; justify-content: center; }
+.mw-qr svg { width: 40px; height: 40px; }
+.mw-preis { display: inline-flex; align-items: center; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--color-border-bright); font-size: 0.82rem; font-weight: 700; color: var(--color-cream); }
+.mw-box h4 { font-size: 1rem; margin: 0 0 0.35rem; color: var(--color-cream); }
+.mw-box p { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--color-cream-dim); }
+.mw-punkte { display: flex; gap: 0.35rem; justify-content: center; margin: 1rem 0 0.8rem; }
+.mw-punkte span { width: 7px; height: 7px; border-radius: 50%; background: var(--color-border-bright); transition: width 0.2s var(--ease-out); }
+.mw-punkte span.an { background: var(--color-orange); width: 18px; border-radius: 4px; }
+.mw-fuss { display: flex; gap: 0.5rem; align-items: center; }
+.mw-fuss .btn-primary { flex: 1; }
+@media (prefers-reduced-motion: reduce) { .mw-box, .mw-tipp { animation: none; } .mw-punkte span { transition: none; } }
 /* Menü aufs Haus und 5-€-Bonus können untereinander stehen */
 .loyalty-card .loyalty-reward-hint + .loyalty-redeem { margin-top: 0.5rem; }
 .loyalty-card .loyalty-redeem + .loyalty-hint,
@@ -8570,6 +8609,110 @@ function commitOrderSuccess(order, cartSnapshot) {
   }
 }
 
+/* ---- Menü aufs Haus: Hinweis im ersten Warenkorb-Schritt ----
+   Der Einlöse-Knopf sitzt erst in Schritt 2 (Stempelkarte). Wer nur in den
+   Warenkorb schaut, soll trotzdem sehen, dass ein Gratis-Menü wartet und was
+   als Nächstes zu tun ist. „Wie geht das?“ öffnet eine Erklärung in drei Schritten. */
+const MW_SYMBOL = {
+  geschenk: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="8" width="17" height="4" rx="1"/><path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12"/><path d="M12 8v13"/><path d="M12 8c-1.5-3.5-5.5-4-5.5-1.5S10 8 12 8z"/><path d="M12 8c1.5-3.5 5.5-4 5.5-1.5S14 8 12 8z"/></svg>',
+  burger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11c0-3.9 3.6-6 8-6s8 2.1 8 6z"/><path d="M3.5 14.2h17"/><path d="M5 17h14v.5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 17.5z"/></svg>',
+  pommes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10l1.5 10h9L18 10z"/><path d="M8.5 10V4.5M11 10V3.5M13.5 10V4M16 10V5"/></svg>',
+  becher: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7h11"/><path d="M7.5 7l1 13h7l1-13"/><path d="M12 7l2-4h3"/></svg>',
+  dip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5h15a7.5 5 0 0 1-15 0z"/><path d="M12 3.5c1.5 2 2.5 3.2 2.5 4.5a2.5 2.5 0 0 1-5 0c0-1.3 1-2.5 2.5-4.5z"/></svg>',
+  qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></svg>',
+};
+function menuWartetHtml() {
+  if (typeof groupJoin !== 'undefined' && groupJoin) return '';
+  const l = getLoyalty();
+  if (!(l.menus > 0)) return '';
+  const eingeloest = (loyaltyApplied && loyaltyKind === 'menu') ? loyaltyDiscount() : 0;
+  let zeile, extra = '';
+  if (eingeloest > 0) zeile = t('loyalty.menu_applied').replace('{amount}', formatPrice(eingeloest));
+  else if (!accountLoggedIn()) {
+    zeile = t('loyalty.wait_login');
+    extra = `<button type="button" class="mini-btn" onclick="openAccountOverlay('kompakt')">${t('loyalty.menu_login_btn')}</button>`;
+  } else if (!SK.gratisMenuWert(cart)) zeile = t('loyalty.wait_add');
+  else zeile = t('loyalty.wait_next');
+  return `<div class="menu-wartet">
+      <span class="mw-icon" aria-hidden="true">${MW_SYMBOL.geschenk}</span>
+      <div class="mw-text">
+        <strong>${eingeloest > 0 ? t('loyalty.menu_line') : t('loyalty.wait_title')}</strong>
+        <span>${zeile}</span>
+        <div class="mw-akt">${extra}<button type="button" class="mini-btn" onclick="menuWieOeffnen(this)">${t('loyalty.how')}</button></div>
+      </div>
+    </div>`;
+}
+let mwSchritt = 0, mwVorher = null;
+function menuWieOeffnen(ausloeser) {
+  mwVorher = ausloeser || document.activeElement;
+  mwSchritt = 0;
+  let ov = document.getElementById('menuWie');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'menuWie';
+    ov.className = 'mw-ov';
+    ov.setAttribute('role', 'dialog');
+    ov.setAttribute('aria-modal', 'true');
+    ov.setAttribute('aria-labelledby', 'mwTitel');
+    ov.addEventListener('click', (e) => { if (e.target === ov) menuWieZu(); });
+    document.body.appendChild(ov);
+  }
+  menuWieZeichnen();
+  ov.classList.add('offen');
+  document.addEventListener('keydown', menuWieTaste);
+  setTimeout(() => { const b = ov.querySelector('.mw-weiter'); if (b) b.focus(); }, 30);
+}
+function menuWieZu() {
+  const ov = document.getElementById('menuWie');
+  if (ov) ov.classList.remove('offen');
+  document.removeEventListener('keydown', menuWieTaste);
+  try { if (mwVorher && mwVorher.isConnected) mwVorher.focus(); } catch (e) {}
+}
+function menuWieTaste(e) {
+  if (e.key === 'Escape') { e.preventDefault(); menuWieZu(); return; }
+  if (e.key === 'ArrowRight') menuWieGehe(1);
+  else if (e.key === 'ArrowLeft') menuWieGehe(-1);
+  else if (e.key === 'Tab') {   // Fokus im Fenster halten
+    const f = [...document.querySelectorAll('#menuWie button')];
+    if (!f.length) return;
+    const i = f.indexOf(document.activeElement);
+    if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+  }
+}
+function menuWieGehe(d) {
+  const n = mwSchritt + d;
+  if (n < 0) return;
+  if (n > 2) { menuWieZu(); return; }
+  mwSchritt = n;
+  menuWieZeichnen();
+  const b = document.querySelector('#menuWie .mw-weiter'); if (b) b.focus();
+}
+function menuWieZeichnen() {
+  const ov = document.getElementById('menuWie');
+  if (!ov) return;
+  const wert = SK.gratisMenuWert(cart) || 13.5;
+  const bilder = [
+    `<div class="mw-chips"><span class="mw-chip">${MW_SYMBOL.burger}</span><span class="mw-plus">+</span><span class="mw-chip">${MW_SYMBOL.pommes}</span><span class="mw-plus">+</span><span class="mw-chip">${MW_SYMBOL.becher}</span><span class="mw-plus">+</span><span class="mw-chip">${MW_SYMBOL.dip}</span></div>`,
+    `<div class="mw-demo"><span class="loyalty-redeem">${t('loyalty.menu_redeem').replace('{amount}', formatPrice(wert))}</span><span class="mw-tipp"></span></div>`,
+    `<div class="mw-chips"><span class="mw-qr">${MW_SYMBOL.qr}</span><span class="mw-preis">Double Patty +${formatPrice(SK.DOUBLE_PATTY_PRICE)}</span></div>`,
+  ];
+  const n = mwSchritt + 1;
+  ov.innerHTML = `<div class="mw-box">
+      <button type="button" class="mw-zu" aria-label="${t('a11y.close')}" onclick="menuWieZu()">\u00d7</button>
+      <div class="mw-schritt" aria-live="polite">${t('onb.step').replace('{n}', n).replace('{m}', 3)}</div>
+      <h3 id="mwTitel">${t('loyalty.how_title')}</h3>
+      <div class="mw-bild" aria-hidden="true">${bilder[mwSchritt]}</div>
+      <h4>${t('loyalty.how_s' + n + '_t')}</h4>
+      <p>${t('loyalty.how_s' + n).replace('{double}', formatPrice(SK.DOUBLE_PATTY_PRICE)).replace('{suess}', formatPrice((SK.MENU_SIDE_OPTIONS.find(o => o.id === 'spommes') || { surcharge: 1 }).surcharge))}</p>
+      <div class="mw-punkte" aria-hidden="true">${[0, 1, 2].map(i => `<span class="${i === mwSchritt ? 'an' : ''}"></span>`).join('')}</div>
+      <div class="mw-fuss">
+        ${mwSchritt > 0 ? `<button type="button" class="btn btn-ghost" onclick="menuWieGehe(-1)">${t('loyalty.how_back')}</button>` : ''}
+        <button type="button" class="btn btn-primary mw-weiter" onclick="menuWieGehe(1)">${mwSchritt < 2 ? t('onb.next') : t('loyalty.how_done')}</button>
+      </div>
+    </div>`;
+}
+
 /* Stempelkarte fürs Warenkorb-Panel */
 function loyaltyCardHtml() {
   const l = getLoyalty();
@@ -8598,6 +8741,7 @@ function loyaltyCardHtml() {
         teile.push(`<button type="button" class="loyalty-redeem" onclick="applyLoyaltyReward('menu')">${t('loyalty.menu_redeem').replace('{amount}', formatPrice(menuWert))}</button>
           <div class="loyalty-hint">${t('loyalty.menu_terms')}</div>`);
       }
+      teile.push(`<div class="mw-akt"><button type="button" class="mini-btn" onclick="menuWieOeffnen(this)">${t('loyalty.how')}</button></div>`);
     }
     // 5-€-Bonus (Geburtstag, Empfehlung, alte Karte)
     if (l.bonus > 0) {
@@ -10900,7 +11044,7 @@ function renderCart() {
     if (checkoutStep === 'cart') {
       // Summe und Frage stehen jetzt fest im Fußbereich – dort sind sie ohne
       // Scrollen sichtbar. Im Inhalt bleibt nur die Artikelliste (+ Hinweise).
-      body.innerHTML = itemsHtml + `${stepBanner}`;
+      body.innerHTML = itemsHtml + menuWartetHtml() + `${stepBanner}`;
       footer.innerHTML = groupJoin ? `
         <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitToGroup(this)" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
         <p style="text-align:center;color:var(--color-cream-dim);font-size:0.78rem;margin:0.6rem 0 0;line-height:1.5;">${t('grp.entry_join').replace('{host}', escG(groupJoin.host || ''))}<br>${t('grp.join_s3')}</p>
