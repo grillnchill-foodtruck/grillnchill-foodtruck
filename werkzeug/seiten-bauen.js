@@ -23,6 +23,12 @@
  *    relativ nachlädt (Produktbilder, Sprachpakete), leitet netlify.toml mit
  *    /tr/* -> /:splat aufs Hauptverzeichnis um.
  *
+ * 3. LIEFERGEBIET UND HALAL
+ *    liefergebiet.html: Zonen, Preise, Karte und Radius kommen aus
+ *    speisekarte.js (DELIVERY_ZONES, MAX_DELIVERY_KM). Ändert sich dort etwas,
+ *    stimmt die Seite nach dem nächsten Deploy. Beide Seiten bekommen ihre
+ *    FAQ-Daten für Google aus den sichtbaren <details>.
+ *
  * tr/ steht in .gitignore: Die Datei entsteht bei jedem Deploy neu und kann
  * deshalb nie hinter index.html zurückbleiben. index.html selbst wird mit der
  * eingebauten Karte committet, damit die lokale Vorschau sie auch zeigt.
@@ -250,6 +256,130 @@ function tuerkischeSeite(deHtml) {
   return h;
 }
 
+/* ---- 3. Unterseiten: Liefergebiet und Halal -------------------------------- */
+// Bereiche zwischen <!-- NAME:START ... --> und <!-- NAME:ENDE --> neu füllen.
+function bereich(html, name, inhalt, datei) {
+  const rx = new RegExp('(<!-- ' + name + ':START[^>]*-->)[\\s\\S]*?(<!-- ' + name + ':ENDE -->)');
+  if (!rx.test(html)) throw new Error('Marker ' + name + ' fehlt in ' + datei);
+  return html.replace(rx, (_, a, b) => a + '\n' + inhalt + '\n' + b);
+}
+
+// FAQ-Daten für Google aus den sichtbaren <details>, damit beides übereinstimmt.
+function faqDaten(html, url) {
+  const fragen = [...html.matchAll(/<details>\s*<summary>([\s\S]*?)<\/summary>\s*<p>([\s\S]*?)<\/p>\s*<\/details>/g)]
+    .map((m) => {
+      const text = (x) => x.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+      return { '@type': 'Question', name: text(m[1]), acceptedAnswer: { '@type': 'Answer', text: text(m[2]) } };
+    });
+  const daten = { '@context': 'https://schema.org', '@type': 'FAQPage', '@id': url + '#faq', inLanguage: 'de', mainEntity: fragen };
+  const rx = /(<script type="application\/ld\+json" id="faq-daten">)[\s\S]*?(<\/script>)/;
+  if (!rx.test(html)) throw new Error('<script id="faq-daten"> fehlt (' + url + ')');
+  return html.replace(rx, (_, a, b) => a + '\n' + JSON.stringify(daten, null, 2) + '\n' + b);
+}
+
+// Bezugspunkt wie im Shop (getRestaurantOrigin): die Nominatim-Koordinate der
+// Truck-Adresse. Stadtteil-Mittelpunkte ebenfalls aus OpenStreetMap/Nominatim,
+// abgefragt am 29.10.2026. seite: wohin die Beschriftung auf der Karte zeigt.
+const TRUCK = { lat: 51.98685, lon: 8.48556 };
+const ORTE = [
+  { name: 'Quelle', lat: 51.9975, lon: 8.4832, seite: 'l' },
+  { name: 'Brackwede', lat: 51.9875, lon: 8.5163, seite: 'r' },
+  { name: 'Ummeln', lat: 51.9694, lon: 8.4600, seite: 'l' },
+  { name: 'Senne', lat: 51.9669, lon: 8.5140, seite: 'r' },
+  { name: 'Gadderbaum', lat: 52.0031, lon: 8.5216, seite: 'o' },
+  { name: 'Mitte', lat: 52.0209, lon: 8.5309, seite: 'r' },
+  { name: 'Avenwedde', lat: 51.9378, lon: 8.4451, seite: 'r' },
+  { name: 'Stieghorst', lat: 51.9982, lon: 8.5799, seite: 'r' },
+  { name: 'Isselhorst', lat: 51.9460, lon: 8.4128, seite: 'l' },
+  { name: 'Dornberg', lat: 52.0472, lon: 8.4540, seite: 'l' },
+  { name: 'Steinhagen', lat: 51.9996, lon: 8.3836, seite: 'l' },
+  { name: 'Sennestadt', lat: 51.9460, lon: 8.5851, seite: 'r' },
+  { name: 'Schildesche', lat: 52.0532, lon: 8.5541, seite: 'r' },
+  { name: 'Heepen', lat: 52.0320, lon: 8.6035, seite: 'r' },
+  { name: 'Gütersloh', lat: 51.9167, lon: 8.4043, seite: 'l' },
+  { name: 'Jöllenbeck', lat: 52.0964, lon: 8.5130, seite: 'r' },
+];
+// Abgerundet, damit 2,96 km nicht als „3,0 km“ in der Zone „bis 3 km“ steht
+const kmText = (k) => (Math.floor(k * 10) / 10).toFixed(1).replace('.', ',') + ' km';
+function luftlinie(a, b) {
+  const R = 6371, rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+const ZONEN = SK.DELIVERY_ZONES.map((z, i) => ({
+  ...z, nr: i + 1, von: i ? SK.DELIVERY_ZONES[i - 1].maxKm : 0,
+}));
+const zoneVon = (k) => (k <= SK.MAX_DELIVERY_KM ? ZONEN.find((z) => k <= z.maxKm) : null);
+const ORTE_KM = ORTE.map((o) => ({ ...o, km: luftlinie(TRUCK, o) })).sort((a, b) => a.km - b.km);
+const ZONEN_FARBE = ['#FF7A3D', '#E85A24', '#A8441E'];
+const spanne = (z) => (z.von ? `${z.von} bis ${z.maxKm} km` : `bis ${z.maxKm} km`);
+
+function karteSvg() {
+  const M = 200, R = 180, s = R / SK.MAX_DELIVERY_KM;
+  const cos = Math.cos(TRUCK.lat * Math.PI / 180);
+  const punkt = (o) => ({
+    x: M + (o.lon - TRUCK.lon) * cos * 111.32 * s,
+    y: M - (o.lat - TRUCK.lat) * 110.57 * s,
+  });
+  const ringe = [...ZONEN].reverse().map((z) => {
+    const i = z.nr - 1;
+    return `<circle cx="${M}" cy="${M}" r="${(z.maxKm * s).toFixed(1)}" fill="${ZONEN_FARBE[i]}" fill-opacity="${[0.26, 0.15, 0.07][i] || 0.07}" stroke="${ZONEN_FARBE[i]}" stroke-opacity="0.55" stroke-width="1"/>`
+      + `<text x="${M}" y="${(M - z.maxKm * s - 5).toFixed(1)}" text-anchor="middle" class="ring">${z.maxKm} km</text>`;
+  }).join('');
+  const orte = ORTE_KM.filter((o) => zoneVon(o.km)).map((o) => {
+    const p = punkt(o);
+    const t = o.seite === 'l' ? { x: p.x - 7, y: p.y + 4, a: 'end' }
+      : o.seite === 'o' ? { x: p.x, y: p.y - 8, a: 'middle' } : { x: p.x + 7, y: p.y + 4, a: 'start' };
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.6" class="ort"/>`
+      + `<text x="${t.x.toFixed(1)}" y="${t.y.toFixed(1)}" text-anchor="${t.a}" class="ortname">${esc(o.name)}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 400 400" role="img" aria-labelledby="kartenTitel">
+  <title id="kartenTitel">Lieferzonen rund um den Truck in Brackwede: ${ZONEN.map((z) => `Zone ${z.nr} ${spanne(z)}`).join(', ')}</title>
+  <style>.ring{font:600 10px Inter,sans-serif;fill:#8F8471}.ort{fill:#F5E9D0}.ortname{font:600 11px Inter,sans-serif;fill:#C9BCA4}.truck{font:800 10px Inter,sans-serif;fill:#FFC93C;letter-spacing:.08em}</style>
+  ${ringe}${orte}
+  <circle cx="${M}" cy="${M}" r="7" fill="#FFC93C" stroke="#0C0B09" stroke-width="2"/>
+  <text x="${M}" y="${M + 20}" text-anchor="middle" class="truck">TRUCK</text>
+</svg>`;
+}
+
+function zonenHtml() {
+  const karten = ZONEN.map((z) => {
+    const orte = ORTE_KM.filter((o) => zoneVon(o.km) === z)
+      .map((o) => `<li>${esc(o.name)} <span>${kmText(o.km)}</span></li>`).join('');
+    return `<div class="zone">
+        <div class="zone-kopf"><span class="zone-nr"><i style="background:${ZONEN_FARBE[z.nr - 1]}"></i>Zone ${z.nr}</span><span class="zone-km">${spanne(z)}</span></div>
+        <dl><div><dt>Mindestbestellwert</dt><dd>${preis(z.minOrder)}</dd></div><div><dt>Liefergebühr</dt><dd>${preis(z.fee)}</dd></div></dl>
+        ${orte ? `<ul class="orte" aria-label="Stadtteile, deren Mitte in Zone ${z.nr} liegt">${orte}</ul>` : ''}
+      </div>`;
+  }).join('\n      ');
+  return `<div class="zonen">
+      <div class="karte-svg">${karteSvg()}</div>
+      <div class="zone-liste">
+      ${karten}
+      </div>
+    </div>
+    <p class="zone-notiz">Entfernung jeweils Luftlinie vom Truck zur Mitte des Stadtteils (Daten: OpenStreetMap). Weiter als ${SK.MAX_DELIVERY_KM} km liefern wir nicht.</p>`;
+}
+
+function liefergebietBauen(html) {
+  const datei = 'liefergebiet.html';
+  const guenstigste = Math.min(...ZONEN.map((z) => z.fee));
+  html = bereich(html, 'FAKTEN', `      <div class="hero-facts">
+        <div><b>${SK.MAX_DELIVERY_KM} km</b>Luftlinie</div>
+        <div><b>ab ${preis(guenstigste)}</b>Liefergebühr</div>
+        <div><b>30 bis 45 Min.</b>Lieferzeit</div>
+        <div><b>Mo bis Sa</b>12:00 bis 20:30</div>
+      </div>`, datei);
+  html = bereich(html, 'ZONEN', zonenHtml(), datei);
+  const fern = ORTE_KM.filter((o) => zoneVon(o.km)).slice(-3).map((o) => o.name);
+  html = bereich(html, 'RADIUS', `Bis ${SK.MAX_DELIVERY_KM} km Luftlinie rund um unseren Truck in der Gütersloher Straße 122, zum Beispiel bis ${fern.slice(0, -1).join(', ')} und ${fern[fern.length - 1]}.`, datei);
+  html = bereich(html, 'PREISE', ZONEN.map((z) => `Zone ${z.nr} (${spanne(z)}): ${preis(z.minOrder)} Mindestbestellwert, ${preis(z.fee)} Liefergebühr.`).join(' ')
+    + ' Welche Zone für dich gilt, zeigt die Adressprüfung oben.', datei);
+  return faqDaten(html, SEITE + '/liefergebiet');
+}
+
 /* ---- Ablauf ---------------------------------------------------------------- */
 const indexPfad = path.join(WURZEL, 'index.html');
 const deHtml = karteEinsetzen(fs.readFileSync(indexPfad, 'utf8'), 'de');
@@ -259,6 +389,11 @@ const trHtml = tuerkischeSeite(deHtml);
 fs.mkdirSync(path.join(WURZEL, 'tr'), { recursive: true });
 fs.writeFileSync(path.join(WURZEL, 'tr', 'index.html'), trHtml);
 
+const lgPfad = path.join(WURZEL, 'liefergebiet.html');
+fs.writeFileSync(lgPfad, liefergebietBauen(fs.readFileSync(lgPfad, 'utf8')));
+const halalPfad = path.join(WURZEL, 'halal.html');
+fs.writeFileSync(halalPfad, faqDaten(fs.readFileSync(halalPfad, 'utf8'), SEITE + '/halal'));
+
 const reste = (trHtml.match(/data-i18n="[^"]+"/g) || []).length;
 console.log('seiten-bauen: Speisekarte mit ' + SK.MENU.length + ' Artikeln in index.html, tr/index.html geschrieben ('
-  + Math.round(trHtml.length / 1024) + ' KB, ' + reste + ' data-i18n-Stellen).');
+  + Math.round(trHtml.length / 1024) + ' KB, ' + reste + ' data-i18n-Stellen), liefergebiet.html und halal.html aktualisiert.');

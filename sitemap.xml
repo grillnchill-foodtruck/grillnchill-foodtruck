@@ -29,6 +29,18 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://grillnchill-foodtruck.de/" />
   </url>
   <url>
+    <loc>https://grillnchill-foodtruck.de/halal</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://grillnchill-foodtruck.de/liefergebiet</loc>
+    <lastmod>2026-10-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://grillnchill-foodtruck.de/catering</loc>
     <lastmod>2026-07-14</lastmod>
     <changefreq>monthly</changefreq>
