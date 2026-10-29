@@ -192,7 +192,15 @@ const I18N = {
 
 let currentLang = 'de';
 
+// Sprache der Adresse: /tr/ trägt <html data-seite="tr"> (werkzeug/seiten-bauen.js),
+// die Startseite ist Deutsch.
+const SEITEN_SPRACHE = document.documentElement.getAttribute('data-seite') || 'de';
 function detectLang() {
+  // Unter /tr/ gilt Türkisch, egal was gespeichert ist oder der Browser meldet
+  if (SEITEN_SPRACHE !== 'de') return SEITEN_SPRACHE;
+  // Suchmaschinen sollen die Startseite so sehen, wie sie ausgeliefert wird.
+  // Der Googlebot meldet en-US und bekam sonst die englische Fassung.
+  if (/bot\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent || '')) return 'de';
   try {
     const saved = localStorage.getItem('gnc_lang');
     // Nicht-deutsche Pakete werden lazy geladen -> auch LANG_PACKS zulassen, sonst geht die gespeicherte Wahl verloren

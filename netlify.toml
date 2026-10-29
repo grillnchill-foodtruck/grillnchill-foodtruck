@@ -5,6 +5,8 @@
 [build]
   # Statische Dateien im Root-Verzeichnis
   publish    = "."
+  # Speisekarte als HTML in index.html, türkische Seite tr/index.html
+  command    = "node werkzeug/seiten-bauen.js"
   # Hier liegen die Netlify-Functions
   functions  = "netlify/functions"
 
@@ -255,6 +257,14 @@
     X-Robots-Tag    = "noindex, nofollow"
     X-Frame-Options = "DENY"
     Cache-Control   = "no-store"
+
+# Türkische Seite /tr/ (entsteht beim Build): Bilder, Skripte und Sprachpakete,
+# die JavaScript relativ nachlädt, liegen im Hauptverzeichnis. Ohne force, also
+# gilt die Regel nur, wo unter /tr/ keine Datei liegt (tr/index.html bleibt).
+[[redirects]]
+  from   = "/tr/*"
+  to     = "/:splat"
+  status = 200
 
 # Gebrandete 404-Seite
 [[redirects]]

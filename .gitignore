@@ -3,3 +3,5 @@ Archive23132.zip
 .claude/
 node_modules/
 .claude/
+# entsteht beim Build (werkzeug/seiten-bauen.js)
+/tr/
