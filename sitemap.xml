@@ -3,7 +3,7 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://grillnchill-foodtruck.de/</loc>
-    <lastmod>2026-08-13</lastmod>
+    <lastmod>2026-10-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -12,7 +12,7 @@
     </image:image>
     <image:image>
       <image:loc>https://grillnchill-foodtruck.de/produktbilder/kubis.webp</image:loc>
-      <image:title>Kubis Special – Halal Smashburger mit Double Patty</image:title>
+      <image:title>Kubis Special, Halal-Smashburger mit Double Patty</image:title>
     </image:image>
   </url>
   <url>

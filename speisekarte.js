@@ -66,7 +66,7 @@
     // SNACKS & BEILAGEN
     { id: 'nug6',        cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "6er Chicken Nuggets",   desc: "Knusprig paniert, mit Dip nach Wahl", price: 4.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: null },
     { id: 'nug9',        cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "9er Chicken Nuggets",   desc: "Knusprig paniert, mit Dip nach Wahl", price: 5.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: { label: 'BELIEBT', class: 'popular' } },
-    { id: 'nug20',       cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "20er Chicken Nuggets",  desc: "Knusprig paniert, mit Dip nach Wahl – perfekt zum Teilen", price: 10.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: { label: 'TO SHARE', class: 'new' } },
+    { id: 'nug20',       cat: 'sides', emoji: '🍗', image: 'produktbilder/nuggets.webp', name: "20er Chicken Nuggets",  desc: "Knusprig paniert, mit Dip nach Wahl, groß genug zum Teilen", price: 10.00, allergens: '1', spuren: '3, 6', includesDip: true, tag: { label: 'TO SHARE', class: 'new' } },
     { id: 'pommes',      cat: 'sides', emoji: '🍟', image: 'produktbilder/pommes.webp', name: "Pommes",                desc: "Knusprige goldbraune Pommes inkl. 1 Dip", price: 4.00, spuren: '1, 3', veggie: true, vegan: true, includesDip: true, tag: { label: 'VEGGIE', class: 'veggie' } },
     { id: 'spommes',     cat: 'sides', emoji: '🍠', image: 'produktbilder/spommes.webp', name: "Süßkartoffelpommes",    desc: "Knusprig frittiert inkl. 1 Dip", price: 5.00, spuren: '1, 3', veggie: true, vegan: true, includesDip: true, tag: { label: 'VEGGIE', class: 'veggie' } },
 
@@ -152,9 +152,9 @@
 
   // Lieferzonen nach Luftlinien-km
   const DELIVERY_ZONES = [
-    { maxKm: 3,  minOrder: 15.00, fee: 2.50, key: 'zone.z1', label: 'Zone 1 – bis 3 km' },
-    { maxKm: 5,  minOrder: 25.00, fee: 3.50, key: 'zone.z2', label: 'Zone 2 – 3 bis 5 km' },
-    { maxKm: 13, minOrder: 50.00, fee: 5.00, key: 'zone.z3', label: 'Zone 3 – 5 bis 13 km' },
+    { maxKm: 3,  minOrder: 15.00, fee: 2.50, key: 'zone.z1', label: 'Zone 1: bis 3 km' },
+    { maxKm: 5,  minOrder: 25.00, fee: 3.50, key: 'zone.z2', label: 'Zone 2: 3 bis 5 km' },
+    { maxKm: 13, minOrder: 50.00, fee: 5.00, key: 'zone.z3', label: 'Zone 3: 5 bis 13 km' },
   ];
   const MAX_DELIVERY_KM = 13;
 
