@@ -113,17 +113,63 @@ async function pruefeSperre(event) {
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Nicht jeder Fehlschlag ist ein Rateversuch. Seit der Zwei-Faktor-Pflicht
+   (lib/zweifaktor.js) scheitern auch:
+   - Sitzungs-Tokens von vor der Umstellung (ohne Vermerk). Einen 256-Bit-Token
+     rät niemand. Zählten sie, sperrte ein offener alter Admin-Tab mit seinen
+     Abfragen alle paar Sekunden den eigenen Anschluss, und Kubi käme danach
+     15 Minuten lang nicht mehr an die Anmeldung.
+   - Ein RICHTIGES Passwort ohne Code, ebenfalls aus alten Tabs. Es öffnet
+     nichts, ist aber auch kein Angriff auf das Passwort.
+   Beides zählt deshalb nicht. Ein falsches Passwort zählt wie bisher, und
+   team.js zählt falsche Codes ausdrücklich mit (zaehleImmer).
+--------------------------------------------------------------------------- */
+const TOKEN_FORM = /^gncs_[a-f0-9]{64}$/;
+function nachweisAus(event) {
+  const q = (event && event.queryStringParameters) || {};
+  if (q.password) return String(q.password);
+  try { const b = JSON.parse((event && event.body) || '{}'); return b && b.password ? String(b.password) : ''; }
+  catch (e) { return ''; }
+}
+async function passwortStimmt(pw) {
+  const admin = process.env.ADMIN_PASSWORD || '';
+  if (admin && pw === admin) return true;
+  const opts = { name: 'team', consistency: 'strong' };
+  if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
+    opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
+    opts.token = process.env.NETLIFY_BLOBS_TOKEN;
+  }
+  const t = getStore(opts);
+  const h = crypto.createHash('sha256').update(pw).digest('hex');
+  const { blobs } = await t.list({ prefix: 'u:' });
+  for (const b of blobs) {
+    const u = await t.get(b.key, { type: 'json' });
+    if (u && u.pwHash === h) return true;
+  }
+  return false;
+}
+async function keinRateversuch(event) {
+  const n = nachweisAus(event);
+  if (!n) return false;
+  if (TOKEN_FORM.test(n)) return true;
+  if (!require('./zweifaktor').pflicht()) return false;
+  try { return await passwortStimmt(n); } catch (e) { return false; }
+}
+
 /**
  * Nach der Anmeldung aufrufen – mit dem Ergebnis.
  * Erfolg löscht den Zähler, Misserfolg erhöht ihn und sperrt beim Erreichen
- * der Schwelle.
+ * der Schwelle. optionen.zaehleImmer: Fehlschlag zählt auch dann, wenn das
+ * Passwort stimmte (falscher Code beim Anmelden).
  */
-async function meldeErgebnis(event, erfolg) {
+async function meldeErgebnis(event, erfolg, optionen) {
   const key = absender(event);
   if (!key) return;
   try {
     const s = store();
     if (erfolg) { await s.delete(key); return; }
+    if (!(optionen && optionen.zaehleImmer) && await keinRateversuch(event)) return;
 
     const jetzt = Date.now();
     const rec = (await s.get(key, { type: 'json' })) || null;

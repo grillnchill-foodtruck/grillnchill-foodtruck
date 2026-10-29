@@ -14,10 +14,15 @@
  * Passwörter werden ausschließlich als SHA-256-Hash gespeichert.
  *
  *   POST { password, action, ... }
+ *     action = "anmelden", code?, einrichtung?, merken
+ *                                          → Passwort + Code -> Sitzungs-Token
+ *                                            (Zwei-Faktor, lib/zweifaktor.js)
  *     action = "whoami"                    → { role, name }        (alle)
  *     action = "list"                      → { staff: [...] }      (admin)
  *     action = "add",    name, staffPassword → legt Mitarbeiter an (admin)
  *     action = "remove", name              → entfernt Mitarbeiter  (admin)
+ *     action = "zfzuruecksetzen", name?    → Zwei-Faktor neu einrichten lassen
+ *                                            (ohne name: das eigene Konto)
  * ----------------------------------------------------------------------------
  */
 
@@ -25,6 +30,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung, erstelle, beende, istToken } = require('./lib/admin-sitzung');
+const zf = require('./lib/zweifaktor');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -68,7 +74,7 @@ async function auditLog(who, action, detail) {
 }
 
 const hash = (pw) => crypto.createHash('sha256').update(String(pw)).digest('hex');
-const slug = (name) => String(name || '').trim().toLowerCase().replace(/[^a-z0-9äöüß-]/g, '-').slice(0, 30);
+const slug = zf.slug;   // dieselbe Regel wie für die Zwei-Faktor-Konten
 
 async function authRole(pw) {
   if (!pw) return null;
@@ -86,6 +92,60 @@ async function authRole(pw) {
   return null;
 }
 
+/* ---- Anmelden mit Passwort und Code (lib/zweifaktor.js) ------------------- */
+// Ohne "angemeldet bleiben" gilt die Sitzung einen Arbeitstag, nicht 30 Tage
+const SITZUNG_TAB_MS = 12 * 60 * 60 * 1000;
+
+async function anmelden(event, input) {
+  const pw = String(input.password || '');
+  if (!pw || istToken(pw)) return json(400, { error: 'password_required' });
+  const who = await authRole(pw);
+  if (!who) {
+    await meldeErgebnis(event, false);
+    return json(401, { error: 'unauthorized' });
+  }
+
+  const fertig = async (extra) => {
+    await meldeErgebnis(event, true);
+    const sitzung = await erstelle(pw, who, { zweiFaktor: true, gueltigMs: input.merken ? 0 : SITZUNG_TAB_MS });
+    if (!sitzung) return json(503, { error: 'sitzung_fehlgeschlagen', hint: 'Die Anmeldung hat geklappt, die Sitzung ließ sich aber nicht speichern. Bitte gleich noch einmal versuchen.' });
+    return json(200, { ok: true, token: sitzung.token, exp: sitzung.exp, role: who.role, name: who.name || '', ...extra });
+  };
+
+  // Notschalter ZWEI_FAKTOR=aus: Passwort genügt
+  if (!zf.pflicht()) return fertig({ zweiFaktor: false });
+
+  const konto = zf.kontoVon(who);
+  const anzeige = who.name || 'Admin';
+
+  if (!(await zf.istEingerichtet(konto))) {
+    if (!input.einrichtung) {
+      const e = await zf.einrichtungStarten(konto, anzeige);
+      return json(200, { ok: false, schritt: 'einrichten', einrichtung: e.einrichtung, geheim: e.geheim, url: e.url, name: anzeige });
+    }
+    const r = await zf.einrichtungAbschliessen(input.einrichtung, konto, input.code);
+    if (!r.ok) {
+      if (r.grund === 'abgelaufen') return json(410, { error: 'einrichtung_abgelaufen', hint: 'Die Einrichtung hat zu lange gedauert. Bitte neu anmelden.' });
+      await meldeErgebnis(event, false, { zaehleImmer: true });
+      return json(401, { error: 'code_falsch' });
+    }
+    await auditLog(who, 'Zwei-Faktor', 'Eingerichtet');
+    return fertig({ notfallCodes: r.notfallCodes });
+  }
+
+  if (!input.code) return json(200, { ok: false, schritt: 'code', name: anzeige });
+  const r = await zf.pruefe(konto, input.code);
+  if (!r.ok) {
+    if (r.grund === 'gesperrt') {
+      return json(429, { error: 'too_many_attempts', retryAfter: r.retryAfter, hint: 'Zu viele falsche Codes. Bitte in einigen Minuten erneut versuchen.' });
+    }
+    await meldeErgebnis(event, false, { zaehleImmer: true });
+    return json(401, { error: 'code_falsch' });
+  }
+  if (r.notfall) await auditLog(who, 'Zwei-Faktor', 'Mit Notfallcode angemeldet, noch ' + r.rest + ' übrig');
+  return fertig(r.notfall ? { notfallRest: r.rest } : {});
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
@@ -96,13 +156,43 @@ exports.handler = async (event) => {
   // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
   const gesperrt = await pruefeSperre(event);
   if (gesperrt) return gesperrt;
+
+  /* Anmelden: der einzige Weg, auf dem noch ein Passwort angenommen wird.
+     Antwortet in Schritten, der Browser fragt jeweils nach:
+       1. nur Passwort     -> { schritt: 'code' } oder beim ersten Mal
+                              { schritt: 'einrichten', geheim, url }
+       2. Passwort + Code  -> { ok, token, exp } (+ notfallCodes nach der Einrichtung)
+     Ein richtiges Passwort ohne Code meldet nichts an die Bremse: Erfolg
+     würde den Zähler löschen, und zwischen zwei Code-Versuchen ließe sich so
+     endlos weiterraten. Falsche Codes zählen mit (zaehleImmer). */
+  if (String(input.action || '') === 'anmelden') return anmelden(event, input);
   const who = await authRole(await passwortAusSitzung(input.password));
   await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });
 
   const action = String(input.action || 'whoami');
 
-  if (action === 'whoami') return json(200, { ok: true, role: who.role, name: who.name });
+  if (action === 'whoami') return json(200, { ok: true, role: who.role, name: who.name, zweiFaktor: zf.pflicht() });
+
+  /* Zwei-Faktor zurücksetzen: Beim nächsten Anmelden richtet die Person die
+     App neu ein (neues Handy, App gelöscht). Das eigene Konto darf jeder
+     zurücksetzen, er ist ja gerade mit Code angemeldet. Fremde Konten: Admins
+     für Mitarbeiter, Admin-Zugänge nur der Superadmin. Den Superadmin kann
+     niemand außer ihm selbst zurücksetzen. */
+  if (action === 'zfzuruecksetzen') {
+    const eigenes = zf.kontoVon(who);
+    let konto = eigenes, ziel = who.name || 'eigenes Konto';
+    if (input.name) {
+      if (who.role !== 'superadmin' && who.role !== 'admin') return json(403, { error: 'forbidden' });
+      const u = await teamStore().get('u:' + slug(input.name), { type: 'json' });
+      if (!u) return json(404, { error: 'not_found' });
+      if (u.role === 'admin' && who.role !== 'superadmin') return json(403, { error: 'forbidden', hint: 'Admin-Zugänge kann nur der Superadmin zurücksetzen' });
+      konto = 'u:' + slug(input.name); ziel = u.name;
+    }
+    await zf.zuruecksetzen(konto);
+    await auditLog(who, 'Zwei-Faktor', 'Zurückgesetzt für ' + ziel);
+    return json(200, { ok: true, eigenes: konto === eigenes });
+  }
 
   /* "Angemeldet bleiben" – siehe lib/admin-sitzung.js.
      Der Browser bekommt einen Sitzungs-Token und legt NUR den ab; das
@@ -136,7 +226,10 @@ exports.handler = async (event) => {
       const staff = [];
       for (const b of blobs) {
         const u = await t.get(b.key, { type: 'json' });
-        if (u) staff.push({ name: u.name || b.key.slice(2), role: u.role === 'admin' ? 'admin' : 'staff', createdAt: u.createdAt || null });
+        if (u) staff.push({
+          name: u.name || b.key.slice(2), role: u.role === 'admin' ? 'admin' : 'staff', createdAt: u.createdAt || null,
+          zweiFaktor: await zf.istEingerichtet('u:' + b.key.slice(2)),
+        });
       }
       staff.sort((a, b2) => (a.name || '').localeCompare(b2.name || ''));
       return json(200, { ok: true, staff });
@@ -203,6 +296,8 @@ exports.handler = async (event) => {
       const u = await t.get(key, { type: 'json' });
       if (u && u.role === 'admin' && !isSuper) return json(403, { error: 'forbidden', hint: 'Admins kann nur der Superadmin entfernen' });
       await t.delete(key);
+      // Sonst übernähme ein später gleichnamig angelegter Zugang die alte App-Kopplung
+      try { await zf.zuruecksetzen(key); } catch (e) {}
       await auditLog(who, 'Team', 'Zugang entfernt: ' + (u ? u.name : input.name));
       return json(200, { ok: true });
     }

@@ -368,7 +368,7 @@
       <img src="logo.png" alt="" width="56" height="56">
       <div>
         <h1 class="display login-title" id="loginTitle">Cockpit</h1>
-        <p class="card-description">Gleiche Anmeldung wie im Admin-Tool.</p>
+        <p class="card-description">Gleiche Anmeldung wie im Admin-Tool, mit Code aus deiner Authenticator-App.</p>
       </div>
     </div>
     <form id="loginForm" class="stack" novalidate>
@@ -563,6 +563,7 @@
   </main>
 </div>
 
+<script src="/admin-anmeldung.js"></script>
 <script>
 (function () {
   'use strict';
@@ -654,11 +655,12 @@
   function gemerkteAnmeldung() {
     var s = null;
     try { s = sessionStorage.getItem(PW_KEY); } catch (e) {}
-    if (s) return s;
+    // Nur Sitzungs-Tokens (Zwei-Faktor). Ein Passwort von vorher oeffnet nichts mehr.
+    if (s && GNCAnmeldung.istToken(s)) return s;
+    if (s) { try { sessionStorage.removeItem(PW_KEY); } catch (e) {} }
     try {
       var p = JSON.parse(localStorage.getItem(PW_KEY + '_p') || 'null');
       if (p && p.t && p.exp > Date.now()) return p.t;
-      if (p && p.pw && p.exp > Date.now()) { localStorage.removeItem(PW_KEY + '_p'); return p.pw; }
       if (p) localStorage.removeItem(PW_KEY + '_p');
     } catch (e) {}
     return '';
@@ -1173,30 +1175,6 @@
     c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake');
   }
 
-  /* "Angemeldet bleiben" wie im Admin-Tool: der Server gibt einen
-     Sitzungs-Token, nur der wird gemerkt. */
-  async function merken(pw) {
-    try {
-      if ($('pwStay').checked) {
-        var r = await fetch(TEAM_URL, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: pw, action: 'sitzung' }),
-        });
-        var d = await r.json().catch(function () { return {}; });
-        if (d && d.ok && d.token) {
-          localStorage.setItem(PW_KEY + '_p', JSON.stringify({ t: d.token, exp: new Date(d.exp).getTime() }));
-        } else {
-          localStorage.removeItem(PW_KEY + '_p');
-          toast('Angemeldet. "Angemeldet bleiben" hat diesmal nicht geklappt.');
-        }
-      } else {
-        localStorage.removeItem(PW_KEY + '_p');
-      }
-    } catch (e) {
-      try { localStorage.removeItem(PW_KEY + '_p'); } catch (e2) {}
-    }
-  }
-
   var meldetAn = false;
   $('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -1208,25 +1186,30 @@
     meldetAn = true;
     busy(btn, true);
     try {
+      /* Passwort und Code (admin-anmeldung.js, lib/zweifaktor.js). Gemerkt
+         wird nur der Sitzungs-Token, im Tab oder 30 Tage auf diesem Geraet. */
+      var merken = $('pwStay').checked;
+      var an = await GNCAnmeldung.anmelden(pw, { merken: merken });
+      if (!an.ok) {
+        if (an.grund === 'abbruch') return;
+        if (an.grund === 'passwort') { feldFehler('Passwort falsch.'); schuetteln(); $('pw').focus(); return; }
+        if (an.grund === 'gesperrt') { feldFehler('Zu viele Fehlversuche. Bitte in ' + wartezeitText(an.retryAfter) + ' erneut versuchen.'); return; }
+        feldFehler(an.grund === 'netz' ? 'Keine Verbindung. Bitte erneut versuchen.' : (an.hinweis || 'Server gerade nicht erreichbar. Bitte erneut versuchen.'));
+        return;
+      }
+      cred = an.token;
+      try {
+        sessionStorage.setItem(PW_KEY, an.token);
+        if (merken) localStorage.setItem(PW_KEY + '_p', JSON.stringify({ t: an.token, exp: new Date(an.exp).getTime() }));
+        else localStorage.removeItem(PW_KEY + '_p');
+      } catch (e2) {}
+      $('pw').value = '';
       var res = await fetch(DATA_URL, {
         method: 'POST', cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw }),
+        body: JSON.stringify({ password: cred }),
       });
-      if (res.status === 401) { feldFehler('Passwort falsch.'); schuetteln(); $('pw').focus(); return; }
-      if (res.status === 429) {
-        var dz = await res.json().catch(function () { return {}; });
-        feldFehler('Zu viele Fehlversuche. Bitte in ' + wartezeitText(dz.retryAfter || res.headers.get('Retry-After')) + ' erneut versuchen.');
-        return;
-      }
       var d = await res.json().catch(function () { return null; });
-      // Geprueft wird vor allem anderen: 200 oder ein Lesefehler danach heisst,
-      // das Passwort stimmt. Alles andere ist eine Stoerung.
-      var angemeldet = (res.ok && d && d.ok) || (res.status === 500 && d && d.error === 'read_failed');
-      if (!angemeldet) { feldFehler('Server gerade nicht erreichbar. Bitte erneut versuchen.'); return; }
-      cred = pw;
-      try { sessionStorage.setItem(PW_KEY, pw); } catch (e2) {}
-      await merken(pw);
       zuruecksetzen();
       zeigeCockpit();
       letzterVersuch = Date.now();
@@ -1254,12 +1237,14 @@
   function abmelden(text, serverAuch) {
     var g = null;
     try { g = JSON.parse(localStorage.getItem(PW_KEY + '_p') || 'null'); } catch (e) {}
-    if (serverAuch && g && g.t) {
+    // Auch die Tab-Sitzung gibt es serverseitig (12 Stunden), also beide entwerten
+    var weg = [g && g.t, cred].filter(function (t, i, a) { return GNCAnmeldung.istToken(t) && a.indexOf(t) === i; });
+    if (serverAuch) weg.forEach(function (t) {
       fetch(TEAM_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: g.t, action: 'abmelden' }),
+        body: JSON.stringify({ password: t, action: 'abmelden' }),
       }).catch(function () {});
-    }
+    });
     try { sessionStorage.removeItem(PW_KEY); } catch (e) {}
     try { if (serverAuch || (g && g.t === cred)) localStorage.removeItem(PW_KEY + '_p'); } catch (e) {}
     cred = '';

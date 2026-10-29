@@ -182,7 +182,7 @@
   <!-- Anmeldung (gleiche Sitzung wie das Admin-Tool) -->
   <section id="login" class="login" hidden>
     <div class="display" style="font-size:1.2rem;">Anmelden</div>
-    <p style="color:var(--dim);font-size:.85rem;margin:.4rem 0 0;">Admin-Passwort zum Planen – Team-Passwort zum Ansehen.</p>
+    <p style="color:var(--dim);font-size:.85rem;margin:.4rem 0 0;">Admin-Passwort zum Planen, Team-Passwort zum Ansehen. Danach fragen wir nach dem Code aus deiner Authenticator-App.</p>
     <input type="password" id="pw" autocomplete="current-password" placeholder="Passwort">
     <label><input type="checkbox" id="pwStay" checked> Angemeldet bleiben</label>
     <button id="loginBtn" onclick="anmelden(this)">Anmelden</button>
@@ -247,6 +247,7 @@
 
 <div class="toast" id="toast" role="status"></div>
 
+<script src="/admin-anmeldung.js"></script>
 <script>
 /* ============================================================
    Dienstplan – bewusst klein: eine Woche ist ein Objekt, jede
@@ -318,7 +319,9 @@ const datumKurz = (d) => d.toLocaleDateString('de-DE', { day:'2-digit', month:'2
 function gespeicherteAnmeldung() {
   try {
     const s = sessionStorage.getItem(PW_KEY);
-    if (s) return s;
+    // Nur Sitzungs-Tokens (Zwei-Faktor). Ein Passwort von vorher oeffnet nichts mehr.
+    if (s && GNCAnmeldung.istToken(s)) return s;
+    if (s) sessionStorage.removeItem(PW_KEY);
     const p = JSON.parse(localStorage.getItem(PW_KEY + '_p') || 'null');
     if (p && p.t && (!p.exp || Date.now() < p.exp)) return p.t;
   } catch (e) {}
@@ -346,23 +349,27 @@ async function anmeldenRun() {
   const pw = $('pw').value;
   if (!pw) return;
   $('loginFehler').textContent = '';
-  anmeldung = pw;
-  const { status, d } = await api('lesen', { woche: iso(montag) });
-  if (status === 0) { anmeldung = null; $('loginFehler').textContent = 'Keine Verbindung. Bitte erneut versuchen.'; return; }
-  if (status === 429) { $('loginFehler').textContent = d.hint || 'Zu viele Versuche – bitte kurz warten.'; return; }
-  if (!d.ok) { $('loginFehler').textContent = 'Passwort falsch.'; anmeldung = null; return; }
-  sessionStorage.setItem(PW_KEY, pw);
-  // "Angemeldet bleiben" ueber die vorhandene Team-Sitzung (Token statt Passwort)
-  if ($('pwStay').checked) {
-    try {
-      const r = await fetch('/.netlify/functions/team', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw, action: 'sitzung' }),
-      });
-      const t = await r.json().catch(() => ({}));
-      if (t && t.ok && t.token) localStorage.setItem(PW_KEY + '_p', JSON.stringify({ t: t.token, exp: new Date(t.exp).getTime() }));
-    } catch (e) {}
+  // Passwort und Code (admin-anmeldung.js); gemerkt wird nur der Token
+  const merken = $('pwStay').checked;
+  const r = await GNCAnmeldung.anmelden(pw, { merken });
+  if (!r.ok) {
+    if (r.grund === 'abbruch') return;
+    $('loginFehler').textContent = r.grund === 'passwort' ? 'Passwort falsch.'
+      : r.grund === 'gesperrt' ? 'Zu viele Versuche. Bitte in ' + GNCAnmeldung.wartezeit(r.retryAfter) + ' erneut versuchen.'
+      : r.grund === 'netz' ? 'Keine Verbindung. Bitte erneut versuchen.'
+      : (r.hinweis || 'Anmeldung gerade nicht möglich. Bitte erneut versuchen.');
+    return;
   }
+  anmeldung = r.token;
+  try {
+    sessionStorage.setItem(PW_KEY, r.token);
+    if (merken) localStorage.setItem(PW_KEY + '_p', JSON.stringify({ t: r.token, exp: new Date(r.exp).getTime() }));
+    else localStorage.removeItem(PW_KEY + '_p');
+  } catch (e) {}
+  $('pw').value = '';
+  const { status, d } = await api('lesen', { woche: iso(montag) });
+  if (status === 0) return;
+  if (!d.ok) { $('loginFehler').textContent = d.hint || 'Plan konnte nicht geladen werden.'; return; }
   zeigePlan(d);
 }
 

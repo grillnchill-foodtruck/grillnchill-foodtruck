@@ -535,6 +535,7 @@
     </label>
     <div style="height:.9rem"></div>
     <button class="btn" id="unlockBtn">Entsperren</button>
+    <p class="hint" style="margin:.9rem 0 0;text-align:center;">Danach fragen wir nach dem Code aus deiner Authenticator-App.</p>
   </div>
 </div>
 
@@ -893,6 +894,11 @@
         <div id="teamList"><p class="empty">Team wird geladen …</p></div>
       </div>
       <div class="card">
+        <h2>Zwei-Faktor</h2>
+        <p class="hint" style="margin-bottom:1rem;">Zum Anmelden braucht jeder Zugang Passwort und Code aus einer Authenticator-App. Neue Mitarbeiter richten die App bei ihrer ersten Anmeldung ein. Hat jemand sein Handy verloren, setz die Zwei-Faktor-App oben beim Namen zurück: Bei der nächsten Anmeldung richtet die Person sie neu ein.</p>
+        <button class="btn-ghost" id="zfEigenBtn" type="button">Meine App neu einrichten</button>
+      </div>
+      <div class="card">
         <h2>Mitarbeiter anlegen</h2>
         <div class="field">
           <label for="tmName">Name</label>
@@ -1007,6 +1013,7 @@
   </div>
 </div>
 
+<script src="/admin-anmeldung.js"></script>
 <script>
 const API = '/shop-status';
 const PW_KEY = 'gnc_admin_pw';
@@ -1373,46 +1380,30 @@ async function unlock(){
   finally{ unlocking=false; gncBusy(btn,false); }
 }
 async function unlockRun(pw){
-  const who=await whoami(pw);
-  if(who && who.gesperrt){
+  /* Anmeldung mit Passwort UND Code (admin-anmeldung.js, lib/zweifaktor.js).
+     Der Browser bekommt dafuer einen Sitzungs-Token und merkt sich nur den:
+     im Tab (sessionStorage) oder mit "angemeldet bleiben" 30 Tage
+     (localStorage). Das Passwort selbst landet nirgends mehr. */
+  const merken=!!($('pwStay')&&$('pwStay').checked);
+  const r=await GNCAnmeldung.anmelden(pw,{merken});
+  if(!r.ok){
+    if(r.grund==='abbruch') return;
     $('loginCard').classList.remove('shake'); void $('loginCard').offsetWidth;
     $('loginCard').classList.add('shake');
-    toast('Zu viele Fehlversuche. Bitte in '+wartezeit(who.retryAfter)+' erneut versuchen.','err');
+    toast(r.grund==='gesperrt' ? 'Zu viele Fehlversuche. Bitte in '+wartezeit(r.retryAfter)+' erneut versuchen.'
+      : r.grund==='passwort' ? 'Passwort falsch'
+      : r.grund==='netz' ? 'Keine Verbindung. Bitte erneut versuchen.'
+      : (r.hinweis||'Anmeldung gerade nicht möglich. Bitte erneut versuchen.'),'err');
     return;
   }
-  if(!who){
-    $('loginCard').classList.remove('shake'); void $('loginCard').offsetWidth;
-    $('loginCard').classList.add('shake');
-    toast('Passwort falsch','err');
-    return;
-  }
-  currentPw=pw;
-  currentRole=who.role; currentName=who.name||'';
-  sessionStorage.setItem(PW_KEY,pw);
-  /* "Angemeldet bleiben": Hier lag frueher das Passwort im Klartext im
-     localStorage – dreissig Tage lang, lesbar fuer jeden mit Zugriff aufs
-     Geraet, und es ist der Generalschluessel fuer alles. Gemerkt wird jetzt
-     ein Sitzungs-Token vom Server (netlify/functions/lib/admin-sitzung.js).
-     Klappt das Anlegen nicht, bleibt die Anmeldung fuer diesen Tab trotzdem
-     gueltig – nur das Merken faellt aus. Nie das Passwort ersatzweise
-     ablegen. */
+  currentPw=r.token;
+  currentRole=r.role; currentName=r.name||'';
   try{
-    if($('pwStay')&&$('pwStay').checked){
-      const r=await fetch('/.netlify/functions/team',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({password:pw,action:'sitzung'}),
-      });
-      const d=await r.json().catch(()=>({}));
-      if(d&&d.ok&&d.token){
-        localStorage.setItem(PW_KEY+'_p', JSON.stringify({t:d.token, exp:new Date(d.exp).getTime()}));
-      }else{
-        localStorage.removeItem(PW_KEY+'_p');
-        toast('Angemeldet – "angemeldet bleiben" hat diesmal nicht geklappt.');
-      }
-    }else{
-      localStorage.removeItem(PW_KEY+'_p');
-    }
-  }catch(e){ try{ localStorage.removeItem(PW_KEY+'_p'); }catch(e2){} }
+    sessionStorage.setItem(PW_KEY,r.token);
+    if(merken) localStorage.setItem(PW_KEY+'_p', JSON.stringify({t:r.token, exp:new Date(r.exp).getTime()}));
+    else localStorage.removeItem(PW_KEY+'_p');
+  }catch(e){}
+  $('pw').value='';
   applyRole();
   showPanel();
   await loadStatus();
@@ -1471,13 +1462,14 @@ function logout(){
      kopierter Token auf einem anderen Geraet weiter gueltig. Feuern und
      vergessen: das Abmelden darf daran nie haengen. */
   try{
+    // Gemerkte Sitzung und Tab-Sitzung (12 Stunden) gibt es beide serverseitig
     const g=JSON.parse(localStorage.getItem(PW_KEY+'_p')||'null');
-    if(g&&g.t){
+    [...new Set([g&&g.t, currentPw])].filter(t=>GNCAnmeldung.istToken(t)).forEach(t=>{
       fetch('/.netlify/functions/team',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({password:g.t,action:'abmelden'}),
+        body:JSON.stringify({password:t,action:'abmelden'}),
       }).catch(()=>{});
-    }
+    });
   }catch(e){}
   sessionStorage.removeItem(PW_KEY);
   try{ localStorage.removeItem(PW_KEY+'_p'); }catch(e){}
@@ -3097,11 +3089,13 @@ async function loadTeam(){
         const canTouch = superOnly || !isAdmin;
         const btns = [
           canTouch ? '<button class="btn-ghost" data-tm-pw="'+esc2(u.name)+'">Passwort ändern</button>' : '',
+          canTouch && u.zweiFaktor ? '<button class="btn-ghost" data-tm-zf="'+esc2(u.name)+'">Zwei-Faktor zurücksetzen</button>' : '',
           superOnly ? '<button class="btn-ghost" data-tm-role="'+esc2(u.name)+'" data-to="'+(isAdmin?'staff':'admin')+'">'+(isAdmin?'Zu Mitarbeiter':'Zum Admin')+'</button>' : '',
           canTouch ? '<button class="btn-ghost" data-tm-remove="'+esc2(u.name)+'">Entfernen</button>' : '',
         ].join('');
         return '<div class="team-row"><div><span class="tn">'+esc2(u.name)+'</span>'
-          +'<small>'+(isAdmin?'Admin – Vollzugriff':'Mitarbeiter')+(u.createdAt?(' · seit '+new Date(u.createdAt).toLocaleDateString('de-DE')):'')+'</small></div>'
+          +'<small>'+(isAdmin?'Admin – Vollzugriff':'Mitarbeiter')+(u.createdAt?(' · seit '+new Date(u.createdAt).toLocaleDateString('de-DE')):'')
+          +' · '+(u.zweiFaktor?'Zwei-Faktor eingerichtet':'<span style="color:var(--yellow,#FFC93C);">Zwei-Faktor beim nächsten Anmelden</span>')+'</small></div>'
           // Kein flex:none und kein justify-content inline: beides schlug die
           // Regeln fuer .team-row>div:last-child, und die drei Knoepfe passten
           // auf schmalen Geraeten nicht mehr in die Karte.
@@ -3134,6 +3128,15 @@ document.addEventListener('click',async(e)=>{
       r=>r.d.hint||r.d.error||'Ändern fehlgeschlagen');
     return;
   }
+  const zfBtn=e.target.closest('[data-tm-zf]');
+  if(zfBtn){
+    const name=zfBtn.dataset.tmZf;
+    if(!confirm('Zwei-Faktor-App von „'+name+'" zurücksetzen?\n\nDie bisherige App gilt dann nicht mehr. Bei der nächsten Anmeldung richtet '+name+' sie mit Passwort neu ein.')) return;
+    await tmAktion(zfBtn,{action:'zfzuruecksetzen',name},
+      async()=>{ toast('Zurückgesetzt. '+name+' richtet die App beim nächsten Anmelden neu ein.','ok'); await loadTeam(); },
+      r=>r.d.hint||'Zurücksetzen fehlgeschlagen');
+    return;
+  }
   const rl=e.target.closest('[data-tm-role]');
   if(rl){
     const name=rl.dataset.tmRole, to=rl.dataset.to;
@@ -3153,6 +3156,12 @@ document.addEventListener('click',async(e)=>{
   await tmAktion(rm,{action:'remove',name},
     async()=>{ toast('Zugang entfernt','ok'); await loadTeam(); },
     ()=>'Entfernen fehlgeschlagen');
+});
+$('zfEigenBtn').addEventListener('click',async()=>{
+  if(!confirm('Deine Zwei-Faktor-App neu einrichten?\n\nDie bisherige App und deine Notfallcodes gelten dann nicht mehr. Du bleibst angemeldet und richtest die App bei der nächsten Anmeldung neu ein.')) return;
+  await tmAktion($('zfEigenBtn'),{action:'zfzuruecksetzen'},
+    ()=>toast('Erledigt. Bei der nächsten Anmeldung richtest du die App neu ein.','ok'),
+    r=>r.d.hint||'Zurücksetzen fehlgeschlagen');
 });
 $('tmAddBtn').addEventListener('click',async()=>{
   const name=$('tmName').value.trim();
@@ -3501,16 +3510,24 @@ $('refreshBtn').addEventListener('click',()=>{
 // laenger im Browser liegt als noetig.
 let saved=sessionStorage.getItem(PW_KEY);
 try{
+  // Seit der Zwei-Faktor-Pflicht gilt nur ein Sitzungs-Token. Ein Passwort
+  // aus einem Tab von vorher wird verworfen, es oeffnet ohnehin nichts mehr.
+  if(saved && !GNCAnmeldung.istToken(saved)){ sessionStorage.removeItem(PW_KEY); saved=null; }
   if(!saved){
     const p=JSON.parse(localStorage.getItem(PW_KEY+'_p')||'null');
     if(p&&p.t&&p.exp>Date.now()) saved=p.t;
-    else if(p&&p.pw&&p.exp>Date.now()){ saved=p.pw; localStorage.removeItem(PW_KEY+'_p'); }
     else if(p) localStorage.removeItem(PW_KEY+'_p');
   }
 }catch(e){}
 if(saved){
   currentPw=saved; showPanel(); loadStatus();
-  whoami(saved).then(w=>{ if(w){ currentRole=w.role; currentName=w.name||''; applyRole(); } });
+  whoami(saved).then(w=>{
+    if(w&&w.gesperrt) return;
+    if(w){ currentRole=w.role; currentName=w.name||''; applyRole(); return; }
+    // 401: Sitzung abgelaufen oder von vor der Umstellung -> neu anmelden
+    logout();
+    toast('Bitte neu anmelden. Ab jetzt mit Code aus der Authenticator-App.');
+  });
 }
 // Direktsprung aus der Bestell-Alarm-Push: /admin.html?tab=orders
 (function(){

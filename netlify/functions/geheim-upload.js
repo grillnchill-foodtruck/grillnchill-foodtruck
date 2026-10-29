@@ -8,16 +8,19 @@
  * Limit beim Deploy - grosse Schluessel liegen deshalb in Netlify Blobs
  * (dort gibt es kein solches Limit), kleine Kennungen bleiben Env.
  *
- *   POST { password, name, wert }
+ *   POST { password, code, name, wert }
  *     name ∈ ERLAUBT (Whitelist), wert = PEM-Text
+ *     code = aktueller Code aus der Authenticator-App des Admin-Zugangs
+ *            (lib/zweifaktor.js; entfällt nur mit ZWEI_FAKTOR=aus)
  *
- * Nur mit dem Admin-Passwort (Inhaber), mit Anmeldebremse. Es gibt bewusst
+ * Nur mit dem Admin-Passwort (Inhaber) und Code, mit Anmeldebremse. Es gibt bewusst
  * KEINEN Lese-Endpunkt - was hier reingeht, kommt nur serverintern wieder raus.
  * ----------------------------------------------------------------------------
  */
 
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
+const zf = require('./lib/zweifaktor');
 
 const ERLAUBT = ['apple-pass-key', 'apple-apns-key', 'firebase-service-account'];
 
@@ -43,8 +46,16 @@ exports.handler = async (event) => {
   if (gesperrt) return gesperrt;
   const admin = process.env.ADMIN_PASSWORD || '';
   const ok = !!admin && String(input.password || '') === admin;
-  await meldeErgebnis(event, ok);
-  if (!ok) return json(401, { error: 'unauthorized' });
+  if (!ok) { await meldeErgebnis(event, false); return json(401, { error: 'unauthorized' }); }
+  if (zf.pflicht()) {
+    if (!input.code) return json(401, { error: 'code_noetig', hint: 'Bitte den aktuellen Code aus der Authenticator-App mitschicken (Feld code).' });
+    const r = await zf.pruefe('superadmin', input.code);
+    if (!r.ok) {
+      if (r.grund !== 'gesperrt') await meldeErgebnis(event, false, { zaehleImmer: true });
+      return json(r.grund === 'gesperrt' ? 429 : 401, { error: r.grund === 'nicht_eingerichtet' ? 'zweifaktor_nicht_eingerichtet' : 'code_falsch' });
+    }
+  }
+  await meldeErgebnis(event, true);
 
   const name = String(input.name || '');
   if (!ERLAUBT.includes(name)) return json(400, { error: 'unknown_name', erlaubt: ERLAUBT });

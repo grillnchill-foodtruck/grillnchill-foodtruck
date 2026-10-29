@@ -48,11 +48,20 @@
  * zu dem keine Sitzung existiert, wird als Passwort durchgereicht statt
  * abgelehnt. Das Anmelden mit dem Passwort funktioniert also immer – auch
  * wenn an diesem Speicher etwas klemmt.
+ *
+ * ZWEI-FAKTOR (seit Oktober 2026, siehe lib/zweifaktor.js)
+ * --------------------------------------------------------
+ * Das Sicherheitsnetz oben gilt nur noch mit ZWEI_FAKTOR=aus. Sonst löst
+ * diese Datei ausschließlich Sitzungen auf, die team.js nach Passwort UND
+ * Code angelegt hat (Vermerk zf: true). Ein reines Passwort, eine alte
+ * Sitzung ohne Vermerk oder ein unbekannter Token werden zu '' – und daran
+ * scheitert jede authRole (alle prüfen `if (!pw) return null`).
  * ----------------------------------------------------------------------------
  */
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { pflicht } = require('./zweifaktor');
 
 /* Wie lange eine gemerkte Anmeldung gilt. Wie bisher im Browser: 30 Tage. */
 const GUELTIG_MS = 30 * 24 * 60 * 60 * 1000;
@@ -82,16 +91,19 @@ function istToken(x) {
 
 /**
  * Neue Sitzung anlegen. Nur aufrufen, NACHDEM das Passwort geprüft wurde.
+ * optionen.zweiFaktor: Code war richtig (Pflicht, solange ZWEI_FAKTOR nicht "aus")
+ * optionen.gueltigMs:  Laufzeit, Standard 30 Tage ("angemeldet bleiben")
  * @returns {Promise<{token: string, exp: string}|null>} null bei Störung
  */
-async function erstelle(passwort, wer) {
+async function erstelle(passwort, wer, optionen) {
+  const o = optionen || {};
   try {
     if (!passwort) return null;
     const token = PRAEFIX + crypto.randomBytes(32).toString('hex');
     const iv = crypto.randomBytes(12);
     const c = crypto.createCipheriv('aes-256-gcm', ableiten(token), iv);
     const daten = Buffer.concat([c.update(String(passwort), 'utf8'), c.final()]);
-    const exp = new Date(Date.now() + GUELTIG_MS).toISOString();
+    const exp = new Date(Date.now() + (o.gueltigMs > 0 ? Math.min(o.gueltigMs, GUELTIG_MS) : GUELTIG_MS)).toISOString();
     await store().setJSON('s:' + sha(token), {
       iv: iv.toString('base64'),
       tag: c.getAuthTag().toString('base64'),
@@ -101,6 +113,7 @@ async function erstelle(passwort, wer) {
       // Nur zur Anzeige im Protokoll – gibt keinen Zugang
       name: (wer && wer.name) || '?',
       rolle: (wer && wer.role) || '?',
+      zf: !!o.zweiFaktor,
     });
     return { token, exp };
   } catch (e) {
@@ -115,20 +128,25 @@ async function erstelle(passwort, wer) {
  * gewöhnliche Anmeldeweg unberührt.
  */
 async function passwortAusSitzung(eingabe) {
-  if (!istToken(eingabe)) return eingabe;
+  // Mit Zwei-Faktor-Pflicht gibt es keinen Rückfall aufs Passwort: alles,
+  // was keine gültige Sitzung mit Code ist, wird zu '' (siehe oben).
+  const zf = pflicht();
+  const sonst = zf ? '' : eingabe;
+  if (!istToken(eingabe)) return sonst;
   try {
     const rec = await store().get('s:' + sha(eingabe), { type: 'json' });
-    if (!rec) return eingabe;                       // unbekannt -> als Passwort weiter
+    if (!rec) return sonst;                         // unbekannt
     if (rec.exp && Date.now() > new Date(rec.exp).getTime()) {
       try { await store().delete('s:' + sha(eingabe)); } catch (e) {}
-      return eingabe;                               // abgelaufen -> als Passwort weiter
+      return sonst;                                 // abgelaufen
     }
+    if (zf && !rec.zf) return '';                   // alte Sitzung ohne Code
     const d = crypto.createDecipheriv('aes-256-gcm', ableiten(eingabe), Buffer.from(rec.iv, 'base64'));
     d.setAuthTag(Buffer.from(rec.tag, 'base64'));
     return Buffer.concat([d.update(Buffer.from(rec.daten, 'base64')), d.final()]).toString('utf8');
   } catch (e) {
     console.error('admin-sitzung aufloesen:', e);
-    return eingabe;                                 // im Zweifel den alten Weg
+    return sonst;                                   // ohne Pflicht: im Zweifel den alten Weg
   }
 }
 
