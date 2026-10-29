@@ -14,6 +14,7 @@
 const { getStore } = require('@netlify/blobs');
 const { istTestCode } = require('./lib/preisberechnung');
 const { codeNormalisieren } = require('./lib/gutschein-code');
+const nutzung = require('./lib/gutschein-nutzung');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -110,26 +111,18 @@ exports.handler = async (event) => {
           if (me && (me.lastOrderAt || me.referredBy)) return json(200, { valid: false, reason: 'ref_not_first' });
         } catch (e) {}
       }
-      const now = Date.now();
       // Zeitraum: Datumsangaben gelten in Europa/Berlin, Ende einschließlich
-      if (c.validFrom && now < new Date(c.validFrom + 'T00:00:00+02:00').getTime() - 2 * 3600000) {
-        return json(200, { valid: false, reason: 'not_started', validFrom: c.validFrom });
-      }
-      if (c.validUntil && now > new Date(c.validUntil + 'T23:59:59+02:00').getTime() + 2 * 3600000) {
-        return json(200, { valid: false, reason: 'expired' });
-      }
+      const zr = nutzung.zeitraum(c);
+      if (zr === 'not_started') return json(200, { valid: false, reason: 'not_started', validFrom: c.validFrom });
+      if (zr === 'expired') return json(200, { valid: false, reason: 'expired' });
       if (c.maxUses > 0 && (c.uses || 0) >= c.maxUses) {
         return json(200, { valid: false, reason: 'limit_reached' });
       }
-      // Pro-Kunde-Limit: maxPerCustomer (Zahl) oder Legacy-Schalter oncePerCustomer (=1)
-      const perCust = c.maxPerCustomer > 0 ? c.maxPerCustomer : (c.oncePerCustomer ? 1 : 0);
-      if (perCust > 0 && email) {
-        const h = require('crypto').createHash('sha256').update(email).digest('hex');
-        const prev = c.usedBy ? c.usedBy[h] : undefined;
-        const count = typeof prev === 'number' ? prev : (prev ? 1 : 0);
-        if (count >= perCust) {
-          return json(200, { valid: false, reason: 'customer_limit', max: perCust });
-        }
+      // Pro-Kunde-Limit: maxPerCustomer (Zahl) oder Legacy-Schalter oncePerCustomer (=1).
+      // Gezählt wird je Kunde in lib/gutschein-nutzung.js, dieselbe Zahl prüft die Preisberechnung.
+      const perCust = nutzung.limitProKunde(c);
+      if (perCust > 0 && email && (await nutzung.einloesungenLesen(vs0, code, c, email)) >= perCust) {
+        return json(200, { valid: false, reason: 'customer_limit', max: perCust });
       }
       return json(200, {
         valid: true,

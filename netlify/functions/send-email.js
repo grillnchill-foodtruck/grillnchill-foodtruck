@@ -61,7 +61,8 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { buildInvoicePdf, buildInvoiceXml, trinkgeldImVat } = require('./lib/invoice');
 const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
-const { codeSchluessel } = require('./lib/gutschein-code');
+const { codeSchluessel, codeNormalisieren } = require('./lib/gutschein-code');
+const gutscheinNutzung = require('./lib/gutschein-nutzung');
 
 /* Speisekarte: nur für die Anzeige, welches Menü aufs Haus geht. Fehlt sie,
    steht im Ticket eben nur „Menü aufs Haus“ ohne Namen. */
@@ -310,6 +311,10 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
   const treueArt = (typeof order.loyaltyDiscount === 'number' && order.loyaltyDiscount > 0)
     ? (order.loyaltyType === 'menu' ? 'menu' : 'bonus') : null;
   let einloesenJetzt = false;
+  // Gutschein ebenso genau einmal zählen. Ohne Archiv (keine Bestellnummer
+  // oder Speicherfehler) wird gezählt: lieber einmal zu oft als gar nicht.
+  const gutscheinCode = order.voucherCode ? codeNormalisieren(order.voucherCode) : '';
+  let gutscheinJetzt = !!gutscheinCode;
   try {
     if (order.reference) {
       const os = blobStore('orders');
@@ -317,6 +322,7 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
       const existing = await os.get(key, { type: 'json' });
       alreadyAccrued = !!(existing && existing.accrued);
       einloesenJetzt = !!(treueArt && order.email && !(existing && existing.treueEingeloest));
+      gutscheinJetzt = !!gutscheinCode && !(existing && existing.gutscheinGezaehlt);
       const raw = JSON.stringify(order);
       await os.setJSON(key, {
         status: 'completed',
@@ -328,6 +334,8 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
         checkoutId: (existing && existing.checkoutId) || null,
         treueFreigabe: (existing && existing.treueFreigabe) || treueFreigabe || null,
         treueEingeloest: (existing && existing.treueEingeloest) || (einloesenJetzt ? treueArt : null),
+        // lib/preisberechnung.js liest das: diese Bestellung zählt nicht gegen ihr eigenes Limit
+        gutscheinGezaehlt: (existing && existing.gutscheinGezaehlt) || (gutscheinJetzt ? gutscheinCode : null),
         order: raw.length < 60000 ? order : { reference: order.reference, name: order.name, total: order.total, note: 'Bestellung zu groß für Archiv-Detail' },
         fstate: 'confirmed',
         fstateAt: { confirmed: new Date().toISOString() },
@@ -472,7 +480,7 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
     }
 
     // Kampagnen-Gutschein (Admin, Prefix c:): Einlösung zählen, ggf. Kunde vermerken
-    if (order.voucherCode) {
+    if (order.voucherCode && gutscheinJetzt) {
       try {
         const cs = blobStore('vouchers');
         // Schluessel ueber die gemeinsame Regel. Stand hier frueher als
@@ -482,8 +490,8 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
         if (!ckey) throw new Error('leerer Gutscheincode');
         const c = await cs.get(ckey, { type: 'json' });
         if (c) {
-          // S3: Limits serverseitig DURCHSETZEN. voucher-check.js ist nur beratend und
-          // per Direktaufruf umgehbar – hier ist die verbindliche Backstop-Prüfung.
+          // S3: Ob der Rabatt gilt, entscheidet lib/preisberechnung.js (vor Ticket und
+          // Belastung). Hier wird nur gezählt und Auffälliges gemeldet.
           const h = order.email
             ? require('crypto').createHash('sha256').update(String(order.email).trim().toLowerCase()).digest('hex')
             : null;
@@ -491,12 +499,12 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
           // Nur-App-Code ausserhalb der App: der Preis wurde bereits ohne Rabatt
           // nachgerechnet - hier nur nicht als Einloesung zaehlen.
           const falscherKanal = !!c.appOnly && !order.app;
+          // Pro Kunde zählt der eigene Datensatz je Code und Kunde
+          // (lib/gutschein-nutzung.js), nicht mehr usedBy.
+          const perCust = gutscheinNutzung.limitProKunde(c);
           let overPerCust = false;
-          if (h && (c.maxPerCustomer > 0 || c.oncePerCustomer)) {
-            const prev = c.usedBy && c.usedBy[h];
-            const usedCount = typeof prev === 'number' ? prev : (prev ? 1 : 0);
-            const lim = c.oncePerCustomer ? 1 : c.maxPerCustomer;
-            overPerCust = usedCount >= lim;
+          if (perCust > 0 && order.email) {
+            overPerCust = (await gutscheinNutzung.einloesungenLesen(cs, gutscheinCode, c, order.email)) >= perCust;
           }
           if (overGlobal) {
             // Code ist ausgeschöpft: nicht weiter zählen, deaktivieren, Inhaber alarmieren.
@@ -515,16 +523,29 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
             } catch (e3) {}
           } else if (falscherKanal) {
             // nichts zaehlen
+          } else if (overPerCust && !((Number(order.discount) || 0) > 0)) {
+            // Limit erreicht, die Preisberechnung hat den Rabatt schon gestrichen: nichts zählen.
           } else if (overPerCust) {
-            // Dieser Kunde hat sein Limit überschritten: nicht erneut zählen, Code bleibt für andere aktiv.
+            // Limit erreicht und der Rabatt steht trotzdem in der Bestellung. Das geht nur,
+            // wenn die Preisprüfung nicht rechnen konnte. Nicht zählen, Inhaber informieren.
             c.lastPerCustAbuseAt = new Date().toISOString();
             c.lastPerCustAbuseRef = order.reference || null;
             await cs.setJSON(ckey, c);
+            try {
+              const tgToken = process.env.TELEGRAM_BOT_TOKEN, tgChat = process.env.TELEGRAM_CHAT_ID;
+              if (tgToken && tgChat) {
+                await fetch('https://api.telegram.org/bot' + tgToken + '/sendMessage', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ chat_id: tgChat, text: '⚠️ Code ' + (c.code || gutscheinCode) + ' über dem Limit eingelöst (Bestellung ' + (order.reference || '?') + '): Der Kunde hatte ihn schon ' + perCust + '× genutzt. Rabatt bitte prüfen.' }),
+                });
+              }
+            } catch (e3) {}
           } else {
             c.uses = (c.uses || 0) + 1;
             c.lastRedeemedAt = new Date().toISOString();
             c.redeemedVia = 'checkout';
-            if ((c.maxPerCustomer > 0 || c.oncePerCustomer) && h) {
+            if (perCust > 0 && h) {
+              // usedBy bleibt nur für die Kundenzahl im Admin-Tool
               c.usedBy = c.usedBy || {};
               if (c.usedBy[h] !== undefined || Object.keys(c.usedBy).length < 5000) {
                 const prev = c.usedBy[h];
@@ -535,6 +556,9 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
             // Gesamtlimit jetzt erreicht -> deaktivieren, damit voucher-check ihn künftig sperrt.
             if (c.maxUses > 0 && c.uses >= c.maxUses) c.active = false;
             await cs.setJSON(ckey, c);
+            if (perCust > 0 && order.email) {
+              try { await gutscheinNutzung.einloesungZaehlen(cs, gutscheinCode, c, order.email); } catch (e4) {}
+            }
             try {
               const ts = blobStore('track');
               const dayKey = 'd:' + new Date().toISOString().slice(0, 10);

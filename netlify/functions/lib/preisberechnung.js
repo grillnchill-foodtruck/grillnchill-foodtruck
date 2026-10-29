@@ -23,7 +23,8 @@
  *
  *   Warenwert       aus dem Warenkorb, mit derselben Funktion wie im Browser
  *   Aktionsrabatt   aus der Staffel; nur wenn die Aktion wirklich läuft
- *   Gutschein       aus dem Gutschein-Speicher, nie aus der Anfrage
+ *   Gutschein       aus dem Gutschein-Speicher, nie aus der Anfrage, mit
+ *                   Laufzeit und Limits (gesamt und pro Kunde)
  *   Treuebonus      5-€-Bonus gegen den Kundendatensatz, ohne Konto auf 5 €
  *                   begrenzt; Menü aufs Haus nur mit gültiger Konto-Anmeldung
  *   Liefergebühr    nur die drei Beträge, die es laut Zonen gibt
@@ -56,6 +57,7 @@
 const { getStore } = require('@netlify/blobs');
 const { codeNormalisieren } = require('./gutschein-code');
 const { tokenGueltig } = require('./kunden-token');
+const nutzung = require('./gutschein-nutzung');
 
 /* Die Speisekarte liegt im Repo-Root und wird von index.html genauso geladen.
    Sollte sie wider Erwarten nicht mitgebündelt sein, darf das den Checkout
@@ -125,28 +127,56 @@ function istTestCode(eingabe) {
    Gutschein: der verbindliche Wert steht im Speicher, nicht in der Anfrage.
    Spiegelt voucherDiscount() aus index.html, aber mit den Konditionen aus
    dem Gutschein-Datensatz statt denen, die der Browser mitschickt.
+   Laufzeit, Gesamtlimit und Limit pro Kunde prüfte bis Oktober 2026 nur
+   voucher-check.js, also der Browser vor dem Absenden. Jetzt auch hier,
+   gezählt über lib/gutschein-nutzung.js. Gibt { betrag, grund } zurück.
 --------------------------------------------------------------------------- */
-async function gutscheinRabatt(code, warenwert, modus, imApp) {
+async function gutscheinRabatt(code, warenwert, modus, imApp, order) {
   const sauber = codeNormalisieren(code);
-  if (!sauber) return 0;
-  const c = await store('vouchers').get('c:' + sauber, { type: 'json' });
-  if (!c || c.active === false) return 0;
+  if (!sauber) return { betrag: 0 };
+  const vs = store('vouchers');
+  const c = await vs.get('c:' + sauber, { type: 'json' });
+  if (!c) return { betrag: 0 };
 
   // Modus-Bindung (nur Abholung / nur Lieferung)
-  if (c.mode && c.mode !== 'any' && modus !== c.mode) return 0;
+  if (c.mode && c.mode !== 'any' && modus !== c.mode) return { betrag: 0 };
   // Kanal-Bindung (nur in der installierten App)
-  if (c.appOnly && !imApp) return 0;
+  if (c.appOnly && !imApp) return { betrag: 0 };
+
+  // Limits. Ist DIESE Bestellung schon gezählt (zweiter Lauf nach der
+  // Zahlung, siehe gutscheinGezaehlt in send-email.js), gilt sie wie beim
+  // ersten Lauf. Sonst zählte sie gegen sich selbst, und der zweite Lauf
+  // meldete eine falsche Preisabweichung.
+  if (!(await schonGezaehlt(order, sauber))) {
+    if (c.active === false) return { betrag: 0, grund: 'inaktiv' };
+    if (nutzung.zeitraum(c)) return { betrag: 0, grund: 'zeitraum' };
+    if (c.maxUses > 0 && (c.uses || 0) >= c.maxUses) return { betrag: 0, grund: 'gesamtlimit' };
+    const max = nutzung.limitProKunde(c);
+    const mail = String((order && order.email) || '').trim();
+    if (max > 0 && mail && (await nutzung.einloesungenLesen(vs, sauber, c, mail)) >= max) {
+      return { betrag: 0, grund: 'kundenlimit', max };
+    }
+  }
 
   if (c.type === 'percent') {
-    if (warenwert < (c.minOrder || 0)) return 0;
+    if (warenwert < (c.minOrder || 0)) return { betrag: 0 };
     let d = warenwert * (c.value || 0) / 100;
     if (c.maxDiscount > 0) d = Math.min(d, c.maxDiscount);
-    return Math.min(runde(d), warenwert);
+    return { betrag: Math.min(runde(d), warenwert) };
   }
   // Fester Betrag. Mindestbestellwert wie im Browser: persönlich => 15 €.
   const mindest = c.minOrder || (c.referral || c.kind === 'personal' ? 15 : 0);
-  if (warenwert < mindest) return 0;
-  return Math.min(c.value || 3, warenwert);
+  if (warenwert < mindest) return { betrag: 0 };
+  return { betrag: Math.min(c.value || 3, warenwert) };
+}
+
+async function schonGezaehlt(order, code) {
+  const ref = String((order && order.reference) || '').replace(/[^A-Za-z0-9-]/g, '');
+  if (!ref) return false;
+  try {
+    const rec = await store('orders').get('o:' + ref.slice(0, 60), { type: 'json' });
+    return !!rec && rec.gutscheinGezaehlt === code;
+  } catch (e) { return false; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -286,11 +316,14 @@ async function betragErmitteln(order) {
 
   // --- Gutschein: aus dem Speicher ----------------------------------------
   let gutschein = 0;
+  let gutscheinGesperrt = null;
   const modus = order.mode === 'delivery' ? 'delivery' : 'pickup';
   const gutscheinCode = order.voucherCode || (order.promo && order.promo.code);
   if (gutscheinCode && String(gutscheinCode).toUpperCase() !== SK.PROMO_CODE) {
     try {
-      gutschein = await gutscheinRabatt(gutscheinCode, warenwert, modus, !!order.app);
+      const g = await gutscheinRabatt(gutscheinCode, warenwert, modus, !!order.app, order);
+      gutschein = g.betrag;
+      if (g.grund) gutscheinGesperrt = { code: codeNormalisieren(gutscheinCode), grund: g.grund, max: g.max || 0 };
     } catch (e) {
       // Gutschein-Speicher nicht erreichbar: den angezeigten Abzug stehen
       // lassen, aber auf den Warenwert begrenzen. Lieber ein Gutschein zu
@@ -342,6 +375,7 @@ async function betragErmitteln(order) {
   // Geprüfte Treue-Art. Der Aufrufer legt sie im Bestell-Archiv ab (nicht in
   // der Bestellung selbst, die kommt aus dem Browser).
   ergebnis.treueFreigabe = treue > 0 ? treueErgebnis.art : null;
+  ergebnis.gutscheinGesperrt = gutscheinGesperrt;
   return ergebnis;
 }
 
@@ -364,7 +398,11 @@ async function meldeAbweichung(p, order) {
       + (p.posten ? '\nWarenwert ' + p.posten.warenwert.toFixed(2)
           + ' · Rabatt ' + (p.posten.aktionsRabatt + p.posten.gutscheinRabatt + p.posten.treueRabatt).toFixed(2)
           + ' · Lieferung ' + p.posten.liefergebuehr.toFixed(2)
-          + ' · Trinkgeld ' + p.posten.trinkgeld.toFixed(2) : '');
+          + ' · Trinkgeld ' + p.posten.trinkgeld.toFixed(2) : '')
+      + (p.gutscheinGesperrt ? '\nCode ' + p.gutscheinGesperrt.code + ' nicht angerechnet: '
+          + ({ kundenlimit: 'Kunde hat ihn schon ' + p.gutscheinGesperrt.max + '× eingelöst',
+               gesamtlimit: 'alle Einlösungen verbraucht', zeitraum: 'außerhalb der Laufzeit',
+               inaktiv: 'Code ist pausiert' })[p.gutscheinGesperrt.grund] : '');
     console.warn('preisberechnung:', text.replace(/\n/g, ' | '));
     if (!tok || !chat) return;
     await fetch('https://api.telegram.org/bot' + tok + '/sendMessage', {
