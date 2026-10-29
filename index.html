@@ -7045,12 +7045,30 @@ async function accountApi(action, body) {
 function accErrText(r) { return r && r.status === 0 ? t('acc.err_network') : t('acc.error'); }
 async function refreshAccount() {
   if (!ACCOUNT || !ACCOUNT.token) return;
+  const treueVorher = JSON.stringify((ACCOUNT.profile && ACCOUNT.profile.loyalty) || null);
   try {
     const r = await accountApi('get');
     if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); }
     else if (r.status === 401) { ACCOUNT = null; saveAccount(); }
     updateAccountUI();
+    // Stempelkarte hat sich geändert (z. B. am Truck gutgeschrieben oder im
+    // Admin korrigiert)? Offenen Warenkorb nachziehen, aber nur in den ersten
+    // beiden Schritten, damit im Formular nichts Getipptes verloren geht.
+    const treueNachher = JSON.stringify((ACCOUNT && ACCOUNT.profile && ACCOUNT.profile.loyalty) || null);
+    const drawer = document.getElementById('cartDrawer');
+    if (treueVorher !== treueNachher && drawer && drawer.classList.contains('open')
+        && (checkoutStep === 'cart' || checkoutStep === 'options')) renderCart();
   } catch (e) {}
+}
+// Der Kontostand liegt im Browser zwischengespeichert. Beim Seitenstart und
+// beim Öffnen des Warenkorbs frisch holen, sonst kennt der Warenkorb ein am
+// Truck gutgeschriebenes Menü aufs Haus erst nach der nächsten Bestellung.
+// Höchstens alle 30 Sekunden, um den Server nicht bei jedem Öffnen zu fragen.
+let kontoZuletztGeholt = 0;
+function kontoAuffrischen() {
+  if (!accountLoggedIn() || Date.now() - kontoZuletztGeholt < 30000) return;
+  kontoZuletztGeholt = Date.now();
+  refreshAccount();
 }
 function updateAccountUI() {
   const b = document.getElementById('accountBtn');
@@ -10513,6 +10531,7 @@ function openCart() {
     checkoutStep = 'cart';
   }
   renderCart();
+  kontoAuffrischen();
   document.getElementById('cartOverlay').classList.add('open');
   document.getElementById('cartDrawer').classList.add('open');
   lockBodyScroll();
@@ -15720,6 +15739,7 @@ highlightToday();
 updateOpenStatus();
 setInterval(updateOpenStatus, 60000); // refresh every minute
 initReviews();
+setTimeout(kontoAuffrischen, 1200);   // Stempelkarte nach dem Seitenstart frisch holen
 initCookies();
 applyLocation();   // Anzeigestellen aus dem Standort-Datensatz füllen
 handlePaymentReturn();
