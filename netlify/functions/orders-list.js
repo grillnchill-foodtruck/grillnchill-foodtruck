@@ -5,7 +5,10 @@
  *
  *   GET /.netlify/functions/orders-list?password=...&days=30
  *   → { orders: [ { reference, status, fstate, createdAt, completedAt, payStatus,
- *                   arrivedAt?, order:{...} } ], days }
+ *                   arrivedAt?, abholnr, abholTag, quelle, angelegtVon?, order:{...} } ], days }
+ *
+ * abholnr: Nummer des Tages („Nr. 47", lib/abholnummer.js), quelle: 'online',
+ * 'telefon' oder 'truck' (bestellung-intern.js). Bei älteren Bestellungen null.
  *
  * Anmeldung, eins von beiden:
  *   password=<Passwort oder Sitzungs-Token>      Admin-Tool (wie bisher)
@@ -135,6 +138,11 @@ exports.handler = async (event) => {
           completedAt: rec.completedAt || null,
           payStatus: rec.payStatus || null,
           ...(rec.arrivedAt ? { arrivedAt: rec.arrivedAt } : {}),
+          // Paket bestellfluss: Abholnummer des Tages, Herkunft, Storno-Grund
+          abholnr: Number.isInteger(rec.abholnr) ? rec.abholnr : null,
+          abholTag: rec.abholTag || null,
+          quelle: rec.quelle || null,
+          ...(rec.angelegtVon ? { angelegtVon: rec.angelegtVon } : {}),
           order: rec.order || null,
         });
       }

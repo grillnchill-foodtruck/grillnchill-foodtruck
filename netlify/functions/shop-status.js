@@ -14,6 +14,18 @@
  * kann vergessen, den Haken zu entfernen.
  * Das "Special der Woche" bleibt bewusst bestehen (wochenweise gedacht).
  *
+ * AUTOMATISCHE WARTEZEIT (lib/wartezeit.js): waitAuto, waitBase,
+ * waitPerBurger, waitMax sind Einstellungen und bleiben über Mitternacht
+ * bestehen. Ist waitAuto an, liefert GET als waitTime den berechneten Wert
+ * (offene Burger heute × waitPerBurger + waitBase, auf 5 Min. gerundet,
+ * höchstens waitMax, außerhalb der Öffnungszeit 0) und dazu offeneBurger.
+ * Der von Hand gesetzte Wert steht immer in waitManual und gilt nur bei AUS.
+ * Fehlen die vier Felder in einem POST (z. B. Cockpit), bleiben sie, wie sie sind.
+ *
+ *   POST { password, action: 'vorschau' } → { ok, offeneBurger, offen }
+ *        Für die Live-Vorschau im Admin („Jetzt wären es 25 Min."), auch
+ *        wenn die Automatik noch aus ist. Schreibt nichts.
+ *
  * Benötigte Environment Variable in Netlify:
  *   ADMIN_PASSWORD   = dein geheimes Admin-Passwort
  *
@@ -26,6 +38,7 @@ const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
 const { mitglied } = require('./lib/team-passwort');
+const wartezeit = require('./lib/wartezeit');
 
 const STORE_NAME = 'shop-status';
 const KEY = 'status';
@@ -38,6 +51,7 @@ const DEFAULT_STATUS = {
   pauseMessage: '',
   soldOut: [],
   special: null,        // { id, note } – "Special der Woche" fürs Best-of-Karussell
+  ...wartezeit.STANDARD, // Automatische Wartezeit: Einstellung, kein Tageswert
   updatedAt: null,
 };
 
@@ -53,6 +67,15 @@ function json(statusCode, data, extraHeaders) {
     headers: { 'Content-Type': 'application/json', ...CORS, ...(extraHeaders || {}) },
     body: JSON.stringify(data),
   };
+}
+
+function ordersStore() {
+  const opts = { name: 'orders', consistency: 'strong' };
+  if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
+    opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
+    opts.token = process.env.NETLIFY_BLOBS_TOKEN;
+  }
+  return getStore(opts);
 }
 
 function store() {
@@ -87,6 +110,7 @@ async function readStatus() {
         ? { id: String(data.special.id), note: String(data.special.note || '').slice(0, 120) }
         : null,
       dayKey: data.dayKey || (data.updatedAt ? berlinDay(new Date(data.updatedAt)) : null),
+      ...wartezeit.einstellungen(data),
       updatedAt: data.updatedAt || null,
     };
 
@@ -168,6 +192,19 @@ exports.handler = async (event) => {
   // ---- GET: Status lesen (öffentlich) ----
   if (event.httpMethod === 'GET') {
     const status = await readStatus();
+    // Von Hand gesetzter Wert, damit Admin und Cockpit ihn beim Speichern
+    // nicht mit dem gerechneten verwechseln
+    status.waitManual = status.waitTime;
+    if (status.waitAuto) {
+      try {
+        const w = await wartezeit.aktuelleWartezeit(status, { store: ordersStore() });
+        status.waitTime = w.minuten;
+        status.offeneBurger = w.burger;
+      } catch (e) {
+        // Fail-open: im Zweifel der von Hand gesetzte Wert
+        console.error('shop-status wartezeit:', e && e.message);
+      }
+    }
     // Jeder Seitenaufruf fragt hier nach. Das Netlify-CDN hält die Antwort
     // 10 Sekunden: Eine Pause oder „Ausverkauft“ kommt also spätestens nach
     // 10 Sekunden bei allen an. Admin-Tool und Cockpit hängen ?frisch=<Zeit>
@@ -201,6 +238,22 @@ exports.handler = async (event) => {
       return json(401, { error: 'Falsches Passwort' });
     }
 
+    // Live-Vorschau für den Admin: offene Burger jetzt, auch bei AUS
+    if (body.action === 'vorschau') {
+      try {
+        const w = await wartezeit.aktuelleWartezeit(wartezeit.STANDARD, { store: ordersStore(), immerZaehlen: true, frisch: true });
+        return json(200, { ok: true, offeneBurger: w.burger, offeneBestellungen: w.bestellungen, offen: w.offen });
+      } catch (e) {
+        console.error('shop-status vorschau:', e && e.message);
+        return json(500, { error: 'Vorschau nicht möglich' });
+      }
+    }
+
+    // Fehlen die Felder der Automatik (z. B. Speichern aus dem Cockpit),
+    // gelten die gespeicherten weiter.
+    const bisher = (body.waitAuto === undefined) ? await readStatus() : null;
+    const autoQuelle = bisher || body;
+
     const newStatus = {
       paused: !!body.paused,
       deliveryOff: !!body.deliveryOff,
@@ -214,6 +267,12 @@ exports.handler = async (event) => {
         ? { id: String(body.special.id).slice(0, 40), note: String(body.special.note || '').slice(0, 120) }
         : null,
       dayKey: berlinDay(),   // Pause/Ausverkauft gelten nur für diesen Tag
+      ...wartezeit.einstellungen({
+        waitAuto: autoQuelle.waitAuto === true,
+        waitBase: autoQuelle.waitBase,
+        waitPerBurger: autoQuelle.waitPerBurger,
+        waitMax: autoQuelle.waitMax,
+      }),
       updatedAt: new Date().toISOString(),
     };
 
@@ -229,7 +288,9 @@ exports.handler = async (event) => {
       + ' · Abholung: ' + (newStatus.pickupOff ? 'AUS' : 'an')
       + ' · Ausverkauft: ' + newStatus.soldOut.length
       + ' · Special: ' + (newStatus.special ? newStatus.special.id : '–')
-      + ' · Wartezeit: ' + (newStatus.waitTime ? '~' + newStatus.waitTime + ' Min' : 'aus'));
+      + ' · Wartezeit: ' + (newStatus.waitAuto
+        ? 'automatisch (' + newStatus.waitBase + ' + ' + newStatus.waitPerBurger + ' je Burger, höchstens ' + newStatus.waitMax + ' Min)'
+        : (newStatus.waitTime ? '~' + newStatus.waitTime + ' Min' : 'aus')));
 
     return json(200, { ok: true, status: newStatus });
   }
