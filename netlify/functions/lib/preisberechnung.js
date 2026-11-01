@@ -58,6 +58,7 @@ const { getStore } = require('@netlify/blobs');
 const { codeNormalisieren } = require('./gutschein-code');
 const { tokenGueltig } = require('./kunden-token');
 const nutzung = require('./gutschein-nutzung');
+const burgerPass = require('./burger-pass');
 
 /* Die Speisekarte liegt im Repo-Root und wird von index.html genauso geladen.
    Sollte sie wider Erwarten nicht mitgebündelt sein, darf das den Checkout
@@ -243,8 +244,14 @@ async function treueRabatt(order, warenwert, korb) {
     if (await schonFreigegeben(order, 'menu')) return { betrag: wert, art: 'menu' };
     try {
       const rec = await store('customers').get(kundenSchluessel(mail), { type: 'json' });
-      const ok = !!rec && tokenGueltig(rec, order.kontoToken) && (rec.menus || 0) >= 1;
-      return ok ? { betrag: wert, art: 'menu' } : { betrag: 0, art: null };
+      // Offen sind Menüs der Stempelkarte UND gültige Burger-Pass-Menüs. Beim
+      // Einlösen geht der Pass mit dem frühesten Ablauf vor (send-email.js);
+      // `pass` sagt Ticket und Archiv schon jetzt, welcher es sein wird.
+      const offen = rec ? (rec.menus || 0) + burgerPass.gueltigePassMenus(rec) : 0;
+      const ok = !!rec && tokenGueltig(rec, order.kontoToken) && offen >= 1;
+      return ok
+        ? { betrag: wert, art: 'menu', pass: burgerPass.bestellBezug(burgerPass.naechsterPass(rec)) }
+        : { betrag: 0, art: null };
     } catch (e) {
       // Speicher nicht erreichbar: nur durchlassen, wenn überhaupt ein Token mitkam
       return order.kontoToken ? { betrag: wert, art: 'menu' } : { betrag: 0, art: null };
@@ -391,6 +398,8 @@ async function betragErmitteln(order) {
   // Geprüfte Treue-Art. Der Aufrufer legt sie im Bestell-Archiv ab (nicht in
   // der Bestellung selbst, die kommt aus dem Browser).
   ergebnis.treueFreigabe = treue > 0 ? treueErgebnis.art : null;
+  // Burger-Pass-Bezug (undefined = unbekannt, z. B. zweiter Lauf: Feld lassen)
+  ergebnis.passVorgabe = treue > 0 ? treueErgebnis.pass : null;
   ergebnis.gutscheinGesperrt = gutscheinGesperrt;
   return ergebnis;
 }
@@ -474,6 +483,14 @@ async function pruefeUndKorrigiere(order) {
     // damit niemand am Truck ein Menü aufs Haus ausgibt, das nicht bezahlt ist.
     if (p && p.sicher && !p.treueFreigabe) { order.loyaltyType = null; order.loyaltyApplied = false; }
     if (p && p.sicher && p.treueFreigabe) order.loyaltyType = p.treueFreigabe;
+    // Feld `pass` (Burger-Pass-Bezug) setzt nur der Server. Beim zweiten Lauf
+    // (Archiv) ist passVorgabe undefined, dann bleibt der Eintrag stehen.
+    if (p && p.sicher && p.treueFreigabe === 'menu') {
+      if (p.passVorgabe) order.pass = p.passVorgabe;
+      else if (p.passVorgabe === null) delete order.pass;
+    } else {
+      delete order.pass;
+    }
   }
   return p;
 }

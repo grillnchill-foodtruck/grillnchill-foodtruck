@@ -83,7 +83,9 @@ function gratisMenuName(order) {
 function treueLabel(order) {
   if (!order || order.loyaltyType !== 'menu') return 'Treuebonus';
   const n = gratisMenuName(order);
-  return 'Menü aufs Haus' + (n ? ' (' + n + ')' : '');
+  // Burger-Pass-Menü (Feld pass, gesetzt von lib/preisberechnung.js)
+  const was = (order.pass && order.pass.id) ? String(order.pass.name || 'Burger-Pass') + '-Menü' : 'Menü aufs Haus';
+  return was + (n ? ' (' + n + ')' : '');
 }
 
 /* Fortlaufende Rechnungsnummer. § 14 Abs. 4 Nr. 4 UStG verlangt eine
@@ -468,7 +470,26 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
         const ck = 'c:' + crypto.createHash('sha256').update(String(order.email).trim().toLowerCase()).digest('hex');
         const cust = await custS.get(ck, { type: 'json' });
         if (cust) {
-          if (treueArt === 'menu') cust.menus = Math.max(0, (cust.menus || 0) - 1);
+          // Menü: zuerst ein gültiges Burger-Pass-Menü (frühester Ablauf),
+          // sonst die Stempelkarte (lib/burger-pass.js).
+          let passBezug = null;
+          if (treueArt === 'menu') {
+            const bpLib = require('./lib/burger-pass');
+            const ab = bpLib.menuAbziehen(cust, new Date());
+            passBezug = ab.bezug;
+            if (passBezug) {
+              await bpLib.einloesungVermerken(passBezug, { wo: 'online', ref: order.reference || null });
+              order.pass = bpLib.bestellBezug(passBezug);
+            } else {
+              delete order.pass;
+            }
+            try {   // Archiv: welcher Pass es wirklich war
+              const os2 = blobStore('orders');
+              const k2 = 'o:' + String(order.reference || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 60);
+              const a2 = order.reference ? await os2.get(k2, { type: 'json' }) : null;
+              if (a2 && a2.order) { a2.order.pass = order.pass || null; await os2.setJSON(k2, a2); }
+            } catch (e) {}
+          }
           else cust.rewards = Math.max(0, (cust.rewards || 0) - 1);
           cust.walletStand = Date.now();
           await custS.setJSON(ck, cust);
