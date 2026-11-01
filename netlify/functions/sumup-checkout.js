@@ -268,6 +268,7 @@ exports.handler = async (event) => {
             createdAt: new Date().toISOString(),
             checkoutId: (data && data.id) || null,
             treueFreigabe,
+            quelle: 'online',   // Abholnummer vergibt erst send-email nach der Zahlung
             order,
           });
         }

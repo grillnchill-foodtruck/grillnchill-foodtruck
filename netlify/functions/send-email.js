@@ -7,6 +7,12 @@
  *  1. order_confirmation     → Kunde: "Vielen Dank für deine Bestellung"
  *  2. status_update          → Kunde: "Deine Bestellung wird zubereitet / ist unterwegs / wurde geliefert"
  *  3. owner_notification     → Pasquale: "Neue Bestellung eingegangen"
+ *  4. intern_bestaetigung    → Kunde einer Telefon-/Truck-Bestellung mit Mail-
+ *                              adresse (nur intern, bestellung-intern.js)
+ *
+ *  Abholnummer: order_confirmation vergibt je Bestellung die Nummer des Tages
+ *  („Nr. 47", lib/abholnummer.js) und schreibt sie in Mails, Telegram, Archiv
+ *  (abholnr, abholTag, quelle 'online') und in die Antwort an den Browser.
  *
  *
  *  SETUP IN 5 SCHRITTEN
@@ -64,6 +70,7 @@ const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
 const { codeSchluessel, codeNormalisieren } = require('./lib/gutschein-code');
 const gutscheinNutzung = require('./lib/gutschein-nutzung');
 const { schutz, saeubern, istIntern } = require('./lib/bremse');
+const { vergebeAbholnr, abholTagFuer, nrText } = require('./lib/abholnummer');
 
 /* Speisekarte: nur für die Anzeige, welches Menü aufs Haus geht. Fehlt sie,
    steht im Ticket eben nur „Menü aufs Haus“ ohne Namen. */
@@ -286,7 +293,7 @@ async function sendOrderAlertPush(order) {
     const total = typeof order.total === 'number' ? order.total.toFixed(2).replace('.', ',') + ' €' : '';
     await sendeTeamPush({
       title: 'Neue Bestellung ' + (total ? '· ' + total : ''),
-      body: '#' + (order.reference || '') + ' · ' + (order.name || '') + ' · ' + mode + pre,
+      body: (order.abholnr ? nrText(order.abholnr) + ' · ' : '') + '#' + (order.reference || '') + ' · ' + (order.name || '') + ' · ' + mode + pre,
       url: '/admin.html?tab=orders',
       ttl: 1800,
     });
@@ -338,6 +345,10 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
         // lib/preisberechnung.js liest das: diese Bestellung zählt nicht gegen ihr eigenes Limit
         gutscheinGezaehlt: (existing && existing.gutscheinGezaehlt) || (gutscheinJetzt ? gutscheinCode : null),
         order: raw.length < 60000 ? order : { reference: order.reference, name: order.name, total: order.total, note: 'Bestellung zu groß für Archiv-Detail' },
+        // Paket bestellfluss: Nummer des Tages und Herkunft (Datenvertrag)
+        abholnr: Number.isInteger(order.abholnr) ? order.abholnr : ((existing && existing.abholnr) || null),
+        abholTag: order.abholTag || (existing && existing.abholTag) || null,
+        quelle: 'online',
         fstate: 'confirmed',
         fstateAt: { confirmed: new Date().toISOString() },
       });
@@ -629,6 +640,17 @@ function formatPrice(num) {
 //  E-Mail-Templates
 // ============================================================
 
+/* Abholnummer groß in der Mail. Leer, wenn es (noch) keine gibt. */
+function abholnrBlock(order) {
+  if (!Number.isInteger(order && order.abholnr)) return '';
+  const abholung = order.mode !== 'delivery';
+  return `<div style="background:#0A0A0A;border-radius:10px;padding:16px 18px;margin:18px 0;text-align:center;">
+          <p style="color:#F5E9D0;margin:0;font-size:13px;letter-spacing:1px;">${abholung ? 'DEINE ABHOLNUMMER' : 'DEINE NUMMER FÜR HEUTE'}</p>
+          <p style="color:#E85A24;margin:4px 0 0;font-size:34px;font-weight:800;line-height:1.1;">${esc(nrText(order.abholnr))}</p>
+          ${abholung ? '<p style="color:#C9BCA4;margin:6px 0 0;font-size:12px;">Nenn sie am Truck, dann geht es schneller.</p>' : ''}
+        </div>`;
+}
+
 function buildOrderConfirmationEmail(order) {
   const itemsHtml = (order.items || []).map(item => `
     <tr>
@@ -695,12 +717,14 @@ function buildOrderConfirmationEmail(order) {
       </td></tr>
 
       <tr><td style="padding:30px;">
-        <h2 style="color:#0A0A0A;margin:0 0 8px;">Hi ${esc(order.name)}!</h2>
+        <h2 style="color:#0A0A0A;margin:0 0 8px;">Hi${order.name ? ' ' + esc(order.name) : ''}!</h2>
         <p style="color:#444;line-height:1.6;margin:0 0 20px;">
           ${order.scheduledFor
             ? 'Danke für deine Bestellung! Wir haben sie als Vorbestellung notiert und bereiten sie pünktlich frisch für dich zu.'
             : 'Danke für deine Bestellung! Wir haben sie erhalten und beginnen gleich mit der Zubereitung.'}
         </p>
+
+        ${abholnrBlock(order)}
 
         <div style="background:#FFF8E7;border-left:4px solid #6DBE45;padding:14px 18px;border-radius:6px;margin:20px 0;">
           <p style="margin:0;color:#444;font-size:14px;">
@@ -806,6 +830,13 @@ function buildStatusUpdateEmail(order, status) {
       eta: 'Jetzt',
       color: '#6DBE45',
     },
+    picked_up: {
+      emoji: '',
+      title: 'Guten Appetit',
+      message: 'Danke für deine Bestellung. Lass es dir schmecken.',
+      eta: null,
+      color: '#6DBE45',
+    },
     delivered: {
       emoji: '🎉',
       title: 'Guten Appetit!',
@@ -847,7 +878,15 @@ function buildStatusUpdateEmail(order, status) {
         </a>
         ` : ''}
 
+        ${(status === 'delivered' || status === 'picked_up') && order.reference ? `
+        <p style="margin:6px 0 0;">
+          <a href="${statusPageUrl(order.reference)}" style="display:inline-block;border:1px solid #E85A24;color:#E85A24;padding:8px 18px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;">Wie war's?</a>
+        </p>
+        <p style="color:#888;font-size:12px;margin:6px 0 0;">Ein Tipp auf die Sterne genügt. Kubi liest jede Rückmeldung selbst.</p>
+        ` : ''}
+
         <p style="color:#888;font-size:13px;margin:30px 0 0;">
+          ${Number.isInteger(order.abholnr) ? `<strong style="color:#0A0A0A;font-size:16px;">${esc(nrText(order.abholnr))}</strong><br>` : ''}
           Bestell-Nr.: <strong>#${esc(order.reference)}</strong><br>
           ${esc(order.name)} · ${formatPrice(order.total)}
         </p>
@@ -877,6 +916,7 @@ function buildOwnerNotificationEmail(order, statusUpdateBaseUrl, statusToken) {
     name: order.name,
     email: order.email,
     total: order.total,
+    abholnr: Number.isInteger(order.abholnr) ? order.abholnr : undefined,
   }));
 
   const statusLink = (status) =>
@@ -905,6 +945,7 @@ function buildOwnerNotificationEmail(order, statusUpdateBaseUrl, statusToken) {
   </td></tr>
 
   <tr><td style="padding:24px;">
+    ${Number.isInteger(order.abholnr) ? `<p style="margin:0 0 4px;font-size:30px;font-weight:800;color:#F5E9D0;line-height:1.1;">${esc(nrText(order.abholnr))}</p>` : ''}
     <h2 style="margin:0 0 6px;color:#E85A24;">#${esc(order.reference)}</h2>
     <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#F5E9D0;">${esc(order.name)}</p>
     <p style="margin:0 0 16px;color:#aaa;font-size:14px;">
@@ -1063,6 +1104,7 @@ function buildStatusLinks(order, siteUrl, statusSecret) {  const ref = encodeURI
     name: order.name,
     email: order.email,
     total: order.total,
+    abholnr: Number.isInteger(order.abholnr) ? order.abholnr : undefined,
   }));
   const link = (status) =>
     `${siteUrl}/status-update?ref=${ref}&status=${status}&token=${tok}&order=${orderJson}`;
@@ -1123,6 +1165,7 @@ async function sendTelegram(order) {
   const e = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const L = [];
   L.push(`<b>NEUE BESTELLUNG</b>  #${e(order.reference)}`);
+  if (Number.isInteger(order.abholnr)) L.push(`<b>${e(nrText(order.abholnr))}</b>`);
   if (order.paymentPending) L.push('[Online-Zahlung wird noch abgeschlossen]');
   L.push('');
   L.push(`<b>${e(order.name)}</b>`);
@@ -1234,7 +1277,7 @@ exports.handler = async (event) => {
   // Gutschein- und Status-Mails löst nur der eigene Server aus (SumUp-Webhook,
   // Admin-Aktionen, Statuslinks). Von außen ließen sich sonst echt aussehende
   // Grill'n-Chill-Mails mit erfundenem Inhalt an jede Adresse schicken.
-  if ((type === 'giftcard' || type === 'status_update') && !istIntern(event)) {
+  if ((type === 'giftcard' || type === 'status_update' || type === 'intern_bestaetigung') && !istIntern(event)) {
     return json(403, { error: 'forbidden' });
   }
 
@@ -1397,11 +1440,27 @@ exports.handler = async (event) => {
           const k = 'o:' + String(order.reference).replace(/[^A-Za-z0-9-]/g, '').slice(0, 60);
           const existing = await blobStore('orders').get(k, { type: 'json' });
           if (existing && existing.status === 'completed') {
+            if (Number.isInteger(existing.abholnr)) order.abholnr = existing.abholnr;
             const statusLinks = buildStatusLinks(order, siteUrl, statusSecret);
-            return json(200, { sent: 0, duplicate: true, type, statusLinks });
+            return json(200, { sent: 0, duplicate: true, type, statusLinks,
+              abholnr: Number.isInteger(existing.abholnr) ? existing.abholnr : null });
           }
         }
       } catch (e) {}
+
+      // Abholnummer des Tages. Was der Browser hier mitschickt, zählt nicht:
+      // vergeben wird nur auf dem Server. Gleiche Bestellnummer = gleiche
+      // Nummer (Webhook, Rückkehr, Abgleich). Klemmt der Zähler, geht die
+      // Bestellung ohne Nummer durch.
+      delete order.abholnr; delete order.abholTag; delete order.quelle;
+      if (order.reference) {
+        try {
+          const vergabe = await vergebeAbholnr(order.reference, abholTagFuer(order));
+          order.abholnr = vergabe.nr;
+          order.abholTag = vergabe.tag;
+        } catch (e) { console.error('Abholnummer:', e && e.message); }
+      }
+      order.quelle = 'online';
 
       // Firmenkunden bekommen eine Rechnung. Die Nummer wird hier vergeben –
       // nach der Doppelt-Prüfung oben, also genau einmal je Bestellung.
@@ -1517,11 +1576,23 @@ exports.handler = async (event) => {
 
       await afterOrderHooks(order, verified, treueFreigabe);
 
-      return json(200, { sent: 2, type, statusLinks, statusUrl: order.reference ? statusPageUrl(order.reference) : null });
+      return json(200, { sent: 2, type, statusLinks, statusUrl: order.reference ? statusPageUrl(order.reference) : null,
+        abholnr: Number.isInteger(order.abholnr) ? order.abholnr : null });
+    }
+
+    // Type 1c: Bestätigung einer Telefon-/Truck-Bestellung (bestellung-intern.js).
+    // Nur intern aufrufbar (siehe oben), keine Inhaber-Mail, kein Telegram, kein Archiv:
+    // den Datensatz hat bestellung-intern schon angelegt.
+    if (type === 'intern_bestaetigung') {
+      const customerMail = buildOrderConfirmationEmail(order);
+      await sendViaBreve(apiKey, senderEmail, senderName,
+        { email: order.email, name: order.name }, customerMail.subject, customerMail.html);
+      return json(200, { sent: 1, type });
     }
 
     // Type 1b: Nur Owner-Benachrichtigung (z. B. sofort bei Online-Zahlung, vor SumUp)
     if (type === 'owner_notification') {
+      delete order.abholnr;   // vergibt nur order_confirmation
       const ownerMail = buildOwnerNotificationEmail(order, siteUrl, statusSecret);
       await sendViaBreve(apiKey, senderEmail, senderName,
         { email: ownerEmail, name: 'Grilln Chill' }, ownerMail.subject, ownerMail.html);

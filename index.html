@@ -3709,6 +3709,25 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   margin-bottom: 0.9rem;
 }
 .success-status { margin: 0 0 1.25rem; }
+/* Abholnummer des Tages (Paket bestellfluss): gross, damit man sie am Truck
+   vom Handy ablesen kann. Reine Information, also Flaeche ohne Knopf-Rahmen. */
+.success-nr {
+  display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+  max-width: 420px; margin: 0 auto 1rem; padding: 0.8rem 1rem 0.85rem;
+  background: var(--color-bg-elev);
+  border: 1px solid var(--color-border-bright);
+  border-radius: var(--radius-md);
+}
+.success-nr-label {
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--color-cream-dim);
+}
+.success-nr-wert {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(2.3rem, 12vw, 3.1rem); line-height: 1.22;
+  color: var(--color-orange-bright);
+}
+.success-nr-hint { font-size: 0.85rem; color: var(--color-cream-dim); line-height: 1.45; }
 /* Kleiner Knopf statt Textlink – die Statusseite ist das Naechste, was man
    nach der Bestellung tun will, aber nicht wichtiger als die Aktionen unten. */
 .status-btn {
@@ -11372,6 +11391,11 @@ function renderCart() {
             ? t('co.preorder_slot') + ': ' + escHtml(o.scheduledFor)
             : (isDelivery ? t('co.success_delivery') : t('co.success_pickup'))}
         </p>
+        ${Number.isInteger(o.abholnr) ? `<div class="success-nr">
+          <span class="success-nr-label">${isDelivery ? t('co.day_no') : t('co.pickup_no')}</span>
+          <span class="success-nr-wert">${escHtml(t('co.pickup_nr').replace('{n}', o.abholnr))}</span>
+          ${isDelivery ? '' : `<span class="success-nr-hint">${t('co.pickup_no_hint')}</span>`}
+        </div>` : ''}
         ${o.statusUrl ? `<p class="success-status"><a class="status-btn" href="${o.statusUrl}" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.2v5l3.2 1.9"/></svg>
           <span>${t('co.status_link')}</span>
@@ -15209,7 +15233,8 @@ function saveActiveOrder(order) {
   try {
     var m = String((order && order.statusUrl) || '').match(/\/s\/(GNC-[A-Za-z0-9-]+)\?k=([A-Za-z0-9]+)/);
     if (!m) return;
-    localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify({ ref: m[1], k: m[2], mode: order.mode === 'delivery' ? 'delivery' : 'pickup', at: Date.now() }));
+    localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify({ ref: m[1], k: m[2], mode: order.mode === 'delivery' ? 'delivery' : 'pickup', at: Date.now(),
+      nr: Number.isInteger(order.abholnr) ? order.abholnr : null }));
   } catch (e) {}
 }
 function getActiveOrder() {
@@ -15362,7 +15387,8 @@ function gncLiveLabels() {
 function gncLiveStart() {
   var a = getActiveOrder();
   if (!a) return;
-  if (gncHas('gncLive')) gncPost('gncLive', { action: 'start', ref: a.ref, k: a.k, mode: a.mode, state: 'confirmed', labels: gncLiveLabels(), lang: currentLang });
+  // nr: Abholnummer des Tages (ab App-Build mit Anzeige; aeltere Builds ignorieren das Feld)
+  if (gncHas('gncLive')) gncPost('gncLive', { action: 'start', ref: a.ref, k: a.k, mode: a.mode, state: 'confirmed', labels: gncLiveLabels(), lang: currentLang, nr: a.nr || null });
   if (a.mode === 'pickup' && gncHas('gncArrival')) gncPost('gncArrival', { action: 'arm', ref: a.ref, k: a.k, lang: currentLang });
   gncTrackStart();
 }
@@ -15388,7 +15414,7 @@ async function gncTrackTick() {
       var first = !gncTrack.state;
       gncTrack.state = st;
       var fin = st === 'picked_up' || st === 'delivered';
-      if (gncHas('gncLive')) gncPost('gncLive', { action: fin ? 'end' : 'update', ref: a.ref, state: st });
+      if (gncHas('gncLive')) gncPost('gncLive', { action: fin ? 'end' : 'update', ref: a.ref, state: st, nr: Number.isInteger(d.abholnr) ? d.abholnr : (a.nr || null) });
       if (!first && st === 'preparing' && gncHas('gncHaptic')) gncPost('gncHaptic', { pattern: 'sizzle' });
       if (fin) {
         if (gncHas('gncArrival')) gncPost('gncArrival', { action: 'cancel' });
@@ -16174,7 +16200,11 @@ async function handlePaymentReturn() {
       // Status-Link für die Erfolgsseite holen (Nachweis: geheime Checkout-ID)
       try {
         const sres = await fetch('/.netlify/functions/order-status?ref=' + encodeURIComponent(pending.reference) + '&ck=' + encodeURIComponent(pending.checkoutId || ''));
-        if (sres.ok) { const sd = await sres.json(); if (sd && sd.statusUrl) pending.order.statusUrl = sd.statusUrl; }
+        if (sres.ok) {
+          const sd = await sres.json();
+          if (sd && sd.statusUrl) pending.order.statusUrl = sd.statusUrl;
+          if (sd && Number.isInteger(sd.abholnr)) pending.order.abholnr = sd.abholnr;   // Webhook war schneller
+        }
       } catch (e) {}
       // ✅ Bezahlt: Bestätigung an Kunde + Inhaber, Warenkorb leeren, Erfolgsseite
       sendOrderConfirmationEmails(pending.order);
@@ -16204,6 +16234,14 @@ async function handlePaymentReturn() {
       }, 250);
     }
   }
+}
+
+/* Abholnummer kam vom Server (send-email). Bei Online-Zahlung steht die
+   Bestaetigung oft schon da: dann neu zeichnen. Die laufende Bestellung
+   (Uhr, Live-Aktivitaet) bekommt die Nummer mit. */
+function abholnrAngekommen(order) {
+  try { if (typeof saveActiveOrder === 'function' && order.statusUrl) saveActiveOrder(order); } catch (e) {}
+  if (checkoutStep === 'success' && lastCompletedOrder === order) renderCart();
 }
 
 // E-Mail-Versand via Netlify Function.
@@ -16275,6 +16313,10 @@ async function sendOrderConfirmationEmails(orderData) {
     }
     const data = await res.json().catch(() => null);
     if (data && data.statusUrl) orderData.statusUrl = data.statusUrl;
+    if (data && Number.isInteger(data.abholnr)) {
+      orderData.abholnr = data.abholnr;
+      abholnrAngekommen(orderData);
+    }
     return data?.statusLinks || true;
   } catch (e) {
     console.warn('E-Mail-Versand fehlgeschlagen:', e);

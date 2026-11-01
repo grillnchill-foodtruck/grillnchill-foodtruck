@@ -14,7 +14,10 @@
  *       sameDayLastWeek: { date, revenue, orders, revenueSoFar, ordersSoFar },
  *       top7d:           [ { name, qty } ]   (Top 5 der letzten 7 Tage nach Stückzahl)
  *       open:            Bestellungen von heute, noch nicht abgeholt/geliefert
- *       status:          { paused, pauseMessage, waitTime, deliveryOff, pickupOff },
+ *       openList:        dieselben als [ { nr, mode, fstate, quelle } ], nach Nummer
+ *                        (nr = Abholnummer aus lib/abholnummer.js, null bei alten)
+ *       status:          { paused, pauseMessage, waitTime, deliveryOff, pickupOff,
+ *                          waitAuto, offeneBurger? }  (waitAuto: lib/wartezeit.js)
  *       updatedAt }
  *
  * DATENBASIS
@@ -43,6 +46,7 @@ const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
 const { mitglied } = require('./lib/team-passwort');
+const wartezeit = require('./lib/wartezeit');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -173,6 +177,8 @@ function bestellung(rec) {
     delivery: o.mode === 'delivery',
     fstate: rec.fstate || 'confirmed',
     items: Array.isArray(o.items) ? o.items : [],
+    nr: Number.isInteger(rec.abholnr) ? rec.abholnr : null,
+    quelle: rec.quelle || 'online',
   };
 }
 
@@ -240,19 +246,31 @@ async function vergangeneTage(s, alleKeys, heute) {
 /* Gleiche Regeln wie readStatus() in shop-status.js, aber ohne zu schreiben:
    was an einem anderen Tag gesetzt wurde, gilt heute nicht mehr. */
 async function liesStatus(heute) {
-  const leer = { paused: false, pauseMessage: '', waitTime: 0, deliveryOff: false, pickupOff: false };
+  const leer = { paused: false, pauseMessage: '', waitTime: 0, deliveryOff: false, pickupOff: false, waitAuto: false };
   try {
     const d = await store('shop-status').get('status', { type: 'json' });
     if (!d || typeof d !== 'object') return leer;
     const tag = d.dayKey || (d.updatedAt ? berlinDate(new Date(d.updatedAt).getTime()) : null);
-    if (tag && tag !== heute) return leer;
-    return {
+    // Tageswerte von gestern gelten nicht mehr, die Automatik der Wartezeit
+    // ist eine Einstellung und gilt weiter.
+    const st = (tag && tag !== heute) ? { ...leer } : {
       paused: !!d.paused,
       pauseMessage: typeof d.pauseMessage === 'string' ? d.pauseMessage : '',
       waitTime: Math.max(0, Math.min(120, parseInt(d.waitTime, 10) || 0)),
       deliveryOff: !!d.deliveryOff,
       pickupOff: !!d.pickupOff,
+      waitAuto: false,
     };
+    const cfg = wartezeit.einstellungen(d);
+    if (cfg.waitAuto) {
+      st.waitAuto = true;
+      try {
+        const w = await wartezeit.aktuelleWartezeit(cfg, { store: store('orders') });
+        st.waitTime = w.minuten;
+        st.offeneBurger = w.burger;
+      } catch (e) { /* bleibt beim Wert von Hand */ }
+    }
+    return st;
   } catch (e) {
     return leer;
   }
@@ -307,6 +325,7 @@ exports.handler = async (event) => {
 
     const t = { date: heute, revenue: 0, orders: 0, pickup: 0, delivery: 0 };
     let open = 0;
+    const openList = [];
     const artikel = { ...vergangen.artikel };
     for (const rec of heuteRecs) {
       const b = bestellung(rec);
@@ -314,7 +333,10 @@ exports.handler = async (event) => {
       t.revenue += b.total;
       t.orders += 1;
       if (b.delivery) t.delivery += 1; else t.pickup += 1;
-      if (b.fstate !== 'picked_up' && b.fstate !== 'delivered') open += 1;
+      if (b.fstate !== 'picked_up' && b.fstate !== 'delivered') {
+        open += 1;
+        openList.push({ nr: b.nr, mode: b.delivery ? 'delivery' : 'pickup', fstate: b.fstate, quelle: b.quelle });
+      }
       zaehleArtikel(artikel, b.items);
     }
     t.revenue = r2(t.revenue);
@@ -348,6 +370,7 @@ exports.handler = async (event) => {
       sameDayLastWeek: lw,
       top7d,
       open,
+      openList: openList.sort((a, b) => (a.nr || 9999) - (b.nr || 9999)).slice(0, 40),
       status,
       updatedAt: new Date(jetzt).toISOString(),
     });

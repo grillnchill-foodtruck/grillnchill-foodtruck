@@ -23,6 +23,10 @@
  * Nach jedem 'set' bekommt jede gemerkte Live Activity ein APNs-Update
  * (lib/apns.js); die Antwort meldet in "live", wie viele angekommen sind.
  *
+ * GET liefert zusätzlich abholnr (Nummer des Tages, lib/abholnummer.js) und,
+ * sobald die Bestellung abgeschlossen ist (abgeholt/geliefert), feedback:
+ * { stars } oder null. Bewertet wird über feedback.js mit demselben k.
+ *
  * Der Status-Key ist ableitbar (sha256(ref|STATUS_UPDATE_SECRET), 20 Zeichen) –
  * keine Speicheränderung nötig, nicht erratbar, gilt genau für eine Bestellung.
  * Zustände: confirmed → preparing → ready_for_pickup → picked_up   (Abholung)
@@ -135,6 +139,7 @@ function publicStatus(rec, ref) {
     total: typeof o.total === 'number' ? o.total : rec.total || null,
     completed: rec.status === 'completed',
     arrivedAt: rec.arrivedAt || null,
+    abholnr: Number.isInteger(rec.abholnr) ? rec.abholnr : null,
   };
 }
 
@@ -145,6 +150,7 @@ function publicStatus(rec, ref) {
    der Gast mitbekommen soll. */
 const LIVE_TOPIC = 'de.grillnchillfoodtruck.app.push-type.liveactivity';
 const FINAL_STATES = ['picked_up', 'delivered'];
+const FEEDBACK_STATES = ['picked_up', 'delivered', 'completed'];   // wie feedback.js
 const LIVE_ALERT_STATES = ['preparing', 'ready_for_pickup', 'on_the_way'];
 
 function liveTokenListe(rec) {
@@ -224,6 +230,13 @@ exports.handler = async (event) => {
     const okCk = q.ck && rec.checkoutId && q.ck === rec.checkoutId;
     if (!okKey && !okCk) return json(403, { error: 'forbidden' });
     const out = publicStatus(rec, ref);
+    // Feedback erst nach Abschluss: schon bewertet? (Store feedback, feedback.js)
+    if (FEEDBACK_STATES.includes(out.state) && out.completed) {
+      try {
+        const fb = await store('feedback').get('f:' + ref, { type: 'json' });
+        out.feedback = fb ? { stars: fb.stars } : null;
+      } catch (e) { out.feedback = null; }
+    }
     if (okCk) out.statusUrl = '/s/' + ref + '?k=' + statusKey(ref); // Erfolgsseite darf den Link lernen
     return json(200, out);
   }
