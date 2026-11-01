@@ -2598,6 +2598,41 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 
 .acc-actions { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
 
+/* Letzte Bestellungen wie ein Kassenzettel: oben Datum, darunter Art und
+   Betrag, rechts der Knopf. Jeder Teil bleibt zusammen, das € hängt per
+   geschütztem Leerzeichen am Betrag. Auf schmalen Handys bricht der Knopf
+   in zwei Zeilen um, damit links genug Platz für Art und Betrag bleibt. */
+.acc-ords { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.9rem; container-type: inline-size; }
+.acc-ord { background: var(--color-bg-elev); border: 1px solid var(--color-border); border-radius: 12px; padding: 0.6rem 0.6rem 0.6rem 0.85rem; }
+.acc-ord-row { display: flex; align-items: center; gap: 0.75rem; }
+.acc-ord-info {
+  flex: 1; min-width: 0; min-height: 44px;
+  display: flex; flex-direction: column; justify-content: center; gap: 0.15rem;
+  border-radius: 8px;
+}
+.acc-ord-info[role="button"] { cursor: pointer; }
+.acc-ord-info:focus-visible { outline: 2px solid var(--color-orange-bright); outline-offset: 2px; }
+.acc-ord-head { display: flex; align-items: center; gap: 0.35rem; }
+.acc-ord-date { font-size: 0.88rem; font-weight: 700; color: var(--color-cream); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.acc-ord-meta { display: flex; flex-wrap: wrap; column-gap: 0.3rem; font-size: 0.8rem; line-height: 1.35; color: var(--color-cream-dim); }
+.acc-ord-meta > span { white-space: nowrap; }
+.acc-ord-price { font-variant-numeric: tabular-nums; }
+.acc-ord-chev { width: 12px; height: 12px; flex: none; color: var(--color-orange-bright); transition: transform .2s var(--ease-out, ease-out); }
+.acc-ord-info[aria-expanded="true"] .acc-ord-chev { transform: rotate(180deg); }
+.acc-ord .mini-btn { flex: none; min-height: 44px; }
+@container (max-width: 380px) {
+  .acc-ord .mini-btn { max-width: 7.6rem; white-space: normal; text-align: center; line-height: 1.2; padding: 0.45rem 0.75rem; }
+}
+/* Sehr schmal (iPhone SE, große Schrift): Knopf unter die Angaben, volle Breite */
+@container (max-width: 300px) {
+  .acc-ord-row { flex-wrap: wrap; row-gap: 0.45rem; }
+  .acc-ord-info { flex-basis: 100%; min-height: 0; }
+  .acc-ord .mini-btn { flex: 1 1 100%; max-width: none; }
+}
+.acc-ord-detail { border-top: 1px solid var(--color-border); margin-top: 0.55rem; padding-top: 0.55rem; font-size: 0.78rem; color: var(--color-cream-dim); line-height: 1.6; }
+.acc-ord-none { font-size: 0.7rem; color: var(--color-text-muted); margin-top: 0.2rem; }
+@media (prefers-reduced-motion: reduce) { .acc-ord-chev { transition: none; } }
+
 /* Gespeicherte Adresse: Name, Anschrift und die beiden Aktionen. */
 .acc-adr {
   display: flex; align-items: center; gap: 0.5rem;
@@ -7984,24 +8019,23 @@ function renderAccProfile(el) {
     </div>` : ''}
     ${(p.orders && p.orders.length) ? `
     <div style="margin-bottom:0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.history')}</div>
-    <div style="margin-bottom:0.9rem;">
+    <div class="acc-ords">
       ${p.orders.map((o, i) => `
-        <div style="background:var(--color-bg-elev);border:1px solid var(--color-border);border-radius:10px;padding:0.55rem 0.8rem;margin-bottom:0.45rem;">
-          <div style="display:flex;align-items:center;gap:0.6rem;">
-            <div style="flex:1;min-width:0;${o.snap ? 'cursor:pointer;' : ''}" ${o.snap ? `data-on-click="accToggleOrd(${i})" data-on-keydown="accOrdTaste(event, ${i})" role="button" tabindex="0" aria-expanded="false" aria-controls="accOrdD${i}"` : ''}>
-              <span style="font-size:0.8rem;font-weight:700;">${o.at ? new Date(o.at).toLocaleDateString((typeof LANG_LOCALES !== 'undefined' && LANG_LOCALES[currentLang]) || 'de-DE', { day: '2-digit', month: '2-digit' }) : ''}</span>
-              <span style="font-size:0.78rem;color:var(--color-cream-dim);"> · ${o.mode === 'delivery' ? t('cart.delivery') : t('cart.pickup')}${typeof o.total === 'number' ? ' · ' + formatPrice(o.total) : ''}</span>
-              ${o.snap ? `<span style="font-size:0.65rem;color:var(--color-orange-bright);margin-left:0.3rem;">▾</span>` : ''}
+        <div class="acc-ord">
+          <div class="acc-ord-row">
+            <div class="acc-ord-info" ${o.snap ? `data-on-click="accToggleOrd(${i})" data-on-keydown="accOrdTaste(event, ${i})" role="button" tabindex="0" aria-expanded="false" aria-controls="accOrdD${i}"` : ''}>
+              <span class="acc-ord-head"><span class="acc-ord-date">${o.at ? new Date(o.at).toLocaleDateString((typeof LANG_LOCALES !== 'undefined' && LANG_LOCALES[currentLang]) || 'de-DE', { day: '2-digit', month: '2-digit' }) : ''}</span>${o.snap ? `<svg class="acc-ord-chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5"/></svg>` : ''}</span>
+              <span class="acc-ord-meta"><span>${o.mode === 'delivery' ? t('cart.delivery') : t('cart.pickup')}${typeof o.total === 'number' ? ' ·' : ''}</span>${typeof o.total === 'number' ? `<span class="acc-ord-price">${formatPrice(o.total)}</span>` : ''}</span>
             </div>
             ${o.snap
-              ? `<button type="button" class="mini-btn" style="flex:none;" data-on-click="accReorder(${i})">${t('acc.reorder')}</button>`
+              ? `<button type="button" class="mini-btn" data-on-click="accReorder(${i})">${t('acc.reorder')}</button>`
               : (i === 0 && getLastOrder()
-                ? `<button type="button" class="mini-btn" style="flex:none;" data-on-click="accReorderFallback()">${t('acc.reorder')}</button>`
+                ? `<button type="button" class="mini-btn" data-on-click="accReorderFallback()">${t('acc.reorder')}</button>`
                 : '')}
           </div>
           ${o.snap
-            ? `<div id="accOrdD${i}" style="display:none;border-top:1px solid var(--color-border);margin-top:0.5rem;padding-top:0.5rem;font-size:0.76rem;color:var(--color-cream-dim);line-height:1.7;"></div>`
-            : `<div style="font-size:0.68rem;color:var(--color-text-muted);margin-top:0.3rem;">${t('acc.no_details')}</div>`}
+            ? `<div id="accOrdD${i}" class="acc-ord-detail" style="display:none;"></div>`
+            : `<div class="acc-ord-none">${t('acc.no_details')}</div>`}
         </div>`).join('')}
     </div>` : ''}
 ${voll ? `    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.biz_title')}</div>
@@ -10468,7 +10502,8 @@ function setCheckoutTotal() {
   document.querySelectorAll('[data-co-total]').forEach(el => { el.textContent = txt; });
 }
 function formatPrice(n) {
-  return n.toFixed(2).replace('.', ',') + ' €';
+  // Geschütztes Leerzeichen: das € bricht nie allein in die nächste Zeile
+  return n.toFixed(2).replace('.', ',') + ' €';
 }
 
 /* ====================================================================
