@@ -11,7 +11,9 @@
  * (lib/admin-sitzung.js), Bremse gegen Durchprobieren (lib/auth-guard.js,
  * 5 in 15 Minuten), Grundschutz je Endpunkt (lib/bremse.js), interne
  * Mail-Arten, Kundenkonto-Anmeldung, Bestellliste über den Schlüssel-Zeitstempel,
- * Team-Passwörter mit scrypt (lib/team-passwort.js).
+ * Team-Passwörter mit scrypt (lib/team-passwort.js). Seit November 2026
+ * dazu: IPv6 je /64-Netz, Grenzen je Kennung (E-Mail, Telefon, Code,
+ * Gastgeber) und die Notbremse je Endpunkt mit gedrosseltem Telegram-Hinweis.
  * Echte Mails gehen keine raus: fetch ist abgefangen.
  * ----------------------------------------------------------------------------
  */
@@ -23,9 +25,10 @@ const crypto = require('crypto');
 const F = path.join(__dirname, '..', 'netlify', 'functions');
 const daten = new Map();
 const lesen = [];
+let stoerung = false;   // true: jeder Speicherzugriff scheitert (Störungsfall)
 const store = (name) => ({
-  async get(k, o) { lesen.push(name + '|' + k); const v = daten.get(name + '|' + k); return v === undefined ? null : (o && o.type === 'json' ? JSON.parse(v) : v); },
-  async setJSON(k, v) { daten.set(name + '|' + k, JSON.stringify(v)); },
+  async get(k, o) { if (stoerung) throw new Error('Speicher gestört'); lesen.push(name + '|' + k); const v = daten.get(name + '|' + k); return v === undefined ? null : (o && o.type === 'json' ? JSON.parse(v) : v); },
+  async setJSON(k, v) { if (stoerung) throw new Error('Speicher gestört'); daten.set(name + '|' + k, JSON.stringify(v)); },
   async set(k, v) { daten.set(name + '|' + k, String(v)); },
   async delete(k) { daten.delete(name + '|' + k); },
   async list({ prefix } = {}) { return { blobs: [...daten.keys()].filter((k) => k.startsWith(name + '|' + (prefix || ''))).map((k) => ({ key: k.slice(name.length + 1) })) }; },
@@ -54,6 +57,7 @@ const kasse = require(F + '/sumup-checkout.js');
 const gutschein = require(F + '/voucher-check.js');
 const konto = require(F + '/account.js');
 const laden = require(F + '/shop-status.js');
+const gruppe = require(F + '/group-order.js');
 
 let fehler = 0, n = 0;
 const ok = (name, b) => { n++; console.log((b ? '✅ ' : '❌ ') + name); if (!b) fehler++; };
@@ -192,6 +196,123 @@ const guard = () => [...daten.keys()].filter((k) => k.startsWith('authguard|'));
   ok('Passwort eines scrypt-Zugangs lässt sich nicht doppelt vergeben', (await call(team, { action: 'add', password: tokenKubi, name: 'Neu Test', staffPassword: 'altes-passwort-123' })).s === 409);
   r = await call(team, { action: 'add', password: tokenKubi, name: 'Neu Test', staffPassword: 'ganz-neues-passwort-9' });
   ok('Neuer Zugang wird mit scrypt gespeichert', r.s === 200 && /^s1\$/.test(JSON.parse(daten.get('team|u:' + zf.slug('Neu Test'))).pwHash));
+
+  /* ---- IPv6 je /64-Netz (lib/bremse.js, lib/auth-guard.js) ------------------- */
+  ok('IPv6: Adressen im selben /64 ergeben dieselbe Kennung',
+    bremse.ipNormalisieren('2a02:8108:1:2:aaaa::1') === '2a02:8108:1:2::/64'
+    && bremse.ipNormalisieren('2A02:8108:0001:0002:ffff:1:2:3') === '2a02:8108:1:2::/64'
+    && bremse.ipNormalisieren('[2a02:8108:1:2::9]') === '2a02:8108:1:2::/64');
+  ok('IPv6: anderes /64 ist ein anderer Absender', bremse.ipNormalisieren('2a02:8108:1:3::1') !== bremse.ipNormalisieren('2a02:8108:1:2::1'));
+  ok('IPv4 bleibt unverändert, auch in IPv6-Schreibweise (::ffff:)',
+    bremse.ipNormalisieren('10.1.2.3') === '10.1.2.3' && bremse.ipNormalisieren('::ffff:10.1.2.3') === '10.1.2.3');
+  ok('IPv4: gleicher Hash wie vor der Umstellung (laufende Sperren gelten weiter)',
+    bremse.absender({ headers: { 'x-nf-client-connection-ip': '10.1.2.3' } }) === crypto.createHash('sha256').update('10.1.2.3').digest('hex').slice(0, 32));
+  erg = [];
+  for (let i = 1; i <= 4; i++) erg.push(await bremse.schutz(roh('{}', '2a02:8108:77:1::' + i.toString(16)), { name: 'probe6', max: 3 }));
+  ok('Bremse: wer im eigenen /64 rotiert, zählt als einer (4. Adresse -> 429)', erg.slice(0, 3).every((x) => x === null) && erg[3] && erg[3].statusCode === 429);
+  ok('Bremse: Nachbar-/64 ist nicht betroffen', (await bremse.schutz(roh('{}', '2a02:8108:77:2::1'), { name: 'probe6', max: 3 })) === null);
+  for (let i = 1; i <= 5; i++) await call(team, { action: 'anmelden', password: 'falsch6-' + i }, '2a02:8108:99:1::' + i);
+  r = await call(team, { action: 'anmelden', password: 'kubi-test-passwort' }, '2a02:8108:99:1:abcd::7');
+  ok('Anmeldung: 5 falsche Passwörter aus einem /64 (5 Adressen) sperren das ganze /64', r.s === 429);
+
+  /* ---- Grenzen je Kennung --------------------------------------------------- */
+  const G = bremse.GRENZEN;
+  const evIp = (n) => ({ httpMethod: 'POST', headers: { 'x-nf-client-connection-ip': '10.110.' + Math.floor(n / 250) + '.' + (n % 250 + 1) }, body: '{}' });
+  ok('Kennung: E-Mail vereinheitlicht (Großschreibung, Gmail-Punkte, +Zusatz)',
+    bremse.kennungVereinheitlichen('mail', 'Max.Muster+gnc@GoogleMail.com') === 'maxmuster@gmail.com'
+    && bremse.kennungVereinheitlichen('mail', 'kein-at') === '');
+  ok('Kennung: Telefon vereinheitlicht (+49, 0049, 0, Klammern, unter 8 Ziffern leer)',
+    ['+49 170 1234567', '0049 (170) 123-4567', '0170/1234567', '+49 (0)170 1234567'].every((x) => bremse.kennungVereinheitlichen('tel', x) === '491701234567')
+    && bremse.kennungVereinheitlichen('tel', '0521 12') === '');
+  let gr = [];
+  const maxCode = G['konto-code'].mail[0];
+  for (let i = 0; i <= maxCode; i++) gr.push(await bremse.grenzen(evIp(i), 'konto-code', { mail: i % 2 ? 'Opfer@Example.com' : 'opfer+' + i + '@example.com' }));
+  ok('Login-Code je E-Mail: ' + maxCode + ' von verschiedenen IPs durch, der nächste 429 (auch mit +Zusatz)',
+    gr.slice(0, maxCode).every((x) => x === null) && gr[maxCode] && gr[maxCode].statusCode === 429);
+  gr = [];
+  for (let i = 0; i < 8; i++) gr.push(await call(konto, { action: 'request_code', email: 'eilig@example.com' }, '10.111.0.' + (i + 1)));
+  const eiligKey = 'bremse|' + new Date().toISOString().slice(0, 10) + '/konto-code.mail/' + crypto.createHash('sha256').update('mail:eilig@example.com').digest('hex').slice(0, 32);
+  ok('Login-Code: schnelles Nachfragen (60-s-Sperre) zählt nicht für die E-Mail-Grenze',
+    gr.slice(1).every((x) => x.d.error === 'too_soon') && JSON.parse(daten.get(eiligKey) || '{}').n === 1);
+  ok('Login-Code: andere E-Mail nicht betroffen', (await bremse.grenzen(evIp(99), 'konto-code', { mail: 'nachbar@example.com' })) === null);
+  ok('Kennung: interne Aufrufe zählen nicht', (await bremse.grenzen({ ...evIp(98), headers: { ...evIp(98).headers, ...bremse.internHeader() } }, 'konto-code', { mail: 'opfer@example.com' })) === null);
+  ok('Kennung: der Speicher hält nur Hashes, keine Adresse', ![...daten.keys()].some((k) => k.startsWith('bremse|') && /opfer|example/i.test(k + daten.get(k))));
+
+  // Online-Kasse echt: gleiche Telefonnummer, wechselnde E-Mails und IPs
+  Object.assign(process.env, { SUMUP_API_KEY: 'sup_sk_test_nicht_echt', SUMUP_MERCHANT_CODE: 'MTEST' });
+  const maxKasse = G.kasse.tel[0];
+  gr = [];
+  for (let i = 0; i <= maxKasse; i++) {
+    const tel = i % 2 ? '0170 5550001' : '+49 (0) 170 555 0001';
+    gr.push(await call(kasse, { amount: 12, order: { email: 'k' + i + '@example.com', phone: tel, total: 12 } }, '10.120.0.' + (i + 1)));
+  }
+  ok('Kasse je Telefon: ' + maxKasse + ' Versuche durch, der nächste 429, egal wie die Nummer geschrieben ist',
+    gr.slice(0, maxKasse).every((x) => x.s !== 429) && gr[maxKasse].s === 429);
+  gr = [];
+  for (let i = 0; i <= G.kasse.mail[0]; i++) gr.push(await call(kasse, { amount: 12, order: { email: 'Stamm.Kunde@gmail.com', total: 12 } }, '10.121.0.' + (i + 1)));
+  ok('Kasse je E-Mail: ' + G.kasse.mail[0] + ' durch, der nächste 429', gr.slice(0, -1).every((x) => x.s !== 429) && gr[gr.length - 1].s === 429);
+  ok('Kasse: Rückzieher (cancelOnly) zählt nicht', (await call(kasse, { cancelOnly: true, order: { email: 'Stamm.Kunde@gmail.com' } }, '10.121.1.1')).s === 200);
+
+  // Gutscheinprüfung: je E-Mail, und je Code
+  gr = [];
+  for (let i = 0; i <= G.gutschein.mail[0]; i++) gr.push(await call(gutschein, { code: 'PROBE' + i, email: 'sammler@example.com' }, '10.130.' + Math.floor(i / 200) + '.' + (i % 200 + 1)));
+  ok('Gutschein je E-Mail: ' + G.gutschein.mail[0] + ' in 10 Min durch, der nächste 429', gr.slice(0, -1).every((x) => x.s === 200) && gr[gr.length - 1].s === 429);
+  for (let i = 0; i < G.gutschein.code[0]; i++) await bremse.schutzKennung(evIp(i), { name: 'gutschein', art: 'code', wert: 'LECK10', max: G.gutschein.code[0], fensterMin: G.gutschein.code[1] });
+  ok('Gutschein je Code: ein einzelner Code ist nach ' + G.gutschein.code[0] + ' Prüfungen gesperrt', (await call(gutschein, { code: 'leck10' }, '10.131.0.1')).s === 429);
+  ok('Gutschein je Code: andere Codes laufen weiter', (await call(gutschein, { code: 'ANDERS10' }, '10.131.0.2')).s === 200);
+
+  // Gruppenbestellung anlegen je Gastgeber
+  gr = [];
+  for (let i = 0; i <= G['gruppe-neu'].gastgeber[0]; i++) gr.push(await call(gruppe, { action: 'create', host: i % 2 ? 'Büro  Nord' : 'büro nord' }, '10.140.0.' + (i + 1)));
+  ok('Gruppe je Gastgeber: ' + G['gruppe-neu'].gastgeber[0] + ' angelegt, die nächste 429', gr.slice(0, -1).every((x) => x.s === 200) && gr[gr.length - 1].s === 429);
+  ok('Gruppe: anderer Gastgeber legt weiter an', (await call(gruppe, { action: 'create', host: 'Werkstatt' }, '10.140.1.1')).s === 200);
+
+  // Catering-Anfrage je E-Mail (send-email, Mailversand ist abgefangen)
+  gr = [];
+  for (let i = 0; i <= G.catering.mail[0]; i++) gr.push(await call(mail, { type: 'catering_request', catering: { name: 'Test', email: 'firma@example.com' } }, '10.150.0.' + (i + 1)));
+  ok('Catering je E-Mail: ' + G.catering.mail[0] + ' Anfragen, die nächste 429', gr.slice(0, -1).every((x) => x.s === 200) && gr[gr.length - 1].s === 429);
+
+  // Bestellweg (send-email) je E-Mail
+  gr = [];
+  for (let i = 0; i <= G.bestellung.mail[0]; i++) gr.push(await call(mail, { type: 'owner_notification', order: { reference: 'GNC-' + (1e12 + i), email: 'viel@example.com', name: 'T', items: [], total: 10 } }, '10.160.0.' + (i + 1)));
+  ok('Bestellweg je E-Mail: ' + G.bestellung.mail[0] + ' durch, der nächste 429', gr.slice(0, -1).every((x) => x.s !== 429) && gr[gr.length - 1].s === 429);
+  ok('Bestellweg: interner Aufruf (SumUp-Webhook) kommt trotzdem durch',
+    (await call(mail, { type: 'owner_notification', order: { reference: 'GNC-1999', email: 'viel@example.com', name: 'T', items: [], total: 10 } }, '10.160.1.1', bremse.internHeader())).s !== 429);
+
+  /* ---- Notbremse über alle Absender mit Telegram-Drossel -------------------- */
+  const telegramm = [];
+  const fetchVorher = global.fetch;
+  global.fetch = async (url, o) => {
+    if (String(url).includes('api.telegram.org')) telegramm.push(JSON.parse(o.body).text);
+    return { ok: false, status: 503, json: async () => ({}), text: async () => '' };
+  };
+  Object.assign(process.env, { TELEGRAM_BOT_TOKEN: 'test-bot', TELEGRAM_CHAT_ID: '1' });
+  const notbremse = () => telegramm.filter((x) => /Notbremse/.test(x));
+  const maxCat = G.catering.gesamt[0];
+  for (let i = 0; i < maxCat; i++) await call(mail, { type: 'catering_request', catering: { name: 'V', email: 'verteilt' + i + '@example.com' } }, '10.170.' + Math.floor(i / 200) + '.' + (i % 200 + 1));
+  r = await call(mail, { type: 'catering_request', catering: { name: 'Echt', email: 'echt@example.com' } }, '10.171.0.1');
+  ok('Notbremse: nach ' + maxCat + ' Catering-Anfragen von ' + maxCat + ' Absendern ist Schluss (429 mit Retry-After)', r.s === 429 && Number(r.h['Retry-After']) > 0);
+  ok('Notbremse: Kubi bekommt genau eine Telegram-Nachricht', notbremse().length === 1 && /Catering-Anfragen/.test(notbremse()[0]) && !/[–—!]/.test(notbremse()[0]));
+  for (let i = 0; i < 5; i++) await call(mail, { type: 'catering_request', catering: { name: 'V', email: 'mehr' + i + '@example.com' } }, '10.172.0.' + (i + 1));
+  ok('Notbremse: weitere Abweisungen schicken keine zweite Nachricht', notbremse().length === 1);
+  ok('Notbremse: interne Aufrufe laufen weiter', (await bremse.gesamtGrenze({ httpMethod: 'POST', headers: bremse.internHeader() }, { name: 'catering', max: maxCat, fensterMin: 10 })) === null);
+  ok('Notbremse: andere Endpunkte nicht betroffen', (await call(gruppe, { action: 'create', host: 'Nach der Bremse' }, '10.173.0.1')).s === 200);
+  // 61 Minuten später: Fenster abgelaufen, neue Welle, neuer Hinweis
+  const echtJetzt = Date.now;
+  Date.now = () => echtJetzt() + 61 * 60 * 1000;
+  for (let i = 0; i <= maxCat; i++) await bremse.gesamtGrenze(evIp(500 + i), { name: 'catering', max: maxCat, fensterMin: 10 });
+  ok('Notbremse: nach einer Stunde darf wieder ein Hinweis kommen', notbremse().length === 2);
+  Date.now = echtJetzt;
+  delete process.env.TELEGRAM_BOT_TOKEN; delete process.env.TELEGRAM_CHAT_ID;
+  global.fetch = fetchVorher;
+
+  /* ---- Störungsfall: durchlassen -------------------------------------------- */
+  stoerung = true;
+  ok('Störung: Bremse, Kennung und Notbremse lassen durch',
+    (await bremse.schutz(roh('{}', '10.180.0.1'), { name: 'probe', max: 1 })) === null
+    && (await bremse.grenzen(evIp(700), 'kasse', { mail: 'x@example.com', tel: '01701234567' })) === null
+    && (await bremse.gesamtGrenze(evIp(701), { name: 'kasse', max: 1 })) === null);
+  stoerung = false;
 
   /* ---- Notschalter ---------------------------------------------------------- */
   process.env.ZWEI_FAKTOR = 'aus';

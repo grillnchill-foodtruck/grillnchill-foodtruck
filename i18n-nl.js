@@ -227,6 +227,7 @@ I18N.nl = {
 
     "cart.title": "Je winkelwagen", "cart.empty": "Je winkelwagen is leeg", "cart.empty_hint": "Kies iets uit het menu.",
     "cart.repeat_last": "Laatste bestelling herhalen", "loyalty.title": "Stempelkaart", "loyalty.line": "Loyaliteitsbonus", "loyalty.hint": "Nog {n} tot je gratis menu.", "loyalty.redeem": "Loyaliteitsbonus inwisselen (−{amount})", "loyalty.applied": "Loyaliteitsbonus toegepast (−{amount})", "loyalty.reward_min": "Loyaliteitsbonus {amount} klaar, inwisselbaar vanaf {min} bestelwaarde.",
+    "promo.voucher_wegwerf": "Voor deze code heb je een vast e-mailadres nodig, geen wegwerpadres.",
     "cart.upsell_title": "Nog iets erbij?", "cart.upsell_min": "Nog {rest} tot de minimale bestelling", "cart.upsell_add": "toevoegen",
     "cart.edit": "Bewerken",
     "menu.tag_meal": "MENUDEAL", "menu.meal_suffix": "Menu", "menu.meal_desc": "side + drankje + dip naar keuze",

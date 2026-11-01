@@ -50,7 +50,7 @@ const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 // Zahlung nicht zur Website zurückkehrt (Abgleich: orders-reconcile.js).
 const { getStore } = require('@netlify/blobs');
 const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
-const { schutz, saeubern } = require('./lib/bremse');
+const { schutz, saeubern, grenzen } = require('./lib/bremse');
 function ordersStore() {
   const opts = { name: 'orders', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -150,6 +150,15 @@ exports.handler = async (event) => {
   }
   } catch (e) {
     return json(400, { error: 'Invalid JSON body' });
+  }
+
+  // Je E-Mail, je Telefon und Notbremse über alle Absender (lib/bremse.js,
+  // GRENZEN.kasse). Erst hier, damit der Rückzieher (cancelOnly) nicht zählt.
+  {
+    const o = (input.order && typeof input.order === 'object') ? input.order : {};
+    const k = (input.customer && typeof input.customer === 'object') ? input.customer : {};
+    const kassenHalt = await grenzen(event, 'kasse', { mail: o.email || k.email, tel: o.phone || k.phone });
+    if (kassenHalt) return kassenHalt;
   }
 
   // Der belastete Betrag wird SERVERSEITIG aus dem Warenkorb nachgerechnet.

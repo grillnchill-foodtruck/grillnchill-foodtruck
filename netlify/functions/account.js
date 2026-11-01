@@ -179,7 +179,7 @@ async function sendCodeMail(email, code) {
    Eigenschaften ("__proto__", "constructor", …) und liess damit jeden
    ohne Anmeldung in fremde Konten. */
 const { tokenGueltig } = require('./lib/kunden-token');
-const { schutz, saeubern } = require('./lib/bremse');
+const { schutz, saeubern, grenzen } = require('./lib/bremse');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 function checkToken(rec, token) {
   return tokenGueltig(rec, token);
@@ -214,6 +214,11 @@ exports.handler = async (event) => {
       if (rec.login && rec.login.sentAt && Date.now() - rec.login.sentAt < CODE_RESEND_MS) {
         return json(429, { error: 'too_soon', hint: 'Bitte warte kurz – der Code wurde gerade erst gesendet.' });
       }
+      // Dazu je Empfängeradresse (auch bei wechselnden IPs) und eine Notbremse über
+      // alle Absender (lib/bremse.js, GRENZEN['konto-code']). Erst nach der
+      // 60-Sekunden-Sperre: nur Codes, die wirklich verschickt würden, zählen.
+      const zuVieleHier = await grenzen(event, 'konto-code', { mail: email });
+      if (zuVieleHier) return zuVieleHier;
       const code = String(crypto.randomInt(100000, 1000000));
       rec.login = { codeHash: sha(code + '|' + email), exp: Date.now() + CODE_TTL_MS, tries: 0, sentAt: Date.now() };
       await s.setJSON(key, rec);

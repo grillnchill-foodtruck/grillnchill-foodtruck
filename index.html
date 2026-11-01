@@ -10915,6 +10915,14 @@ function normalizePhone(phone) {
 function gutscheinPruefMail() {
   return accountLoggedIn() && ACCOUNT.profile.email ? ACCOUNT.profile.email : '';
 }
+/* Codes mit Kundenlimit zählen auch je Telefonnummer (lib/gutschein-nutzung.js) */
+function gutscheinPruefTel() {
+  return accountLoggedIn() && ACCOUNT.profile.phone ? ACCOUNT.profile.phone : '';
+}
+/* 429 der Bremse: kein Urteil über den Code, nur "später noch mal" */
+function gutscheinAntwort(r) {
+  return r.status === 429 ? { valid: false, reason: 'zu_viele' } : r.json();
+}
 function quickApplyPromo(chip) {
   if (gncIsBusy(chip)) return;   // Doppeltipp waehrend der Pruefung ignorieren
   const code = adCode();
@@ -10933,9 +10941,9 @@ function quickApplyPromo(chip) {
   fetch('/voucher-check', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, mode: checkoutMode, app: istInApp(), email: gutscheinPruefMail() }),
+    body: JSON.stringify({ code, mode: checkoutMode, app: istInApp(), email: gutscheinPruefMail(), phone: gutscheinPruefTel() }),
   })
-    .then(r => r.json())
+    .then(gutscheinAntwort)
     .then(d => {
       gncBusy(chip, false);
       if (d && d.valid) {
@@ -10959,6 +10967,10 @@ function quickApplyPromo(chip) {
         flashCartNotice(t('promo.voucher_app_only'));
       } else if (d && d.reason === 'customer_limit') {
         flashCartNotice(t('promo.voucher_customer_limit').replace('{max}', d.max || 3));
+      } else if (d && d.reason === 'wegwerf') {
+        flashCartNotice(t('promo.voucher_wegwerf'));
+      } else if (d && d.reason === 'zu_viele') {
+        flashCartNotice(t('team.err_wait'));
       } else {
         flashCartNotice(t('promo.invalid'));
       }
@@ -11006,9 +11018,9 @@ function applyPromo(btn) {
     fetch('/voucher-check', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, mode: checkoutMode, app: istInApp(), email: gutscheinPruefMail() }),
+      body: JSON.stringify({ code, mode: checkoutMode, app: istInApp(), email: gutscheinPruefMail(), phone: gutscheinPruefTel() }),
     })
-      .then(r => r.json())
+      .then(gutscheinAntwort)
       .then(d => {
         input.disabled = false;
         gncBusy(btn, false);
@@ -11055,6 +11067,8 @@ function applyPromo(btn) {
             : reason === 'ref_not_first' ? t('promo.ref_not_first')
             : reason === 'not_started' ? t('promo.voucher_not_started')
             : reason === 'app_only' ? t('promo.voucher_app_only')
+            : reason === 'wegwerf' ? t('promo.voucher_wegwerf')
+            : reason === 'zu_viele' ? t('team.err_wait')
             : t('promo.invalid'));
         }
       })
@@ -11063,11 +11077,23 @@ function applyPromo(btn) {
     promoInputError(input, t('promo.invalid'));
   }
 }
+/* Passt der Text als Platzhalter ganz ins Feld? Längere Hinweise (Kundenlimit,
+   Wegwerf-Adresse, nur in der App) wurden dort abgeschnitten. */
+function passtInsFeld(input, text) {
+  try {
+    const cs = getComputedStyle(input);
+    if (!passtInsFeld.c) passtInsFeld.c = document.createElement('canvas').getContext('2d');
+    passtInsFeld.c.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    const platz = input.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    return passtInsFeld.c.measureText(text).width <= platz;
+  } catch (e) { return String(text).length <= 24; }
+}
 function promoInputError(input, msg) {
   input.style.borderColor = 'var(--color-error)';
   input.setAttribute('aria-invalid', 'true');
   input.value = '';
-  input.placeholder = msg;
+  if (passtInsFeld(input, msg)) input.placeholder = msg;
+  else flashCartNotice(msg);   // ganzer Satz als Hinweis oben im Warenkorb, Feld nur rot
   setTimeout(() => {
     input.style.borderColor = '';
     input.removeAttribute('aria-invalid');
@@ -12403,9 +12429,11 @@ async function submitOrder(e) {
       const vres = await fetch('/voucher-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: voucherApplied.code, email, mode: checkoutMode, app: istInApp() }),
+        body: JSON.stringify({ code: voucherApplied.code, email, phone, mode: checkoutMode, app: istInApp() }),
       });
-      const vd = await vres.json().catch(() => null);
+      // 429 der Bremse sagt nichts über den Code: wie bei einer Netzstörung
+      // weiter, die Preisberechnung auf dem Server entscheidet verbindlich.
+      const vd = vres.status === 429 ? { valid: true } : await vres.json().catch(() => null);
       if (!vd || !vd.valid) {
         const reason = vd && vd.reason;
         releaseCheckout();
@@ -12418,6 +12446,7 @@ async function submitOrder(e) {
           : reason === 'limit_reached' ? t('promo.voucher_limit')
           : reason === 'expired' ? t('promo.voucher_expired')
           : reason === 'app_only' ? t('promo.voucher_app_only')
+          : reason === 'wegwerf' ? t('promo.voucher_wegwerf')
           : t('promo.voucher_removed'));
         return; // Kunde sieht den neuen Gesamtpreis und bestätigt erneut
       }
@@ -16837,7 +16866,7 @@ function stelleKasseWieder(order) {
       fetch('/voucher-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: order.voucherCode, email: order.email || '', mode: checkoutMode, app: istInApp() }),
+        body: JSON.stringify({ code: order.voucherCode, email: order.email || '', phone: order.phone || '', mode: checkoutMode, app: istInApp() }),
       })
         .then(r => r.json())
         .then(d => {

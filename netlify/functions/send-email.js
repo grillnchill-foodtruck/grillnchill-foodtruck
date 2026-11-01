@@ -69,7 +69,7 @@ const { buildInvoicePdf, buildInvoiceXml, trinkgeldImVat } = require('./lib/invo
 const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
 const { codeSchluessel, codeNormalisieren } = require('./lib/gutschein-code');
 const gutscheinNutzung = require('./lib/gutschein-nutzung');
-const { schutz, saeubern, istIntern } = require('./lib/bremse');
+const { schutz, saeubern, istIntern, grenzen } = require('./lib/bremse');
 const { vergebeAbholnr, abholTagFuer, nrText } = require('./lib/abholnummer');
 const firmen = require('./lib/firmen');   // Firmen-Mittag auf Monatsrechnung (Paket firmen)
 
@@ -532,13 +532,16 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
           // Nur-App-Code ausserhalb der App: der Preis wurde bereits ohne Rabatt
           // nachgerechnet - hier nur nicht als Einloesung zaehlen.
           const falscherKanal = !!c.appOnly && !order.app;
-          // Pro Kunde zählt der eigene Datensatz je Code und Kunde
-          // (lib/gutschein-nutzung.js), nicht mehr usedBy.
+          // Pro Kunde zählt der eigene Datensatz je Code und E-Mail bzw.
+          // Telefonnummer (lib/gutschein-nutzung.js), nicht mehr usedBy.
           const perCust = gutscheinNutzung.limitProKunde(c);
+          const kunde = { email: order.email || '', phone: order.phone || '' };
           let overPerCust = false;
-          if (perCust > 0 && order.email) {
-            overPerCust = (await gutscheinNutzung.einloesungenLesen(cs, gutscheinCode, c, order.email)) >= perCust;
+          if (perCust > 0 && (kunde.email || kunde.phone)) {
+            overPerCust = (await gutscheinNutzung.einloesungenLesen(cs, gutscheinCode, c, kunde)) >= perCust;
           }
+          // Wegwerf-Adresse: die Preisberechnung hat den Rabatt gestrichen, nichts zählen
+          const wegwerf = gutscheinNutzung.wegwerfGesperrt(c, order.email);
           if (overGlobal) {
             // Code ist ausgeschöpft: nicht weiter zählen, deaktivieren, Inhaber alarmieren.
             c.active = false;
@@ -554,7 +557,7 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
                 });
               }
             } catch (e3) {}
-          } else if (falscherKanal) {
+          } else if (falscherKanal || wegwerf) {
             // nichts zaehlen
           } else if (overPerCust && !((Number(order.discount) || 0) > 0)) {
             // Limit erreicht, die Preisberechnung hat den Rabatt schon gestrichen: nichts zählen.
@@ -574,6 +577,14 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
               }
             } catch (e3) {}
           } else {
+            // Erst je Kunde zählen, DANN usedBy erhöhen. Andersherum las
+            // einloesungZaehlen den gerade erhöhten usedBy-Wert als Altstand mit,
+            // und die erste Einlösung eines neuen Kunden zählte doppelt
+            // (GRILL5 ging dann nur zweimal statt dreimal).
+            if (perCust > 0 && (kunde.email || kunde.phone)) {
+              // zählt unter E-Mail UND Telefon, die Bestellung selbst nur einmal (gutscheinGezaehlt)
+              try { await gutscheinNutzung.einloesungZaehlen(cs, gutscheinCode, c, kunde); } catch (e4) {}
+            }
             c.uses = (c.uses || 0) + 1;
             c.lastRedeemedAt = new Date().toISOString();
             c.redeemedVia = 'checkout';
@@ -589,9 +600,6 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
             // Gesamtlimit jetzt erreicht -> deaktivieren, damit voucher-check ihn künftig sperrt.
             if (c.maxUses > 0 && c.uses >= c.maxUses) c.active = false;
             await cs.setJSON(ckey, c);
-            if (perCust > 0 && order.email) {
-              try { await gutscheinNutzung.einloesungZaehlen(cs, gutscheinCode, c, order.email); } catch (e4) {}
-            }
             try {
               const ts = blobStore('track');
               const dayKey = 'd:' + new Date().toISOString().slice(0, 10);
@@ -1320,6 +1328,9 @@ exports.handler = async (event) => {
     if (!c || !c.email || !c.name) {
       return json(400, { error: 'Missing catering fields', hint: 'catering.name und catering.email sind Pflicht' });
     }
+    // Je E-Mail und Notbremse über alle Absender (lib/bremse.js, GRENZEN.catering)
+    const cateringHalt = await grenzen(event, 'catering', { mail: c.email });
+    if (cateringHalt) return cateringHalt;
 
     // Cloudflare Turnstile serverseitig verifizieren (nur wenn TURNSTILE_SECRET gesetzt)
     const turnstileSecret = process.env.TURNSTILE_SECRET || '';
@@ -1447,6 +1458,12 @@ exports.handler = async (event) => {
   const order = input.order;
   if (!order || !order.email || !order.reference) {
     return json(400, { error: 'Missing required fields', hint: 'order.email und order.reference sind Pflicht' });
+  }
+  // Je E-Mail, je Telefon und Notbremse über alle Absender (lib/bremse.js,
+  // GRENZEN.bestellung). Interne Aufrufe (SumUp-Webhook, Abgleich) zählen nicht.
+  if (type === 'order_confirmation' || type === 'owner_notification') {
+    const bestellHalt = await grenzen(event, 'bestellung', { mail: order.email, tel: order.phone });
+    if (bestellHalt) return bestellHalt;
   }
 
   /* Betrag serverseitig nachrechnen, BEVOR daraus Ticket, Mail, Archiv,

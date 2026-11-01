@@ -13,7 +13,7 @@ I18N.tr = {
     "hero.lead": "Sulu helal burgerler ve çıtır patates, Bielefeld-Brackwede'de taze ızgarada. Buradan sipariş ver, GRILL5 koduyla 5 € tasarruf et (20 € sipariş tutarından itibaren).",
     "hero.cta_order": "Hemen sipariş ver", "hero.cta_catering": "Foodtruck kirala",
     "hero.reviews": "Google'da {count} değerlendirme", "hero.badge_code": "Kod GRILL5", "hero.badge_discount": "5 € indirim",
-    "promo.bar_main": "GRILL5 koduyla 5 € tasarruf", "promo.bar_sub": "(20 € sipariş tutarından itibaren · kişi başı en fazla 3 kez · sadece online)",
+    "promo.bar_main": "Bu kodla 5 € tasarruf et:", "promo.bar_sub": "(20 € sipariş tutarından itibaren · kişi başı en fazla 3 kez · sadece online)",
     "hero.trust_halal": "%100 Helal", "hero.trust_prep": "Dk hazırlık", "hero.trust_delivery": "Bielefeld'de teslimat",
 
     "ticker.save": "GRILL5 koduyla 5 € tasarruf", "ticker.halal": "%100 Helal",
@@ -227,6 +227,7 @@ I18N.tr = {
 
     "cart.title": "Sepetin", "cart.empty": "Sepetin boş", "cart.empty_hint": "Menüden bir şey seç.",
     "cart.repeat_last": "Son siparişi tekrarla", "loyalty.title": "Damga kartı", "loyalty.line": "Sadakat bonusu", "loyalty.hint": "Ücretsiz menüne {n} kaldı.", "loyalty.redeem": "Sadakat bonusunu kullan (−{amount})", "loyalty.applied": "Sadakat bonusu uygulandı (−{amount})", "loyalty.reward_min": "{amount} sadakat bonusu hazır, {min} sipariş tutarından itibaren kullanılabilir.",
+    "promo.voucher_wegwerf": "Bu kod için kalıcı bir e-posta adresi gerekiyor, geçici adresle olmaz.",
     "cart.upsell_title": "Başka bir şey?", "cart.upsell_min": "Minimum sipariş tutarına {rest} kaldı", "cart.upsell_add": "ekle",
     "cart.edit": "Düzenle",
     "menu.tag_meal": "MENÜ FIRSATI", "menu.meal_suffix": "Menü", "menu.meal_desc": "garnitür + içecek + sos seçimli",
