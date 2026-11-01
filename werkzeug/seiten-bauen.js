@@ -402,6 +402,9 @@ const lgPfad = path.join(WURZEL, 'liefergebiet.html');
 fs.writeFileSync(lgPfad, liefergebietBauen(fs.readFileSync(lgPfad, 'utf8')));
 const halalPfad = path.join(WURZEL, 'halal.html');
 fs.writeFileSync(halalPfad, faqDaten(fs.readFileSync(halalPfad, 'utf8'), SEITE + '/halal'));
+// Paket firmen: FAQ-Daten der Seite /firmen aus ihren <details>
+const firmenPfad = path.join(WURZEL, 'firmen.html');
+if (fs.existsSync(firmenPfad)) fs.writeFileSync(firmenPfad, faqDaten(fs.readFileSync(firmenPfad, 'utf8'), SEITE + '/firmen'));
 
 /* ---- Content-Security-Policy ---------------------------------------------- */
 const crypto = require('crypto');

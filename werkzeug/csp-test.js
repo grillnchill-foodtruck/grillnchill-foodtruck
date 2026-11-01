@@ -37,7 +37,7 @@ const zerlegen = fenster.gncEreignisse.zerlegen;
 
 const SEITEN = fs.readdirSync(W).filter((f) => f.endsWith('.html')).concat(fs.existsSync(path.join(W, 'tr/index.html')) ? ['tr/index.html'] : []);
 const SKRIPTE = ['i18n.js', 'speisekarte.js', 'burger-jahr.js', 'admin-anmeldung.js', 'ereignisse.js'];
-const EIGENE = { 'index.html': ['i18n.js', 'speisekarte.js', 'burger-jahr.js'], 'tr/index.html': ['i18n.js', 'speisekarte.js', 'burger-jahr.js'] };
+const EIGENE = { 'index.html': ['i18n.js', 'speisekarte.js', 'burger-jahr.js'], 'tr/index.html': ['i18n.js', 'speisekarte.js', 'burger-jahr.js'], 'firmen.html': ['i18n.js', 'speisekarte.js'] };
 
 let fehler = 0, n = 0;
 const ok = (name, b, info) => { n++; console.log((b ? '✅ ' : '❌ ') + name + (b || !info ? '' : '\n   ' + info)); if (!b) fehler++; };
@@ -81,7 +81,7 @@ for (const f of SEITEN.concat(SKRIPTE)) {
   }
   ok(f + ': alle data-on-* zerlegbar', kaputt.length === 0, kaputt.slice(0, 3).join('\n   '));
 }
-const quelle = (f) => [f].concat(EIGENE[f] || (/^(admin|cockpit|dienstplan)\.html$/.test(f) ? ['admin-anmeldung.js'] : [])).map(lies).join('\n');
+const quelle = (f) => [f].concat(EIGENE[f] || (/^(admin|cockpit|dienstplan|firmen-admin)\.html$/.test(f) ? ['admin-anmeldung.js'] : [])).map(lies).join('\n');
 const fehlend = [];
 for (const [fn, wo] of namen) {
   for (const f of wo) {

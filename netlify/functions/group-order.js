@@ -16,12 +16,18 @@
  * der hostKey berechtigt zusätzlich zum Schließen. Preise werden hier NICHT
  * vertraut – der Gastgeber-Warenkorb berechnet beim Import alles neu aus der
  * Speisekarte. Gruppen verfallen nach 48 Stunden (Lazy-Cleanup + Cron).
+ *
+ * Firmen-Mittag (Paket firmen): create mit firmaCode legt eine Gruppe für
+ * eine Firma an. Beiträge gehen bis 11:00 Uhr, geliefert wird um 12:00 Uhr,
+ * bezahlt über die Monatsrechnung. Der Code selbst steht NICHT in der Gruppe
+ * (die Gruppe ist für alle mit dem Link lesbar), nur Firmenname und Termin.
  * ----------------------------------------------------------------------------
  */
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { schutz, saeubern } = require('./lib/bremse');
+const firmen = require('./lib/firmen');
 
 const GROUP_TTL_MS = 48 * 3600 * 1000;
 const MAX_CONTRIBUTIONS = 30;
@@ -79,6 +85,16 @@ exports.handler = async (event) => {
     // ---------- Gruppe erstellen ----------
     if (action === 'create') {
       const host = cleanText(input.host, 40) || 'Team';
+      // Firmen-Mittag: nur mit gültigem Code einer aktiven Firma
+      let firmenMittag = null;
+      if (input.firmaCode) {
+        const f = await firmen.firmaPerCode(input.firmaCode);
+        if (!f) return json(400, { error: 'firma', grund: 'code' });
+        if (!f.aktiv) return json(400, { error: 'firma', grund: 'inaktiv' });
+        const termin = firmen.mittagTermin();
+        if (!termin) return json(409, { error: 'firma', grund: 'termin' });
+        firmenMittag = { firma: f.name, ...termin };
+      }
       let id = randomId(8);
       for (let i = 0; i < 4 && await s.get('g:' + id, { type: 'json' }); i++) id = randomId(8);
       const hostKey = randomId(12);
@@ -88,6 +104,7 @@ exports.handler = async (event) => {
         createdAt: new Date().toISOString(),
         contributions: [],
       };
+      if (firmenMittag) group.firmenMittag = firmenMittag;
       await s.setJSON('g:' + id, group);
       return json(200, { ok: true, id, hostKey, group: publicView(group) });
     }
@@ -112,6 +129,8 @@ exports.handler = async (event) => {
     // ---------- Beitrag hinzufügen ----------
     if (action === 'add') {
       if (g.status !== 'open') return json(409, { error: 'closed' });
+      // Firmen-Mittag: Annahmeschluss 11:00 Uhr
+      if (g.firmenMittag && Date.now() > Date.parse(g.firmenMittag.schluss)) return json(409, { error: 'schluss' });
       if (g.contributions.length >= MAX_CONTRIBUTIONS) return json(409, { error: 'full' });
       const person = cleanText(input.person, 30);
       if (!person) return json(400, { error: 'missing_person' });

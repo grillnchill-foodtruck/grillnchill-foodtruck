@@ -71,6 +71,7 @@ const { codeSchluessel, codeNormalisieren } = require('./lib/gutschein-code');
 const gutscheinNutzung = require('./lib/gutschein-nutzung');
 const { schutz, saeubern, istIntern } = require('./lib/bremse');
 const { vergebeAbholnr, abholTagFuer, nrText } = require('./lib/abholnummer');
+const firmen = require('./lib/firmen');   // Firmen-Mittag auf Monatsrechnung (Paket firmen)
 
 /* Speisekarte: nur für die Anzeige, welches Menü aufs Haus geht. Fehlt sie,
    steht im Ticket eben nur „Menü aufs Haus“ ohne Namen. */
@@ -111,24 +112,8 @@ function deDate(d) {
    Rechnungsschluessels gelingt dank onlyIfNew nur einmal. Wer unterliegt,
    nimmt die naechste. */
 async function nextInvoiceNo() {
-  const s = blobStore('invoices');
-  const jahr = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric' })
-    .format(new Date());
-  const key = 'counter:' + jahr;
-
-  for (let versuch = 0; versuch < 25; versuch++) {
-    const cur = (await s.get(key, { type: 'json' })) || { n: 0 };
-    const n = cur.n + 1;
-    const nummer = `GNC-${jahr}-${String(n).padStart(4, '0')}`;
-    const res = await s.setJSON('inv:' + nummer,
-      { invoiceNo: nummer, platzhalter: true, reserviertAm: new Date().toISOString() },
-      { onlyIfNew: true });
-    // Bereits vergeben – jemand anderes war schneller, also weiterzaehlen.
-    if (res && res.modified === false) continue;
-    await s.setJSON(key, { n });
-    return nummer;
-  }
-  throw new Error('Rechnungsnummer konnte nicht vergeben werden');
+  // Ein Nummernkreis für Einzel- und Firmen-Sammelrechnungen (Paket firmen)
+  return require('./lib/rechnungsnummer').naechsteRechnungsnummer(blobStore('invoices'));
 }
 
 /* Rechnungsblock fuer Firmenkunden. Erscheint nur, wenn eine Firma
@@ -336,7 +321,7 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
         status: 'completed',
         // "accrued" wird sofort mitgesetzt (vor der eigentlichen Gutschrift weiter unten),
         // damit ein zweiter, gleichzeitiger Aufruf die Gutschrift überspringt.
-        accrued: (existing && existing.accrued) || (!!verified && !!order.email),
+        accrued: (existing && existing.accrued) || (!!verified && !!order.email) || !!order.firma,
         createdAt: (existing && existing.createdAt) || new Date().toISOString(),
         completedAt: new Date().toISOString(),
         checkoutId: (existing && existing.checkoutId) || null,
@@ -355,11 +340,26 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
     }
   } catch (e) {}
 
+  // Firmen-Mittag: Der Umsatz zählt, sobald die Bestellung steht (die Firma
+  // zahlt per Monatsrechnung). Die Stempelkarte zählt in v1 nicht mit, und
+  // Mitarbeitende bekommen keine Rückhol-Mails an die Firmenadresse.
+  if (order.firma && !alreadyAccrued && !order.isTest) {
+    try {
+      const total0 = typeof order.total === 'number' ? order.total : 0;
+      const isDel = order.mode === 'delivery';
+      await addRevenue(blobStore('orders'), {
+        oCount: 1, oTotal: total0,
+        pickupCount: isDel ? 0 : 1, pickupTotal: isDel ? 0 : total0,
+        deliveryCount: isDel ? 1 : 0, deliveryTotal: isDel ? total0 : 0,
+      });
+    } catch (e) {}
+  }
+
   // 1) Retargeting-Warteschlange: fällig in 7 Tagen.
   //    Erneute Bestellung überschreibt den Eintrag → Fälligkeit verschiebt sich,
   //    es wird also nur an Kunden gesendet, die nicht von selbst zurückkamen.
   try {
-    if (order.email && !order.isTest) {
+    if (order.email && !order.isTest && !order.firma) {
       const hash = crypto.createHash('sha256').update(order.email.toLowerCase().trim()).digest('hex');
       await blobStore('retarget').setJSON('q:' + hash, {
         email: order.email.trim(),
@@ -376,7 +376,7 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
     // Bestellung nur einmal – sonst könnte der offene order_confirmation-Endpunkt
     // zum Farmen von Guthaben missbraucht werden (Befund S1). Idempotent über den
     // "accrued"-Marker (Befund S5).
-    if (order.email && verified && !alreadyAccrued) {
+    if (order.email && verified && !alreadyAccrued && !order.firma) {
       try {
         const crypto2 = require('crypto');
         const custS = blobStore('customers');
@@ -760,7 +760,7 @@ function buildOrderConfirmationEmail(order) {
         </p>
 
         <p style="margin:14px 0;color:#555;">
-          <strong>Zahlung:</strong> ${order.payment === 'sumup' ? 'Online bezahlt' : 'Vor Ort'}
+          <strong>Zahlung:</strong> ${order.payment === 'firma' ? 'Auf Firmenrechnung (' + esc(order.firmaName || '') + ')' : (order.payment === 'sumup' ? 'Online bezahlt' : 'Vor Ort')}
         </p>
 
         ${order.scheduledFor
@@ -992,7 +992,7 @@ function buildOwnerNotificationEmail(order, statusUpdateBaseUrl, statusToken) {
     </table>
 
     <p style="margin:8px 0;color:#ccc;font-size:14px;">
-      <strong>Zahlung:</strong> ${order.paymentPending ? '🟠 Online (SumUp) – Zahlung wird gerade abgeschlossen' : (order.payment === 'sumup' ? '✅ Online bezahlt (SumUp)' : '💶 Bei Lieferung/Abholung')}
+      <strong>Zahlung:</strong> ${order.payment === 'firma' ? 'Firmenrechnung ' + esc(order.firmaName || '') + ', nicht kassieren' : (order.paymentPending ? '🟠 Online (SumUp) – Zahlung wird gerade abgeschlossen' : (order.payment === 'sumup' ? '✅ Online bezahlt (SumUp)' : '💶 Bei Lieferung/Abholung'))}
     </p>
 
     ${order.note ? `<div style="background:#FFC93C;color:#0A0A0A;padding:10px 14px;border-radius:6px;margin:12px 0;">
@@ -1200,7 +1200,7 @@ async function sendTelegram(order) {
   if (order.loyaltyDiscount > 0) L.push(`${order.loyaltyType === 'menu' ? '🎁 <b>' + e(treueLabel(order)) + '</b>' : 'Treuebonus'}: -${formatPrice(order.loyaltyDiscount)}`);
   if (order.tip > 0) L.push(`Trinkgeld: ${formatPrice(order.tip)}`);
   L.push(`<b>Gesamt: ${formatPrice(order.total)}</b>`);
-  L.push(`Zahlung: ${order.payment === 'sumup' ? (order.paymentPending ? 'Online (ausstehend)' : 'Online bezahlt') : 'Bar/EC vor Ort'}`);
+  L.push(`Zahlung: ${order.payment === 'firma' ? 'Firmenrechnung ' + e(order.firmaName) + ', nicht kassieren' : (order.payment === 'sumup' ? (order.paymentPending ? 'Online (ausstehend)' : 'Online bezahlt') : 'Bar/EC vor Ort')}`);
   if (order.note) L.push(`Notiz: ${e(order.note)}`);
   if (order.customerOrderNo) L.push(`Stammkunden-Zähler: ${order.customerOrderNo}. Bestellung`);
   if (order.loyaltyProgress) {
@@ -1436,10 +1436,26 @@ exports.handler = async (event) => {
      auf dem Ticket, das am Truck abkassiert wird. Bei Online-Zahlungen hat
      sumup-checkout schon korrigiert; dann findet der zweite Lauf nichts mehr.
      Bricht nie ab – siehe lib/preisberechnung.js. */
+  // Firmen-Mittag: Rabatte, Stempelkarte und Trinkgeld raus, BEVOR nachgerechnet wird
+  firmen.fuerBestellungVorbereiten(order);
   let treueFreigabe = null;
   if (type === 'order_confirmation' || type === 'owner_notification') {
     const preis = await pruefeUndKorrigiere(order);
     treueFreigabe = (preis && preis.treueFreigabe) || null;
+  }
+  // Auf Firmenrechnung nur mit gültigem Code, aktiver Firma, passender
+  // E-Mail-Domain und genug Monatslimit. Im Zweifel ablehnen: Der Gast kann
+  // dann normal bezahlen, Kubi gibt keinen Kredit ohne Deckung.
+  if (order.payment === 'firma') {
+    if (type !== 'order_confirmation') return json(400, { error: 'firma', grund: 'pruefung' });
+    let freigabe;
+    try { freigabe = await firmen.bestellungFreigeben(order); } catch (e) {
+      console.error('Firmenprüfung:', e.message);
+      freigabe = { ok: false, grund: 'stoerung' };
+    }
+    if (!freigabe.ok) {
+      return json(403, { error: 'firma', grund: freigabe.grund, rest: freigabe.grund === 'limit' ? freigabe.rest : undefined });
+    }
   }
 
   try {
@@ -1587,6 +1603,16 @@ exports.handler = async (event) => {
         || (trustCash && order && order.payment && order.payment !== 'sumup');
 
       await afterOrderHooks(order, verified, treueFreigabe);
+
+      // Firmen-Mittag: für Monatslimit und Sammelrechnung vermerken
+      if (order.firma) {
+        try { await firmen.bestellungVermerken(order); } catch (e) {
+          console.error('Firmenbestellung vermerken:', e.message);
+          const { telegram } = require('./lib/telegram');
+          await telegram('Firmenbestellung #' + order.reference + ' (' + (order.firmaName || order.firma)
+            + ') fehlt in der Monatsrechnung. Im Admin unter Firmen auf Abgleich tippen.');
+        }
+      }
 
       return json(200, { sent: 2, type, statusLinks, statusUrl: order.reference ? statusPageUrl(order.reference) : null,
         abholnr: Number.isInteger(order.abholnr) ? order.abholnr : null });

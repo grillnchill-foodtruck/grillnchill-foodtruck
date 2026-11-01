@@ -324,6 +324,7 @@
   .abtn.primary{background:var(--ember-solid);border-color:var(--ember-solid);color:#fff}
   .abtn.danger{color:#8FB7E8;border-color:rgba(143,183,232,.45)}
   .bdg.online{color:var(--live);border-color:rgba(109,190,69,.4)}
+  .bdg.firma{color:var(--amber,#FFB020);border-color:rgba(255,176,32,.45)}
   .ord-body{display:none;border-top:1px dashed var(--border);padding:.75rem .85rem;font-size:.83rem}
   .ord.open .ord-body{display:block}
   .ord-items{margin:0 0 .6rem;padding:0;list-style:none}
@@ -662,6 +663,9 @@
       </a>
       <a class="icon-btn" href="/fahrer.html" aria-label="Fahrer-Ansicht öffnen" title="Fahrer" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/></svg>
+      </a>
+      <a class="icon-btn" id="hdrFirmen" href="/firmen-admin" aria-label="Firmen-Mittag verwalten" title="Firmen" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M15 9h4a1 1 0 0 1 1 1v11"/><path d="M9 7h2M9 11h2M9 15h2"/></svg>
       </a>
       <a class="icon-btn" href="/dienstplan" aria-label="Dienstplan öffnen" title="Dienstplan" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
@@ -1626,6 +1630,8 @@ function applyRole(){
   $('tabPush').classList.toggle('hidden',staff);
   $('tabVouchers').classList.toggle('hidden',staff);
   $('tabStats').classList.toggle('hidden',staff);
+  // Firmen-Mittag: Anschriften, Umsätze, Rechnungen, nur für Admins
+  if($('hdrFirmen')) $('hdrFirmen').classList.toggle('hidden',staff);
   $('tabTeam').classList.toggle('hidden',staff);
   // Rechnungen enthalten Kunden- und Umsatzdaten – nur Admins
   $('tabInvoices').classList.toggle('hidden',staff);
@@ -2228,8 +2234,9 @@ const ORD_FILTERS=[
   {key:'pickup',  label:'Abholung',       test:r=>((r.order||{}).mode!=='delivery')&&r.status==='completed'},
   {key:'delivery',label:'Lieferung',      test:r=>((r.order||{}).mode==='delivery')&&r.status==='completed'},
   {key:'preorder',label:'Vorbestellung',  test:r=>{const o=r.order||{};return !!(o.isPreorder||o.scheduledFor)&&r.status==='completed';}},
-  {key:'cash',    label:'Bar/EC vor Ort', test:r=>((r.order||{}).payment!=='sumup')&&r.status==='completed'},
+  {key:'cash',    label:'Bar/EC vor Ort', test:r=>!['sumup','firma'].includes((r.order||{}).payment)&&r.status==='completed'},
   {key:'intern',  label:'Telefon & Truck',test:r=>(r.quelle==='telefon'||r.quelle==='truck')&&r.status==='completed'},
+  {key:'firma',   label:'Firmenrechnung', test:r=>((r.order||{}).payment==='firma')&&r.status==='completed'},
   {key:'ended',   label:'Storniert & Co.',test:r=>['abandoned','cancelled','refunded'].includes(r.status)},
 ];
 function ordFilterTest(r){
@@ -2295,7 +2302,10 @@ function renderOrders(){
       r.quelle==='telefon' ? '<span class="bdg bf-quelle">Telefon</span>' : (r.quelle==='truck' ? '<span class="bdg bf-quelle">Truck</span>' : ''),
       o.mode==='delivery' ? '<span class="bdg delivery">Lieferung</span>' : '<span class="bdg">Abholung</span>',
       o.isPreorder||o.scheduledFor ? '<span class="bdg pre">Vorbestellung</span>' : '',
-      intern ? zahlartBadge(o) : (o.payment==='sumup' ? '<span class="bdg online">Online bezahlt</span>' : '<span class="bdg">Bar/EC vor Ort</span>'),
+      intern ? zahlartBadge(o)
+        : o.payment==='sumup' ? '<span class="bdg online">Online bezahlt</span>'
+        : o.payment==='firma' ? '<span class="bdg firma">Firmenrechnung'+(o.firmaName?' · '+esc2(o.firmaName):'')+'</span>'
+        : '<span class="bdg">Bar/EC vor Ort</span>',
       r.status==='pending' ? '<span class="bdg pending">Zahlung offen</span>' : '',
       r.status==='abandoned' ? '<span class="bdg abandoned">Abgebrochen</span>' : '',
       r.status==='cancelled' ? '<span class="bdg abandoned">Storniert</span>' : '',
@@ -2628,7 +2638,7 @@ $('ordCsv').addEventListener('click',()=>{
     const w=ordTime(r.completedAt||r.createdAt);
     rows.push([w.d,w.t,r.reference,(r.abholnr||''),({telefon:'Telefon',truck:'Truck'})[r.quelle]||'Online',r.status,(o.name||''),(o.phone||''),
       o.mode==='delivery'?'Lieferung':'Abholung',
-      o.payment==='sumup'?'Online':(o.zahlart?({bar:'Bar',karte:'Karte',offen:'Offen'})[o.zahlart]:'Bar/EC'),
+      o.payment==='sumup'?'Online':(o.payment==='firma'?'Firmenrechnung '+(o.firmaName||''):(o.zahlart?({bar:'Bar',karte:'Karte',offen:'Offen'})[o.zahlart]:'Bar/EC')),
       String(o.total||'').replace('.',','),
       (o.items||[]).map(it=>it.qty+'x '+it.name).join(' | ')]);
   });
@@ -2925,7 +2935,7 @@ function renderInvoices(){
       </div>
       <div style="text-align:right;white-space:nowrap;">
         <div><strong>${eur(r.total)}</strong></div>
-        <div class="muted" style="font-size:.78rem;">${r.payment==='sumup'?'online bezahlt':'vor Ort'}</div>
+        <div class="muted" style="font-size:.78rem;">${r.payment==='sumup'?'online bezahlt':(r.payment==='firma'?'Sammelrechnung, Überweisung':'vor Ort')}</div>
         <div class="inv-dls">
           <button type="button" class="inv-dl" data-inv-pdf="${esc2(r.invoiceNo)}"
                   title="Rechnung ${esc2(r.invoiceNo)} als PDF herunterladen">
@@ -3084,7 +3094,7 @@ function invCsvZeile(r){
   const q=x=>'"'+csvSicher(x).replace(/"/g,'""')+'"';
   return [r.invoiceNo,r.invoiceDate,r.company,a.street,a.zip,a.city,r.reference,
           v(7).netto,v(7).steuer,v(19).netto,v(19).steuer,r.total,
-          r.payment==='sumup'?'online':'vor Ort'].map(q).join(';');
+          r.payment==='sumup'?'online':(r.payment==='firma'?'Überweisung':'vor Ort')].map(q).join(';');
 }
 /* BOM voran, sonst zeigt Excel unter Windows Umlaute falsch an. */
 /* Kundeneingaben wie „=HYPERLINK(…)“ führt Excel beim Öffnen sonst als
