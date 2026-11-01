@@ -3,18 +3,21 @@
 // (netlify.toml). Vorher `node werkzeug/seiten-bauen.js`, dann
 // `node werkzeug/vorschau-server.js` und http://localhost:8644/tr/ öffnen.
 // Schickt dieselbe Content-Security-Policy wie Netlify (aus _headers).
+// Anderer Port: `PORT=8651 node werkzeug/vorschau-server.js` (z. B. je Arbeitskopie).
+// Saubere Adressen wie /cockpit fallen auf cockpit.html zurück.
 const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
 const csp = () => { try { return (/Content-Security-Policy: (.*)/.exec(fs.readFileSync(path.join(ROOT, '_headers'), 'utf8')) || [])[1]; } catch (e) { return null; } };
-const TYP = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.mp4': 'video/mp4', '.webm': 'video/webm', '.txt': 'text/plain' };
+const TYP = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.mp4': 'video/mp4', '.webm': 'video/webm', '.txt': 'text/plain', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.pdf': 'application/pdf', '.ico': 'image/x-icon' };
 function datei(p) { let f = path.join(ROOT, decodeURIComponent(p)); if (p.endsWith('/')) f = path.join(f, 'index.html'); return fs.existsSync(f) && fs.statSync(f).isFile() ? f : null; }
 http.createServer((req, res) => {
   const p = req.url.split('?')[0];
   let f = datei(p);
   if (!f && p.startsWith('/tr/')) f = datei(p.slice(3));
+  if (!f && !path.extname(p) && p !== '/') f = datei(p.replace(/\/$/, '') + '.html');
   if (!f) { res.writeHead(404); return res.end('404'); }
   const kopf = { 'Content-Type': TYP[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-store' };
   if (f.endsWith('.html') && csp()) kopf['Content-Security-Policy'] = csp();
   res.writeHead(200, kopf);
   fs.createReadStream(f).pipe(res);
-}).listen(8644, () => console.log('tr-server 8644'));
+}).listen(Number(process.env.PORT) || 8644, function () { console.log('vorschau ' + this.address().port); });
