@@ -13101,9 +13101,12 @@ const LEGAL = {
       <h4>4. Cookies &amp; lokaler Speicher</h4>
       <p>
         Diese Website setzt <strong>keine Cookies</strong> – weder eigene noch von Dritten.
-        Fremde Skripte laden wir nur in zwei Fällen und erst auf deine Aktion hin: die
-        Google-Karte nach Klick auf „Karte laden" (siehe Abschnitt 9) und die Anmelde-Skripte
-        von Apple bzw. Google, wenn du den Anmeldebereich öffnest (siehe Abschnitt 8b).
+        Fremde Inhalte laden wir nur in diesen Fällen und erst, wenn du die jeweilige Funktion
+        nutzt: die Google-Karte nach Klick auf „Karte laden" (siehe Abschnitt 9), die
+        Anmelde-Skripte von Apple bzw. Google, wenn du den Anmeldebereich öffnest (siehe
+        Abschnitt 8b), die Zahlungsfelder von SumUp, wenn wir die Online-Zahlung direkt im
+        Bestellvorgang anbieten (siehe Abschnitt 6), und Kartenbilder von OpenStreetMap auf
+        deiner Statusseite, solange deine Lieferung unterwegs ist (siehe Abschnitt 8c).
         Zählpixel oder Werbe-Tracker gibt es nicht.
       </p>
       <p>
@@ -13137,7 +13140,12 @@ const LEGAL = {
         (Art. 6 Abs. 1 lit. b DSGVO). Beim Kauf eines Wertgutscheins verarbeiten wir
         die angegebene E-Mail-Adresse sowie optionale Namensangaben zur Zustellung des
         Gutschein-Codes und zur Verwaltung der Einlösung; diese Daten speichern wir für die
-        Dauer der Gutschein-Gültigkeit von 3 Jahren (Art. 6 Abs. 1 lit. b DSGVO). Zur internen Benachrichtigung des Teams übermitteln wir eingehende Bestelldaten zusätzlich
+        Dauer der Gutschein-Gültigkeit von 3 Jahren (Art. 6 Abs. 1 lit. b DSGVO).
+        Jede Bestellung erhält eine kurze Abholnummer für den Tag, damit wir dich am Truck
+        nicht mit Namen aufrufen müssen. Bestellungen, die du telefonisch oder direkt am Truck
+        aufgibst, erfasst unser Team im selben System (Name, Telefon und bei Lieferung die
+        Adresse; freiwillig sind alle Angaben außer denen, die wir für die Lieferung brauchen).
+        Es gelten dieselben Zwecke und Fristen wie für Online-Bestellungen. Zur internen Benachrichtigung des Teams übermitteln wir eingehende Bestelldaten zusätzlich
         über den Messenger-Dienst Telegram (Telegram Messenger Inc.); dabei kann eine Verarbeitung
         außerhalb der EU stattfinden. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO
         (Vertragserfüllung – schnelle Bearbeitung deiner Bestellung).
@@ -13154,6 +13162,20 @@ const LEGAL = {
         Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).
         Mehr unter <a href="https://sumup.com/de/datenschutz/" target="_blank" rel="noopener">sumup.com/de/datenschutz</a>.
       </p>
+      <p>
+        Bieten wir die Zahlung direkt im Bestellvorgang an, bleibst du auf unserer Seite: Die
+        Eingabefelder stammen dann von SumUp und werden von SumUp-Servern geladen (Skripte von
+        gateway.sumup.com, Abfragen an sumup.com). Deine Kartendaten gehen auch dabei nur an
+        SumUp, nie an uns. Zur Betrugsprävention erhebt SumUp über einen Dienst unter
+        ltxup.sumup.com technische Merkmale deines Geräts und Browsers (z.&nbsp;B. Browserkennung,
+        Sprache, Zeitzone, Bildschirmgröße). Nutzt du Apple&nbsp;Pay oder Google&nbsp;Pay, wirken
+        zusätzlich Apple Distribution International Ltd. (Cork, Irland) bzw. Google Ireland
+        Limited (Dublin, Irland) mit; Google lädt dafür ein eigenes Skript. Rechtsgrundlage ist
+        Art. 6 Abs. 1 lit. b DSGVO, für die Betrugsprävention Art. 6 Abs. 1 lit. f DSGVO
+        (berechtigtes Interesse an sicheren Zahlungen); das Speichern und Auslesen technisch
+        nötiger Angaben auf deinem Gerät erfolgt nach § 25 Abs. 2 Nr. 2 TDDDG. Über SumUp laufen
+        auch Anzahlungen auf Catering-Angebote, sofern wir sie online anbieten.
+      </p>
 
       <h4>7. E-Mail-Versand über Brevo (EU)</h4>
       <p>
@@ -13165,7 +13187,7 @@ const LEGAL = {
         Mehr unter <a href="https://www.brevo.com/de/legal/privacypolicy/" target="_blank" rel="noopener">brevo.com/de/legal/privacypolicy</a>.
       </p>
 
-      <h4>8. Adress-Prüfung über OpenStreetMap / Nominatim</h4>
+      <h4>8. Adress-Prüfung und Lieferplanung über OpenStreetMap / Nominatim</h4>
       <p>
         Zur Berechnung der Lieferzone und -gebühr ermitteln wir die ungefähre Entfernung
         zwischen unserem Standort und deiner Lieferadresse. Dazu wird deine eingegebene Adresse
@@ -13173,8 +13195,21 @@ const LEGAL = {
         Großbritannien) übermittelt und in Koordinaten umgewandelt. Tippst du im Bestellvorgang
         auf „Standort verwenden", fragt dein Gerät einmalig deine Position ab (nur mit deiner
         Zustimmung im System-Dialog) und wir übersetzen die Koordinaten über Nominatim in eine
-        Adresse, um das Formular vorauszufüllen (Art. 6 Abs. 1 lit. a DSGVO). Wir speichern
-        weder Koordinaten noch Standortverläufe. Mehr unter <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org/wiki/Privacy_Policy</a>.
+        Adresse, um das Formular vorauszufüllen (Art. 6 Abs. 1 lit. a DSGVO). Deine
+        Geräteposition speichern wir nicht.
+      </p>
+      <p>
+        Für Lieferungen wandelt zusätzlich unser Server die Lieferadresse über Nominatim in
+        Koordinaten um. Damit planen wir die Reihenfolge der Fahrten, schätzen die Ankunftszeit
+        und zeigen die Karte auf deiner Statusseite (Art. 6 Abs. 1 lit. b DSGVO). Übertragen
+        werden dabei Straße, Hausnummer, Postleitzahl und Ort, nicht dein Name. Das Ergebnis
+        (Koordinaten, Postleitzahl, Stadtteil) speichern wir unter einem Prüfwert der Adresse
+        höchstens 12 Monate, damit dieselbe Adresse nicht erneut abgefragt werden muss. Intern
+        werten wir aus, in welchen Gegenden besonders oft bestellt wird; dabei fassen wir
+        Lieferungen zu Feldern von etwa 250&nbsp;m zusammen und zeigen nur Felder mit mindestens
+        drei Bestellungen, nie einzelne Adressen (Art. 6 Abs. 1 lit. f DSGVO, berechtigtes
+        Interesse an der Planung von Liefergebiet und Standorten). Für Großbritannien gilt ein
+        Angemessenheitsbeschluss der EU-Kommission. Mehr unter <a href="https://osmfoundation.org/wiki/Privacy_Policy" target="_blank" rel="noopener">osmfoundation.org/wiki/Privacy_Policy</a>.
       </p>
 
       <h4>8a. Kundenkonto (optional)</h4>
@@ -13201,6 +13236,11 @@ const LEGAL = {
         Zum Schutz vor automatisierten Anmeldeversuchen zählen wir Fehlversuche je Absender;
         die IP-Adresse wird dabei ausschließlich als nicht umkehrbarer, gekürzter Hash-Wert
         für maximal 15 Minuten gespeichert (Art. 6 Abs. 1 lit. f DSGVO – Missbrauchsschutz).
+        Ebenso begrenzen wir, wie oft in kurzer Zeit Bestellungen, Anmelde-Codes,
+        Gutschein-Prüfungen, Catering-Anfragen und Gruppenbestellungen ausgelöst werden können.
+        Dafür zählen wir Anfragen je IP-Adresse (bei IPv6 je Netzbereich) sowie je E-Mail-Adresse,
+        Telefonnummer, Gutscheincode oder Gastgebername, gespeichert nur als Hash-Wert mit Zähler
+        und Zeitpunkt. Diese Zähler löschen wir nach spätestens 3 Tagen (Art. 6 Abs. 1 lit. f DSGVO).
         Zur Ausfallsicherheit erstellen wir wöchentlich verschlüsselt übertragene
         Sicherungskopien unserer Bestell- und Kontodaten; alte Stände werden automatisch
         gelöscht, sodass gelöschte Daten spätestens nach 8 Wochen auch aus den Sicherungen
@@ -13224,6 +13264,26 @@ const LEGAL = {
         <a href="https://www.apple.com/legal/privacy/de-ww/" target="_blank" rel="noopener">Apple</a> und
         <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google</a>.
       </p>
+      <h4>8c. Lieferung live verfolgen</h4>
+      <p>
+        Ist deine Lieferung unterwegs, zeigt deine Statusseite die Ankunftszeit und, wenn der
+        Fahrer den Standort teilt, eine Karte mit seiner aktuellen Position. Dafür überträgt das
+        Handy des Fahrers während der Fahrt etwa alle 15 Sekunden seine Position an uns. Wir
+        speichern nur die jeweils letzte Position (Breite, Länge, Genauigkeit, Uhrzeit), keinen
+        Verlauf. Sie ist nur über den Statuslink deiner Bestellung abrufbar und wird gelöscht,
+        sobald die Lieferung zugestellt ist, das Teilen beendet wird oder spätestens nach
+        6 Stunden. Die geschätzte Ankunftszeit bleibt mit der Bestellung bis zu deren Löschung
+        gespeichert. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Abwicklung deiner
+        Lieferung). Fahren Mitarbeitende, informieren wir sie gesondert.
+      </p>
+      <p>
+        Die Kartenbilder lädt dein Browser von tile.openstreetmap.org (OpenStreetMap Foundation,
+        siehe Abschnitt 8). Dabei erhält die OSMF deine IP-Adresse, die aufrufende Seite und
+        deine Browserkennung (Art. 6 Abs. 1 lit. f DSGVO, berechtigtes Interesse an einer
+        verständlichen Darstellung der Lieferung). Ohne geteilten Standort siehst du nur die
+        Ankunftszeit, dann werden keine Kartenbilder geladen.
+      </p>
+
       <h4>9. Google Maps &amp; Schriftarten</h4>
       <p>
         Wir binden eine Karte von Google Maps ein (Google Ireland Limited, Gordon House,
@@ -13234,21 +13294,67 @@ const LEGAL = {
         unserem Server; dabei findet keine Verbindung zu Google Fonts oder anderen
         Drittanbietern statt.</p>
 
-      <h4>10. Catering-Anfragen</h4>
+      <h4>10. Catering-Anfragen und Angebote</h4>
       <p>
         Catering-Anfragen werden per E-Mail über unseren Versanddienstleister Brevo (siehe Abschnitt 7)
         übermittelt. Wir verarbeiten Name, Kontaktdaten und Anfrage-Daten zur Bearbeitung deiner
         Anfrage und Vertragsanbahnung (Art. 6 Abs. 1 lit. b DSGVO).
       </p>
+      <p>
+        Auf Grundlage deiner Anfrage erstellen wir ein Angebot und schicken es dir per E-Mail
+        (Brevo) mit einem persönlichen Link. Dafür speichern wir Name, Firma, E-Mail, Telefon,
+        Eventdaten und den Inhalt des Angebots. Nimmst du das Angebot online an, speichern wir
+        zusätzlich Zeitpunkt, Sprache und einen gekürzten Hash-Wert deiner IP-Adresse als
+        Nachweis der Annahme (Art. 6 Abs. 1 lit. b und f DSGVO) und benachrichtigen unser Team
+        über Telegram (siehe Abschnitt 5). Bleibt ein Angebot unbeantwortet, erinnern wir dich
+        einmal per E-Mail. Entwürfe sowie abgelehnte und abgelaufene Angebote löschen wir nach
+        12 Monaten; angenommene Angebote bewahren wir im Rahmen der handels- und steuerrechtlichen
+        Fristen auf.
+      </p>
 
-      <h4>11. Aktionscode GRILL5</h4>
+      <h4>10a. Firmen-Mittag</h4>
+      <p>
+        Für ein Firmenkonto verarbeiten wir die Angaben aus dem Antrag: Firma, Ansprechperson,
+        E-Mail, Telefon, Liefer- und Rechnungsadresse, freiwillig USt-IdNr., E-Mail-Domain der
+        Mitarbeitenden und ungefähre Personenzahl (Art. 6 Abs. 1 lit. b DSGVO, vorvertragliche
+        Maßnahmen). Über neue Anträge informieren wir unser Team über Telegram. Bei der Eingabe
+        der Lieferadresse prüft dein Browser über Nominatim, ob sie im Liefergebiet liegt (siehe
+        Abschnitt 8). Abgelehnte Anträge löschen wir nach 6 Monaten, Firmenkonten speichern wir
+        bis zur Kündigung.
+      </p>
+      <p>
+        Bestellen Mitarbeitende auf Firmenrechnung, erscheinen Name, Liefertag und Bestellung auf
+        der monatlichen Sammelrechnung an den Arbeitgeber (Art. 6 Abs. 1 lit. b und f DSGVO).
+        Rechnungen bewahren wir nach § 147 AO und § 257 HGB bis zu 10 Jahre auf. Für Bestellungen
+        auf Firmenrechnung schreiben wir keine Stempel gut und verschicken keine Werbe-Mails.
+      </p>
+
+      <h4>11. Aktionscodes mit Kundenlimit (z.&nbsp;B. GRILL5)</h4>
       <p>
         Der Aktionscode GRILL5 ist ausschließlich online über diese Website einlösbar
-        und bis zu dreimal pro Kunde nutzbar. Zur Durchsetzung dieses Limits speichern wir
-        die E-Mail-Adresse der Bestellung ausschließlich als nicht umkehrbaren Hash-Wert
-        (SHA-256) zusammen mit einem Einlösezähler (Art. 6 Abs. 1 lit. f DSGVO – Schutz vor
-        missbräuchlicher Mehrfachnutzung); ein Rückschluss auf die E-Mail-Adresse ist daraus
-        nicht möglich.
+        und bis zu dreimal pro Kunde nutzbar; dasselbe gilt sinngemäß für andere Codes mit
+        einer Grenze je Kunde. Zur Durchsetzung dieses Limits speichern wir je Code einen
+        Einlösezähler zur E-Mail-Adresse und einen zur Telefonnummer der Bestellung, jeweils
+        nur als Hash-Wert (SHA-256) der vereinheitlichten Angabe, dazu Anzahl und Datum der
+        letzten Einlösung. Diese Daten sind pseudonym: Wir können aus ihnen nicht ablesen, wer
+        bestellt hat, wohl aber erkennen, ob dieselbe Angabe erneut verwendet wird. Adressen
+        bekannter Wegwerf-Maildienste nehmen wir für solche Codes nicht an. Rechtsgrundlage ist
+        Art. 6 Abs. 1 lit. b und f DSGVO (Einhaltung der Aktionsbedingungen, Schutz vor
+        missbräuchlicher Mehrfachnutzung). Wir speichern die Zähler, solange die Aktion läuft,
+        und löschen sie spätestens 12 Monate nach ihrem Ende.
+      </p>
+
+      <h4>11a. Bewertung nach der Bestellung</h4>
+      <p>
+        Nach Abholung oder Lieferung kannst du deine Bestellung auf der Statusseite mit einem
+        bis fünf Sternen und optional einem kurzen Text bewerten. Wir speichern Sterne, Text,
+        Sprache, Abholung oder Lieferung und den Zeitpunkt, verknüpft mit der Bestellnummer,
+        aber ohne Name, E-Mail oder Telefon. Wir nutzen die Bewertungen, um Speisen und Abläufe
+        zu verbessern (Art. 6 Abs. 1 lit. f DSGVO). Bei weniger als vier Sternen geht die
+        Bewertung sofort per Telegram an unser Team, damit wir reagieren können; in einem
+        wöchentlichen internen Bericht erscheinen Durchschnitt und gekürzte Texte ohne Namen und
+        Kontaktdaten. Bewertungen löschen wir nach 24 Monaten. Ob du uns zusätzlich bei Google
+        bewertest, entscheidest du selbst; dafür gelten die Bedingungen von Google.
       </p>
 
       <h4>12. Anonyme Statistik (ohne Cookies)</h4>
@@ -13320,7 +13426,9 @@ const LEGAL = {
       <p>Die Darstellung der Produkte auf der Website ist kein bindendes Angebot. Mit dem Absenden
       der Bestellung gibst du ein verbindliches Angebot ab. Der Vertrag kommt zustande, wenn wir
       die Bestellung per E-Mail bestätigen oder mit der Zubereitung beginnen. Bei Online-Zahlung
-      erfolgt die Belastung mit Abschluss des Bezahlvorgangs.</p>
+      erfolgt die Belastung mit Abschluss des Bezahlvorgangs. Telefonische Bestellungen und
+      Bestellungen am Truck erfassen wir im selben System; für sie gelten diese AGB
+      entsprechend.</p>
       <h4>§ 3 Preise</h4>
       <p>Alle Preise sind Endpreise inklusive der gesetzlichen Umsatzsteuer. Liefergebühren und
       ein etwaiges freiwilliges Trinkgeld werden vor Abschluss der Bestellung klar ausgewiesen.
@@ -13332,20 +13440,26 @@ const LEGAL = {
       Mindestbestellwert 25,00&nbsp;€, Liefergebühr 3,50&nbsp;€ · Zone&nbsp;3 (5–13&nbsp;km):
       Mindestbestellwert 50,00&nbsp;€, Liefergebühr 5,00&nbsp;€. Maßgeblich sind die im
       Bestellprozess für deine Adresse angezeigten Werte. Die voraussichtliche Lieferzeit beträgt
-      je nach Stadtteil 30–45 Minuten und ist eine unverbindliche Prognose.</p>
+      je nach Stadtteil 30–45 Minuten und ist eine unverbindliche Prognose. Das gilt auch für
+      die Ankunftszeit, die wir dir während der Lieferung auf der Statusseite anzeigen.</p>
       <h4>§ 5 Abholung</h4>
       <p>Bei Abholung stellen wir deine Bestellung am Foodtruck (Gütersloher Straße 122,
       33649 Bielefeld) bereit – in der Regel innerhalb von ca. 15 Minuten bzw. zur gewählten
-      Vorbestell-Zeit. Bitte nenne bei der Abholung deine Bestellnummer und hole frisch
-      zubereitete Speisen zeitnah ab.</p>
+      Vorbestell-Zeit. Bitte nenne bei der Abholung deine Abholnummer (z.&nbsp;B. „Nr.&nbsp;47")
+      oder deine Bestellnummer und hole frisch zubereitete Speisen zeitnah ab.</p>
       <h4>§ 6 Zahlung</h4>
       <p>Die Bezahlung erfolgt wahlweise bar oder per EC-/Kreditkarte vor Ort oder online über
-      unseren Zahlungsdienstleister SumUp (Karte, Apple&nbsp;Pay, Google&nbsp;Pay).</p>
+      unseren Zahlungsdienstleister SumUp (Karte, Apple&nbsp;Pay, Google&nbsp;Pay). Firmen mit
+      freigeschaltetem Firmenkonto können zusätzlich auf Monatsrechnung bestellen (§&nbsp;16).</p>
       <h4>§ 7 Aktionscodes</h4>
       <p>Der Aktionscode „GRILL5" gewährt 5,00&nbsp;€ Rabatt auf den Warenwert ab einem
       Bestellwert von 20,00&nbsp;€. Der Code ist ausschließlich online über diese Website
-      einlösbar, kann von jedem Kunden bis zu dreimal eingelöst werden (Zuordnung über die
-      bei der Bestellung angegebene E-Mail-Adresse) und gilt ab dem 20.07.2026 bis auf Widerruf.
+      einlösbar, kann von jedem Kunden bis zu dreimal eingelöst werden und gilt ab dem
+      20.07.2026 bis auf Widerruf. Als derselbe Kunde gelten Bestellungen mit derselben
+      E-Mail-Adresse oder derselben Telefonnummer. Codes mit einer Grenze je Kunde setzen eine
+      dauerhafte E-Mail-Adresse voraus; Adressen von Wegwerf-Maildiensten sind ausgeschlossen.
+      Wird ein Code entgegen diesen Bedingungen eingegeben, entfällt der Rabatt; maßgeblich ist
+      der Betrag, der vor dem Bezahlen bzw. in der Bestellbestätigung angezeigt wird.
       Aktionscodes sind nicht mit anderen Rabatten (persönliche Gutscheine, Wertgutscheine,
       Prämien aus dem Treueprogramm) kombinierbar; eine Barauszahlung ist ausgeschlossen. Die zeitlich befristete
       WM-Aktion (gestaffelter Rabatt) endete am 20.07.2026.</p>
@@ -13398,7 +13512,10 @@ const LEGAL = {
       wir nicht erfüllen können, erstatten wir vollständig.</p>
       <h4>§ 11 Catering</h4>
       <p>Die auf der Website dargestellten Catering-Pakete und -Preise sind freibleibend; der
-      Vertrag kommt auf Grundlage des individuellen Angebots zustande. Mit der Buchung wird eine
+      Vertrag kommt auf Grundlage des individuellen Angebots zustande. Das Angebot schicken wir
+      dir per E-Mail; es gilt für den darin genannten Zeitraum. Du kannst es online über den
+      Link in der E-Mail, telefonisch oder schriftlich annehmen; mit der Annahme kommt der
+      Vertrag zustande. Mit der Buchung wird eine
       Anzahlung von 50&nbsp;% fällig, mit deren Eingang der Termin verbindlich reserviert ist;
       der Restbetrag ist nach Erbringung der Leistung fällig. Einzelheiten – insbesondere
       Event-Pauschale, Personenzahl, Leistungsumfang und Stornobedingungen – ergeben sich aus dem
@@ -13436,7 +13553,25 @@ const LEGAL = {
       vom Programm. Das Konto kann jederzeit direkt im Konto-Bereich („Konto löschen")
       oder formlos per E-Mail an info@grillnchill-foodtruck.de gelöscht werden; damit
       verfallen auch Stempelkarten-Guthaben und Empfehlungs-Code.</p>
-      <p style="color: var(--color-text-muted); font-size: 0.8rem;">Stand: 20. Oktober 2026</p>
+      <h4>§ 16 Firmenkunden (Firmen-Mittag)</h4>
+      <p>Unternehmen können ein Firmenkonto beantragen. Wir prüfen jeden Antrag; ein Anspruch auf
+      Annahme besteht nicht. Geliefert wird nur ins Liefergebiet, die Mindestbestellwerte nach
+      §&nbsp;4 gelten. Mit dem freigeschalteten Konto erhält die Firma einen Firmencode. Bestellungen
+      mit diesem Code und, soweit hinterlegt, mit einer E-Mail-Adresse der freigegebenen Domain
+      gelten als Bestellungen der Firma. Die Firma hält den Code geheim und haftet für damit
+      aufgegebene Bestellungen; die Domainprüfung ist keine Identitätsprüfung. Die Firma legt ein
+      Monatslimit fest, Bestellungen darüber können wir ablehnen.</p>
+      <p>Wir rechnen nach Ablauf jedes Kalendermonats mit einer Sammelrechnung per E-Mail ab
+      (PDF und XRechnung; die Firma stimmt dem Empfang elektronischer Rechnungen zu). Sie ist
+      innerhalb des vereinbarten Zahlungsziels, ohne abweichende Vereinbarung 14 Tage, ohne Abzug
+      per Überweisung zu zahlen. Bei Zahlungsverzug gelten §§&nbsp;286, 288 BGB; wir dürfen das
+      Firmenkonto dann pausieren. Auf Firmenrechnung sind Aktionscodes, Gutscheine, Prämien aus dem
+      Treueprogramm und Trinkgeld ausgeschlossen. Für den gemeinsamen Firmen-Mittag als
+      Gruppenbestellung gilt Annahmeschluss 11:00&nbsp;Uhr und Lieferung um 12:00&nbsp;Uhr,
+      nicht freitags, sonntags und an Feiertagen. Beide Seiten können das Firmenkonto jederzeit in
+      Textform kündigen; bis dahin aufgegebene Bestellungen werden noch abgerechnet. Firmenkunden
+      handeln als Unternehmer, ein Widerrufsrecht für Verbraucher besteht nicht.</p>
+      <p style="color: var(--color-text-muted); font-size: 0.8rem;">Stand: 1. November 2026</p>
     `,
   },
   widerruf: {
