@@ -58,6 +58,9 @@
   .hdr-link{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;text-decoration:none}
   .hdr-link span{display:none;font-size:.82rem;font-weight:700}
   @media (min-width:560px){ .hdr-link{width:auto;padding:0 .8rem} .hdr-link span{display:inline} }
+  /* Fünf Symbole im Kopf (mit Fahrer-Ansicht): am schmalen Handy ohne Logo, damit ADMIN lesbar bleibt */
+  @media (max-width:419px){ .hdr-inner > img{display:none} .hdr .brand{overflow:hidden} }
+  @media (max-width:359px){ .hdr-inner{gap:.45rem;padding-left:.8rem;padding-right:.8rem} }
   /* Anmeldezeile einzeilig halten, sonst waechst der Kopf mit jedem Symbol */
   .hdr .brand small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -551,6 +554,9 @@
       </div>
       <a class="icon-btn hdr-link" href="/cockpit.html" aria-label="Cockpit öffnen" title="Cockpit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14l4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg><span>Cockpit</span>
+      </a>
+      <a class="icon-btn" href="/fahrer.html" aria-label="Fahrer-Ansicht öffnen" title="Fahrer" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/></svg>
       </a>
       <a class="icon-btn" href="/dienstplan" aria-label="Dienstplan öffnen" title="Dienstplan" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>

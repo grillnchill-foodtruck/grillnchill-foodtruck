@@ -273,3 +273,20 @@
   to     = "/404.html"
   status = 404
 
+
+# --- Paket lieferung ---
+# Fahrer-Ansicht für Kubis Handy (fahrer.html, gleiche Anmeldung wie das
+# Admin-Tool). Achtung beim Zusammenführen: Redirects gelten in Reihenfolge,
+# dieser Block muss VOR der Regel "/*" -> /404.html stehen, sonst greift
+# die 404-Seite zuerst. Das Admin-Tool verlinkt sicherheitshalber /fahrer.html.
+[[redirects]]
+  from   = "/fahrer"
+  to     = "/fahrer.html"
+  status = 200
+
+[[headers]]
+  for = "/fahrer.html"
+  [headers.values]
+    X-Robots-Tag    = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    Cache-Control   = "no-store"

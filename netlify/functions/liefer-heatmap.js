@@ -93,12 +93,13 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
   const start = Date.now();
 
+  // Bremse und Grundschutz vor dem Lesen des Inhalts (lib/auth-guard.js)
+  const gesperrt = await pruefeSperre(event);
+  if (gesperrt) return gesperrt;
+
   let input = {};
   try { input = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'invalid_json' }); }
   if (!input || typeof input !== 'object') return json(400, { error: 'invalid_json' });
-
-  const gesperrt = await pruefeSperre(event);
-  if (gesperrt) return gesperrt;
 
   let who = null;
   if (typeof input.password === 'string' && input.password) {

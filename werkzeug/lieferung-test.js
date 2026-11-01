@@ -32,14 +32,16 @@ require.cache['@netlify/blobs'] = { id: '@netlify/blobs', exports: { getStore: (
 
 process.env.ADMIN_PASSWORD = 'kubi-test-passwort';
 delete process.env.ZWEI_FAKTOR;
-Object.assign(process.env, { STATUS_UPDATE_SECRET: 'test-status-geheim', BREVO_API_KEY: 'test-nicht-echt', BREVO_SENDER_EMAIL: 'test@example.com' });
+Object.assign(process.env, { STATUS_UPDATE_SECRET: 'test-status-geheim', BREVO_API_KEY: 'test-nicht-echt', BREVO_SENDER_EMAIL: 'test@example.com', OWNER_EMAIL: 'inhaber@example.com' });
 delete process.env.VAPID_PUBLIC_KEY; delete process.env.VAPID_PRIVATE_KEY; delete process.env.TELEGRAM_BOT_TOKEN;
 
 /* fetch: Nominatim-Stub, alles andere 503 (keine Mail, kein Push nach außen) */
 const anfragen = [];
+const sonstige = [];
 let nominatim = () => [];
 global.fetch = async (url, opt) => {
   const u = String(url);
+  if (!u.startsWith('https://nominatim.openstreetmap.org/')) sonstige.push({ url: u, body: opt && opt.body });
   if (u.startsWith('https://nominatim.openstreetmap.org/')) {
     anfragen.push({ url: u, opt, t: uhr.t });
     const r = nominatim(new URL(u));
@@ -63,6 +65,8 @@ const fahrer = require(F + '/fahrer.js');
 const live = require(F + '/lieferung-live.js');
 const status = require(F + '/order-status.js');
 const heatmap = require(F + '/liefer-heatmap.js');
+const mail = require(F + '/send-email.js');
+const { internHeader } = require(F + '/lib/bremse.js');
 
 let fehler = 0, n = 0;
 const ok = (name, b, info) => { n++; console.log((b ? '✅ ' : '❌ ') + name + (b || info === undefined ? '' : '\n   ' + JSON.stringify(info))); if (!b) fehler++; };
@@ -188,12 +192,22 @@ const treffer = (lat, lng, extra) => [{ lat: String(lat), lon: String(lng), addr
   ok('Fahrer-Liste: Hinweis auf gemeinsame Fahrt (mitte + fern)', (r.d.buendel || []).some((b) => b.a === rMitte && b.b === rFern), r.d.buendel);
 
   /* ---- Losfahren über den vorhandenen Weg ---------------------------------- */
+  sonstige.length = 0;
   r = await post(status, { action: 'set', password: kubi.token, reference: rFern, state: 'on_the_way', ankunftMin: 15 });
+  const mailRuf = sonstige.find((x) => x.url.includes('/send-email'));
+  const mailBody = mailRuf ? JSON.parse(mailRuf.body) : {};
+  ok('Losfahren: Kunden-Mail \"unterwegs\" geht über den vorhandenen Weg, mit Ankunftszeit', mailBody.type === 'status_update' && mailBody.status === 'on_the_way' && !!mailBody.order.ankunft);
   let rec = JSON.parse(daten.get('orders|o:' + rFern));
   const eta = Date.parse(rec.fahrt && rec.fahrt.ankunft) - Date.now();
   ok('Losfahren: order-status setzt on_the_way und rec.fahrt mit Ankunftszeit', r.s === 200 && rec.fstate === 'on_the_way' && rec.fahrt.minuten === 15 && eta > 14 * 60000 && eta <= 15 * 60000);
   r = await post(fahrer, { action: 'liste', password: kubi.token });
   ok('Fahrer-Liste: unterwegs steht oben, mit Ankunft', r.d.lieferungen[0].ref === rFern && r.d.lieferungen[0].gruppe === 'unterwegs' && !!r.d.lieferungen[0].fahrt.ankunft);
+
+  sonstige.length = 0;
+  await mail.handler({ httpMethod: 'POST', headers: { 'x-nf-client-connection-ip': ip(), ...internHeader() }, body: JSON.stringify(mailBody) });
+  const brevo = sonstige.find((x) => x.url.includes('brevo'));
+  const html = brevo ? JSON.parse(brevo.body).htmlContent : '';
+  ok('Mail \"unterwegs\": Ankunft gegen Uhrzeit und Link zur Live-Karte', /Ankunft gegen/.test(html) && /\d\d:\d\d Uhr/.test(html) && html.includes('/s/' + rFern + '?k=' + L.statusKey(rFern)) && /Lieferung live verfolgen/.test(html));
 
   /* ---- Position teilen ------------------------------------------------------ */
   ok('Position ohne Anmeldung -> 401', (await post(fahrer, { action: 'position', refs: [rFern], lat: 52.0, lng: 8.5 })).s === 401);

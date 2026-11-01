@@ -265,13 +265,14 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 
+  // Bremse gegen Durchprobieren und Grundschutz (Größe, Anfragen je Absender),
+  // siehe lib/auth-guard.js und lib/bremse.js. Vor dem Lesen des Inhalts.
+  const gesperrt = await pruefeSperre(event);
+  if (gesperrt) return gesperrt;
+
   let input = {};
   try { input = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'invalid_json' }); }
   if (!input || typeof input !== 'object') return json(400, { error: 'invalid_json' });
-
-  // Bremse gegen Durchprobieren und Grundschutz, siehe lib/auth-guard.js
-  const gesperrt = await pruefeSperre(event);
-  if (gesperrt) return gesperrt;
   const who = await authRole(await passwortAusSitzung(typeof input.password === 'string' ? input.password : ''));
   await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });

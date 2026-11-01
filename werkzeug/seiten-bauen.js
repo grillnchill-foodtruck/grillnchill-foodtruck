@@ -409,7 +409,8 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self' %HASHES% https://challenges.cloudflare.com https://accounts.google.com https://appleid.cdn-apple.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
-  "img-src 'self' data: blob:",
+  // Kartenkacheln für die Live-Lieferung (status.html) und die Liefer-Heatmap (cockpit.html), karte.js
+  "img-src 'self' data: blob: https://tile.openstreetmap.org",
   "font-src 'self' https://fonts.gstatic.com",
   "connect-src 'self' https://nominatim.openstreetmap.org https://accounts.google.com https://appleid.apple.com",
   "frame-src https://maps.google.com https://www.google.com https://challenges.cloudflare.com https://accounts.google.com",

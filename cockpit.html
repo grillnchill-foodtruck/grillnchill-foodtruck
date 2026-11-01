@@ -356,6 +356,30 @@
     .skeleton{animation:none}
   }
   .kpi-value.is-hidden-value { font-size: 1.35rem; color: var(--muted-foreground); letter-spacing: 0; }
+
+  /* ================= Liefer-Heatmap (nur Inhaber) ================= */
+  .heat-card{margin-top:16px}
+  @media (min-width:1024px){ .heat-card{margin-top:20px} }
+  .seg{display:inline-flex;padding:3px;gap:3px;background:var(--muted);border:1px solid var(--border);border-radius:999px;flex:none}
+  .seg button{min-height:40px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:var(--muted-foreground);font-weight:600;font-size:.875rem;cursor:pointer;white-space:nowrap}
+  .seg button[aria-checked="true"]{background:var(--primary-solid);color:#fff}
+  .seg button:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+  .heat-raster{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+  @media (min-width:900px){ .heat-raster{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)} }
+  .heat-karte{height:300px;border:1px solid var(--border)}
+  @media (min-width:700px){ .heat-karte{height:380px} }
+  .heat-legende{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.8125rem;color:var(--muted-foreground)}
+  .heat-legende i{flex:0 1 160px;height:8px;border-radius:999px;background:linear-gradient(90deg,rgba(232,90,36,.55),#FF7A3D,#FFC93C)}
+  .heat-seite{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .heat-liste{display:flex;flex-direction:column;gap:6px;counter-reset:gegend}
+  .heat-liste li{display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:var(--muted);border:1px solid var(--border);border-radius:10px}
+  .heat-liste li::before{counter-increment:gegend;content:counter(gegend) ".";color:var(--muted-foreground);font-size:.8125rem;min-width:1.2rem;font-variant-numeric:tabular-nums}
+  .heat-liste .ort{flex:1;min-width:0;overflow-wrap:anywhere}
+  .heat-liste .plz{color:var(--muted-foreground);font-variant-numeric:tabular-nums;margin-right:6px}
+  .heat-liste .anz{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .heat-liste .anz small{font-weight:500;color:var(--muted-foreground);font-size:.8125rem}
+  .heat-liste .leer{background:none;border:0;padding:0;color:var(--muted-foreground)}
+  .heat-liste .leer::before{content:none}
 </style>
 </head>
 <body>
@@ -560,6 +584,32 @@
       </section>
 
     </div>
+
+    <!-- Liefer-Heatmap (nur Inhaber, cockpit-heatmap.js, karte.js) -->
+    <section class="card heat-card" id="cardHeat" aria-labelledby="hHeat" hidden>
+      <div class="card-header">
+        <div>
+          <h2 class="card-title" id="hHeat">Liefer-Heatmap</h2>
+          <p class="card-description">Wohin am meisten geliefert wird. Nur Felder von etwa 250 m mit mindestens 3 Bestellungen, nie einzelne Adressen.</p>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="Zeitraum" id="heatTage">
+          <button type="button" role="radio" aria-checked="true" data-tage="30">30 Tage</button>
+          <button type="button" role="radio" aria-checked="false" data-tage="90">90 Tage</button>
+        </div>
+      </div>
+      <div class="heat-raster">
+        <div class="heat-karte-box">
+          <div class="heat-karte" id="heatKarte"></div>
+          <div class="heat-legende" aria-hidden="true"><span>wenig</span><i></i><span>viel</span></div>
+        </div>
+        <div class="heat-seite">
+          <p class="card-description" id="heatInfo" aria-live="polite">Wird geladen</p>
+          <h3 class="sub-title">Stärkste Gegenden</h3>
+          <ol class="heat-liste" id="heatListe"></ol>
+          <p class="hint">Das Bestell-Archiv reicht 90 Tage zurück. Adressen werden einmal über OpenStreetMap verortet und gespeichert.</p>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -838,6 +888,8 @@
 
     steuerungAktiv(true);
     zeichneStatus(d.status || {});
+    // Liefer-Heatmap (cockpit-heatmap.js) zeigt sich nur dem Inhaber
+    document.dispatchEvent(new CustomEvent('gnc-cockpit', { detail: { owner: d.owner === true, cred: cred } }));
   }
 
   function badge(el, art, icon, text) {
@@ -1248,6 +1300,7 @@
     try { sessionStorage.removeItem(PW_KEY); } catch (e) {}
     try { if (serverAuch || (g && g.t === cred)) localStorage.removeItem(PW_KEY + '_p'); } catch (e) {}
     cred = '';
+    document.dispatchEvent(new CustomEvent('gnc-cockpit', { detail: { owner: false, cred: '' } }));
     zuruecksetzen();
     zeigeLogin();
     if (text) toast(text, 'err');
@@ -1270,5 +1323,7 @@
   }
 })();
 </script>
+<script src="/karte.js"></script>
+<script src="/cockpit-heatmap.js"></script>
 </body>
 </html>
