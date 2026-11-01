@@ -47,6 +47,11 @@ const SPEICHER = [
   { name: 'track',     zweck: 'Nutzungszähler' },
   { name: 'retarget',  zweck: 'Warteschlange für Erinnerungsmails' },
   { name: 'push',      zweck: 'Push-Anmeldungen der Geräte' },
+  { name: 'firmen',    zweck: 'Firmenkonten, Anträge, Sammelrechnungen (8 Jahre aufbewahrungspflichtig)' },
+  { name: 'paesse',    zweck: 'Burger-Pässe: gekaufte Menü-Pakete und ihre Einlösungen' },
+  { name: 'feedback',  zweck: 'Bewertungen nach der Bestellung' },
+  { name: 'kosten',    zweck: 'Wareneinsatz je Artikel (Eingaben des Inhabers)' },
+  { name: 'geo',       zweck: 'Koordinaten zu Lieferadressen (Cache der Geokodierung)' },
 ];
 
 function store(name) {

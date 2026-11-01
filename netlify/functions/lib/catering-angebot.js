@@ -76,7 +76,7 @@ const STANDARD = {
   stundenPreis: 89,
   inklStunden: 2.5,
   gueltigTage: 14,
-  anzahlungProzent: 30,
+  anzahlungProzent: 50,   // wie auf der Website (catp.cond_text)
   anzahlungOnline: false,
 };
 const PAKETE = Object.keys(STANDARD.pakete);

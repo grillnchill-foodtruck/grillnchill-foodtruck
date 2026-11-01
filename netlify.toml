@@ -362,6 +362,11 @@
 # included_files unter [functions], eine eigene Liste je Function würde die
 # globale ersetzen.
 
+# Löschfristen aus der Datenschutzerklärung durchsetzen (lib/aufraeumen.js):
+# Geokodierung, Feedback, Abholnummern, Live-Position, Bremse, abgelehnte Firmenanträge
+[functions."aufraeumen"]
+  schedule = "40 2 * * *"
+
 # Gebrandete 404-Seite. Muss der LETZTE Redirect bleiben: Regeln gelten in
 # Reihenfolge, neue Redirects also immer davor eintragen.
 [[redirects]]

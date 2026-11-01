@@ -114,9 +114,9 @@ const TAG = 864e5;
   ok('Mitarbeiter -> 403 (keine Preise für Staff)', (await adminGet({ liste: '1' }, tokenStaff)).s === 403);
   ok('Reines Passwort ohne Zwei-Faktor-Sitzung -> 401', (await adminGet({ liste: '1' }, 'kubi-test-passwort')).s === 401);
   let r = await adminGet({ liste: '1' });
-  ok('Admin-Liste leer, Standardpreise 21/26/32, Anzahlung 30 %, Schalter AUS',
+  ok('Admin-Liste leer, Standardpreise 21/26/32, Anzahlung 50 % (wie Website), Schalter AUS',
     r.s === 200 && r.d.angebote.length === 0 && r.d.einstellungen.pakete.classic.preis === 21 && r.d.einstellungen.pakete.gnc.preis === 26
-    && r.d.einstellungen.pakete.flat.preis === 32 && r.d.einstellungen.anzahlungProzent === 30 && r.d.einstellungen.gueltigTage === 14
+    && r.d.einstellungen.pakete.flat.preis === 32 && r.d.einstellungen.anzahlungProzent === 50 && r.d.einstellungen.gueltigTage === 14
     && r.d.einstellungen.anzahlungOnline === false, r.d);
 
   /* ---- Entwurf aus Anfrage ------------------------------------------------- */
