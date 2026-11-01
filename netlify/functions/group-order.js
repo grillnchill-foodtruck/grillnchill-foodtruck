@@ -21,7 +21,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
-const { schutz, saeubern } = require('./lib/bremse');
+const { schutz, saeubern, grenzen } = require('./lib/bremse');
 
 const GROUP_TTL_MS = 48 * 3600 * 1000;
 const MAX_CONTRIBUTIONS = 30;
@@ -79,6 +79,9 @@ exports.handler = async (event) => {
     // ---------- Gruppe erstellen ----------
     if (action === 'create') {
       const host = cleanText(input.host, 40) || 'Team';
+      // Je Gastgeber-Name und Notbremse über alle Absender (lib/bremse.js, GRENZEN['gruppe-neu'])
+      const halt = await grenzen(event, 'gruppe-neu', { gastgeber: host });
+      if (halt) return halt;
       let id = randomId(8);
       for (let i = 0; i < 4 && await s.get('g:' + id, { type: 'json' }); i++) id = randomId(8);
       const hostKey = randomId(12);

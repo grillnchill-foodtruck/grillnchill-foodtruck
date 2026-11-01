@@ -124,6 +124,7 @@ I18N.pt = {
 
     "cart.title": "O teu carrinho", "cart.empty": "O teu carrinho está vazio", "cart.empty_hint": "Escolhe algo no menu.",
     "cart.repeat_last": "Repetir a última encomenda", "loyalty.title": "Cartão de selos", "loyalty.line": "Bónus de fidelidade", "loyalty.hint": "Faltam {n} para o teu menu grátis.", "loyalty.redeem": "Resgatar bónus de fidelidade (−{amount})", "loyalty.applied": "Bónus de fidelidade aplicado (−{amount})", "loyalty.reward_min": "Bónus de fidelidade de {amount} pronto, resgatável a partir de {min} de valor de encomenda.",
+    "promo.voucher_wegwerf": "Para este código precisas de um endereço de email permanente, não descartável.",
     "cart.upsell_title": "Mais alguma coisa?", "cart.upsell_min": "Faltam {rest} para a encomenda mínima", "cart.upsell_add": "adicionar",
     "cart.edit": "Editar",
     "menu.tag_meal": "MENU", "menu.meal_suffix": "Menu", "menu.meal_desc": "acompanhamento + bebida + dip à tua escolha",

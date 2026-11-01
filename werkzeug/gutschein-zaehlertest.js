@@ -15,6 +15,10 @@
  * Der Test fährt die ECHTE send-email-Function gegen einen nachgebauten
  * Speicher. Kein Netz, keine Mails, keine Zugangsdaten nötig.
  *
+ * Seit November 2026 auch: Zählung je Telefonnummer neben der E-Mail
+ * (lib/gutschein-nutzung.js), Vereinheitlichung der Nummer, eine Bestellung
+ * zählt nur einmal, Wegwerf-Adressen zählen nicht.
+ *
  *   node werkzeug/gutschein-zaehlertest.js
  * ----------------------------------------------------------------------------
  */
@@ -119,6 +123,54 @@ const stand = (code) => SPEICHER['vouchers']['c:' + code];
   for (let i = 0; i < 3; i++) await einloesen('EINMAL');
   const e = stand('EINMAL');
   pruefe('oncePerCustomer greift', e.uses === 1, 'uses=' + e.uses);
+
+  console.log('\n4) Telefonnummer zählt mit (GRILL5-Regel: max. 3 pro Kunde)');
+  const crypto = require('crypto');
+  const sha = (x) => crypto.createHash('sha256').update(x).digest('hex');
+  const zaehler = (k) => (SPEICHER.vouchers[k] || {}).n || 0;
+  const mitKunde = (code, email, phone, ref) => handler({
+    httpMethod: 'POST', headers: {},
+    body: JSON.stringify({ type: 'order_confirmation', order: { ...bestellung(code), email, phone, reference: ref || bestellung(code).reference } }),
+  });
+  legeAn('TELTEST', { maxUses: 0, maxPerCustomer: 3, createdAt: '2026-11-01T00:00:00.000Z' });
+  await mitKunde('TELTEST', 'erste@example.org', '+49 170 1112223');
+  pruefe('Eine Einlösung zählt unter E-Mail UND Telefon',
+    zaehler('n:TELTEST:' + sha('erste@example.org')) === 1 && zaehler('t:TELTEST:' + sha('491701112223')) === 1);
+  await mitKunde('TELTEST', 'zweite@example.org', '0170 111 22 23');
+  await mitKunde('TELTEST', 'dritte@example.org', '0049 (170) 111-2223');
+  pruefe('Andere Schreibweisen derselben Nummer zählen zusammen', zaehler('t:TELTEST:' + sha('491701112223')) === 3, 't=' + zaehler('t:TELTEST:' + sha('491701112223')));
+  await mitKunde('TELTEST', 'vierte@example.org', '+49 (0) 170 1112223');
+  const tt = stand('TELTEST');
+  pruefe('4. Bestellung mit neuer E-Mail, gleicher Nummer: nicht gezählt', tt.uses === 3 && zaehler('n:TELTEST:' + sha('vierte@example.org')) === 0, 'uses=' + tt.uses);
+
+  legeAn('DREIMAL', { maxUses: 0, maxPerCustomer: 3, createdAt: '2026-11-01T00:00:00.000Z' });
+  for (let i = 0; i < 3; i++) await mitKunde('DREIMAL', 'stamm@example.org', '');
+  pruefe('Neuer Kunde: drei Einlösungen ergeben Zähler 3 (nicht doppelt)', zaehler('n:DREIMAL:' + sha('stamm@example.org')) === 3 && stand('DREIMAL').uses === 3, 'n=' + zaehler('n:DREIMAL:' + sha('stamm@example.org')));
+  legeAn('ALTSTAND', { maxUses: 0, maxPerCustomer: 3, createdAt: '2026-11-01T00:00:00.000Z', usedBy: { [sha('alt@example.org')]: 2 } });
+  await mitKunde('ALTSTAND', 'alt@example.org', '01705556667');
+  pruefe('Altkunde mit 2 Einlösungen in usedBy: Zähler danach 3', zaehler('n:ALTSTAND:' + sha('alt@example.org')) === 3 && zaehler('t:ALTSTAND:' + sha('491705556667')) === 1);
+
+  const ref = 'GNC-EINMAL-' + Date.now();
+  legeAn('DOPPELT', { maxUses: 0, maxPerCustomer: 3, createdAt: '2026-11-01T00:00:00.000Z' });
+  await mitKunde('DOPPELT', 'doppelt@example.org', '01702223334', ref);
+  await mitKunde('DOPPELT', 'doppelt@example.org', '01702223334', ref);
+  pruefe('Dieselbe Bestellung zweimal gemeldet: zählt einmal',
+    stand('DOPPELT').uses === 1 && zaehler('t:DOPPELT:' + sha('491702223334')) === 1 && zaehler('n:DOPPELT:' + sha('doppelt@example.org')) === 1);
+
+  legeAn('KURZ', { maxUses: 0, maxPerCustomer: 3, createdAt: '2026-11-01T00:00:00.000Z' });
+  await mitKunde('KURZ', 'kurz@example.org', '0521 12');
+  pruefe('Nummer unter 8 Ziffern wird ignoriert', !Object.keys(SPEICHER.vouchers).some((k) => k.startsWith('t:KURZ:')) && stand('KURZ').uses === 1);
+
+  legeAn('OHNELIMIT', { maxUses: 0, maxPerCustomer: 0 });
+  await mitKunde('OHNELIMIT', 'frei@example.org', '01703334445');
+  pruefe('Code ohne Kundenlimit legt keine Kundenzähler an', !Object.keys(SPEICHER.vouchers).some((k) => /^[nt]:OHNELIMIT:/.test(k)) && stand('OHNELIMIT').uses === 1);
+
+  console.log('\n5) Wegwerf-Adressen');
+  legeAn('WEGWERF5', { maxUses: 0, maxPerCustomer: 3, createdAt: '2026-11-01T00:00:00.000Z' });
+  await mitKunde('WEGWERF5', 'trick@mailinator.com', '01704445556');
+  await mitKunde('WEGWERF5', 'trick@abc.yopmail.com', '01704445557');
+  pruefe('Wegwerf-Adresse (auch Subdomain): keine Einlösung gezählt',
+    stand('WEGWERF5').uses === 0 && !Object.keys(SPEICHER.vouchers).some((k) => /^[nt]:WEGWERF5:/.test(k)), 'uses=' + stand('WEGWERF5').uses);
 
   console.log('\n' + '─'.repeat(74));
   console.log(fehler === 0

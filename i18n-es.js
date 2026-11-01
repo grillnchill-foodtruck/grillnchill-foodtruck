@@ -124,6 +124,7 @@ I18N.es = {
 
     "cart.title": "Tu cesta", "cart.empty": "Tu cesta está vacía", "cart.empty_hint": "Elige algo de la carta.",
     "cart.repeat_last": "Repetir el último pedido", "loyalty.title": "Tarjeta de sellos", "loyalty.line": "Bono de fidelidad", "loyalty.hint": "Te faltan {n} para tu menú gratis.", "loyalty.redeem": "Canjear bono de fidelidad (−{amount})", "loyalty.applied": "Bono de fidelidad aplicado (−{amount})", "loyalty.reward_min": "Bono de fidelidad de {amount} listo, canjeable a partir de {min} de pedido.",
+    "promo.voucher_wegwerf": "Para este código necesitas una dirección de email permanente, no una desechable.",
     "cart.upsell_title": "¿Algo más?", "cart.upsell_min": "Faltan {rest} para el pedido mínimo", "cart.upsell_add": "añadir",
     "cart.edit": "Editar",
     "menu.tag_meal": "MENÚ", "menu.meal_suffix": "Menú", "menu.meal_desc": "acompañamiento + bebida + dip a elegir",

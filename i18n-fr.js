@@ -124,6 +124,7 @@ I18N.fr = {
 
     "cart.title": "Ton panier", "cart.empty": "Ton panier est vide", "cart.empty_hint": "Choisis quelque chose dans la carte.",
     "cart.repeat_last": "Répéter la dernière commande", "loyalty.title": "Carte de fidélité", "loyalty.line": "Bonus fidélité", "loyalty.hint": "Encore {n} avant ton menu offert.", "loyalty.redeem": "Utiliser le bonus fidélité (−{amount})", "loyalty.applied": "Bonus fidélité appliqué (−{amount})", "loyalty.reward_min": "Bonus fidélité de {amount} prêt, utilisable dès {min} de commande.",
+    "promo.voucher_wegwerf": "Pour ce code, il te faut une adresse e-mail permanente, pas une adresse jetable.",
     "cart.upsell_title": "Un petit truc en plus ?", "cart.upsell_min": "Encore {rest} pour atteindre la commande minimum", "cart.upsell_add": "ajouter",
     "cart.edit": "Modifier",
     "menu.tag_meal": "OFFRE MENU", "menu.meal_suffix": "Menu", "menu.meal_desc": "accompagnement + boisson + dip au choix",

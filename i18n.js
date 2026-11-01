@@ -131,6 +131,7 @@ const I18N = {
 
     "cart.title": "Dein Warenkorb", "cart.empty": "Dein Warenkorb ist leer", "cart.empty_hint": "Such dir in der Speisekarte etwas aus.",
     "cart.repeat_last": "Letzte Bestellung wiederholen", "loyalty.title": "Stempelkarte", "loyalty.line": "Treuebonus", "loyalty.hint": "Noch {n} bis zu deinem Menü aufs Haus.", "loyalty.redeem": "Treuebonus einlösen (−{amount})", "loyalty.applied": "Treuebonus angewendet (−{amount})", "loyalty.reward_min": "Treuebonus {amount} bereit, einlösbar ab {min} Bestellwert.",
+    "promo.voucher_wegwerf": "Für diesen Code brauchst du eine dauerhafte E-Mail-Adresse, keine Wegwerf-Adresse.",
     "cart.upsell_title": "Fehlt noch etwas?", "cart.upsell_min": "Noch {rest} bis zum Mindestbestellwert", "cart.upsell_add": "hinzufügen",
     "cart.edit": "Bearbeiten",
     "menu.tag_meal": "SPAR-MENÜ", "menu.meal_suffix": "Menü", "menu.meal_desc": "Beilage + Getränk + Dip nach Wahl",

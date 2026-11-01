@@ -3,9 +3,15 @@
  * ----------------------------------------------------------------------------
  * Prüft persönliche Gutschein-Codes (aus der Retargeting-Mail) serverseitig.
  *
- *   POST /voucher-check   Body: { code }
+ *   POST /voucher-check   Body: { code, email?, phone?, mode?, app? }
  *   → { valid: true, value: 3, minOrder: 15, expiresAt }
- *   → { valid: false, reason: 'not_found' | 'expired' | 'used' }
+ *   → { valid: false, reason: 'not_found' | 'expired' | 'used' | 'customer_limit'
+ *                             | 'wegwerf' | 'app_only' | ... }
+ *
+ * Codes mit Kundenlimit (GRILL5 u. a.) zählen je E-Mail UND je Telefonnummer
+ * (lib/gutschein-nutzung.js) und gelten nicht für Wegwerf-Adressen. Die
+ * Prüfung hier sagt dem Kunden früh Bescheid; verbindlich ist
+ * lib/preisberechnung.js beim Bestellen.
  *
  * Die Codes werden von retarget-daily.js erzeugt (Store: vouchers).
  * ----------------------------------------------------------------------------
@@ -15,7 +21,7 @@ const { getStore } = require('@netlify/blobs');
 const { istTestCode } = require('./lib/preisberechnung');
 const { codeNormalisieren } = require('./lib/gutschein-code');
 const nutzung = require('./lib/gutschein-nutzung');
-const { schutz } = require('./lib/bremse');
+const { schutz, grenzen } = require('./lib/bremse');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -71,16 +77,20 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 
-  let code = '', email = '', mode = '', imApp = false;
+  let code = '', email = '', phone = '', mode = '', imApp = false;
   try {
     const b = JSON.parse(event.body || '{}');
     // Muss zeichengenau zu cleanCode() in vouchers-admin.js passen
     code = codeNormalisieren(b.code);
     email = (b.email || '').toString().trim().toLowerCase().slice(0, 120);
+    phone = (b.phone || '').toString().slice(0, 40);
     mode = (b.mode || '').toString();
     imApp = !!b.app;   // Seite laeuft in der installierten App (iOS/Android/PWA)
   } catch (e) {}
   if (code.length < 3) return json(200, { valid: false, reason: 'not_found' });
+  // Je Code, je E-Mail, je Telefon und Notbremse über alle (lib/bremse.js, GRENZEN.gutschein)
+  const grenzHalt = await grenzen(event, 'gutschein', { code, mail: email, tel: phone });
+  if (grenzHalt) return grenzHalt;
 
   /* 🔧 Testbestellung (nur für den Inhaber).
      Der Code stand früher als Klartext in index.html – also im Quelltext
@@ -122,10 +132,14 @@ exports.handler = async (event) => {
       if (c.maxUses > 0 && (c.uses || 0) >= c.maxUses) {
         return json(200, { valid: false, reason: 'limit_reached' });
       }
+      // Codes mit Kundenlimit brauchen eine dauerhafte Adresse: mit Wegwerf-Postfächern
+      // liesse sich das Limit mit jeder Bestellung neu umgehen.
+      if (nutzung.wegwerfGesperrt(c, email)) return json(200, { valid: false, reason: 'wegwerf' });
       // Pro-Kunde-Limit: maxPerCustomer (Zahl) oder Legacy-Schalter oncePerCustomer (=1).
-      // Gezählt wird je Kunde in lib/gutschein-nutzung.js, dieselbe Zahl prüft die Preisberechnung.
+      // Gezählt wird je E-Mail und je Telefon in lib/gutschein-nutzung.js, es gilt das
+      // Maximum aus beiden. Dieselbe Zahl prüft die Preisberechnung.
       const perCust = nutzung.limitProKunde(c);
-      if (perCust > 0 && email && (await nutzung.einloesungenLesen(vs0, code, c, email)) >= perCust) {
+      if (perCust > 0 && (email || phone) && (await nutzung.einloesungenLesen(vs0, code, c, { email, phone })) >= perCust) {
         return json(200, { valid: false, reason: 'customer_limit', max: perCust });
       }
       return json(200, {

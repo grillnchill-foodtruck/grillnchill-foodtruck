@@ -354,6 +354,83 @@ async function treuepruefung() {
 }
 
 /* ---------------------------------------------------------------------------
+   4b. Kundenlimit je E-Mail UND Telefon, Wegwerf-Adressen (November 2026)
+   GRILL5: 5 € ab 20 €, höchstens 3× pro Kunde. Es gilt das Maximum aus
+   E-Mail- und Telefon-Zählung. Adressen von Wegwerfdiensten bekommen Codes
+   mit Kundenlimit nicht. Verbindlich ist die Preisberechnung; voucher-check
+   sagt es dem Kunden vorher.
+--------------------------------------------------------------------------- */
+async function kundenlimitpruefung() {
+  const crypto = require('crypto');
+  const sha = (x) => crypto.createHash('sha256').update(x).digest('hex');
+  const roh = new Map();
+  const gemeinsam = {
+    async get(k) { return roh.has(k) ? JSON.parse(roh.get(k)) : null; },
+    async setJSON(k, v) { roh.set(k, JSON.stringify(v)); },
+    async delete(k) { roh.delete(k); },
+    async list() { return { blobs: [] }; },
+  };
+  speicher = gemeinsam;
+  const seit = '2026-07-20T00:00:00.000Z';
+  const GRILL5 = { code: 'GRILL5', type: 'fixed', value: 5, minOrder: 20, maxUses: 0, maxPerCustomer: 3,
+    combinable: false, mode: 'any', active: true, createdAt: seit, createdBy: 'Admin', uses: 0, usedBy: {} };
+  roh.set('c:GRILL5', JSON.stringify(GRILL5));
+  roh.set('c:FREI10', JSON.stringify({ ...GRILL5, code: 'FREI10', maxPerCustomer: 0 }));
+  const zaehlerSetzen = (art, wert, n) => roh.set((art === 'mail' ? 'n:GRILL5:' : 't:GRILL5:') + sha(wert), JSON.stringify({ seit, n }));
+  zaehlerSetzen('mail', 'dreimal@example.com', 3);
+  zaehlerSetzen('tel', '491701234567', 3);
+  zaehlerSetzen('mail', 'einmal@example.com', 1);
+  zaehlerSetzen('tel', '491709998887', 2);
+
+  const cart = { a: { menuId: 'kubis', qty: 2, double: false, isMenu: false } };   // 22,00 €
+  const echt = SK.warenwert(cart);
+  const faelle = [
+    ['Neue E-Mail, neue Nummer: Rabatt gilt',              'GRILL5', 'neu@example.com',       '0171 2223334',        echt - 5, null],
+    ['E-Mail schon 3×: kein Rabatt',                       'GRILL5', 'dreimal@example.com',   '',                    echt, 'kundenlimit'],
+    ['Neue E-Mail, Nummer schon 3×: kein Rabatt',          'GRILL5', 'frisch@example.com',    '+49 (0) 170 123 4567', echt, 'kundenlimit'],
+    ['Nummer anders geschrieben (0049 …): kein Rabatt',    'GRILL5', 'frisch2@example.com',   '0049 170 1234567',    echt, 'kundenlimit'],
+    ['E-Mail 1×, Nummer 2×: Maximum 2, Rabatt gilt',        'GRILL5', 'einmal@example.com',    '0170 9998887',        echt - 5, null],
+    ['Wegwerf-Adresse: kein Rabatt',                        'GRILL5', 'x@mailinator.com',      '',                    echt, 'wegwerf'],
+    ['Wegwerf als Subdomain: kein Rabatt',                  'GRILL5', 'x@neu.guerrillamail.de', '',                   echt, 'wegwerf'],
+    ['Wegwerf, aber Code ohne Kundenlimit: Rabatt gilt',    'FREI10', 'x@yopmail.com',         '',                    echt - 5, null],
+  ];
+  const out = [];
+  for (const [was, code, email, phone, erwartet, grund] of faelle) {
+    const p = await preis.betragErmitteln({
+      reference: 'GNC-LIMIT', mode: 'pickup', payment: 'cash', cartSnapshot: cart, subtotal: echt,
+      discount: 5, voucherCode: code, loyaltyDiscount: 0, deliveryFee: 0, tip: 0, total: echt - 5, email, phone,
+    });
+    const g = p.gutscheinGesperrt ? p.gutscheinGesperrt.grund : null;
+    out.push({ was, belastet: p.betrag, erwartet, ok: Math.abs(p.betrag - erwartet) < 0.005 && g === grund });
+  }
+
+  // Zweiter Lauf derselben Bestellung nach dem Zählen: gilt wie beim ersten
+  roh.set('o:GNC-ZWEITER', JSON.stringify({ gutscheinGezaehlt: 'GRILL5' }));
+  const zweiter = await preis.betragErmitteln({
+    reference: 'GNC-ZWEITER', mode: 'pickup', payment: 'sumup', cartSnapshot: cart, subtotal: echt,
+    discount: 5, voucherCode: 'GRILL5', loyaltyDiscount: 0, deliveryFee: 0, tip: 0, total: echt - 5,
+    email: 'dreimal@example.com', phone: '01701234567',
+  });
+  out.push({ was: '2. Lauf nach dem Zählen (Archiv): Rabatt bleibt', belastet: zweiter.betrag, erwartet: echt - 5, ok: Math.abs(zweiter.betrag - (echt - 5)) < 0.005 });
+
+  // voucher-check sagt es dem Kunden vorher (echter Handler, gleicher Speicher)
+  const vc = require(path.join(WURZEL, 'netlify/functions/voucher-check.js'));
+  const pruef = async (body) => JSON.parse((await vc.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify(body) })).body);
+  for (const [was, body, soll] of [
+    ['voucher-check: Wegwerf-Adresse -> wegwerf',          { code: 'grill5', email: 'a@trashmail.de' },                        'wegwerf'],
+    ['voucher-check: Subdomain eines Wegwerfdienstes',     { code: 'GRILL5', email: 'a@b.yopmail.com' },                       'wegwerf'],
+    ['voucher-check: Nummer schon 3× -> customer_limit',  { code: 'GRILL5', email: 'ganz.neu@example.com', phone: '0170 1234567' }, 'customer_limit'],
+    ['voucher-check: neue Kundin -> gültig',               { code: 'GRILL5', email: 'ganz.neu@example.com', phone: '0171 0001112' }, true],
+  ]) {
+    const d = await pruef(body);
+    const ist = d.valid === true ? true : d.reason;
+    out.push({ was, belastet: null, erwartet: null, ist, soll, ok: ist === soll });
+  }
+  speicher = LEERER_SPEICHER;
+  return out;
+}
+
+/* ---------------------------------------------------------------------------
    5. Testbestellung MIT gültigem Code muss weiter 1 € kosten
 --------------------------------------------------------------------------- */
 async function testbestellung() {
@@ -461,6 +538,15 @@ async function ausfallsicherheit() {
   }
   const mpFehler = mp.filter(a => !a.ok).length;
 
+  console.log('\n2d) KUNDENLIMIT je E-Mail und Telefon, Wegwerf-Adressen (GRILL5)\n');
+  const kl = await kundenlimitpruefung();
+  for (const a of kl) {
+    console.log('   ' + a.was.padEnd(52) + (a.belastet != null
+      ? 'belastet ' + a.belastet.toFixed(2) + ' € (soll ' + a.erwartet.toFixed(2) + ')  '
+      : 'Antwort ' + String(a.ist).padEnd(15) + '  ') + (a.ok ? '✅' : '❌'));
+  }
+  const klFehler = kl.filter(a => !a.ok).length;
+
   console.log('\n3) TESTBESTELLUNG mit gültigem Code\n');
   const t = await testbestellung();
   console.log('   mit gueltigem Code:  Warenkorb 55,00 € -> belastet ' + t.betrag.toFixed(2)
@@ -476,7 +562,7 @@ async function ausfallsicherheit() {
   }
   const afFehler = af.filter(a => !a.ok).length;
 
-  const gesamt = fehler + angFehler + tpFehler + mpFehler + (t.ok ? 0 : 1) + afFehler;
+  const gesamt = fehler + angFehler + tpFehler + mpFehler + klFehler + (t.ok ? 0 : 1) + afFehler;
   console.log('\n' + '─'.repeat(74));
   console.log(gesamt === 0
     ? 'ERGEBNIS: ✅ Alles deckungsgleich, alle Manipulationen abgewehrt, kein Abbruchrisiko.'

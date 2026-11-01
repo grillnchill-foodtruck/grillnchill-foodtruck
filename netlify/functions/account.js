@@ -176,7 +176,7 @@ async function sendCodeMail(email, code) {
    Eigenschaften ("__proto__", "constructor", …) und liess damit jeden
    ohne Anmeldung in fremde Konten. */
 const { tokenGueltig } = require('./lib/kunden-token');
-const { schutz, saeubern } = require('./lib/bremse');
+const { schutz, saeubern, grenzen } = require('./lib/bremse');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 function checkToken(rec, token) {
   return tokenGueltig(rec, token);
@@ -203,6 +203,10 @@ exports.handler = async (event) => {
       // Mails an fremde Adressen in Serie verhindern: höchstens 10 Codes je Absender in 15 Minuten
       const zuViele = await schutz(event, { name: 'konto-code', max: 10, fensterMin: 15 });
       if (zuViele) return zuViele;
+      // Dazu je Empfängeradresse (auch bei wechselnden IPs) und eine Notbremse
+      // über alle Absender (lib/bremse.js, GRENZEN['konto-code'])
+      const zuVieleHier = await grenzen(event, 'konto-code', { mail: email });
+      if (zuVieleHier) return zuVieleHier;
       let rec = (await s.get(key, { type: 'json' })) || {
         email, name: '', phone: '', addresses: [], spent: 0, rewards: 0,
         tokens: {}, createdAt: new Date().toISOString(),

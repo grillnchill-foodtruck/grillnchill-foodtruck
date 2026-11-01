@@ -124,6 +124,7 @@ I18N.it = {
 
     "cart.title": "Il tuo carrello", "cart.empty": "Il tuo carrello è vuoto", "cart.empty_hint": "Scegli qualcosa dal menù.",
     "cart.repeat_last": "Ripeti l'ultimo ordine", "loyalty.title": "Tessera fedeltà", "loyalty.line": "Bonus fedeltà", "loyalty.hint": "Ancora {n} al tuo menù offerto.", "loyalty.redeem": "Riscatta bonus fedeltà (−{amount})", "loyalty.applied": "Bonus fedeltà applicato (−{amount})", "loyalty.reward_min": "Bonus fedeltà di {amount} pronto, riscattabile da {min} di ordine.",
+    "promo.voucher_wegwerf": "Per questo codice ti serve un indirizzo email permanente, non usa e getta.",
     "cart.upsell_title": "Qualcos'altro?", "cart.upsell_min": "Mancano {rest} all'ordine minimo", "cart.upsell_add": "aggiungi",
     "cart.edit": "Modifica",
     "menu.tag_meal": "MENÙ COMPLETO", "menu.meal_suffix": "Menù", "menu.meal_desc": "contorno + bevanda + dip a scelta",

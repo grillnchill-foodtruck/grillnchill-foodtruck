@@ -124,6 +124,7 @@ I18N.en = {
 
     "cart.title": "Your cart", "cart.empty": "Your cart is empty", "cart.empty_hint": "Pick something from the menu.",
     "cart.repeat_last": "Repeat last order", "loyalty.title": "Stamp card", "loyalty.line": "Loyalty bonus", "loyalty.hint": "{n} more to your free meal.", "loyalty.redeem": "Redeem loyalty bonus (−{amount})", "loyalty.applied": "Loyalty bonus applied (−{amount})", "loyalty.reward_min": "{amount} loyalty bonus ready, redeemable from {min} order value.",
+    "promo.voucher_wegwerf": "This code needs a permanent email address, not a disposable one.",
     "cart.upsell_title": "Anything else?", "cart.upsell_min": "{rest} more to reach the minimum order", "cart.upsell_add": "add",
     "cart.edit": "Edit",
     "menu.tag_meal": "MEAL DEAL", "menu.meal_suffix": "Meal", "menu.meal_desc": "side + drink + dip of your choice",

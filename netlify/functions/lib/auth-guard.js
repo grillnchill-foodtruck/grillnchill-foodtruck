@@ -67,14 +67,18 @@ function store() {
  * x-forwarded-for, das der Aufrufer frei erfinden kann. Deshalb hat es
  * Vorrang; x-forwarded-for dient nur als Rückfallebene.
  * Die Adresse wird nur als Hash abgelegt, nie im Klartext.
+ * IPv6 zählt je /64-Netz (ipNormalisieren in lib/bremse.js): Wer innerhalb
+ * seines Anschlusses die Adresse wechselt, bekommt keine neuen Versuche.
+ * IPv4 bleibt wie bisher, laufende Sperren gelten weiter.
  */
 function absender(event) {
   const h = (event && event.headers) || {};
   const roh = h['x-nf-client-connection-ip']
     || String(h['x-forwarded-for'] || '').split(',')[0].trim()
     || '';
-  if (!roh) return null;
-  return 'ip:' + crypto.createHash('sha256').update(roh).digest('hex').slice(0, 32);
+  const ip = require('./bremse').ipNormalisieren(roh);
+  if (!ip) return null;
+  return 'ip:' + crypto.createHash('sha256').update(ip).digest('hex').slice(0, 32);
 }
 
 const antwort429 = (sekunden) => ({

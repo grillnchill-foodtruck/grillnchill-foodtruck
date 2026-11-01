@@ -146,6 +146,9 @@ let verbranntGemeldet = false;
    Laufzeit, Gesamtlimit und Limit pro Kunde prüfte bis Oktober 2026 nur
    voucher-check.js, also der Browser vor dem Absenden. Jetzt auch hier,
    gezählt über lib/gutschein-nutzung.js. Gibt { betrag, grund } zurück.
+   Seit November 2026: Das Kundenlimit gilt für das Maximum aus E-Mail- und
+   Telefon-Zählung, und Codes mit Kundenlimit gibt es nicht für Adressen von
+   Wegwerf-Maildiensten (grund 'wegwerf').
 --------------------------------------------------------------------------- */
 async function gutscheinRabatt(code, warenwert, modus, imApp, order) {
   const sauber = codeNormalisieren(code);
@@ -169,7 +172,9 @@ async function gutscheinRabatt(code, warenwert, modus, imApp, order) {
     if (c.maxUses > 0 && (c.uses || 0) >= c.maxUses) return { betrag: 0, grund: 'gesamtlimit' };
     const max = nutzung.limitProKunde(c);
     const mail = String((order && order.email) || '').trim();
-    if (max > 0 && mail && (await nutzung.einloesungenLesen(vs, sauber, c, mail)) >= max) {
+    const tel = String((order && order.phone) || '').trim();
+    if (nutzung.wegwerfGesperrt(c, mail)) return { betrag: 0, grund: 'wegwerf' };
+    if (max > 0 && (mail || tel) && (await nutzung.einloesungenLesen(vs, sauber, c, { email: mail, phone: tel })) >= max) {
       return { betrag: 0, grund: 'kundenlimit', max };
     }
   }
@@ -418,7 +423,7 @@ async function meldeAbweichung(p, order) {
       + (p.gutscheinGesperrt ? '\nCode ' + p.gutscheinGesperrt.code + ' nicht angerechnet: '
           + ({ kundenlimit: 'Kunde hat ihn schon ' + p.gutscheinGesperrt.max + '× eingelöst',
                gesamtlimit: 'alle Einlösungen verbraucht', zeitraum: 'außerhalb der Laufzeit',
-               inaktiv: 'Code ist pausiert' })[p.gutscheinGesperrt.grund] : '');
+               inaktiv: 'Code ist pausiert', wegwerf: 'E-Mail-Adresse eines Wegwerfdienstes' })[p.gutscheinGesperrt.grund] : '');
     console.warn('preisberechnung:', text.replace(/\n/g, ' | '));
     if (!tok || !chat) return;
     await fetch('https://api.telegram.org/bot' + tok + '/sendMessage', {
