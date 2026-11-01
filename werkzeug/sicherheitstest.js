@@ -229,6 +229,11 @@ const guard = () => [...daten.keys()].filter((k) => k.startsWith('authguard|'));
   for (let i = 0; i <= maxCode; i++) gr.push(await bremse.grenzen(evIp(i), 'konto-code', { mail: i % 2 ? 'Opfer@Example.com' : 'opfer+' + i + '@example.com' }));
   ok('Login-Code je E-Mail: ' + maxCode + ' von verschiedenen IPs durch, der nächste 429 (auch mit +Zusatz)',
     gr.slice(0, maxCode).every((x) => x === null) && gr[maxCode] && gr[maxCode].statusCode === 429);
+  gr = [];
+  for (let i = 0; i < 8; i++) gr.push(await call(konto, { action: 'request_code', email: 'eilig@example.com' }, '10.111.0.' + (i + 1)));
+  const eiligKey = 'bremse|' + new Date().toISOString().slice(0, 10) + '/konto-code.mail/' + crypto.createHash('sha256').update('mail:eilig@example.com').digest('hex').slice(0, 32);
+  ok('Login-Code: schnelles Nachfragen (60-s-Sperre) zählt nicht für die E-Mail-Grenze',
+    gr.slice(1).every((x) => x.d.error === 'too_soon') && JSON.parse(daten.get(eiligKey) || '{}').n === 1);
   ok('Login-Code: andere E-Mail nicht betroffen', (await bremse.grenzen(evIp(99), 'konto-code', { mail: 'nachbar@example.com' })) === null);
   ok('Kennung: interne Aufrufe zählen nicht', (await bremse.grenzen({ ...evIp(98), headers: { ...evIp(98).headers, ...bremse.internHeader() } }, 'konto-code', { mail: 'opfer@example.com' })) === null);
   ok('Kennung: der Speicher hält nur Hashes, keine Adresse', ![...daten.keys()].some((k) => k.startsWith('bremse|') && /opfer|example/i.test(k + daten.get(k))));

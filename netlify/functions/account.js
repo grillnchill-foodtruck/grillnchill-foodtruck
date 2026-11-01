@@ -203,10 +203,6 @@ exports.handler = async (event) => {
       // Mails an fremde Adressen in Serie verhindern: höchstens 10 Codes je Absender in 15 Minuten
       const zuViele = await schutz(event, { name: 'konto-code', max: 10, fensterMin: 15 });
       if (zuViele) return zuViele;
-      // Dazu je Empfängeradresse (auch bei wechselnden IPs) und eine Notbremse
-      // über alle Absender (lib/bremse.js, GRENZEN['konto-code'])
-      const zuVieleHier = await grenzen(event, 'konto-code', { mail: email });
-      if (zuVieleHier) return zuVieleHier;
       let rec = (await s.get(key, { type: 'json' })) || {
         email, name: '', phone: '', addresses: [], spent: 0, rewards: 0,
         tokens: {}, createdAt: new Date().toISOString(),
@@ -215,6 +211,11 @@ exports.handler = async (event) => {
       if (rec.login && rec.login.sentAt && Date.now() - rec.login.sentAt < CODE_RESEND_MS) {
         return json(429, { error: 'too_soon', hint: 'Bitte warte kurz – der Code wurde gerade erst gesendet.' });
       }
+      // Dazu je Empfängeradresse (auch bei wechselnden IPs) und eine Notbremse über
+      // alle Absender (lib/bremse.js, GRENZEN['konto-code']). Erst nach der
+      // 60-Sekunden-Sperre: nur Codes, die wirklich verschickt würden, zählen.
+      const zuVieleHier = await grenzen(event, 'konto-code', { mail: email });
+      if (zuVieleHier) return zuVieleHier;
       const code = String(crypto.randomInt(100000, 1000000));
       rec.login = { codeHash: sha(code + '|' + email), exp: Date.now() + CODE_TTL_MS, tries: 0, sentAt: Date.now() };
       await s.setJSON(key, rec);
