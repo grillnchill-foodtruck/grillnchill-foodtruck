@@ -386,6 +386,114 @@
   .heat-liste .anz small{font-weight:500;color:var(--muted-foreground);font-size:.8125rem}
   .heat-liste .leer{background:none;border:0;padding:0;color:var(--muted-foreground)}
   .heat-liste .leer::before{content:none}
+  /* ================= Ansichten: Live und Auswertung (nur Inhaber) ================= */
+  .views{
+    max-width:1280px;margin:0 auto;display:flex;gap:8px;
+    padding:0 max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));
+  }
+  .view-tab{
+    min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--input);background:var(--card);
+    color:var(--foreground);font-weight:600;font-size:.9375rem;cursor:pointer;transition:background-color .15s,border-color .15s,color .15s;
+  }
+  .view-tab:hover{border-color:var(--primary-bright)}
+  .view-tab[aria-selected="true"]{background:var(--foreground);border-color:var(--foreground);color:#140D06}
+
+  .aw-grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+  @media (min-width:1024px){
+    .aw-grid{gap:20px;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+    #cardMenu{grid-column:1 / -1}
+    #cardBericht{align-self:start}
+  }
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--input);background:var(--muted);
+    color:var(--foreground);font-weight:600;font-size:.875rem;cursor:pointer;transition:background-color .15s,border-color .15s;
+  }
+  .chip:hover{border-color:var(--primary-bright)}
+  .chip[aria-pressed="true"]{background:var(--primary-solid);border-color:var(--primary-solid);color:#fff}
+
+  /* Vier-Felder-Tafel */
+  .tafel-wrap{display:grid;gap:16px;grid-template-columns:minmax(0,1fr);align-items:start}
+  @media (min-width:900px){ .tafel-wrap{grid-template-columns:minmax(0,1.7fr) minmax(220px,1fr)} }
+  .tafel{margin:0;min-width:0}
+  .tafel svg{display:block;width:100%;height:auto;overflow:visible}
+  .tafel text{font-family:var(--font-sans)}
+  .tafel .achse{fill:var(--muted-foreground);font-size:12px}
+  .tafel .feldname{font-size:12px;font-weight:700;letter-spacing:.06em}
+  .tafel .punkt-name{fill:var(--foreground);font-size:12px;font-weight:500;paint-order:stroke;stroke:#141414;stroke-width:3px;stroke-linejoin:round}
+  .tafel .punkt-name.grau{fill:#B9AD98}
+  .tafel .gitter{stroke:#2A2520;stroke-width:1}
+  .tafel .schwelle{stroke:var(--muted-foreground);stroke-width:1.5;stroke-dasharray:5 4}
+  .tafel figcaption{margin-top:8px}
+  .tafel-leer{display:grid;place-items:center;min-height:180px;border:1px dashed var(--border);border-radius:calc(var(--radius) - 4px);color:var(--muted-foreground);text-align:center;padding:16px}
+  .felder{display:flex;flex-direction:column;gap:10px}
+  .feld-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 10px;align-items:baseline;padding:10px 12px;background:var(--muted);border:1px solid var(--border);border-radius:calc(var(--radius) - 4px)}
+  .feld-item .swatch{width:12px;height:12px;border-radius:50%;align-self:center}
+  .feld-item strong{font-weight:700}
+  .feld-item .feld-n{font-variant-numeric:tabular-nums;font-weight:700}
+  .feld-item p{grid-column:2 / -1;font-size:.8125rem;color:var(--muted-foreground);line-height:1.4}
+  .f-renner{--feld:#6DBE45}
+  .f-zugpferd{--feld:#FF7A3D}
+  .f-raetsel{--feld:#FFC93C}
+  .f-ladenhueter{--feld:#F07070}
+  .f-fehlt{--feld:#9A8E7A}
+  .feld-item .swatch{background:var(--feld)}
+  .badge-feld{color:var(--feld);background:rgba(154,142,122,.12);border-color:rgba(154,142,122,.4)}
+  .badge-feld.f-renner{background:rgba(109,190,69,.13);border-color:rgba(109,190,69,.4)}
+  .badge-feld.f-zugpferd{background:rgba(255,122,61,.13);border-color:rgba(255,122,61,.45)}
+  .badge-feld.f-raetsel{background:rgba(255,201,60,.12);border-color:rgba(255,201,60,.4)}
+  .badge-feld.f-ladenhueter{background:rgba(240,112,112,.13);border-color:rgba(240,112,112,.45)}
+  .note-muted{background:var(--muted);color:var(--muted-foreground);border:1px solid var(--border)}
+
+  /* Tabelle: breit als Tabelle, schmal als Karten je Artikel */
+  .me-table{width:100%;border-collapse:collapse;font-size:.875rem}
+  .me-table th{font-size:.75rem;font-weight:600;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+  .me-table td{padding:10px;border-bottom:1px solid var(--border);vertical-align:top}
+  .me-table .z{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .me-table th.z{text-align:right}
+  .me-table td.hinweis{color:var(--muted-foreground);min-width:200px}
+  .me-table tr.is-grey td{color:var(--muted-foreground)}
+  .me-table tr.is-grey td:first-child{color:#B9AD98}
+  .me-name{font-weight:600}
+  @media (max-width:899px){
+    .me-table thead{display:none}
+    .me-table,.me-table tbody,.me-table tr,.me-table td{display:block;width:100%}
+    .me-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .me-table td{padding:0;border:0;min-width:0}
+    .me-table td.name-zelle{grid-column:1 / -1;display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 8px;align-items:center}
+    .me-table .me-name{min-width:0;overflow-wrap:anywhere}
+    .me-table td.feld-zelle{display:none}
+    .me-table td.hinweis{grid-column:1 / -1;min-width:0}
+    .me-table td.z{text-align:left}
+    .me-table td[data-label]::before{content:attr(data-label);display:block;font-size:.75rem;color:var(--muted-foreground);font-weight:600}
+  }
+  @media (min-width:900px){ .me-table .feld-mobil{display:none} }
+
+  /* Wareneinsatz eintragen */
+  .kosten-gruppe{display:flex;flex-direction:column}
+  .kosten-zeile{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:4px 12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+  .kosten-zeile:last-child{border-bottom:0}
+  .kosten-name{font-weight:600;min-width:0}
+  .kosten-info{grid-column:1;font-size:.8125rem;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+  .kosten-feld{grid-column:2;grid-row:1 / span 2;position:relative}
+  .kosten-feld .input{height:44px;padding:0 30px 0 12px;text-align:right;font-variant-numeric:tabular-nums}
+  .kosten-feld .einheit{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted-foreground);pointer-events:none}
+  .kosten-aktion{
+    position:sticky;bottom:calc(8px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    padding:12px;margin-top:4px;background:rgba(28,28,28,.94);border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  }
+  .kosten-aktion .hint{flex:1 1 160px}
+  .kosten-aktion.is-dirty .hint{color:var(--warning)}
+
+  /* Wochenbericht */
+  .btn-row{display:flex;flex-wrap:wrap;gap:10px}
+  .btn-row .btn{flex:1 1 180px}
+  .bericht-vorschau{
+    background:var(--background);border:1px solid var(--border);border-radius:calc(var(--radius) - 4px);
+    padding:14px;font-size:.875rem;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow:auto;
+  }
+  .bericht-vorschau strong{font-weight:700;color:var(--foreground)}
 </style>
 </head>
 <body>
@@ -450,9 +558,13 @@
         </button>
       </div>
     </div>
+    <div class="views" id="viewTabs" role="tablist" aria-label="Ansicht" hidden>
+      <button type="button" class="view-tab" role="tab" id="tabLive" aria-selected="true" aria-controls="viewLive">Live</button>
+      <button type="button" class="view-tab" role="tab" id="tabAuswertung" aria-selected="false" aria-controls="viewAuswertung" tabindex="-1">Auswertung</button>
+    </div>
   </header>
 
-  <main class="page">
+  <main class="page" id="viewLive" role="tabpanel" aria-labelledby="tabLive">
     <div class="grid">
 
       <!-- Umsatz heute -->
@@ -587,6 +699,106 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
             <span>Lieferung und Abholung sind aus. Kunden können nicht bestellen.</span>
           </p>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- ================= Auswertung (nur Inhaber) ================= -->
+  <main class="page" id="viewAuswertung" role="tabpanel" aria-labelledby="tabAuswertung" hidden>
+    <div class="aw-grid">
+
+      <!-- Speisekarte: Vier-Felder-Tafel -->
+      <section class="card is-loading" id="cardMenu" aria-labelledby="hMenu" aria-busy="true">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title" id="hMenu">Speisekarte</h2>
+            <p class="card-description" id="menuZeitraum">Die letzten 30 Tage bis gestern.</p>
+          </div>
+          <span class="badge badge-warning">Schätzung</span>
+        </div>
+        <div class="chips" id="gruppenChips" role="group" aria-label="Gruppe wählen">
+          <button type="button" class="chip" data-gruppe="burger" aria-pressed="true">Burger</button>
+          <button type="button" class="chip" data-gruppe="sides" aria-pressed="false">Snacks &amp; Beilagen</button>
+          <button type="button" class="chip" data-gruppe="dips" aria-pressed="false">Dips</button>
+          <button type="button" class="chip" data-gruppe="drinks" aria-pressed="false">Getränke</button>
+          <button type="button" class="chip" data-gruppe="alle" aria-pressed="false">Alle</button>
+        </div>
+        <div class="card-content">
+          <div class="skeleton-list" aria-hidden="true">
+            <span class="skeleton" style="height:260px"></span>
+            <span class="skeleton sk-bar"></span><span class="skeleton sk-bar"></span>
+          </div>
+          <div class="tafel-wrap when-ready">
+            <figure class="tafel" id="tafel">
+              <div id="tafelSvg"></div>
+              <figcaption class="hint" id="tafelText"></figcaption>
+            </figure>
+            <ul class="felder" id="felderListe"></ul>
+          </div>
+          <p class="note note-muted when-ready">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            <span>Schätzung: Nettopreis mit 7 % für Speisen und 19 % für Getränke, wie in der Rechnung. Menüs sind nach Einzelpreisen aufgeteilt, das Getränk zum vollen Preis. Rabatte, Liefergebühr und Trinkgeld sind nicht eingerechnet.</span>
+          </p>
+          <table class="me-table when-ready" id="meTable">
+            <caption class="sr-only">Artikel der gewählten Gruppe mit Stückzahl, Umsatz, Wareneinsatz und Deckungsbeitrag</caption>
+            <thead>
+              <tr>
+                <th scope="col">Artikel</th>
+                <th scope="col">Feld</th>
+                <th scope="col" class="z">Stück</th>
+                <th scope="col" class="z">Umsatz</th>
+                <th scope="col" class="z">Netto je Stück</th>
+                <th scope="col" class="z">Wareneinsatz</th>
+                <th scope="col" class="z">Quote</th>
+                <th scope="col" class="z">DB je Stück</th>
+                <th scope="col">Hinweis</th>
+              </tr>
+            </thead>
+            <tbody id="meBody"></tbody>
+          </table>
+          <p class="hint when-ready" id="menuExtras"></p>
+        </div>
+      </section>
+
+      <!-- Wareneinsatz eintragen -->
+      <section class="card is-loading" id="cardKosten" aria-labelledby="hKosten" aria-busy="true">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title" id="hKosten">Wareneinsatz</h2>
+            <p class="card-description">Zutatenkosten pro Stück in Euro, netto. Nur du siehst diese Zahlen.</p>
+          </div>
+        </div>
+        <div class="card-content">
+          <div class="skeleton-list" aria-hidden="true">
+            <span class="skeleton sk-bar"></span><span class="skeleton sk-bar"></span><span class="skeleton sk-bar"></span><span class="skeleton sk-bar"></span>
+          </div>
+          <form id="kostenForm" class="stack when-ready" novalidate>
+            <div id="kostenGruppen" class="stack"></div>
+            <div class="kosten-aktion" id="kostenAktion">
+              <p class="hint" id="kostenStatus" role="status">Leer lassen, wenn du den Wert noch nicht kennst.</p>
+              <button type="submit" class="btn btn-primary" id="kostenSave"><span>Speichern</span></button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Wochenbericht -->
+      <section class="card" id="cardBericht" aria-labelledby="hBericht">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title" id="hBericht">Wochenbericht</h2>
+            <p class="card-description">Kommt jeden Montag früh per Telegram, für die Woche davor: Umsatz, Bestellungen, Top 5, Feedback, offene Anfragen.</p>
+          </div>
+        </div>
+        <div class="card-content">
+          <div class="btn-row">
+            <button type="button" class="btn btn-secondary" id="berichtVorschau"><span>Vorschau</span></button>
+            <button type="button" class="btn btn-primary" id="berichtSenden"><span>Bericht jetzt senden</span></button>
+          </div>
+          <div class="bericht-vorschau" id="berichtText" aria-live="polite" hidden></div>
         </div>
       </section>
 
@@ -770,6 +982,7 @@
     steuerungAktiv(false);
     setzeLive('loading');
     $('todayLabel').textContent = fmtTag.format(new Date());
+    awZuruecksetzen();
   }
 
   function setzeLive(zustand) {
@@ -898,6 +1111,7 @@
 
     steuerungAktiv(true);
     zeichneStatus(d.status || {});
+    inhaberAnsicht(d.owner === true);
     // Liefer-Heatmap (cockpit-heatmap.js) zeigt sich nur dem Inhaber
     document.dispatchEvent(new CustomEvent('gnc-cockpit', { detail: { owner: d.owner === true, cred: cred } }));
   }
@@ -1351,6 +1565,605 @@
   $('refreshBtn').addEventListener('click', function () {
     if (istBusy(this) || laedt) return;
     laden(true).then(planen);
+    if (ansicht === 'auswertung') ladeAuswertung();
+  });
+
+  /* ================= Auswertung (nur Inhaber) =================
+     Speisekarte (Vier-Felder-Tafel), Wareneinsatz und Wochenbericht aus
+     cockpit-inhaber.js. Der Server prüft selbst, ob der Inhaber angemeldet
+     ist. Die Seite blendet die Ansicht für alle anderen nur aus. */
+  var INHABER_URL = '/.netlify/functions/cockpit-inhaber';
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var FELD = {
+    renner: { name: 'Renner', farbe: '#6DBE45', kurz: 'Beliebt, hohe Marge. Halten.' },
+    zugpferd: { name: 'Zugpferd', farbe: '#FF7A3D', kurz: 'Beliebt, wenig Marge. Preis prüfen oder Rezept günstiger.' },
+    raetsel: { name: 'Rätsel', farbe: '#FFC93C', kurz: 'Hohe Marge, wenig gekauft. Besser platzieren.' },
+    ladenhueter: { name: 'Ladenhüter', farbe: '#F07070', kurz: 'Wenig gekauft, wenig Marge. Von der Karte nehmen?' },
+    fehlt: { name: 'Wareneinsatz fehlt', farbe: '#9A8E7A', kurz: 'Ohne Wareneinsatz keine Einordnung.' }
+  };
+  var FELD_REIHE = ['renner', 'zugpferd', 'raetsel', 'ladenhueter', 'fehlt'];
+  var fmtProz = new Intl.NumberFormat('de-DE', { style: 'percent', maximumFractionDigits: 0 });
+  var fmtZahl2 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var fmtDatum = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'numeric', timeZone: 'UTC' });
+  var fmtUhr = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+
+  var istInhaber = false;
+  var ansicht = 'live';
+  var aw = null;            // letzte Auswertung vom Server
+  var awGruppe = 'burger';
+  var awLaedt = false;
+  var awAm = 0;
+  var kostenAlt = {};       // id -> gespeicherter Wert als Zahl oder null
+  var kostenSpeichert = false;
+
+  async function inhaberAnfrage(body) {
+    var mit = cred;
+    if (!mit) throw stumm();
+    var res;
+    try {
+      res = await fetch(INHABER_URL, {
+        method: 'POST', cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({ password: mit }, body)),
+      });
+    } catch (e) {
+      throw new Error('Keine Verbindung. Bitte erneut versuchen.');
+    }
+    if (res.status === 401) {
+      if (cred === mit) abmelden('Anmeldung abgelaufen. Bitte neu anmelden.', false);
+      throw stumm();
+    }
+    if (res.status === 403) { inhaberAnsicht(false); throw new Error('Nur für den Inhaber.'); }
+    var d = await res.json().catch(function () { return {}; });
+    if (res.status === 429) throw new Error('Zu viele Anfragen. Bitte in ' + wartezeitText(d.retryAfter || res.headers.get('Retry-After')) + ' erneut versuchen.');
+    if (!res.ok || !d.ok) throw new Error(d.hint || 'Gerade nicht möglich. Bitte gleich noch einmal versuchen.');
+    if (cred !== mit) throw stumm();
+    return d;
+  }
+
+  /* ---------------- Ansicht wechseln ---------------- */
+  function inhaberAnsicht(an) {
+    istInhaber = !!an;
+    $('viewTabs').hidden = !istInhaber;
+    if (!istInhaber && ansicht !== 'live') zeigeAnsicht('live');
+  }
+  function zeigeAnsicht(welche, fokus) {
+    ansicht = (welche === 'auswertung' && istInhaber) ? 'auswertung' : 'live';
+    var live = ansicht === 'live';
+    $('viewLive').hidden = !live;
+    $('viewAuswertung').hidden = live;
+    [['tabLive', live], ['tabAuswertung', !live]].forEach(function (x) {
+      var b = $(x[0]);
+      b.setAttribute('aria-selected', x[1] ? 'true' : 'false');
+      b.tabIndex = x[1] ? 0 : -1;
+    });
+    if (fokus) $(live ? 'tabLive' : 'tabAuswertung').focus();
+    try { window.scrollTo(0, 0); } catch (e) {}
+    if (live) { passeAlle(); return; }
+    if (!aw || Date.now() - awAm > 10 * 60000) ladeAuswertung();
+    else zeichneTafel();   // die Breite kann sich geändert haben
+  }
+  $('tabLive').addEventListener('click', function () { zeigeAnsicht('live'); });
+  $('tabAuswertung').addEventListener('click', function () { zeigeAnsicht('auswertung'); });
+  $('viewTabs').addEventListener('keydown', function (e) {
+    var ziel = { ArrowLeft: 'wechsel', ArrowRight: 'wechsel', Home: 'live', End: 'auswertung' }[e.key];
+    if (!ziel) return;
+    e.preventDefault();
+    zeigeAnsicht(ziel === 'wechsel' ? (ansicht === 'live' ? 'auswertung' : 'live') : ziel, true);
+  });
+
+  function awZuruecksetzen() {
+    aw = null; awAm = 0; awGruppe = 'burger'; kostenAlt = {}; kostenSpeichert = false;
+    ['cardMenu', 'cardKosten'].forEach(function (id) { $(id).classList.add('is-loading'); $(id).setAttribute('aria-busy', 'true'); });
+    ['tafelSvg', 'felderListe', 'meBody', 'kostenGruppen', 'menuExtras', 'tafelText', 'berichtText'].forEach(function (id) { $(id).textContent = ''; });
+    $('berichtText').hidden = true;
+    $('menuZeitraum').textContent = 'Die letzten 30 Tage bis gestern.';
+    zeigeChips();
+    kostenStatus();
+    inhaberAnsicht(false);
+  }
+
+  /* ---------------- Laden ---------------- */
+  async function ladeAuswertung() {
+    if (!istInhaber || awLaedt) return;
+    awLaedt = true;
+    try {
+      uebernehmeAuswertung(await inhaberAnfrage({ action: 'speisekarte' }), true);
+    } catch (e) {
+      if (!aw) {
+        ['cardMenu', 'cardKosten'].forEach(function (id) { $(id).classList.remove('is-loading'); $(id).removeAttribute('aria-busy'); });
+        leer($('tafelSvg'), 'Die Auswertung ist gerade nicht da. Oben rechts neu laden.');
+      }
+      if (!e.stumm) toast(e.message || 'Auswertung nicht geladen.', 'err');
+    } finally {
+      awLaedt = false;
+    }
+  }
+  function uebernehmeAuswertung(d, formNeu) {
+    aw = d; awAm = Date.now();
+    ['cardMenu', 'cardKosten'].forEach(function (id) { $(id).classList.remove('is-loading'); $(id).removeAttribute('aria-busy'); });
+    var z = d.zeitraum || {};
+    $('menuZeitraum').textContent = 'Die letzten 30 Tage bis gestern (' + datum(z.von) + ' bis ' + datum(z.bis) + '), '
+      + (d.bestellungen || 0) + (d.bestellungen === 1 ? ' Bestellung.' : ' Bestellungen.');
+    zeichneAuswertung();
+    if (formNeu) baueKostenForm();
+  }
+  function datum(d) { return d ? fmtDatum.format(new Date(d + 'T12:00:00Z')) : ''; }
+  function eurOderLeer(x) { return x === null || x === undefined ? '' : fmtEUR.format(x); }
+
+  /* ---------------- Gruppen ---------------- */
+  function zeigeChips() {
+    Array.prototype.forEach.call($('gruppenChips').querySelectorAll('.chip'), function (c) {
+      c.setAttribute('aria-pressed', c.getAttribute('data-gruppe') === awGruppe ? 'true' : 'false');
+    });
+  }
+  $('gruppenChips').addEventListener('click', function (e) {
+    var c = e.target.closest('.chip');
+    if (!c) return;
+    awGruppe = c.getAttribute('data-gruppe');
+    zeigeChips();
+    if (aw) zeichneAuswertung();
+  });
+
+  function artikelDerGruppe() {
+    if (!aw) return [];
+    return aw.artikel.filter(function (a) { return !a.extra && (awGruppe === 'alle' || a.cat === awGruppe); });
+  }
+  function punktVon(a) {
+    var t = aw && aw.tafeln && aw.tafeln[awGruppe];
+    return (t && t.punkte && t.punkte[a.id]) || { feld: null, hinweis: '' };
+  }
+  function feldVon(a) {
+    var p = punktVon(a);
+    return p.feld || (a.cost === null ? 'fehlt' : null);
+  }
+  /* Kurze Namen fürs Diagramm, die Tabelle zeigt die vollen */
+  function kurzName(n) {
+    return String(n || '')
+      .replace(/^Dip:\s*/, '')
+      .replace(/\s*\(Veggie\/Vegan\)/, ' Veggie')
+      .replace(/(-| )Burger\b/, '')
+      .replace(/ Chicken Nuggets/, ' Nuggets')
+      .replace(/^Fritz /, '')
+      .replace(/Super Zero/, 'Zero')
+      .replace(/Süßkartoffelpommes/, 'Süßkartoffel');
+  }
+
+  function zeichneAuswertung() {
+    zeichneTafel();
+    zeichneFelder();
+    zeichneTabelle();
+    var ex = aw.artikel.filter(function (a) { return a.extra; });
+    $('menuExtras').textContent = ex.map(function (a) {
+      return a.name + ': ' + a.qty + ' Stück' + (a.db === null ? ', Wareneinsatz fehlt.' : ', DB je Stück ' + fmtEUR.format(a.db) + '.');
+    }).join(' ') + (aw.ohne ? ' ' + aw.ohne + ' Positionen ohne Warenkorb-Daten sind nicht zugeordnet.' : '');
+  }
+
+  function leer(box, text) {
+    box.textContent = '';
+    var p = document.createElement('p');
+    p.className = 'tafel-leer';
+    p.textContent = text;
+    box.appendChild(p);
+  }
+
+  /* ---------------- Vier-Felder-Tafel als SVG ---------------- */
+  function svgEl(name, attrs, parent, text) {
+    var e = document.createElementNS(SVG_NS, name);
+    Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    if (text !== undefined && text !== null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  var messKontext = null;
+  function textBreite(text, px, gewicht) {
+    try {
+      if (!messKontext) messKontext = document.createElement('canvas').getContext('2d');
+      messKontext.font = (gewicht || 500) + ' ' + px + 'px Inter, sans-serif';
+      return messKontext.measureText(text).width;
+    } catch (e) {
+      return text.length * px * 0.56;
+    }
+  }
+  function schoeneZahl(x) {
+    var p = Math.pow(10, Math.floor(Math.log10(x)));
+    var f = x / p;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+  }
+
+  function zeichneTafel() {
+    var box = $('tafelSvg');
+    box.textContent = '';
+    $('tafelText').textContent = '';
+    if (!aw) return;
+    var tafel = aw.tafeln[awGruppe];
+    var liste = artikelDerGruppe();
+    if (!tafel || tafel.leer) { leer(box, 'In den letzten 30 Tagen wurde aus dieser Gruppe nichts verkauft.'); return; }
+
+    var mit = liste.filter(function (a) { return a.db !== null; });
+    var ohne = liste.filter(function (a) { return a.db === null; });
+    tafelBreite = box.clientWidth;
+    var B = Math.max(280, Math.round(box.clientWidth || 600));
+    var schmal = B < 520;
+    var H = Math.round(Math.min(440, Math.max(300, B * 0.62))) + (ohne.length ? 44 : 0);
+    var M = { l: schmal ? 50 : 60, r: 12, t: 30, b: ohne.length ? 94 : 50 };
+    var x0 = M.l, x1 = B - M.r, y0 = M.t, y1 = H - M.b;
+
+    /* x: verkaufte Stück auf Wurzel-Skala. Wenige Renner verkaufen oft ein
+       Vielfaches der übrigen; linear klebte der Rest am linken Rand. */
+    var maxQ = Math.max(1, tafel.schwelleStueck || 0);
+    liste.forEach(function (a) { maxQ = Math.max(maxQ, a.qty); });
+    var xMax = schoeneZahl(maxQ * 1.05);
+    var sx = function (v) { return x0 + Math.sqrt(Math.max(0, v) / xMax) * (x1 - x0); };
+
+    var svg = svgEl('svg', { viewBox: '0 0 ' + B + ' ' + H, width: B, height: H, role: 'img' }, box);
+    var belegt = [];
+    var frei = function (r) {
+      if (r.x < 2 || r.x + r.w > B - 2 || r.y < 2 || r.y + r.h > H - 2) return false;
+      return belegt.every(function (b) { return r.x + r.w < b.x || b.x + b.w < r.x || r.y + r.h < b.y || b.y + b.h < r.y; });
+    };
+
+    // y: Deckungsbeitrag je Stück
+    var sy = null, yT = null, xT = sx(tafel.schwelleStueck || 0);
+    if (mit.length) {
+      var werte = mit.map(function (a) { return a.db; });
+      if (tafel.schnittDb !== null) werte.push(tafel.schnittDb);
+      /* Streudiagramm: die Achse beginnt nicht bei null, sonst kleben die
+         Burger mit 4 bis 5 € Deckungsbeitrag in einem schmalen Streifen. */
+      var lo = Math.min.apply(null, werte);
+      var hi = Math.max.apply(null, werte);
+      var spanne = Math.max(hi - lo, Math.max(0.2, Math.abs(hi) * 0.25));
+      var mitte = (hi + lo) / 2;
+      lo = Math.min(lo, mitte - spanne / 2) - spanne * 0.14;
+      hi = Math.max(hi, mitte + spanne / 2) + spanne * 0.2;
+      sy = function (v) { return y1 - (v - lo) / (hi - lo) * (y1 - y0); };
+      if (tafel.schnittDb !== null) yT = sy(tafel.schnittDb);
+
+      // Felder einfärben
+      if (yT !== null) {
+        [['raetsel', x0, y0, xT - x0, yT - y0], ['renner', xT, y0, x1 - xT, yT - y0],
+         ['ladenhueter', x0, yT, xT - x0, y1 - yT], ['zugpferd', xT, yT, x1 - xT, y1 - yT]].forEach(function (q) {
+          if (q[3] > 0 && q[4] > 0) svgEl('rect', { x: q[1], y: q[2], width: q[3], height: q[4], fill: FELD[q[0]].farbe, 'fill-opacity': '0.07' }, svg);
+        });
+      }
+      // Gitter und Beschriftung y
+      var schritt = schoeneZahl((hi - lo) / 4);
+      var ganz = schritt >= 1;
+      for (var v = Math.ceil(lo / schritt) * schritt; v <= hi + 1e-9; v += schritt) {
+        var yy = sy(v);
+        svgEl('line', { x1: x0, x2: x1, y1: yy, y2: yy, 'class': 'gitter' }, svg);
+        var marke = (ganz ? String(Math.round(v)) : fmtZahl2.format(v)) + ' €';
+        svgEl('text', { x: x0 - 8, y: yy + 4, 'text-anchor': 'end', 'class': 'achse' }, svg, marke);
+        var mb = textBreite(marke, 12, 400);
+        belegt.push({ x: x0 - 8 - mb, y: yy - 8, w: mb, h: 14 });
+      }
+      svgEl('text', { x: x0, y: y0 - 12, 'class': 'achse' }, svg, 'Deckungsbeitrag je Stück');
+      belegt.push({ x: x0, y: y0 - 24, w: textBreite('Deckungsbeitrag je Stück', 12, 400), h: 14 });
+    } else {
+      svgEl('rect', { x: x0, y: y0, width: x1 - x0, height: y1 - y0, fill: '#1C1C1C' }, svg);
+      var mt = svgEl('text', { x: (x0 + x1) / 2, y: (y0 + y1) / 2, 'text-anchor': 'middle', 'class': 'achse' }, svg,
+        'Wareneinsatz eintragen, dann erscheint hier die Tafel.');
+      mt.setAttribute('font-size', schmal ? '11' : '13');
+    }
+
+    // Achse x mit Teilstrichen (echte Stückzahlen)
+    svgEl('line', { x1: x0, x2: x1, y1: y1, y2: y1, stroke: '#706250', 'stroke-width': 1 }, svg);
+    var kandidaten = [0, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000].filter(function (t) { return t <= xMax; });
+    if (kandidaten.indexOf(xMax) === -1) kandidaten.push(xMax);
+    var letzteX = -1e9;
+    kandidaten.forEach(function (t, i) {
+      var xx = sx(t);
+      var istLetzte = i === kandidaten.length - 1;
+      if (xx - letzteX < 34 && !istLetzte) return;
+      if (istLetzte && xx - letzteX < 34) return;
+      letzteX = xx;
+      svgEl('line', { x1: xx, x2: xx, y1: y1, y2: y1 + 5, stroke: '#706250' }, svg);
+      svgEl('text', { x: xx, y: y1 + 18, 'text-anchor': 'middle', 'class': 'achse' }, svg, String(t));
+    });
+    svgEl('text', { x: (x0 + x1) / 2, y: y1 + 36, 'text-anchor': 'middle', 'class': 'achse' }, svg, 'Verkaufte Stück (Wurzel-Skala)');
+
+    // Schwellen
+    if (sy) {
+      svgEl('line', { x1: xT, x2: xT, y1: y0, y2: y1, 'class': 'schwelle' }, svg);
+      if (yT !== null) svgEl('line', { x1: x0, x2: x1, y1: yT, y2: yT, 'class': 'schwelle' }, svg);
+      // Feldnamen in die äußeren Ecken, nur wenn sie in ihr Feld passen
+      if (yT !== null) {
+        [['raetsel', x0 + 8, y0 + 16, 'start', xT - x0], ['renner', x1 - 8, y0 + 16, 'end', x1 - xT],
+         ['ladenhueter', x0 + 8, y1 - 8, 'start', xT - x0], ['zugpferd', x1 - 8, y1 - 8, 'end', x1 - xT]].forEach(function (q) {
+          var name = FELD[q[0]].name.toUpperCase();
+          var w = textBreite(name, 12, 700) * 1.08;
+          if (w + 14 > q[4]) return;
+          svgEl('text', { x: q[1], y: q[2], 'text-anchor': q[3], 'class': 'feldname', fill: FELD[q[0]].farbe }, svg, name);
+          belegt.push({ x: q[3] === 'end' ? q[1] - w : q[1], y: q[2] - 12, w: w, h: 15 });
+        });
+      }
+    }
+
+    // Band für Artikel ohne Wareneinsatz
+    var bandY = y1 + 50, bandH = 30;
+    if (ohne.length) {
+      svgEl('rect', { x: x0, y: bandY, width: x1 - x0, height: bandH, rx: 8, fill: '#1C1C1C', stroke: '#2A2520' }, svg);
+      svgEl('text', { x: x0, y: bandY + bandH + 16, 'class': 'achse' }, svg, 'Ohne Wareneinsatz, nur nach Stück');
+    }
+
+    // Punkte
+    var punkte = mit.map(function (a) { return { a: a, x: sx(a.qty), y: sy(a.db), feld: punktVon(a).feld || 'fehlt', voll: true }; })
+      .concat(ohne.map(function (a) { return { a: a, x: sx(a.qty), y: bandY + bandH / 2, feld: 'fehlt', voll: false }; }));
+    var r = schmal ? 6 : 7;
+    punkte.forEach(function (p) { belegt.push({ x: p.x - r, y: p.y - r, w: 2 * r, h: 2 * r }); });
+    punkte.forEach(function (p) {
+      var c = svgEl('circle', {
+        cx: p.x, cy: p.y, r: r,
+        fill: p.voll ? FELD[p.feld].farbe : '#141414',
+        stroke: p.voll ? '#141414' : FELD.fehlt.farbe,
+        'stroke-width': 2,
+      }, svg);
+      svgEl('title', {}, c, p.a.name + ': ' + FELD[p.feld].name + ', ' + p.a.qty + ' Stück'
+        + (p.a.db !== null ? ', DB je Stück ' + fmtEUR.format(p.a.db) : ''));
+    });
+    // Namen: wichtigste zuerst, an die erste freie Stelle neben dem Punkt
+    punkte.slice().sort(function (a, b) { return b.a.qty - a.a.qty; }).forEach(function (p) {
+      var name = kurzName(p.a.name);
+      var w = textBreite(name, 12, 500) + 2, h = 14;
+      var stellen = [
+        { x: p.x + r + 4, y: p.y - h / 2 }, { x: p.x - r - 4 - w, y: p.y - h / 2 },
+        { x: p.x - w / 2, y: p.y - r - 2 - h }, { x: p.x - w / 2, y: p.y + r + 2 },
+        { x: p.x + r + 2, y: p.y - r - h + 2 }, { x: p.x + r + 2, y: p.y + r - 2 },
+        { x: p.x - r - 2 - w, y: p.y - r - h + 2 }, { x: p.x - r - 2 - w, y: p.y + r - 2 },
+        { x: p.x - w / 2, y: p.y - r - 4 - 2 * h }, { x: p.x - w / 2, y: p.y + r + 4 + h },
+      ];
+      for (var i = 0; i < stellen.length; i++) {
+        var st = { x: stellen[i].x, y: stellen[i].y, w: w, h: h };
+        if (!p.voll && (st.y < bandY - 2 || st.y + h > bandY + bandH + 2)) continue;
+        if (!frei(st)) continue;
+        belegt.push(st);
+        svgEl('text', { x: st.x + 1, y: st.y + 11, 'class': 'punkt-name' + (p.voll ? '' : ' grau') }, svg, name);
+        return;
+      }
+    });
+
+    // Beschreibung für Screenreader und unter der Grafik
+    var nachFeld = {};
+    liste.forEach(function (a) { var f = feldVon(a) || 'fehlt'; (nachFeld[f] = nachFeld[f] || []).push(a.name); });
+    svg.setAttribute('aria-label', 'Vier-Felder-Tafel ' + gruppenName() + '. ' + FELD_REIHE.filter(function (f) { return nachFeld[f]; })
+      .map(function (f) { return FELD[f].name + ': ' + nachFeld[f].join(', '); }).join('. ') + '.');
+    $('tafelText').textContent = 'Beliebt ab ' + Math.max(1, Math.ceil(tafel.schwelleStueck - 1e-9)) + ' Stück: 70 % des Durchschnitts von '
+      + tafel.n + ' Artikeln. ' + (tafel.schnittDb !== null ? 'Hohe Marge ab ' + fmtEUR.format(tafel.schnittDb)
+      + ' Deckungsbeitrag je Stück: Schnitt der Gruppe, nach Menge gewichtet.' : 'Für die Marge fehlt noch der Wareneinsatz.');
+  }
+  function gruppenName() {
+    var c = $('gruppenChips').querySelector('[data-gruppe="' + awGruppe + '"]');
+    return c ? c.textContent : '';
+  }
+
+  /* ---------------- Felder-Übersicht ---------------- */
+  function zeichneFelder() {
+    var ul = $('felderListe');
+    ul.textContent = '';
+    var liste = artikelDerGruppe();
+    FELD_REIHE.forEach(function (f) {
+      var drin = liste.filter(function (a) { return feldVon(a) === f; });
+      if (f === 'fehlt' && !drin.length) return;
+      var li = document.createElement('li');
+      li.className = 'feld-item f-' + f;
+      var sw = document.createElement('span'); sw.className = 'swatch'; sw.setAttribute('aria-hidden', 'true');
+      var st = document.createElement('strong'); st.textContent = FELD[f].name;
+      var n = document.createElement('span'); n.className = 'feld-n'; n.textContent = String(drin.length);
+      n.setAttribute('aria-label', drin.length + (drin.length === 1 ? ' Artikel' : ' Artikel'));
+      var p = document.createElement('p');
+      p.textContent = FELD[f].kurz + (drin.length ? ' ' + drin.map(function (a) { return kurzName(a.name); }).join(', ') + '.' : '');
+      li.append(sw, st, n, p);
+      ul.appendChild(li);
+    });
+  }
+
+  /* ---------------- Tabelle ---------------- */
+  function zelle(tr, text, klasse, label) {
+    var td = document.createElement('td');
+    if (klasse) td.className = klasse;
+    if (label) td.setAttribute('data-label', label);
+    if (text instanceof Node) td.appendChild(text); else td.textContent = text;
+    tr.appendChild(td);
+    return td;
+  }
+  function feldBadge(f) {
+    var b = document.createElement('span');
+    b.className = 'badge badge-feld f-' + f;
+    b.textContent = FELD[f].name;
+    return b;
+  }
+  function zeichneTabelle() {
+    var body = $('meBody');
+    body.textContent = '';
+    artikelDerGruppe().slice().sort(function (a, b) { return b.qty - a.qty || a.name.localeCompare(b.name, 'de'); }).forEach(function (a) {
+      var p = punktVon(a);
+      var f = feldVon(a);
+      var tr = document.createElement('tr');
+      if (a.cost === null) tr.className = 'is-grey';
+      var name = document.createDocumentFragment();
+      var ns = document.createElement('span'); ns.className = 'me-name'; ns.textContent = a.name;
+      name.appendChild(ns);
+      if (f) { var mb = feldBadge(f); mb.classList.add('feld-mobil'); name.appendChild(mb); }
+      zelle(tr, name, 'name-zelle');
+      zelle(tr, f ? feldBadge(f) : '', 'feld-zelle');
+      zelle(tr, String(a.qty), 'z', 'Stück');
+      zelle(tr, fmtEUR.format(a.umsatz), 'z', 'Umsatz');
+      zelle(tr, fmtEUR.format(a.nettoSchnitt), 'z', 'Netto je Stück');
+      zelle(tr, a.cost === null ? 'fehlt' : fmtEUR.format(a.cost), 'z', 'Wareneinsatz');
+      zelle(tr, a.quote === null ? '' : fmtProz.format(a.quote), 'z', 'Quote');
+      zelle(tr, eurOderLeer(a.db), 'z', 'DB je Stück');
+      zelle(tr, p.hinweis || (a.cost === null ? 'Wareneinsatz fehlt.' : ''), 'hinweis');
+      body.appendChild(tr);
+    });
+  }
+
+  /* ---------------- Wareneinsatz eintragen ---------------- */
+  var GRUPPEN_FORM = [['burger', 'Burger'], ['sides', 'Snacks & Beilagen'], ['dips', 'Dips'], ['drinks', 'Getränke'], ['extra', 'Extras']];
+  function alsText(x) { return x === null || x === undefined ? '' : fmtZahl2.format(x); }
+  function leseFeld(v) {
+    var t = String(v || '').trim();
+    if (!t) return { ok: true, wert: null };
+    if (!/^\d{1,3}([.,]\d{1,3})?$/.test(t)) return { ok: false };
+    var x = Number(t.replace(',', '.'));
+    if (!(x >= 0 && x <= 50)) return { ok: false };
+    return { ok: true, wert: Math.round(x * 100) / 100 };
+  }
+  function baueKostenForm() {
+    var box = $('kostenGruppen');
+    box.textContent = '';
+    kostenAlt = {};
+    GRUPPEN_FORM.forEach(function (g) {
+      var drin = aw.artikel.filter(function (a) { return a.cat === g[0]; });
+      if (!drin.length) return;
+      var grp = document.createElement('div');
+      grp.className = 'kosten-gruppe';
+      var h = document.createElement('h3');
+      h.className = 'sub-title';
+      h.textContent = g[1];
+      grp.appendChild(h);
+      drin.forEach(function (a) {
+        kostenAlt[a.id] = a.cost;
+        var z = document.createElement('div');
+        z.className = 'kosten-zeile';
+        var l = document.createElement('label');
+        l.className = 'kosten-name';
+        l.htmlFor = 'k-' + a.id;
+        l.textContent = a.name;
+        var info = document.createElement('span');
+        info.className = 'kosten-info';
+        info.id = 'ki-' + a.id;
+        var feld = document.createElement('div');
+        feld.className = 'kosten-feld';
+        var inp = document.createElement('input');
+        inp.className = 'input';
+        inp.id = 'k-' + a.id;
+        inp.setAttribute('inputmode', 'decimal');
+        inp.setAttribute('autocomplete', 'off');
+        inp.setAttribute('enterkeyhint', 'done');
+        inp.setAttribute('placeholder', '0,00');
+        inp.setAttribute('aria-describedby', 'ki-' + a.id);
+        inp.setAttribute('data-id', a.id);
+        inp.value = alsText(a.cost);
+        var e = document.createElement('span');
+        e.className = 'einheit';
+        e.setAttribute('aria-hidden', 'true');
+        e.textContent = '€';
+        feld.append(inp, e);
+        z.append(l, feld, info);
+        grp.appendChild(z);
+        kostenInfo(a, inp, info);
+      });
+      box.appendChild(grp);
+    });
+    kostenStatus();
+  }
+  /* Preis, Netto und die Quote, sobald ein Wert drin steht */
+  function kostenInfo(a, inp, ziel) {
+    var f = leseFeld(inp.value);
+    var text = 'Preis ' + fmtEUR.format(a.preis) + ', netto ' + fmtEUR.format(a.nettoKarte);
+    if (!f.ok) text += '. Bitte eine Zahl von 0 bis 50 eingeben.';
+    else if (f.wert !== null && a.nettoKarte > 0) text += ', Quote ' + fmtProz.format(f.wert / a.nettoKarte);
+    (ziel || $('ki-' + a.id)).textContent = text;
+    if (f.ok) inp.removeAttribute('aria-invalid'); else inp.setAttribute('aria-invalid', 'true');
+  }
+  function geaenderteKosten() {
+    var aus = {}, n = 0, falsch = null;
+    Array.prototype.forEach.call($('kostenGruppen').querySelectorAll('input[data-id]'), function (inp) {
+      var id = inp.getAttribute('data-id');
+      var f = leseFeld(inp.value);
+      if (!f.ok) { if (!falsch) falsch = inp; return; }
+      var alt = kostenAlt[id] === undefined ? null : kostenAlt[id];
+      if (f.wert !== alt) { aus[id] = f.wert; n++; }
+    });
+    return { werte: aus, n: n, falsch: falsch };
+  }
+  function kostenStatus(text) {
+    var box = $('kostenAktion');
+    if (!aw) { box.classList.remove('is-dirty'); $('kostenStatus').textContent = 'Leer lassen, wenn du den Wert noch nicht kennst.'; return; }
+    var g = geaenderteKosten();
+    box.classList.toggle('is-dirty', g.n > 0 || !!g.falsch);
+    if (text) $('kostenStatus').textContent = text;
+    else if (g.falsch) $('kostenStatus').textContent = 'Ein Wert ist keine Zahl von 0 bis 50.';
+    else if (g.n) $('kostenStatus').textContent = g.n + (g.n === 1 ? ' Änderung' : ' Änderungen') + ' noch nicht gespeichert.';
+    else $('kostenStatus').textContent = 'Leer lassen, wenn du den Wert noch nicht kennst.';
+  }
+  $('kostenGruppen').addEventListener('input', function (e) {
+    var inp = e.target;
+    if (!inp.matches || !inp.matches('input[data-id]') || !aw) return;
+    var a = aw.artikel.filter(function (x) { return x.id === inp.getAttribute('data-id'); })[0];
+    if (a) kostenInfo(a, inp);
+    kostenStatus();
+  });
+  $('kostenForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var btn = $('kostenSave');
+    if (!aw || kostenSpeichert || istBusy(btn)) return;
+    var g = geaenderteKosten();
+    if (g.falsch) { g.falsch.focus(); kostenStatus(); toast('Bitte nur Zahlen von 0 bis 50 eingeben, zum Beispiel 2,40.', 'err'); return; }
+    if (!g.n) { toast('Nichts geändert.', 'ok'); return; }
+    kostenSpeichert = true;
+    busy(btn, true);
+    var felder = $('kostenGruppen').querySelectorAll('input[data-id]');
+    Array.prototype.forEach.call(felder, function (i) { i.readOnly = true; });
+    try {
+      var d = await inhaberAnfrage({ action: 'kosten_speichern', kosten: g.werte });
+      uebernehmeAuswertung(d, true);
+      kostenStatus('Gespeichert um ' + fmtUhr.format(new Date()) + '. Die Tafel ist neu berechnet.');
+      toast(g.n === 1 ? 'Wareneinsatz gespeichert.' : g.n + ' Werte gespeichert.', 'ok');
+    } catch (err) {
+      if (!err.stumm) { toast(err.message || 'Nicht gespeichert.', 'err'); kostenStatus(); }
+    } finally {
+      kostenSpeichert = false;
+      busy(btn, false);
+      Array.prototype.forEach.call($('kostenGruppen').querySelectorAll('input[data-id]'), function (i) { i.readOnly = false; });
+    }
+  });
+
+  /* ---------------- Wochenbericht ---------------- */
+  function zeigeBericht(text) {
+    var box = $('berichtText');
+    box.textContent = '';
+    var ent = function (x) { return x.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); };
+    String(text || '').split(/(<b>[\s\S]*?<\/b>)/).forEach(function (teil) {
+      if (/^<b>[\s\S]*<\/b>$/.test(teil)) {
+        var s = document.createElement('strong');
+        s.textContent = ent(teil.slice(3, -4));
+        box.appendChild(s);
+      } else if (teil) {
+        box.appendChild(document.createTextNode(ent(teil)));
+      }
+    });
+    box.hidden = false;
+  }
+  async function bericht(btn, senden) {
+    if (istBusy(btn) || istBusy($('berichtVorschau')) || istBusy($('berichtSenden'))) return;
+    busy(btn, true);
+    try {
+      var d = await inhaberAnfrage({ action: senden ? 'bericht_senden' : 'bericht_vorschau' });
+      zeigeBericht(d.text);
+      if (!senden) toast('Vorschau für ' + datum(d.von) + ' bis ' + datum(d.bis) + '.', 'ok');
+      else if (d.gesendet) toast('Bericht gesendet.', 'ok');
+      else toast('Nicht gesendet. Telegram ist nicht eingerichtet oder gerade nicht erreichbar.', 'err');
+    } catch (err) {
+      if (!err.stumm) toast(err.message || 'Gerade nicht möglich.', 'err');
+    } finally {
+      busy(btn, false);
+    }
+  }
+  $('berichtVorschau').addEventListener('click', function () { bericht(this, false); });
+  $('berichtSenden').addEventListener('click', function () { bericht(this, true); });
+
+  var tafelT = null;
+  var tafelBreite = 0;
+  window.addEventListener('resize', function () {
+    clearTimeout(tafelT);
+    tafelT = setTimeout(function () {
+      if (ansicht !== 'auswertung' || !aw) return;
+      var b = $('tafelSvg').clientWidth;
+      if (Math.abs(b - tafelBreite) < 4) return;
+      tafelBreite = b;
+      zeichneTafel();
+    }, 150);
   });
 
   /* ---------------- Start ---------------- */

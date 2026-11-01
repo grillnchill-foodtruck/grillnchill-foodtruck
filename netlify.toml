@@ -290,3 +290,10 @@
     X-Robots-Tag    = "noindex, nofollow"
     X-Frame-Options = "DENY"
     Cache-Control   = "no-store"
+
+# --- Paket cockpit ---
+# Wochenbericht per Telegram: montags 07:00 UTC (08:00 Winterzeit, 09:00
+# Sommerzeit) für die Woche davor. Je Woche höchstens ein geplanter Bericht,
+# siehe netlify/functions/wochenbericht.js.
+[functions."wochenbericht"]
+  schedule = "0 7 * * 1"
