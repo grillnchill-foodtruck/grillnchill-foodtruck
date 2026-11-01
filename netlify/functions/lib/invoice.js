@@ -66,7 +66,24 @@ function latin1(s) {
     .replace(/–/g, '-').replace(/—/g, '-');
 }
 
+/* Bankverbindung für Überweisungen (Firmen-Sammelrechnung). Steht nicht im
+   Repo, sondern in Netlify: RECHNUNG_IBAN, RECHNUNG_BIC, RECHNUNG_KONTOINHABER. */
+function bankverbindung() {
+  const iban = String(process.env.RECHNUNG_IBAN || '').replace(/\s+/g, '').toUpperCase();
+  if (!iban) return null;
+  return {
+    iban,
+    ibanLesbar: iban.replace(/(.{4})/g, '$1 ').trim(),
+    bic: String(process.env.RECHNUNG_BIC || '').replace(/\s+/g, '').toUpperCase(),
+    inhaber: String(process.env.RECHNUNG_KONTOINHABER || VERKAEUFER.name),
+  };
+}
+
 function zahlungsText(order) {
+  // Firmen-Mittag: Sammelrechnung, zahlbar per Überweisung (Paket firmen)
+  if (order.payment === 'firma') {
+    return `Überweisung bis ${order.faelligAm || ''} (${Number(order.zahlungsziel) || 14} Tage), Verwendungszweck ${order.invoiceNo || ''}`;
+  }
   if (order.payment !== 'sumup') return 'Vor Ort (bar oder Karte)';
   const c = order.card || {};
   const marke = c.type ? String(c.type).charAt(0) + String(c.type).slice(1).toLowerCase() : null;
@@ -112,8 +129,14 @@ function buildInvoicePdf(order) {
       };
       zeile('Rechnungsnummer', order.invoiceNo || '', 50);
       zeile('Rechnungsdatum', order.invoiceDate || '', 63);
-      zeile('Leistungsdatum', order.serviceDate || order.invoiceDate || '', 76);
-      zeile('Bestellung', order.reference || '', 89);
+      if (order.sammel) {
+        // Sammelrechnung (Firmen-Mittag): ein Monat statt eines Tages
+        zeile('Leistungszeitraum', order.leistungsmonat || '', 76);
+        zeile('Fällig am', order.faelligAm || '', 89);
+      } else {
+        zeile('Leistungsdatum', order.serviceDate || order.invoiceDate || '', 76);
+        zeile('Bestellung', order.reference || '', 89);
+      }
 
       // Empfänger
       let y = 130;
@@ -125,6 +148,14 @@ function buildInvoicePdf(order) {
       doc.font('Helvetica').fontSize(10).fillColor(dunkel);
       if (a.street) { doc.text(latin1(a.street), L, y); y += 13; }
       if (a.zip || a.city) { doc.text(latin1(`${a.zip || ''} ${a.city || ''}`.trim()), L, y); y += 13; }
+      if (order.ustIdKunde) { doc.fillColor(grau).fontSize(9).text(`USt-IdNr. ${latin1(order.ustIdKunde)}`, L, y); y += 13; doc.fillColor(dunkel); }
+      if (order.sammel) {
+        y += 10;
+        doc.font('Helvetica').fontSize(9.5).fillColor(dunkel).text(latin1(
+          `Sammelrechnung Firmen-Mittag für ${order.sammel.anzahl} Bestellungen im Leistungszeitraum `
+          + `${order.leistungszeitraum || ''}. Jede Position nennt Liefertag und Besteller.`), L, y, { width: B });
+        y = doc.y;
+      }
 
       // Positionen
       y += 22;
@@ -151,7 +182,9 @@ function buildInvoicePdf(order) {
         if (y > 690) { doc.addPage(); y = 60; }
       });
 
-      // Summen
+      // Summen. Bei langen Listen (Sammelrechnung) nicht über den Seitenrand
+      // laufen: der Block braucht gut 150 pt.
+      if (y > 620) { doc.addPage(); y = 60; }
       y += 4;
       doc.moveTo(300, y).lineTo(R, y).strokeColor(linie).stroke();
       y += 9;
@@ -193,9 +226,17 @@ function buildInvoicePdf(order) {
       // Fuß
       y += 14;
       doc.font('Helvetica').fontSize(9).fillColor(grau);
-      doc.text(`Zahlung: ${latin1(zahlungsText(order))}`, L, y);
-      y += 13;
-      doc.text(order.mode === 'delivery' ? 'Lieferung' : 'Abholung am Foodtruck', L, y);
+      doc.text(`Zahlung: ${latin1(zahlungsText(order))}`, L, y, { width: B });
+      y = Math.max(y + 13, doc.y);
+      if (order.payment === 'firma') {
+        const bank = bankverbindung();
+        if (bank) {
+          doc.text(latin1(`Bankverbindung: ${bank.inhaber} · IBAN ${bank.ibanLesbar}${bank.bic ? ' · BIC ' + bank.bic : ''}`), L, y, { width: B });
+          y = Math.max(y + 13, doc.y);
+        }
+      } else {
+        doc.text(order.mode === 'delivery' ? 'Lieferung' : 'Abholung am Foodtruck', L, y);
+      }
       if (z(order.total) <= 0) {
         y += 13;
         doc.text('Der Rechnungsbetrag ist durch die ausgewiesenen Abzüge vollständig ausgeglichen.', L, y, { width: B });
@@ -363,6 +404,11 @@ function rechneXml(order) {
 function buildInvoiceXml(order) {
   const a = order.invoiceAddress || {};
   const b = rechneXml(order);
+  // Firmen-Sammelrechnung: Überweisung mit Fälligkeit und Abrechnungszeitraum
+  const firma = order.payment === 'firma';
+  const bank = firma ? bankverbindung() : null;
+  const zeitraum = firma && order.leistungszeitraum
+    ? String(order.leistungszeitraum).split(' bis ').map(ymd) : null;
 
   const positionen = b.zeilen.map((p, idx) => `    <ram:IncludedSupplyChainTradeLineItem>
       <ram:AssociatedDocumentLineDocument><ram:LineID>${idx + 1}</ram:LineID></ram:AssociatedDocumentLineDocument>
@@ -454,7 +500,10 @@ ${positionen}
           <ram:LineOne>${x(a.street)}</ram:LineOne>
           <ram:CityName>${x(a.city)}</ram:CityName>
           <ram:CountryID>DE</ram:CountryID>
-        </ram:PostalTradeAddress>
+        </ram:PostalTradeAddress>${order.ustIdKunde ? `
+        <ram:SpecifiedTaxRegistration>
+          <ram:ID schemeID="VA">${x(order.ustIdKunde)}</ram:ID>
+        </ram:SpecifiedTaxRegistration>` : ''}
       </ram:BuyerTradeParty>
       <ram:BuyerOrderReferencedDocument><ram:IssuerAssignedID>${x(order.reference)}</ram:IssuerAssignedID></ram:BuyerOrderReferencedDocument>
     </ram:ApplicableHeaderTradeAgreement>
@@ -463,14 +512,30 @@ ${positionen}
         <ram:OccurrenceDateTime><udt:DateTimeString format="102">${ymd(order.serviceDate || order.invoiceDate)}</udt:DateTimeString></ram:OccurrenceDateTime>
       </ram:ActualDeliverySupplyChainEvent>
     </ram:ApplicableHeaderTradeDelivery>
-    <ram:ApplicableHeaderTradeSettlement>
+    <ram:ApplicableHeaderTradeSettlement>${firma ? `
+      <ram:PaymentReference>${x(order.invoiceNo)}</ram:PaymentReference>` : ''}
       <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
       <ram:SpecifiedTradeSettlementPaymentMeans>
-        <ram:TypeCode>${order.payment === 'sumup' ? '68' : '10'}</ram:TypeCode>
-        <ram:Information>${x(zahlungsText(order))}</ram:Information>
+        <ram:TypeCode>${firma ? '58' : (order.payment === 'sumup' ? '68' : '10')}</ram:TypeCode>
+        <ram:Information>${x(zahlungsText(order))}</ram:Information>${firma && bank ? `
+        <ram:PayeePartyCreditorFinancialAccount>
+          <ram:IBANID>${x(bank.iban)}</ram:IBANID>
+          <ram:AccountName>${x(bank.inhaber)}</ram:AccountName>
+        </ram:PayeePartyCreditorFinancialAccount>${bank.bic ? `
+        <ram:PayeeSpecifiedCreditorFinancialInstitution>
+          <ram:BICID>${x(bank.bic)}</ram:BICID>
+        </ram:PayeeSpecifiedCreditorFinancialInstitution>` : ''}` : ''}
       </ram:SpecifiedTradeSettlementPaymentMeans>
-${steuerBloecke}
-${abschlaege}
+${steuerBloecke}${firma && zeitraum ? `
+      <ram:BillingSpecifiedPeriod>
+        <ram:StartDateTime><udt:DateTimeString format="102">${zeitraum[0]}</udt:DateTimeString></ram:StartDateTime>
+        <ram:EndDateTime><udt:DateTimeString format="102">${zeitraum[1]}</udt:DateTimeString></ram:EndDateTime>
+      </ram:BillingSpecifiedPeriod>` : ''}
+${abschlaege}${firma ? `
+      <ram:SpecifiedTradePaymentTerms>
+        <ram:Description>${x('Zahlbar innerhalb von ' + (Number(order.zahlungsziel) || 14) + ' Tagen ohne Abzug')}</ram:Description>
+        <ram:DueDateDateTime><udt:DateTimeString format="102">${ymd(order.faelligAm)}</udt:DateTimeString></ram:DueDateDateTime>
+      </ram:SpecifiedTradePaymentTerms>` : ''}
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
         <ram:LineTotalAmount>${num(b.zeilenSumme)}</ram:LineTotalAmount>
         <ram:ChargeTotalAmount>${num(b.zuschlagSumme)}</ram:ChargeTotalAmount>
