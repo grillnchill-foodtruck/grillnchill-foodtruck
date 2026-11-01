@@ -273,3 +273,25 @@
   to     = "/404.html"
   status = 404
 
+# --- Paket firmen ---
+# Firmen-Mittag: öffentliche Seite und Verwaltung. Netlify liefert /firmen
+# auch ohne Regel aus firmen.html aus (wie /halal); die Regeln machen es
+# ausdrücklich. Achtung: Sie stehen hinter der 404-Regel "/*" und greifen
+# deshalb nur, wenn die Datei nicht gefunden wird. Beim Zusammenführen vor
+# die 404-Regel ziehen.
+[[redirects]]
+  from   = "/firmen"
+  to     = "/firmen.html"
+  status = 200
+
+[[redirects]]
+  from   = "/firmen-admin"
+  to     = "/firmen-admin.html"
+  status = 200
+
+[[headers]]
+  for = "/firmen-admin.html"
+  [headers.values]
+    X-Robots-Tag    = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    Cache-Control   = "no-store"

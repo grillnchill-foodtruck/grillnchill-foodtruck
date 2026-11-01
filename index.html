@@ -2840,6 +2840,22 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   cursor: pointer; text-align: left;
 }
 .co-firma-toggle:hover { color: var(--color-cream); }
+/* Firmen-Mittag (Paket firmen): Firmencode an der Kasse, Zahlart Firmenrechnung */
+.co-firmacode { margin: 0.7rem 0 0; }
+.co-firmacode label { display: block; font-weight: 600; font-size: 0.86rem; margin-bottom: 0.4rem; }
+.co-firmacode-row { display: flex; gap: 0.5rem; }
+.co-firmacode-row .form-input { flex: 1; min-width: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+.co-firmacode-row .btn { flex: none; min-height: 44px; padding: 0.6rem 1rem; }
+.co-firmacode-toggle { margin: 0.7rem 0 0; }
+.field-note.co-firma-ok { color: var(--color-success); }
+.field-note.co-firma-err { color: #FF8A6B; }
+.payment-option-firma { border-color: rgba(109, 190, 69, 0.45); }
+.payment-option-firma:has(input:checked) { border-color: var(--color-success); background: rgba(109, 190, 69, 0.08); }
+.payment-option-firma input[type="radio"] { accent-color: var(--color-success); }
+.form-input.co-firma-fest { opacity: 0.8; cursor: default; }
+.grp-firma-banner { margin: 0 0 1rem; padding: 0.7rem 0.8rem; border: 1px solid rgba(109, 190, 69, 0.35); border-radius: var(--radius-sm);
+  background: rgba(109, 190, 69, 0.07); color: var(--color-cream); font-size: 0.86rem; line-height: 1.5; }
+.grp-firma-note { color: var(--color-text-muted); font-size: 0.78rem; line-height: 1.5; margin: 0 0 1rem; }
 .cart-savings-banner {
   background: rgba(109, 190, 69, 0.08);
   border: 1px solid rgba(109, 190, 69, 0.22);
@@ -7025,6 +7041,7 @@ body.onb-lock { overflow: hidden; }
           <li><a href="#location" data-i18n="footer.menu_location">Standort &amp; Zeiten</a></li>
           <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
           <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
+          <li><a href="/firmen" data-i18n="footer.menu_firmen">Firmen-Mittag</a></li>
         </ul>
       </div>
       <div>
@@ -9115,7 +9132,8 @@ function commitOrderSuccess(order, cartSnapshot) {
     if (order) accMaybeSaveOrderAddress(order);
     setTimeout(refreshAccount, 5000);
   } else {
-    if (order) addLoyaltySpend(order.subtotal); // Umsatz (Warenwert) auf Treue-Fortschritt anrechnen
+    // Umsatz (Warenwert) auf Treue-Fortschritt anrechnen; Firmenrechnung zählt nicht (v1)
+    if (order && order.payment !== 'firma') addLoyaltySpend(order.subtotal);
     if (order && order.loyaltyApplied && order.loyaltyType !== 'menu') consumeLoyaltyReward();
   }
   if (order) incrementCustomerOrderCount(order.email, order.phone);
@@ -10447,6 +10465,7 @@ function onPayChange() {
   if (sec) sec.style.display = m === 'sumup' ? '' : 'none';
   if (m !== 'sumup') tipPercent = 0; // Bar/EC: kein Online-Trinkgeld
   refreshTipUI();
+  firmaZahlartGeaendert(m);
 }
 function refreshTipUI() {
   document.querySelectorAll('.tip-btn').forEach(b => {
@@ -11292,7 +11311,7 @@ function renderCart() {
     const card = `
       <div class="success-card">
         ${o.reference ? `<div class="success-row"><span class="label">${t('co.s_order_no')}</span><span class="value">#${escHtml(o.reference)}</span></div>` : ''}
-        <div class="success-row"><span class="label">${t('co.s_payment')}</span><span class="value">${paidOnline ? t('co.s_pay_online') : t('co.s_pay_onsite')}</span></div>
+        <div class="success-row"><span class="label">${t('co.s_payment')}</span><span class="value">${o.payment === 'firma' ? escHtml(t('co.s_pay_firma').replace('{firma}', o.firmaName || '')) : (paidOnline ? t('co.s_pay_online') : t('co.s_pay_onsite'))}</span></div>
         ${o.loyaltyDiscount > 0 ? `<div class="success-row"><span class="label">${loyaltyLineLabel(o.loyaltyType)}</span><span class="value">− ${formatPrice(o.loyaltyDiscount)}</span></div>` : ''}
         ${o.tip > 0 ? `<div class="success-row"><span class="label">${t('co.s_tip')}</span><span class="value">${formatPrice(o.tip)}</span></div>` : ''}
         ${o.total != null ? `<div class="success-row"><span class="label">${t('co.s_total')}</span><span class="value">${formatPrice(o.total)}</span></div>` : ''}
@@ -11712,7 +11731,8 @@ function renderCart() {
 
     body.innerHTML = `
       ${usageNote}
-      ${orderStatusNote}
+      <div id="coOrderStatusNote">${orderStatusNote}</div>
+      ${firmaTerminBannerHtml()}
       <form id="checkoutForm" novalidate data-on-submit="submitOrder(event)">
         <!-- Vor- und Nachname getrennt: mit einem Feld kamen oft nur Vornamen an.
              An Server, Mails und Kasse geht weiter ein Feld "Vorname Nachname". -->
@@ -11788,6 +11808,7 @@ function renderCart() {
             </div>
           </div>
           <div id="zoneInfo" aria-live="polite"></div>
+          <p id="coFirmaAddr" class="field-note co-firma-ok" hidden>${t('co.firma_addr')}</p>
         ` : `
           <div class="form-group">
             <label for="co-pickup-time">${t('co.pickup_time')}</label>
@@ -11812,7 +11833,7 @@ function renderCart() {
           <label>${t('co.pay_title')}</label>
           <div class="payment-options payment-options-stack">
             <label class="payment-option payment-option-featured">
-              <input type="radio" name="pay" value="sumup" required checked data-on-change="onPayChange()" />
+              <input type="radio" name="pay" value="sumup" required${firmaGewaehlt() ? '' : ' checked'} data-on-change="onPayChange()" />
               <div class="payment-option-content">
                 <span class="payment-option-title">${t('co.pay_online_title')} <span class="badge-recommended">${t('co.recommended')}</span></span>
                 <span class="payment-option-sub">${t('co.pay_online_sub')}</span>
@@ -11825,7 +11846,9 @@ function renderCart() {
                 <span class="payment-option-sub">${t('checkout.pay_cash')}</span>
               </div>
             </label>
+            ${firmaZahlartHtml()}
           </div>
+          ${firmaCodeHtml()}
         </div>
 
         <div class="form-group" id="tipSection">
@@ -11983,6 +12006,10 @@ function renderCart() {
         btn.className = 'btn btn-primary btn-block btn-lg';
         btn.innerHTML = t('checkout.submit_online');
         hint.textContent = t('checkout.hint_online');
+      } else if (checked.value === 'firma') {
+        btn.className = 'btn btn-primary btn-block btn-lg';
+        btn.innerHTML = t('co.firma_submit');
+        hint.textContent = t('co.firma_hint');
       } else {
         btn.className = 'btn btn-primary btn-block btn-lg';
         btn.innerHTML = t('checkout.submit_cash');
@@ -11999,6 +12026,8 @@ function renderCart() {
       renderZoneInfo();
     }
     updateCheckoutSummary();
+    // Firmen-Mittag: Firmenadresse, Termin, automatische Code-Prüfung
+    firmaNachRender();
 
     // Fuss neu gebaut, waehrend eine Bestellung laeuft: Wartezustand wieder anlegen
     if (checkoutBusy) { gncBusy(checkoutSubmitBtn(), true); lockCheckoutForm(true); }
@@ -12167,7 +12196,7 @@ function resetCheckoutSubmitLabel() {
   // Der Ring bleibt bis zum Ende seiner Mindestanzeige (gncBusy raeumt ihn danach ab)
   const ring = btn.querySelector(':scope > .busy-spin');
   btn.innerHTML = t(checked && checked.value === 'sumup'
-    ? 'checkout.submit_online' : 'checkout.submit_cash');
+    ? 'checkout.submit_online' : (checked && checked.value === 'firma' ? 'co.firma_submit' : 'checkout.submit_cash'));
   if (ring) btn.appendChild(ring);
   /* Der Knopf ist auch dann gesperrt, wenn bei Lieferung die Adresse fehlt
      oder der Mindestbestellwert nicht erreicht ist. Diese Sperre gehoert
@@ -12240,7 +12269,9 @@ async function submitOrder(e) {
   const email = form['co-email'] ? form['co-email'].value : '';
   const note = form['co-note'].value + (groupOrderNote ? '\n\n' + groupOrderNote : '');
   const pay = form.querySelector('input[name="pay"]:checked').value;
-  const payLabel = pay === 'sumup' ? 'Online (SumUp)' : 'Bar / EC vor Ort';
+  const payLabel = pay === 'sumup' ? 'Online (SumUp)' : (pay === 'firma' ? 'Firmenrechnung' : 'Bar / EC vor Ort');
+  // Firmenrechnung nur mit frisch geprüftem Code (der Server prüft noch einmal)
+  if (pay === 'firma' && !firmaGewaehlt()) { releaseCheckout(); flashCartNotice(t('co.firma_err')); return; }
 
   // Bestellstatus nach Öffnungszeiten prüfen
   const os = getOrderingState();
@@ -12254,6 +12285,11 @@ async function submitOrder(e) {
   // Lieferung wird als getimte Bestellung für den Lieferstart eingeplant.
   if (!scheduledFor && checkoutMode === 'delivery' && os.deliveryPreorder && os.deliveryFromStr) {
     scheduledFor = t('co.preorder_when').replace('{day}', t('co.today')).replace('{time}', os.deliveryFromStr);
+  }
+  // Firmen-Mittag aus der Gruppe: fester Liefertermin 12:00 Uhr
+  if (pay === 'firma' && checkoutMode === 'delivery') {
+    const ft = firmaTerminText();
+    if (ft) scheduledFor = t('co.firma_termin').replace('{day}', ft.day).replace('{time}', ft.time);
   }
 
   // Gutschein final serverseitig prüfen – für ALLE Arten (Kampagne, Empfehlung, Geschenk).
@@ -12379,14 +12415,18 @@ async function submitOrder(e) {
     voucherCode: vDisc > 0 ? voucherApplied.code : null,
     // Bestellung kam aus der installierten App (fuer Nur-App-Gutscheine)
     app: istInApp(),
-    // Firmenkunden bekommen eine Rechnung – ohne Firma bleibt alles wie bisher
-    company: (form['co-company'] && form['co-company'].value.trim()) || null,
-    invoiceAddress: (form['co-company'] && form['co-company'].value.trim()) ? {
+    // Firmen-Mittag: Code für die Prüfung im Server, Name nur für die Anzeige
+    firmaCode: pay === 'firma' && firmaCheckout ? firmaCheckout.code : undefined,
+    firmaName: pay === 'firma' && firmaCheckout && firmaCheckout.firma ? firmaCheckout.firma.name : undefined,
+    // Firmenkunden bekommen eine Rechnung – ohne Firma bleibt alles wie bisher.
+    // Auf Firmenrechnung keine Einzelrechnung: die Firma bekommt die Sammelrechnung.
+    company: pay === 'firma' ? null : ((form['co-company'] && form['co-company'].value.trim()) || null),
+    invoiceAddress: (pay !== 'firma' && form['co-company'] && form['co-company'].value.trim()) ? {
       street: (form['co-inv-street'] || {}).value || '',
       zip: (form['co-inv-zip'] || {}).value || '',
       city: (form['co-inv-city'] || {}).value || '',
     } : null,
-    vat: (form['co-company'] && form['co-company'].value.trim())
+    vat: (pay === 'firma' || (form['co-company'] && form['co-company'].value.trim()))
       ? buildVatSummary(cart, disc + vDisc + loyDisc, fee, tip) : null,
     deliveryAddress: checkoutMode === 'delivery' ? {
       street: form['co-street'].value,
@@ -12570,6 +12610,12 @@ async function submitOrder(e) {
   sendOrderConfirmationEmails(orderWithRef)
     .then(result => {
       releaseCheckout();
+      if (result && result.firmaFehler) {
+        // Server hat die Firmenrechnung abgelehnt: nichts bestellt, Zahlart wieder wählen
+        resetCheckoutSubmitLabel();
+        firmaAbgelehnt(result.firmaFehler, result.rest);
+        return;
+      }
       if (result === false) {
         // E-Mail-Versand fehlgeschlagen → Fehler anzeigen, NICHT als erfolgreich werten
         resetCheckoutSubmitLabel();
@@ -12660,7 +12706,7 @@ function buildWhatsAppMessage(o, sumupPending, statusLinks) {
     m += `*Abholzeit:* ${o.pickupTime}\n`;
   }
 
-  m += `*Bezahlung:* ${o.payment === 'sumup' ? (sumupPending ? '💳 Online (SumUp) – ZAHLUNG AUSSTEHEND' : '💳 Online (SumUp) ✅ BEZAHLT') : '💶 Bar / EC vor Ort'}\n`;
+  m += `*Bezahlung:* ${o.payment === 'firma' ? 'Firmenrechnung ' + (o.firmaName || '') + ', nicht kassieren' : (o.payment === 'sumup' ? (sumupPending ? '💳 Online (SumUp) – ZAHLUNG AUSSTEHEND' : '💳 Online (SumUp) ✅ BEZAHLT') : '💶 Bar / EC vor Ort')}\n`;
   if (o.note) m += `*Notiz:* ${o.note}\n`;
   if (o.promo) m += `\n💸 *Promo:* ${o.promo.code} (Nutzung ${o.promo.usage}/${o.promo.max} für diese Tel-Nr)\n`;
 
@@ -13386,6 +13432,224 @@ function selectCateringPackage(key) {
   setTimeout(() => { const n = document.getElementById('cf-name'); if (n) n.focus({ preventScroll: true }); }, 450);
 }
 
+/* ================= FIRMEN-MITTAG (Paket firmen) =================
+   Bestellen auf Firmenrechnung. Die Zahlart erscheint erst, wenn der
+   Firmencode geprüft ist (/firmen, action pruefen): Code gültig, Firma aktiv,
+   E-Mail-Domain passt, Monatslimit reicht. Verbindlich prüft send-email.js
+   beim Absenden noch einmal (lib/firmen.js). Auf Firmenrechnung gibt es in
+   v1 keine Gutscheine, keine Stempelkarte und kein Trinkgeld. */
+var firmaCheckout = null;   // { code, offen, ok, firma: { name, lieferadresse }, rest, gewaehlt, termin, meldung, auto }
+var FIRMA_KEY = 'gnc_firma_code_v1';
+var firmaGespeicherteAdresse = null;   // private Lieferadresse, solange die Firmenadresse eingesetzt ist
+
+function firmaGemerkt() {
+  try { return localStorage.getItem(FIRMA_KEY) || ''; } catch (e) { return ''; }
+}
+function firmaGewaehlt() { return !!(firmaCheckout && firmaCheckout.ok && firmaCheckout.gewaehlt); }
+/* Betrag für die Limit-Vorprüfung: Warenwert plus Liefergebühr, ohne Rabatte */
+function firmaBetrag() {
+  return Math.round((cartSubtotal() + (checkoutMode === 'delivery' && deliveryZone ? deliveryZone.fee : 0)) * 100) / 100;
+}
+function firmaFehlerText(grund, rest) {
+  if (grund === 'code') return t('co.firma_err_code');
+  if (grund === 'domain') return t('co.firma_err_domain');
+  if (grund === 'inaktiv') return t('co.firma_err_inaktiv');
+  if (grund === 'limit') return t('co.firma_err_limit').replace('{rest}', formatPrice(Number(rest) || 0));
+  if (grund === 'pruefung') return t('co.firma_err_pruefung');
+  return t('co.firma_err');
+}
+/* Liefertag in der Sprache des Gastes: heute, morgen oder Wochentag */
+function firmaTagLabel(iso, wochentag) {
+  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' });
+  const tag = fmt.format(new Date(iso));
+  if (tag === fmt.format(new Date())) return t('co.today');
+  if (tag === fmt.format(new Date(Date.now() + 86400000))) return t('co.tomorrow');
+  const keys = ['location.sun', 'location.mon', 'location.tue', 'location.wed', 'location.thu', 'location.fri', 'location.sat'];
+  return t(keys[wochentag] || 'co.today');
+}
+function firmaTerminText() {
+  const tm = firmaCheckout && firmaCheckout.termin;
+  if (!tm || !tm.lieferung || !(new Date(tm.lieferung) > new Date())) return null;
+  return { day: firmaTagLabel(tm.lieferung, tm.wochentag), time: tm.lieferZeit || '12:00' };
+}
+function firmaTerminBannerHtml() {
+  const tx = firmaTerminText();
+  if (!tx) return '';
+  return '<div id="coFirmaTermin" class="checkout-info-banner"' + (firmaGewaehlt() ? '' : ' hidden') + '>'
+    + escG(t('co.firma_termin').replace('{day}', tx.day).replace('{time}', tx.time)) + '</div>';
+}
+function grpFirmaBannerHtml(fm) {
+  if (!fm || !fm.lieferung) return '';
+  return '<div class="grp-firma-banner">' + escG(t('grp.firma_banner')
+    .replace('{firma}', fm.firma || '').replace('{schluss}', fm.schlussZeit || '11:00')
+    .replace('{day}', firmaTagLabel(fm.lieferung, fm.wochentag)).replace('{time}', fm.lieferZeit || '12:00')) + '</div>';
+}
+function firmaZahlartHtml() {
+  if (!(firmaCheckout && firmaCheckout.ok && firmaCheckout.firma) || groupJoin) return '';
+  return `
+            <label class="payment-option payment-option-firma">
+              <input type="radio" name="pay" value="firma" required${firmaCheckout.gewaehlt ? ' checked' : ''} data-on-change="onPayChange()" />
+              <div class="payment-option-content">
+                <span class="payment-option-title">${t('co.firma_pay_title')}</span>
+                <span class="payment-option-sub">${escG(t('co.firma_pay_sub').replace('{firma}', firmaCheckout.firma.name))}</span>
+              </div>
+            </label>`;
+}
+function firmaCodeHtml() {
+  if (groupJoin) return '';
+  const offen = !!(firmaCheckout && (firmaCheckout.offen || firmaCheckout.code));
+  const code = (firmaCheckout && firmaCheckout.code) || '';
+  const meldung = (firmaCheckout && firmaCheckout.meldung) || '';
+  const klasse = firmaCheckout && firmaCheckout.ok ? ' co-firma-ok' : (meldung ? ' co-firma-err' : '');
+  return `
+          <button type="button" id="coFirmaCodeToggle" class="co-firma-toggle co-firmacode-toggle" data-on-click="firmaCodeOeffnen()"${offen ? ' hidden' : ''}>+ ${t('co.firma_toggle')}</button>
+          <div id="coFirmaCodeWrap" class="co-firmacode"${offen ? '' : ' hidden'}>
+            <label for="co-firmacode">${t('co.firma_code')}</label>
+            <div class="co-firmacode-row">
+              <input type="text" id="co-firmacode" class="form-input" maxlength="14" value="${escG(code)}" placeholder="FIRMA-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" data-on-keydown="firmaCodeTaste(event)" />
+              <button type="button" class="btn btn-secondary co-firmacode-btn" data-on-click="firmaCodePruefen(this)">${t('co.firma_check')}</button>
+            </div>
+            <p id="coFirmaMsg" class="field-note${klasse}" aria-live="polite">${escG(meldung)}</p>
+          </div>`;
+}
+function firmaCodeOeffnen() {
+  firmaCheckout = firmaCheckout || {};
+  firmaCheckout.offen = true;
+  if (!firmaCheckout.code) firmaCheckout.code = firmaGemerkt();
+  const w = document.getElementById('coFirmaCodeWrap'), b = document.getElementById('coFirmaCodeToggle');
+  if (w) w.hidden = false;
+  if (b) b.hidden = true;
+  const i = document.getElementById('co-firmacode');
+  if (i) { if (!i.value) i.value = firmaCheckout.code || ''; try { i.focus(); } catch (e) {} }
+}
+/* Enter im Code-Feld prüft den Code, statt das Bestellformular abzusenden */
+function firmaCodeTaste(e) {
+  if (e && e.key === 'Enter') { e.preventDefault(); firmaCodePruefen(); }
+}
+/* Auf Firmenrechnung gelten keine Rabatte (v1). Gibt true zurück, wenn einer entfernt wurde. */
+function firmaRabatteEntfernen() {
+  const hatte = !!(voucherApplied || promoApplied || loyaltyApplied || testPromoApplied);
+  voucherApplied = null; promoApplied = false; loyaltyApplied = false;
+  testPromoApplied = false; testOrderCode = '';
+  tipPercent = 0;
+  return hatte;
+}
+/* Detail-Schritt neu zeichnen, ohne dass der AGB-Haken und die Scrollposition verloren gehen */
+function firmaNeuZeichnen() {
+  const agb = document.getElementById('co-agb');
+  const hatteAgb = !!(agb && agb.checked);
+  const body = document.getElementById('cartBody');
+  const oben = body ? body.scrollTop : 0;
+  renderCart();
+  const agb2 = document.getElementById('co-agb');
+  if (agb2 && hatteAgb) agb2.checked = true;
+  if (body) body.scrollTop = oben;
+}
+async function firmaCodePruefen(btn) {
+  const inp = document.getElementById('co-firmacode');
+  const code = ((inp && inp.value) || '').trim().toUpperCase();
+  const mailEl = document.getElementById('co-email');
+  const email = ((mailEl && mailEl.value) || '').trim();
+  const msg = document.getElementById('coFirmaMsg');
+  const zeig = (text, gut) => {
+    if (!msg) return;
+    msg.textContent = text;
+    msg.classList.toggle('co-firma-ok', !!gut);
+    msg.classList.toggle('co-firma-err', !gut && !!text);
+  };
+  if (!code) { if (inp) { markeFeldFehler(inp); try { inp.focus(); } catch (e) {} } return; }
+  if (!email) {
+    zeig(t('co.firma_err_email'), false);
+    if (mailEl) { markeFeldFehler(mailEl); try { mailEl.focus(); } catch (e) {} }
+    return;
+  }
+  return withBusy(btn || document.querySelector('.co-firmacode-btn'), async () => {
+    let d = null;
+    try {
+      const r = await fetch('/.netlify/functions/firmen', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pruefen', code, email, betrag: firmaBetrag() }),
+      });
+      d = await r.json().catch(() => null);
+      if (!r.ok) d = null;
+    } catch (e) { d = null; }
+    const vorher = firmaCheckout || {};
+    if (!d) { zeig(t('co.firma_err'), false); return; }
+    if (!d.ok) {
+      const warGueltig = !!vorher.ok;
+      firmaCheckout = { code, offen: true, ok: false, termin: vorher.termin, meldung: firmaFehlerText(d.grund, d.rest) };
+      if (warGueltig) firmaNeuZeichnen(); else zeig(firmaCheckout.meldung, false);
+      return;
+    }
+    firmaCheckout = {
+      code, offen: true, ok: true, firma: d.firma, rest: d.rest, gewaehlt: true, termin: vorher.termin,
+      meldung: t('co.firma_ok').replace('{firma}', d.firma.name),
+    };
+    try { localStorage.setItem(FIRMA_KEY, code); } catch (e) {}
+    if (firmaRabatteEntfernen()) flashCartNotice(t('co.firma_no_discount'));
+    firmaNeuZeichnen();
+  });
+}
+/* Wechsel der Zahlart: Firmenadresse ein oder aus, Rabatte raus */
+function firmaZahlartGeaendert(m) {
+  if (!firmaCheckout || !firmaCheckout.ok) return;
+  firmaCheckout.gewaehlt = (m === 'firma');
+  if (firmaCheckout.gewaehlt && firmaRabatteEntfernen()) {
+    flashCartNotice(t('co.firma_no_discount'));
+    firmaNeuZeichnen();
+    return;
+  }
+  firmaNachRender();
+}
+/* Nach jedem Zeichnen des Detail-Schritts: Lieferadresse der Firma fest
+   einsetzen (und die private zurückholen, wenn anders bezahlt wird),
+   Termin-Hinweis zeigen, Code aus der Gruppe automatisch prüfen. */
+function firmaNachRender() {
+  const banner = document.getElementById('coFirmaTermin');
+  const statusNote = document.getElementById('coOrderStatusNote');
+  if (banner) banner.hidden = !firmaGewaehlt();
+  if (statusNote) statusNote.hidden = !!(banner && firmaGewaehlt());
+  const ids = ['co-street', 'co-zip', 'co-city'];
+  const felder = ids.map((id) => document.getElementById(id));
+  const note = document.getElementById('coFirmaAddr');
+  const f = firmaCheckout && firmaCheckout.firma;
+  if (felder[0] && firmaGewaehlt() && checkoutMode === 'delivery' && f && f.lieferadresse) {
+    const a = f.lieferadresse;
+    const werte = [a.street, a.zip, a.city];
+    if (!firmaGespeicherteAdresse && !felder[0].readOnly) firmaGespeicherteAdresse = felder.map((el) => (el ? el.value : ''));
+    let geaendert = false;
+    felder.forEach((el, i) => {
+      if (!el) return;
+      if (el.value !== werte[i]) { el.value = werte[i]; geaendert = true; }
+      el.readOnly = true;
+      el.classList.add('co-firma-fest');
+    });
+    if (note) note.hidden = false;
+    if (geaendert || !deliveryZone) checkDeliveryAddress(a.street, a.zip, a.city);
+  } else if (felder[0]) {
+    const warFest = felder[0].readOnly;
+    felder.forEach((el) => { if (el) { el.readOnly = false; el.classList.remove('co-firma-fest'); } });
+    if (note) note.hidden = true;
+    if (warFest && firmaGespeicherteAdresse) {
+      felder.forEach((el, i) => { if (el) el.value = firmaGespeicherteAdresse[i] || ''; });
+      firmaGespeicherteAdresse = null;
+      checkDeliveryAddress(felder[0].value.trim(), felder[1] ? felder[1].value.trim() : '', felder[2] ? felder[2].value.trim() : '');
+    }
+  }
+  if (firmaCheckout && firmaCheckout.auto && !firmaCheckout.ok) {
+    firmaCheckout.auto = false;
+    const mail = document.getElementById('co-email');
+    if (mail && mail.value.trim()) setTimeout(function () { firmaCodePruefen(); }, 60);
+  }
+}
+/* Der Server hat die Firmenrechnung abgelehnt (Code, Domain, Limit …) */
+function firmaAbgelehnt(grund, rest) {
+  const vorher = firmaCheckout || {};
+  firmaCheckout = { code: vorher.code, offen: true, ok: false, termin: vorher.termin, meldung: firmaFehlerText(grund, rest) };
+  firmaNeuZeichnen();
+  flashCartNotice(firmaCheckout.meldung);
+}
+
 /* ================= GRUPPENBESTELLUNG ================= */
 const GROUP_API = '/.netlify/functions/group-order';
 const GROUP_HOST_KEY = 'gnc_group_host_v1';
@@ -13502,6 +13766,9 @@ function renderGroupStart() {
     <p style="color:var(--color-cream-dim);font-size:0.9rem;margin:0 0 1rem;">${t('grp.intro')}</p>
     <label for="grpHostName" style="display:block;font-weight:600;font-size:0.86rem;margin-bottom:0.4rem;">${t('grp.host_label')}</label>
     <input type="text" id="grpHostName" class="form-input" maxlength="40" placeholder="${t('grp.host_ph')}" style="margin-bottom:1rem;">
+    <label for="grpFirmaCode" style="display:block;font-weight:600;font-size:0.86rem;margin-bottom:0.4rem;">${t('grp.firma_label')}</label>
+    <input type="text" id="grpFirmaCode" class="form-input" maxlength="14" placeholder="FIRMA-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" style="margin-bottom:0.4rem;text-transform:uppercase;" value="${escG(firmaGemerkt())}">
+    <p class="grp-firma-note">${t('grp.firma_note')}</p>
     <button class="btn btn-primary btn-block" data-on-click="createGroup(this)">${t('grp.create')}</button>
     <p id="grpErr" class="grp-err" role="alert" hidden></p>
   `;
@@ -13509,11 +13776,21 @@ function renderGroupStart() {
 async function createGroup(btn) {
   const host = (document.getElementById('grpHostName').value || '').trim();
   if (!host) { document.getElementById('grpHostName').focus(); return; }
+  // Firmen-Mittag: optionaler Firmencode (bleibt nur hier im Browser)
+  const firmaCode = ((document.getElementById('grpFirmaCode') || {}).value || '').trim().toUpperCase();
   return withBusy(btn, async () => {
     grpFehler('');
-    const r = await groupApi({ action: 'create', host });
+    const r = await groupApi({ action: 'create', host, firmaCode: firmaCode || undefined });
+    if (!r.ok && r.d && r.d.error === 'firma') {
+      grpFehler(r.d.grund === 'termin' ? t('grp.firma_err_termin') : firmaFehlerText(r.d.grund));
+      return;
+    }
     if (!r.ok) { grpFehler(r.net ? t('acc.err_network') : t('grp.error')); return; }
     groupHost = { id: r.d.id, hostKey: r.d.hostKey, host };
+    if (firmaCode && r.d.group && r.d.group.firmenMittag) {
+      groupHost.firmaCode = firmaCode;
+      try { localStorage.setItem(FIRMA_KEY, firmaCode); } catch (e) {}
+    }
     try { localStorage.setItem(GROUP_HOST_KEY, JSON.stringify(groupHost)); } catch(e) {}
     updateGroupEntryBtn();
     renderGroupHost(r.d.group);
@@ -13548,8 +13825,12 @@ async function renderGroupHost(preloaded, refresh) {
     g = r.d.group;
   }
   const link = groupLink(g.id);
-  const wa = 'https://wa.me/?text=' + encodeURIComponent(t('grp.share_text').replace('{host}', g.host) + ' ' + link);
-  grpShare = { url: link, host: g.host, text: t('grp.share_text').replace('{host}', g.host) };
+  // Firmen-Mittag: Einladung nennt den Annahmeschluss
+  const teilText = g.firmenMittag
+    ? t('grp.firma_share').replace('{host}', g.host).replace('{time}', g.firmenMittag.schlussZeit || '11:00')
+    : t('grp.share_text').replace('{host}', g.host);
+  const wa = 'https://wa.me/?text=' + encodeURIComponent(teilText + ' ' + link);
+  grpShare = { url: link, host: g.host, text: teilText };
   // Teilen-Knopf, wo es ein Teilen-Blatt gibt (App, iMessage, Handy-Browser); WhatsApp bleibt als Direktweg
   const canShare = GNC_IMESSAGE || gncHas('gncShare') || !!navigator.share;
   const shareBtn = canShare ? `<button type="button" class="btn btn-primary btn-block grp-share-btn" style="margin-bottom:${GNC_IMESSAGE ? '1.2rem' : '0.6rem'};" data-on-click="shareGroupLink(this)">${t(GNC_IMESSAGE ? 'grp.send_chat' : 'grp.share')}</button>` : '';
@@ -13560,6 +13841,7 @@ async function renderGroupHost(preloaded, refresh) {
        <div style="color:var(--color-text-muted);font-size:0.78rem;">${((c.entries && grpZeilen(c.entries, false).length) ? grpZeilen(c.entries, false) : c.lines).map(l => l.qty + '× ' + escG(l.name)).join(' · ')}</div>
      </div>`).join('');
   document.getElementById('groupBody').innerHTML = `
+    ${grpFirmaBannerHtml(g.firmenMittag)}
     <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('grp.host_intro').replace('{host}', escG(g.host))}</p>
     <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
       <input type="text" class="form-input" readonly value="${link}" id="grpLinkField" style="font-size:0.8rem;flex:1;">
@@ -13660,6 +13942,11 @@ async function importGroup(btn) {
       if (!r.ok) { alert(t('grp.error')); return; }
       const g = r.d.group;
       if (!(g.contributions || []).length) return;
+      // Firmen-Mittag: Kasse mit Firmencode, Lieferung und Termin vorbereiten
+      if (g.firmenMittag && groupHost.firmaCode) {
+        firmaCheckout = { code: groupHost.firmaCode, offen: true, auto: true, termin: g.firmenMittag };
+        checkoutMode = 'delivery';
+      }
       // Beiträge in den eigenen Warenkorb mergen – Preise rechnet der Warenkorb neu
       g.contributions.forEach(c => {
         Object.entries(c.entries || {}).forEach(([key, entry]) => {
@@ -13735,6 +14022,7 @@ async function importGroup(btn) {
         }
         groupJoin.loading = false;
         groupJoin.host = r.d.group.host;
+        groupJoin.firmenMittag = r.d.group.firmenMittag || null;
         updateGroupEntryBtn();
         setTimeout(openGroupOverlay, 700);
       });
@@ -13744,6 +14032,7 @@ async function importGroup(btn) {
 
 function renderGroupJoin() {
   document.getElementById('groupBody').innerHTML = `
+    ${grpFirmaBannerHtml(groupJoin.firmenMittag)}
     <p style="color:var(--color-cream-dim);font-size:0.9rem;margin:0 0 1rem;">${t('grp.join_intro').replace('{host}', escG(groupJoin.host || ''))}</p>
     <ol style="color:var(--color-text-muted);font-size:0.84rem;margin:0 0 1.2rem;padding-left:1.2rem;line-height:1.8;">
       <li>${t('grp.join_s1')}</li><li>${t('grp.join_s2')}</li><li>${t('grp.join_s3')}</li>
@@ -13775,7 +14064,9 @@ async function submitToGroup(btn) {
     gncBusy(sendBtn, false);
   }
   if (!r.ok) {
-    alert(r.d && r.d.error === 'closed' ? t('grp.closed') : t('grp.error'));
+    alert(r.d && r.d.error === 'closed' ? t('grp.closed')
+      : r.d && r.d.error === 'schluss' ? t('grp.firma_schluss').replace('{time}', (groupJoin.firmenMittag && groupJoin.firmenMittag.schlussZeit) || '11:00')
+      : t('grp.error'));
     return;
   }
   cart = {}; saveCart(); renderCart(); updateCartUI();
@@ -16226,6 +16517,8 @@ async function sendOrderConfirmationEmails(orderData) {
       testCode: orderData.testCode || null,
       cartSnapshot: orderData.cartSnapshot || null,
       loyaltyApplied: !!orderData.loyaltyApplied,
+      // Firmen-Mittag: der Server prüft Code, Domain, Limit und Steuerdaten
+      firmaCode: orderData.firmaCode || null,
     },
   };
   try {
@@ -16234,6 +16527,10 @@ async function sendOrderConfirmationEmails(orderData) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    if (res.status === 403) {
+      const fd = await res.clone().json().catch(() => null);
+      if (fd && fd.error === 'firma') return { firmaFehler: fd.grund || 'pruefung', rest: fd.rest };
+    }
     if (!res.ok) {
       console.warn('E-Mail-Versand fehlgeschlagen:', res.status);
       return false;

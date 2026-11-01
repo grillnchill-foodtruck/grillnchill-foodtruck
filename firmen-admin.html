@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Firmen · Grill'n Chill</title>
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<style>
+  /* CI wie Admin-Tool und Dienstplan */
+  @font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+  :root{
+    --bg:#0C0B09; --card:#17140F; --card2:#1D1913; --border:#2E2820; --border-hi:#4A3E30;
+    --cream:#F5E9D0; --dim:#A2957D; --faint:#8B7E68;
+    --ember:#E85A24; --ember-hi:#FF7A3D; --dunkel:#140D06;
+    --live:#6DBE45; --amber:#FFB020; --red:#E04848;
+    --r-sm:10px; --r-md:14px; --r-lg:18px;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html{-webkit-text-size-adjust:100%}
+  @supports (-webkit-touch-callout: none){
+    html{font:-apple-system-body}
+    html{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  }
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg);color:var(--cream);line-height:1.5;font-size:1rem;
+    padding-bottom:calc(env(safe-area-inset-bottom) + 30px)}
+  .display{font-family:'Bowlby One',cursive;font-weight:400;letter-spacing:.01em;line-height:1.25}
+  .wrap{max-width:760px;margin:0 auto;padding:0 1rem}
+  button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  button:active{transform:scale(.97)}
+  input,select{font-family:inherit;font-size:1rem}
+  :focus-visible{outline:3px solid var(--ember-hi);outline-offset:2px;border-radius:4px}
+
+  header{position:sticky;top:0;z-index:50;background:rgba(12,11,9,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);padding:.7rem 0 .65rem}
+  .kopf{display:flex;align-items:center;gap:.7rem}
+  .kopf img{width:34px;height:34px;border-radius:50%}
+  .kopf h1{font-size:1.05rem;margin:0;flex:1}
+  .pille{color:var(--dim);font-size:.78rem;text-decoration:none;border:1px solid var(--border);background:none;
+    border-radius:999px;padding:.35rem .8rem;min-height:36px;display:inline-flex;align-items:center;gap:.35rem;font-weight:600}
+  .pille:hover{border-color:var(--ember);color:var(--cream)}
+
+  h2{font-size:.8rem;margin:1.6rem 0 .6rem;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+  .karte{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:.9rem 1rem;margin-bottom:.7rem}
+  .karte.neu{border-color:rgba(255,176,32,.5)}
+  .zeile{display:flex;align-items:flex-start;gap:.7rem;flex-wrap:wrap}
+  .zeile .haupt{flex:1;min-width:0}
+  .zeile b{font-size:1rem}
+  .klein{font-size:.82rem;color:var(--dim)}
+  .leise{font-size:.78rem;color:var(--faint)}
+  .chip{display:inline-flex;align-items:center;border-radius:999px;padding:.12rem .55rem;font-size:.72rem;font-weight:700;border:1px solid var(--border-hi);color:var(--dim);white-space:nowrap}
+  .chip.gruen{border-color:rgba(109,190,69,.5);color:#9FE07A}
+  .chip.gelb{border-color:rgba(255,176,32,.5);color:var(--amber)}
+  .chip.rot{border-color:rgba(224,72,72,.6);color:#FF8A8A}
+  .code{font:700 1.05rem/1.2 var(--mono);letter-spacing:.08em;color:var(--cream)}
+  .balken{height:6px;border-radius:3px;background:var(--card2);overflow:hidden;margin-top:.4rem}
+  .balken i{display:block;height:100%;background:var(--ember)}
+  .knoepfe{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem}
+  .k{min-height:44px;border-radius:var(--r-sm);padding:.55rem .95rem;font-size:.88rem;font-weight:700;
+    border:1px solid var(--border-hi);background:var(--card2);color:var(--cream)}
+  .k.voll{background:var(--ember);border-color:var(--ember);color:var(--dunkel)}
+  .k.gruen{border-color:rgba(109,190,69,.55);color:#9FE07A}
+  .k.rot{border-color:rgba(224,72,72,.55);color:#FF8A8A}
+  .k:disabled{opacity:.55;cursor:default}
+  .felder{display:grid;gap:.6rem;grid-template-columns:minmax(0,1fr)}
+  @media(min-width:600px){.felder{grid-template-columns:repeat(2,minmax(0,1fr))}.felder .breit{grid-column:1 / -1}}
+  .feld label{display:block;font-size:.72rem;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+  .feld input,.feld select{width:100%;background:var(--bg);border:1px solid var(--border-hi);color:var(--cream);
+    border-radius:var(--r-sm);padding:.6rem .7rem;min-height:44px}
+  .adr{display:grid;gap:.5rem;grid-template-columns:minmax(0,2fr) minmax(0,.8fr) minmax(0,1.2fr)}
+  @media(max-width:480px){.adr{grid-template-columns:minmax(0,1fr)}}
+  .schalter{display:flex;align-items:center;gap:.6rem;min-height:44px;font-size:.92rem}
+  .schalter input{width:22px;height:22px;accent-color:var(--ember)}
+  .detail{border-top:1px solid var(--border);margin-top:.9rem;padding-top:.9rem}
+  .monat{background:var(--card2);border:1px solid var(--border);border-radius:var(--r-sm);padding:.75rem .8rem;margin-top:.7rem}
+  .monat-kopf{display:flex;justify-content:space-between;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+  .best{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.2rem .7rem;font-size:.84rem;padding:.35rem 0;border-bottom:1px solid var(--border)}
+  .best:last-child{border-bottom:none}
+  .best .zeit{color:var(--faint);font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.78rem}
+  .best .betrag{font-variant-numeric:tabular-nums;text-align:right}
+  .best.raus{opacity:.55;text-decoration:line-through}
+  .rechnung{border:1px dashed var(--border-hi);border-radius:var(--r-sm);padding:.7rem .8rem;margin-top:.7rem}
+  .hinweisbox{background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.35);border-radius:var(--r-sm);padding:.6rem .8rem;font-size:.84rem;color:var(--cream);margin:.9rem 0 0}
+  .leer{color:var(--faint);font-size:.85rem;padding:.4rem 0}
+  details.erledigt summary{cursor:pointer;color:var(--dim);font-size:.85rem;min-height:44px;display:flex;align-items:center}
+
+  .login{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.4rem 1.2rem;margin-top:2.2rem;text-align:center}
+  .login input[type=password]{width:100%;background:var(--bg);border:1px solid var(--border-hi);color:var(--cream);border-radius:var(--r-sm);padding:.8rem .9rem;margin:.9rem 0 .6rem}
+  .login label{font-size:.82rem;color:var(--dim);display:flex;align-items:center;gap:.45rem;justify-content:center;margin-bottom:.9rem}
+  .login button{width:100%;background:var(--ember);border:none;color:var(--dunkel);font-weight:800;border-radius:999px;padding:.85rem;font-size:1rem;min-height:48px}
+  .login .fehler{color:var(--red);font-size:.82rem;min-height:1.2em;margin:.4rem 0 0}
+
+  .toast{position:fixed;left:50%;bottom:calc(1.4rem + env(safe-area-inset-bottom));transform:translateX(-50%);
+    background:#1E2A1A;border:1px solid var(--live);color:#9FE07A;border-radius:999px;max-width:calc(100% - 2rem);
+    padding:.55rem 1.1rem;font-size:.85rem;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none;text-align:center}
+  .toast.an{opacity:1}
+  .toast.err{background:var(--red);border-color:var(--red);color:#fff}
+
+  /* Warten: Busy-Knopf und Skelett wie im Admin-Tool */
+  :root{--ease-out:cubic-bezier(0.23,1,0.32,1)}
+  @keyframes gncSpin{to{transform:rotate(360deg)}}
+  @keyframes gncBreath{0%,100%{opacity:.4}50%{opacity:1}}
+  .is-busy{position:relative;cursor:progress!important;color:transparent!important;opacity:1!important}
+  .is-busy>:not(.busy-spin){visibility:hidden}
+  .busy-spin{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;
+    border:2px solid var(--busy-ink,currentColor);border-right-color:transparent;opacity:0;pointer-events:none;
+    animation:gncSpin .8s linear infinite;transition:opacity 150ms var(--ease-out)}
+  .is-busy.busy-shown .busy-spin{opacity:1}
+  .skel{background:var(--card2);border-radius:var(--r-sm);height:64px;margin-bottom:.7rem}
+  @media (prefers-reduced-motion: no-preference){
+    .skel{background:linear-gradient(90deg,var(--card2) 0%,var(--border) 50%,var(--card2) 100%);background-size:260% 100%;animation:shimmer 1.4s linear infinite}
+  }
+  @keyframes shimmer{from{background-position:130% 0}to{background-position:-130% 0}}
+  @media (prefers-reduced-motion: reduce){
+    .busy-spin{animation:gncBreath 1.2s ease-in-out infinite!important;border-right-color:var(--busy-ink,currentColor)}
+    .skel{animation:none!important}
+    .toast{transition:none}
+  }
+</style>
+<script src="/ereignisse.js"></script>
+</head>
+<body>
+<header>
+  <div class="wrap kopf">
+    <img src="/logo.png" alt="">
+    <h1 class="display">Firmen</h1>
+    <button type="button" class="pille" id="neuLaden" data-on-click="laden(this)" hidden>Aktualisieren</button>
+    <a class="pille" href="/admin">Admin-Tool</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="login" class="login" hidden>
+    <div class="display" style="font-size:1.2rem;">Anmelden</div>
+    <p style="color:var(--dim);font-size:.85rem;margin:.4rem 0 0;">Mit dem Admin-Passwort. Danach fragen wir nach dem Code aus deiner Authenticator-App.</p>
+    <input type="password" id="pw" autocomplete="current-password" placeholder="Passwort" data-on-keydown="if(event.key==='Enter') anmelden()">
+    <label><input type="checkbox" id="pwStay" checked> Angemeldet bleiben</label>
+    <button id="loginBtn" data-on-click="anmelden(this)">Anmelden</button>
+    <p class="fehler" id="loginFehler" role="alert"></p>
+  </section>
+
+  <section id="inhalt" hidden>
+    <div id="hinweise"></div>
+    <h2>Neue Anträge</h2>
+    <div id="antraege"></div>
+    <h2>Firmen</h2>
+    <div id="firmen"></div>
+    <p class="leise" style="margin-top:1.4rem;">Bestellungen auf Firmenrechnung stehen wie alle anderen auch im Admin-Tool unter Bestellungen.
+      Die Sammelrechnung gibt es nach Monatsende; sie landet zusätzlich in der Rechnungsliste und im ZIP-Export.</p>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="/admin-anmeldung.js"></script>
+<script>
+/* ============================================================
+   Firmen-Mittag verwalten: Anträge annehmen, Firmen pflegen,
+   Bestellungen ansehen, Sammelrechnung erstellen und versenden.
+   Server: netlify/functions/firmen-admin.js (nur Admin/Inhaber).
+   Anmeldung wie Admin-Tool und Dienstplan (gleiche Sitzung).
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const PW_KEY = 'gnc_admin_pw';
+let DATEN = { antraege: [], firmen: [] };
+let OFFEN = null;            // aufgeklappte Firma (id)
+let DETAIL = {};             // id -> Antwort von 'bestellungen'
+let ANNAHME = null;          // Antrag, dessen Annahme-Formular offen ist
+let ladeSeq = 0;
+let toastTimer = null;
+
+function esc(x) { return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function eur(n) { return (Number(n) || 0).toFixed(2).replace('.', ',') + ' €'; }
+function datum(iso) {
+  try { return new Date(iso).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; }
+}
+function adrText(a) { return a ? [a.street, ((a.zip || '') + ' ' + (a.city || '')).trim()].filter(Boolean).join(', ') : ''; }
+function toast(msg, art) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('an');
+  t.classList.toggle('err', art === 'err');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('an'), 2800);
+}
+
+/* ---- Busy-Knopf (wie admin.html) ---- */
+function gncBusy(btn, on) {
+  if (!btn) return;
+  if (on) {
+    if (btn.classList.contains('is-busy')) return;
+    btn.style.setProperty('--busy-ink', getComputedStyle(btn).color);
+    btn._busyWasDisabled = !!btn.disabled;
+    btn.disabled = true;
+    btn.classList.add('is-busy');
+    btn.setAttribute('aria-busy', 'true');
+    const sp = document.createElement('span');
+    sp.className = 'busy-spin'; sp.setAttribute('aria-hidden', 'true');
+    btn.appendChild(sp);
+    btn._busyShownAt = 0;
+    btn._busyT = setTimeout(function () { btn.classList.add('busy-shown'); btn._busyShownAt = Date.now(); }, 150);
+    return;
+  }
+  if (!btn.classList.contains('is-busy')) return;
+  clearTimeout(btn._busyT);
+  const rest = btn._busyShownAt ? Math.max(0, 400 - (Date.now() - btn._busyShownAt)) : 0;
+  setTimeout(function () {
+    btn.classList.remove('is-busy', 'busy-shown');
+    btn.removeAttribute('aria-busy');
+    btn.style.removeProperty('--busy-ink');
+    const sp = btn.querySelector(':scope > .busy-spin'); if (sp) sp.remove();
+    btn.disabled = !!btn._busyWasDisabled;
+  }, rest);
+}
+async function withBusy(btn, fn) {
+  if (!btn) return fn();
+  if (btn.classList.contains('is-busy')) return;
+  gncBusy(btn, true);
+  try { return await fn(); } finally { gncBusy(btn, false); }
+}
+
+/* ---------- Anmeldung: gleiche Sitzung wie das Admin-Tool ---------- */
+function gespeicherteAnmeldung() {
+  try {
+    const s = sessionStorage.getItem(PW_KEY);
+    if (s && GNCAnmeldung.istToken(s)) return s;
+    if (s) sessionStorage.removeItem(PW_KEY);
+    const p = JSON.parse(localStorage.getItem(PW_KEY + '_p') || 'null');
+    if (p && p.t && (!p.exp || Date.now() < p.exp)) return p.t;
+  } catch (e) {}
+  return null;
+}
+let anmeldung = gespeicherteAnmeldung();
+
+function zeigeLogin(text) {
+  anmeldung = null;
+  $('login').hidden = false; $('inhalt').hidden = true; $('neuLaden').hidden = true;
+  $('loginFehler').textContent = text || '';
+}
+async function api(action, extra) {
+  try {
+    const r = await fetch('/.netlify/functions/firmen-admin', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: anmeldung, action, ...(extra || {}) }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 401) { try { sessionStorage.removeItem(PW_KEY); } catch (e) {} zeigeLogin(); }
+    if (r.status === 403) toast(d.hint || 'Firmen verwaltet nur ein Admin.', 'err');
+    if (r.status === 429) toast('Zu viele Versuche. Bitte in ' + GNCAnmeldung.wartezeit(Number(d.retryAfter) || 900) + ' erneut versuchen.', 'err');
+    return { status: r.status, d };
+  } catch (e) {
+    toast('Keine Verbindung. Bitte erneut versuchen.', 'err');
+    return { status: 0, d: {} };
+  }
+}
+function anmelden(btn) { return withBusy(btn || $('loginBtn'), anmeldenRun); }
+async function anmeldenRun() {
+  const pw = $('pw').value;
+  if (!pw) return;
+  $('loginFehler').textContent = '';
+  const merken = $('pwStay').checked;
+  const r = await GNCAnmeldung.anmelden(pw, { merken });
+  if (!r.ok) {
+    if (r.grund === 'abbruch') return;
+    $('loginFehler').textContent = r.grund === 'passwort' ? 'Passwort falsch.'
+      : r.grund === 'gesperrt' ? 'Zu viele Versuche. Bitte in ' + GNCAnmeldung.wartezeit(r.retryAfter) + ' erneut versuchen.'
+      : r.grund === 'netz' ? 'Keine Verbindung. Bitte erneut versuchen.'
+      : (r.hinweis || 'Anmeldung gerade nicht möglich. Bitte erneut versuchen.');
+    return;
+  }
+  anmeldung = r.token;
+  try {
+    sessionStorage.setItem(PW_KEY, r.token);
+    if (merken) localStorage.setItem(PW_KEY + '_p', JSON.stringify({ t: r.token, exp: new Date(r.exp).getTime() }));
+    else localStorage.removeItem(PW_KEY + '_p');
+  } catch (e) {}
+  $('pw').value = '';
+  await laden();
+}
+
+/* ---------- Laden ---------- */
+function laden(btn) { return withBusy(btn, ladenRun); }
+async function ladenRun() {
+  if (!anmeldung) { zeigeLogin(); return; }
+  const seq = ++ladeSeq;
+  if (!DATEN.firmen.length && !DATEN.antraege.length) {
+    $('inhalt').hidden = false; $('login').hidden = true;
+    $('antraege').innerHTML = '<div class="skel" aria-hidden="true"></div>';
+    $('firmen').innerHTML = '<span class="sr-only">Firmen werden geladen</span><div class="skel" aria-hidden="true"></div><div class="skel" aria-hidden="true"></div>';
+  }
+  const { status, d } = await api('uebersicht');
+  if (seq !== ladeSeq) return;
+  if (status === 401) return;
+  if (!d.ok) {
+    if (status) toast(d.hint || 'Laden fehlgeschlagen', 'err');
+    if (status === 403) { $('antraege').innerHTML = ''; $('firmen').innerHTML = '<p class="leer">Diesen Bereich sehen nur Admins.</p>'; }
+    return;
+  }
+  DATEN = d;
+  $('login').hidden = true; $('inhalt').hidden = false; $('neuLaden').hidden = false;
+  zeichnen();
+  if (OFFEN) detailLaden(OFFEN);
+}
+
+/* ---------- Zeichnen ---------- */
+function zeichnen() {
+  const h = [];
+  if (!DATEN.iban) h.push('Für die Sammelrechnung fehlt die Bankverbindung. Trag in Netlify <b>RECHNUNG_IBAN</b> (und optional RECHNUNG_BIC, RECHNUNG_KONTOINHABER) ein, sonst steht keine IBAN auf der Rechnung.');
+  if (!DATEN.mail) h.push('Der Mailversand ist nicht eingerichtet (BREVO_API_KEY, BREVO_SENDER_EMAIL). Rechnungen lassen sich dann nur als PDF laden.');
+  $('hinweise').innerHTML = h.map((x) => '<p class="hinweisbox">' + x + '</p>').join('');
+
+  const neu = DATEN.antraege.filter((a) => a.status === 'neu');
+  const alt = DATEN.antraege.filter((a) => a.status !== 'neu');
+  $('antraege').innerHTML = (neu.length ? neu.map(antragHtml).join('') : '<p class="leer">Keine offenen Anträge.</p>')
+    + (alt.length ? '<details class="erledigt"><summary>Erledigte Anträge (' + alt.length + ')</summary>' + alt.map(antragHtml).join('') + '</details>' : '');
+
+  $('firmen').innerHTML = DATEN.firmen.length ? DATEN.firmen.map(firmaHtml).join('')
+    : '<p class="leer">Noch keine Firmen. Sie entstehen, wenn du einen Antrag annimmst.</p>';
+}
+
+function antragHtml(a) {
+  const g = a.gebiet;
+  const gebiet = g ? 'Zone ' + g.zone + ' · ' + String(g.km).replace('.', ',') + ' km (im Browser geprüft)' : 'Liefergebiet nicht geprüft';
+  const status = a.status === 'angenommen' ? '<span class="chip gruen">angenommen</span>'
+    : a.status === 'abgelehnt' ? '<span class="chip rot">abgelehnt</span>' : '<span class="chip gelb">neu</span>';
+  let annahme = '';
+  if (ANNAHME === a.id) {
+    annahme = '<div class="detail"><div class="felder">'
+      + feld('aLimit_' + a.id, 'Monatslimit in Euro (0 = ohne)', '500', 'number')
+      + feld('aZiel_' + a.id, 'Zahlungsziel in Tagen', '14', 'number')
+      + feld('aDomains_' + a.id, 'Erlaubte E-Mail-Domains (Komma)', (a.domains || []).join(', '), 'text', 'breit')
+      + '</div><div class="knoepfe"><button type="button" class="k voll" data-on-click="annehmen(\'' + a.id + '\', this)">Annehmen und Code erzeugen</button>'
+      + '<button type="button" class="k" data-on-click="annahmeZu()">Abbrechen</button></div></div>';
+  }
+  return '<div class="karte' + (a.status === 'neu' ? ' neu' : '') + '">'
+    + '<div class="zeile"><div class="haupt"><b>' + esc(a.firma) + '</b> ' + status
+    + '<div class="klein">' + esc(a.ansprechperson) + ' · <a href="mailto:' + esc(a.email) + '" style="color:var(--ember-hi)">' + esc(a.email) + '</a> · ' + esc(a.telefon) + '</div>'
+    + '<div class="klein">Lieferung: ' + esc(adrText(a.lieferadresse)) + ' · ' + esc(gebiet) + '</div>'
+    + (a.rechnungsadresse && adrText(a.rechnungsadresse) !== adrText(a.lieferadresse) ? '<div class="klein">Rechnung: ' + esc(adrText(a.rechnungsadresse)) + '</div>' : '')
+    + '<div class="leise">ca. ' + esc(a.personen) + ' Personen' + (a.ustId ? ' · USt-IdNr. ' + esc(a.ustId) : '')
+    + ((a.domains || []).length ? ' · Domain ' + esc(a.domains.join(', ')) : '') + ' · eingegangen ' + esc(datum(a.at)) + '</div>'
+    + '</div></div>'
+    + (a.status === 'neu' && ANNAHME !== a.id ? '<div class="knoepfe"><button type="button" class="k voll" data-on-click="annahmeAuf(\'' + a.id + '\')">Annehmen</button>'
+      + '<button type="button" class="k rot" data-on-click="ablehnen(\'' + a.id + '\', this)">Ablehnen</button></div>' : '')
+    + annahme + '</div>';
+}
+
+function feld(id, label, wert, typ, extra) {
+  return '<div class="feld' + (extra ? ' ' + extra : '') + '"><label for="' + id + '">' + esc(label) + '</label>'
+    + '<input id="' + id + '" type="' + (typ || 'text') + '"' + (typ === 'number' ? ' inputmode="decimal" min="0" step="1"' : '') + ' value="' + esc(wert == null ? '' : wert) + '"></div>';
+}
+function adrFeld(prefix, label, a) {
+  a = a || {};
+  return '<div class="feld breit"><label>' + esc(label) + '</label><div class="adr">'
+    + '<input id="' + prefix + 'S" aria-label="' + esc(label) + ' Straße" placeholder="Straße" value="' + esc(a.street) + '">'
+    + '<input id="' + prefix + 'P" aria-label="' + esc(label) + ' PLZ" placeholder="PLZ" inputmode="numeric" maxlength="5" value="' + esc(a.zip) + '">'
+    + '<input id="' + prefix + 'O" aria-label="' + esc(label) + ' Ort" placeholder="Ort" value="' + esc(a.city) + '">'
+    + '</div></div>';
+}
+
+function firmaHtml(f) {
+  const limit = Number(f.limit) || 0;
+  const anteil = limit > 0 ? Math.min(100, Math.round((f.monatSumme || 0) / limit * 100)) : 0;
+  const offen = OFFEN === f.id;
+  return '<div class="karte" id="firma_' + f.id + '">'
+    + '<div class="zeile"><div class="haupt"><b>' + esc(f.name) + '</b> '
+    + (f.aktiv ? '<span class="chip gruen">aktiv</span>' : '<span class="chip rot">pausiert</span>')
+    + '<div class="code" style="margin-top:.3rem;">' + esc(f.code) + '</div>'
+    + '<div class="klein">Dieser Monat: ' + eur(f.monatSumme) + ' aus ' + (f.monatAnzahl || 0) + ' Bestellungen'
+    + (limit > 0 ? ' · Limit ' + eur(limit) : ' · ohne Limit') + ' · Ziel ' + esc(f.zahlungsziel) + ' Tage</div>'
+    + (limit > 0 ? '<div class="balken" aria-hidden="true"><i style="width:' + anteil + '%"></i></div>' : '')
+    + '</div></div>'
+    + '<div class="knoepfe">'
+    + '<button type="button" class="k" data-on-click="codeKopieren(\'' + f.id + '\', this)">Code kopieren</button>'
+    + '<button type="button" class="k' + (offen ? ' voll' : '') + '" aria-expanded="' + (offen ? 'true' : 'false') + '" data-on-click="umschalten(\'' + f.id + '\')">' + (offen ? 'Schließen' : 'Bestellungen und Einstellungen') + '</button>'
+    + '</div>'
+    + (offen ? '<div class="detail" id="detail_' + f.id + '">' + detailHtml(f) + '</div>' : '')
+    + '</div>';
+}
+
+function detailHtml(f) {
+  const d = DETAIL[f.id];
+  const monate = !d ? '<div class="skel" aria-hidden="true"></div>' : d.monate.map((m) => monatHtml(f, m)).join('');
+  const verlauf = d && d.rechnungen && d.rechnungen.length
+    ? '<h2 style="margin-top:1.1rem;">Alle Sammelrechnungen</h2>' + d.rechnungen.map((r) =>
+        '<div class="best"><span class="zeit">' + esc(r.monat) + '</span><span>' + esc(r.invoiceNo) + ' ' + statusChip(r.status) + '</span><span class="betrag">' + eur(r.total) + '</span></div>').join('')
+    : '';
+  const id = f.id;
+  return monate + verlauf
+    + '<h2 style="margin-top:1.1rem;">Einstellungen</h2>'
+    + '<div class="felder">'
+    + '<label class="schalter breit"><input type="checkbox" id="fAktiv_' + id + '"' + (f.aktiv ? ' checked' : '') + '> Aktiv: Bestellen auf Firmenrechnung erlaubt</label>'
+    + feld('fLimit_' + id, 'Monatslimit in Euro (0 = ohne)', f.limit, 'number')
+    + feld('fZiel_' + id, 'Zahlungsziel in Tagen', f.zahlungsziel, 'number')
+    + feld('fDomains_' + id, 'Erlaubte E-Mail-Domains (Komma, leer = alle)', (f.domains || []).join(', '), 'text', 'breit')
+    + feld('fName_' + id, 'Firmenname', f.name)
+    + feld('fRName_' + id, 'Name auf der Rechnung (falls anders)', f.rechnungsname || '')
+    + feld('fPerson_' + id, 'Ansprechperson', f.ansprechperson)
+    + feld('fTel_' + id, 'Telefon', f.telefon)
+    + feld('fMail_' + id, 'E-Mail', f.email, 'email')
+    + feld('fRMail_' + id, 'Rechnungen an (falls anders)', f.rechnungsEmail || '', 'email')
+    + adrFeld('fL_' + id, 'Lieferadresse', f.lieferadresse)
+    + adrFeld('fR_' + id, 'Rechnungsadresse', f.rechnungsadresse)
+    + feld('fUst_' + id, 'USt-IdNr. der Firma', f.ustId || '')
+    + '</div>'
+    + '<div class="knoepfe"><button type="button" class="k voll" data-on-click="speichern(\'' + id + '\', this)">Speichern</button>'
+    + '<button type="button" class="k" data-on-click="codeNeu(\'' + id + '\', this)">Neuen Code erzeugen</button>'
+    + '<button type="button" class="k" data-on-click="abgleich(\'' + id + '\', this)">Abgleich mit dem Bestell-Archiv</button></div>'
+    + (f.gebiet ? '<p class="leise" style="margin-top:.6rem;">Liefergebiet laut Antrag: Zone ' + esc(f.gebiet.zone) + ', ' + String(f.gebiet.km).replace('.', ',') + ' km (im Browser geprüft).</p>' : '');
+}
+
+function statusChip(s) {
+  return s === 'bezahlt' ? '<span class="chip gruen">bezahlt</span>'
+    : s === 'versendet' ? '<span class="chip gelb">versendet</span>'
+    : '<span class="chip">erstellt</span>';
+}
+
+function monatHtml(f, m) {
+  const zeilen = m.bestellungen.length ? m.bestellungen.map((b) =>
+    '<div class="best' + (b.zaehlt ? '' : ' raus') + '"><span class="zeit">' + esc(datum(b.at)) + '</span>'
+    + '<span>' + esc(b.name) + ' <span class="leise">' + esc(b.artikel) + ' Artikel · #' + esc(b.ref) + (b.zaehlt ? '' : ' · ' + esc(b.status)) + '</span></span>'
+    + '<span class="betrag">' + eur(b.total) + '</span></div>').join('') : '<p class="leer">Keine Bestellungen.</p>';
+  let rechnung = '';
+  const r = m.rechnung;
+  if (r && r.invoiceNo) {
+    rechnung = '<div class="rechnung"><div class="monat-kopf"><span><b>' + esc(r.invoiceNo) + '</b> ' + statusChip(r.status) + '</span><span>' + eur(r.total) + '</span></div>'
+      + '<div class="leise">vom ' + esc(r.invoiceDate) + ', fällig am ' + esc(r.faelligAm) + (r.versendetAn ? ' · gesendet an ' + esc(r.versendetAn) : '') + '</div>'
+      + '<div class="knoepfe">'
+      + '<button type="button" class="k" data-on-click="pdfLaden(\'' + esc(r.invoiceNo) + '\', this)">PDF</button>'
+      + (r.status === 'erstellt' ? '<button type="button" class="k voll" data-on-click="senden(\'' + f.id + '\', \'' + m.monat + '\', this)">Per Mail senden</button>' : '')
+      + (r.status === 'versendet' ? '<button type="button" class="k" data-on-click="senden(\'' + f.id + '\', \'' + m.monat + '\', this)">Erneut senden</button>' : '')
+      + (r.status !== 'bezahlt' ? '<button type="button" class="k gruen" data-on-click="statusSetzen(\'' + f.id + '\', \'' + m.monat + '\', \'bezahlt\', this)">Als bezahlt markieren</button>'
+        : '<button type="button" class="k" data-on-click="statusSetzen(\'' + f.id + '\', \'' + m.monat + '\', \'versendet\', this)">Bezahlt zurücknehmen</button>')
+      + '</div></div>';
+  } else if (m.abgeschlossen && m.anzahl) {
+    rechnung = '<div class="knoepfe"><button type="button" class="k voll" data-on-click="rechnungErstellen(\'' + f.id + '\', \'' + m.monat + '\', this)">Monatsrechnung erstellen</button></div>'
+      + '<p class="leise">Erzeugt die Sammelrechnung als PDF und XRechnung. Verschickt wird erst, wenn du auf „Per Mail senden“ tippst.</p>';
+  } else if (!m.abgeschlossen) {
+    rechnung = '<p class="leise" style="margin-top:.5rem;">Laufender Monat: die Rechnung gibt es nach Monatsende.</p>';
+  }
+  return '<div class="monat"><div class="monat-kopf"><b>' + esc(m.name) + '</b><span>' + m.anzahl + ' Bestellungen · <b>' + eur(m.summe) + '</b></span></div>'
+    + zeilen + rechnung + '</div>';
+}
+
+/* ---------- Aktionen ---------- */
+function annahmeAuf(id) { ANNAHME = id; zeichnen(); const i = $('aLimit_' + id); if (i) i.focus(); }
+function annahmeZu() { ANNAHME = null; zeichnen(); }
+function annehmen(id, btn) {
+  return withBusy(btn, async () => {
+    const { d } = await api('antrag_annehmen', {
+      id, limit: Number($('aLimit_' + id).value), zahlungsziel: Number($('aZiel_' + id).value), domains: $('aDomains_' + id).value,
+    });
+    if (!d.ok) { if (d.error) toast(d.hint || 'Annehmen fehlgeschlagen', 'err'); return; }
+    ANNAHME = null;
+    OFFEN = d.firma.id;
+    toast('Angenommen. Code ' + d.firma.code);
+    await ladenRun();
+  });
+}
+function ablehnen(id, btn) {
+  if (!confirm('Antrag ablehnen? Die Firma bekommt keine automatische Nachricht.')) return;
+  return withBusy(btn, async () => {
+    const { d } = await api('antrag_ablehnen', { id });
+    if (!d.ok) { toast(d.hint || 'Ablehnen fehlgeschlagen', 'err'); return; }
+    toast('Abgelehnt');
+    await ladenRun();
+  });
+}
+function umschalten(id) {
+  OFFEN = OFFEN === id ? null : id;
+  zeichnen();
+  if (OFFEN) detailLaden(OFFEN);
+}
+async function detailLaden(id) {
+  const { d } = await api('bestellungen', { id });
+  if (!d.ok) return;
+  DETAIL[id] = d;
+  const f = DATEN.firmen.find((x) => x.id === id);
+  const box = $('detail_' + id);
+  if (f && box) box.innerHTML = detailHtml(f);
+}
+async function codeKopieren(id, btn) {
+  const f = DATEN.firmen.find((x) => x.id === id);
+  if (!f) return;
+  try { await navigator.clipboard.writeText(f.code); toast('Code ' + f.code + ' kopiert'); }
+  catch (e) { toast('Code: ' + f.code); }
+}
+function wert(id) { const el = $(id); return el ? el.value : undefined; }
+function adresse(prefix) {
+  return { street: wert(prefix + 'S'), zip: wert(prefix + 'P'), city: wert(prefix + 'O') };
+}
+function speichern(id, btn) {
+  return withBusy(btn, async () => {
+    const firma = {
+      aktiv: $('fAktiv_' + id).checked,
+      limit: Number(wert('fLimit_' + id)), zahlungsziel: Number(wert('fZiel_' + id)),
+      domains: wert('fDomains_' + id), name: wert('fName_' + id), rechnungsname: wert('fRName_' + id),
+      ansprechperson: wert('fPerson_' + id), telefon: wert('fTel_' + id), email: wert('fMail_' + id), rechnungsEmail: wert('fRMail_' + id),
+      lieferadresse: adresse('fL_' + id), rechnungsadresse: adresse('fR_' + id), ustId: wert('fUst_' + id),
+    };
+    const { d } = await api('firma_speichern', { id, firma });
+    if (!d.ok) { toast(d.hint || 'Speichern fehlgeschlagen', 'err'); return; }
+    toast('Gespeichert');
+    await ladenRun();
+  });
+}
+function codeNeu(id, btn) {
+  if (!confirm('Neuen Firmencode erzeugen? Der alte Code gilt danach nicht mehr. Gib der Firma den neuen Code weiter.')) return;
+  return withBusy(btn, async () => {
+    const { d } = await api('code_neu', { id });
+    if (!d.ok) { toast(d.hint || 'Hat nicht geklappt', 'err'); return; }
+    toast('Neuer Code ' + d.firma.code);
+    await ladenRun();
+  });
+}
+function abgleich(id, btn) {
+  return withBusy(btn, async () => {
+    const { d } = await api('abgleich', { id });
+    if (!d.ok) { toast('Abgleich fehlgeschlagen', 'err'); return; }
+    toast(d.neu ? d.neu + ' Bestellungen nachgetragen' : 'Alles vollständig');
+    await ladenRun();
+  });
+}
+function rechnungErstellen(id, monat, btn) {
+  return withBusy(btn, async () => {
+    const { d } = await api('rechnung_erstellen', { id, monat });
+    if (!d.ok) { toast(d.hint || 'Rechnung konnte nicht erstellt werden', 'err'); return; }
+    toast((d.schon ? 'Gibt es schon: ' : 'Erstellt: ') + d.rechnung.invoiceNo);
+    await detailLaden(id);
+  });
+}
+function senden(id, monat, btn) {
+  const f = DATEN.firmen.find((x) => x.id === id);
+  const an = f ? (f.rechnungsEmail || f.email) : '';
+  if (!confirm('Sammelrechnung jetzt per Mail an ' + an + ' senden?')) return;
+  return withBusy(btn, async () => {
+    const { d } = await api('rechnung_senden', { id, monat });
+    if (!d.ok) { toast(d.hint || 'Senden fehlgeschlagen', 'err'); return; }
+    toast('Gesendet an ' + d.rechnung.versendetAn);
+    await detailLaden(id);
+  });
+}
+function statusSetzen(id, monat, status, btn) {
+  return withBusy(btn, async () => {
+    const { d } = await api('rechnung_status', { id, monat, status });
+    if (!d.ok) { toast('Status konnte nicht gesetzt werden', 'err'); return; }
+    toast(status === 'bezahlt' ? 'Als bezahlt markiert' : 'Status zurückgesetzt');
+    await detailLaden(id);
+  });
+}
+/* PDF über den vorhandenen Abruf (invoice-pdf.js). Als Blob, damit kein Token in der Adresszeile landet. */
+async function pdfLaden(nummer, btn) {
+  return withBusy(btn, async () => {
+    try {
+      const r = await fetch('/.netlify/functions/invoice-pdf?no=' + encodeURIComponent(nummer), { headers: { 'x-gnc-sitzung': anmeldung } });
+      if (r.status === 401) { zeigeLogin(); return; }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'Rechnung-' + nummer + '.pdf';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    } catch (e) { toast('PDF konnte nicht geladen werden', 'err'); }
+  });
+}
+
+if (anmeldung) laden(); else zeigeLogin();
+</script>
+</body>
+</html>

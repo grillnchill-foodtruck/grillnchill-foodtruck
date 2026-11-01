@@ -41,6 +41,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://grillnchill-foodtruck.de/firmen</loc>
+    <lastmod>2026-11-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://grillnchill-foodtruck.de/catering</loc>
     <lastmod>2026-07-14</lastmod>
     <changefreq>monthly</changefreq>
