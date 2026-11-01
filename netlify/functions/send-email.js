@@ -816,6 +816,12 @@ function buildStatusUpdateEmail(order, status) {
   };
 
   const info = statusInfo[status] || statusInfo.preparing;
+  // Ankunftszeit aus der Fahrer-Ansicht (Paket lieferung): statt der groben
+  // Spanne die Uhrzeit, dazu der Link zur Live-Karte auf der Statusseite
+  const ankunft = status === 'on_the_way' && order.ankunft && !isNaN(Date.parse(order.ankunft))
+    ? new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date(order.ankunft))
+    : '';
+  const liveLink = status === 'on_the_way' && order.reference ? statusPageUrl(order.reference) : '';
 
   return {
     subject: `${info.title} (#${esc(order.reference)})`,
@@ -835,9 +841,15 @@ function buildStatusUpdateEmail(order, status) {
 
         ${info.eta ? `
         <div style="background:${info.color};border-radius:10px;padding:20px;margin:20px 0;color:#0A0A0A;">
-          <p style="margin:0;font-size:14px;">${status === 'ready_for_pickup' ? 'Bereit ab' : 'Voraussichtlich noch'}</p>
-          <p style="margin:6px 0 0;font-size:22px;font-weight:700;">${info.eta}</p>
+          <p style="margin:0;font-size:14px;">${ankunft ? 'Ankunft gegen' : (status === 'ready_for_pickup' ? 'Bereit ab' : 'Voraussichtlich noch')}</p>
+          <p style="margin:6px 0 0;font-size:22px;font-weight:700;">${ankunft ? esc(ankunft) + ' Uhr' : info.eta}</p>
         </div>
+        ` : ''}
+
+        ${liveLink ? `
+        <a href="${esc(liveLink)}" style="display:inline-block;border:1px solid #E85A24;color:#CC4715;padding:10px 20px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;margin:4px 0 8px;">
+          Lieferung live verfolgen
+        </a>
         ` : ''}
 
         ${(status === 'delivered' || status === 'ready_for_pickup') ? `
