@@ -288,6 +288,10 @@ const bestellen = (o, eigeneIp) => call(mail, { type: 'order_confirmation', orde
   ok('Übersicht: laufender Monat mit Summe', r.s === 200 && mAkt.monat === monatJetzt && mAkt.anzahl === 3 && Math.abs(mAkt.summe - (18.5 + o2.total + 18.5)) < 0.001);
   ok('Übersicht: Vormonat zählt die Erstattung nicht', mVor.monat === vm && mVor.anzahl === 2 && mVor.bestellungen.length === 3 && mVor.abgeschlossen);
 
+  delete process.env.FIRMEN_SAMMELRECHNUNG;
+  r = await call(admin, { action: 'rechnung_erstellen', password: kubi, id: firma.id, monat: vm });
+  ok('Schalter aus: Sammelrechnung gesperrt (409), keine Nummer vergeben', r.s === 409 && r.d.error === 'gesperrt' && !schluessel('invoices', 'counter:').length);
+  process.env.FIRMEN_SAMMELRECHNUNG = 'an';
   r = await call(admin, { action: 'rechnung_erstellen', password: kubi, id: firma.id, monat: monatJetzt });
   ok('Laufender Monat lässt sich nicht abrechnen (409)', r.s === 409 && r.d.error === 'monat_offen');
   r = await call(admin, { action: 'rechnung_erstellen', password: kubi, id: firma.id, monat: vm });

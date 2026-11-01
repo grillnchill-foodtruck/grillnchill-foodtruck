@@ -308,6 +308,7 @@ async function ladenRun() {
 function zeichnen() {
   const h = [];
   if (!DATEN.iban) h.push('Für die Sammelrechnung fehlt die Bankverbindung. Trag in Netlify <b>RECHNUNG_IBAN</b> (und optional RECHNUNG_BIC, RECHNUNG_KONTOINHABER) ein, sonst steht keine IBAN auf der Rechnung.');
+  if (!DATEN.sammelrechnung) h.push('Sammelrechnungen sind noch gesperrt, bis der Steuerberater sie freigegeben hat. Danach in Netlify <b>FIRMEN_SAMMELRECHNUNG=an</b> setzen und neu deployen. Bestellungen auf Firmenrechnung laufen schon jetzt auf.');
   if (!DATEN.mail) h.push('Der Mailversand ist nicht eingerichtet (BREVO_API_KEY, BREVO_SENDER_EMAIL). Rechnungen lassen sich dann nur als PDF laden.');
   $('hinweise').innerHTML = h.map((x) => '<p class="hinweisbox">' + x + '</p>').join('');
 

@@ -76,6 +76,11 @@ async function auditLog(who, detail) {
   } catch (e) {}
 }
 
+/* Schalter: Sammelrechnungen erst nach Freigabe durch den Steuerberater.
+   Netlify FIRMEN_SAMMELRECHNUNG=an. Bis dahin laufen Bestellungen auf
+   Firmenrechnung normal auf, nur das Erstellen der Rechnung ist gesperrt. */
+const sammelrechnungFrei = () => String(process.env.FIRMEN_SAMMELRECHNUNG || '').toLowerCase() === 'an';
+
 const idSauber = (x) => String(x || '').replace(/[^a-z0-9]/g, '').slice(0, 24);
 const monatSauber = (x) => (/^\d{4}-(0[1-9]|1[0-2])$/.test(String(x || '')) ? String(x) : '');
 const EMAIL = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
@@ -207,6 +212,7 @@ exports.handler = async (event) => {
       return json(200, {
         ok: true, monat, antraege, firmen,
         iban: !!process.env.RECHNUNG_IBAN,
+        sammelrechnung: sammelrechnungFrei(),
         mail: !!(process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL),
       });
     }
@@ -351,6 +357,9 @@ exports.handler = async (event) => {
       if (!f) return json(404, { error: 'not_found' });
       const monat = monatSauber(input.monat);
       if (!monat) return json(400, { error: 'monat' });
+      if (!sammelrechnungFrei()) {
+        return json(409, { error: 'gesperrt', hint: 'Sammelrechnungen sind noch gesperrt, bis der Steuerberater sie freigibt (Netlify: FIRMEN_SAMMELRECHNUNG=an).' });
+      }
       if (monat >= F.monatVon(Date.now())) {
         return json(409, { error: 'monat_offen', hint: 'Den laufenden Monat rechnest du nach dem Monatsende ab.' });
       }
