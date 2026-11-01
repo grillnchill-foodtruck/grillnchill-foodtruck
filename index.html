@@ -16565,7 +16565,22 @@ function kasseWidgetMethoden(liste) {
     if (k === 'google_pay' && ios) return false;
     return KW_WEITERLEITUNG.indexOf(k) < 0;
   });
+  if (KASSE_W) KASSE_W.methoden = ids;
+  kasseWidgetDiagnose();
   return bleiben.length ? bleiben : undefined;
+}
+
+/* Diagnose mit ?kwdebug=1: zeigt unter dem Widget, welche Zahlarten SumUp für
+   diese Kasse meldet, ob die Google-Pay-Händler-ID mitkam und ob der Browser
+   Apple Pay kann. Ändert nichts am Ablauf. */
+function kasseWidgetDiagnose() {
+  if (!/[?&]kwdebug=1/.test(location.search) || !KASSE_W) return;
+  var ap = 'nein';
+  try { ap = (window.ApplePaySession && window.ApplePaySession.canMakePayments()) ? 'ja' : 'nein'; } catch (e) { ap = 'Fehler'; }
+  var m = KASSE_W.methoden;
+  kasseWidgetHinweis('Diagnose: SumUp meldet ' + (m ? (m.join(', ') || 'keine Zahlarten') : 'noch keine Liste')
+    + ' · Google-Pay-ID ' + (KASSE_W.gp ? 'gesetzt' : 'fehlt')
+    + ' · Apple Pay im Browser ' + ap);
 }
 
 function kasseWidgetHinweis(text) {
@@ -16619,6 +16634,7 @@ function kasseWidgetZeigen(data, anfrage, auftrag, betrag) {
   };
   if (auftrag && auftrag.email) cfg.email = auftrag.email;
   if (data.googlePay && data.googlePay.merchantId) cfg.googlePay = data.googlePay;
+  KASSE_W.gp = !!cfg.googlePay;
   try {
     KASSE_W.karte = window.SumUpCard.mount(cfg);
   } catch (e) {
@@ -16633,6 +16649,7 @@ function kasseWidgetZeigen(data, anfrage, auftrag, betrag) {
 function kasseWidgetGeladen() {
   if (!KASSE_W) return;
   KASSE_W.geladen = true;
+  setTimeout(kasseWidgetDiagnose, 1500);
   clearTimeout(KASSE_W.ladeT);
   var l = document.getElementById('kwLaden'); if (l) l.hidden = true;
 }
