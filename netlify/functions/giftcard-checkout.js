@@ -15,6 +15,7 @@
  */
 
 const { getStore } = require('@netlify/blobs');
+const { schutz, saeubern } = require('./lib/bremse');
 
 const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 const MIN_AMOUNT = 10;
@@ -41,6 +42,9 @@ function ordersStore() {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'gutscheinkauf', max: 10, maxKB: 16 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 
@@ -49,7 +53,7 @@ exports.handler = async (event) => {
   if (!apiKey || !merchantCode) return json(500, { error: 'not_configured' });
 
   let input = {};
-  try { input = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'invalid_json' }); }
+  try { input = saeubern(JSON.parse(event.body || '{}'), { maxText: 2000 }); } catch (e) { return json(400, { error: 'invalid_json' }); }
 
   // Stiller Rückzieher: Kunde ist aus dem SumUp-Fenster zurückgekehrt, ohne zu zahlen.
   // Der Vorgang wird storniert, als hätte es ihn nie gegeben (kein Phantom im Admin).
@@ -106,7 +110,7 @@ exports.handler = async (event) => {
     });
     const data = await response.json().catch(() => null);
     if (!response.ok || !data || !data.id) {
-      return json(502, { error: 'sumup_error', detail: data });
+      { console.error('SumUp Gutschein:', JSON.stringify(data).slice(0, 500)); return json(502, { error: 'sumup_error' }); }
     }
 
     // Vorgang für Webhook/Abgleich sichern (Erfüllung passiert NACH Zahlung)
@@ -135,6 +139,7 @@ exports.handler = async (event) => {
 
     return json(200, { id: data.id, hosted_checkout_url: data.hosted_checkout_url || null, reference });
   } catch (e) {
-    return json(502, { error: 'request_failed', detail: String((e && e.message) || e) });
+    console.error('giftcard-checkout:', (e && e.message) || e);
+    return json(502, { error: 'request_failed' });
   }
 };

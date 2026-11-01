@@ -114,6 +114,7 @@ async function readStatus() {
 
 // --- Team-Auth: admin (ADMIN_PASSWORD) oder staff (Team-Store, siehe team.js) ---
 const _teamCrypto = require('crypto');
+const { schutz } = require('./lib/bremse');
 function _teamStore() {
   const opts = { name: 'team', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -160,6 +161,9 @@ async function auditLog(who, action, detail) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'ladenstatus', max: 300, maxKB: 16 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS, body: '' };
   }
@@ -167,7 +171,11 @@ exports.handler = async (event) => {
   // ---- GET: Status lesen (öffentlich) ----
   if (event.httpMethod === 'GET') {
     const status = await readStatus();
-    return json(200, status, { 'Cache-Control': 'no-store' });
+    // Jeder Seitenaufruf fragt hier nach. Das Netlify-CDN hält die Antwort
+    // 10 Sekunden: Eine Pause oder „Ausverkauft“ kommt also spätestens nach
+    // 10 Sekunden bei allen an. Admin-Tool und Cockpit hängen ?frisch=<Zeit>
+    // an und bekommen immer den aktuellen Stand. Der Browser speichert nichts.
+    return json(200, status, { 'Cache-Control': 'no-store', 'Netlify-CDN-Cache-Control': 'public, durable, s-maxage=10' });
   }
 
   // ---- POST: Status schreiben (passwortgeschützt) ----

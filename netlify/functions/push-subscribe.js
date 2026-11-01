@@ -15,6 +15,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { schutz } = require('./lib/bremse');
 
 const STORE_NAME = 'push-subs';
 
@@ -66,6 +67,9 @@ async function authRole(pw) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'push', max: 60, maxKB: 16 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
 
   // GET: liefert den öffentlichen VAPID-Schlüssel (fürs Frontend-Abo)
@@ -106,7 +110,8 @@ exports.handler = async (event) => {
       return json(200, { ok: true });
     }
   } catch (e) {
-    return json(500, { error: 'storage_failed', detail: String((e && e.message) || e) });
+    console.error('push-subscribe:', (e && e.message) || e);
+    return json(500, { error: 'storage_failed' });
   }
   return json(405, { error: 'method_not_allowed' });
 };

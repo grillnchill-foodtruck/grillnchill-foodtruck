@@ -63,6 +63,7 @@ const { buildInvoicePdf, buildInvoiceXml, trinkgeldImVat } = require('./lib/invo
 const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
 const { codeSchluessel, codeNormalisieren } = require('./lib/gutschein-code');
 const gutscheinNutzung = require('./lib/gutschein-nutzung');
+const { schutz, saeubern, istIntern } = require('./lib/bremse');
 
 /* Speisekarte: nur für die Anzeige, welches Menü aufs Haus geht. Fehlt sie,
    steht im Ticket eben nur „Menü aufs Haus“ ohne Namen. */
@@ -1182,6 +1183,9 @@ async function addRevenue(s, patch) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'mail', max: 20, maxKB: 96 });
+  if (bremseHalt) return bremseHalt;
   const apiKey      = process.env.BREVO_API_KEY || '';
   const senderEmail = process.env.BREVO_SENDER_EMAIL || '';
   const senderName  = process.env.BREVO_SENDER_NAME || 'Grilln Chill';
@@ -1198,47 +1202,10 @@ exports.handler = async (event) => {
     }, body: '' };
   }
 
-  // GET: Status-Seite
+  // GET: Früher eine öffentliche Statusseite mit Inhaber- und Absenderadresse.
+  // Die gehört nicht ins Netz; die Einstellungen stehen in Netlify.
   if (event.httpMethod === 'GET') {
-    const apiKeySet    = apiKey.length > 10;
-    const senderSet    = senderEmail.includes('@');
-    const ownerSet     = ownerEmail.includes('@');
-    const secretSet    = statusSecret.length >= 10;
-    const tgToken      = process.env.TELEGRAM_BOT_TOKEN || '';
-    const tgChat       = process.env.TELEGRAM_CHAT_ID || '';
-    const telegramSet  = tgToken.length > 20 && tgChat.length > 0;
-    const allOk        = apiKeySet && senderSet && ownerSet && secretSet;
-
-    return html(200, `<!DOCTYPE html>
-<html lang="de"><head><meta charset="utf-8"><title>E-Mail Backend Status</title>
-<style>
-  body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0A0A0A;color:#F5E9D0;margin:0;padding:2rem;line-height:1.6}
-  .box{max-width:600px;margin:2rem auto;background:#141414;border:1px solid #2A2520;border-radius:14px;padding:2rem}
-  h1{color:#F5E9D0;margin:0 0 1.5rem}
-  .row{display:flex;justify-content:space-between;padding:0.7rem 0;border-bottom:1px solid #2A2520}
-  .ok{color:#6DBE45;font-weight:700}
-  .fail{color:#E04848;font-weight:700}
-  .summary{margin-top:1.5rem;padding:1rem;border-radius:8px;font-weight:700;text-align:center}
-  .summary.ok{background:rgba(109,190,69,0.12);color:#6DBE45;border:1px solid #6DBE45}
-  .summary.fail{background:rgba(224,72,72,0.12);color:#E04848;border:1px solid #E04848}
-  small{color:#9A8E7A}
-  code{background:#252220;padding:2px 6px;border-radius:4px;font-size:0.85em}
-</style></head><body><div class="box">
-<h1>✉️ E-Mail Backend Status (Brevo)</h1>
-<div class="row"><span>BREVO_API_KEY gesetzt</span><span class="${apiKeySet?'ok':'fail'}">${apiKeySet?'✓ JA':'✗ NEIN'}</span></div>
-<div class="row"><span>BREVO_SENDER_EMAIL</span><span class="${senderSet?'ok':'fail'}">${senderSet?esc(senderEmail):'✗ NEIN'}</span></div>
-<div class="row"><span>BREVO_SENDER_NAME</span><span class="ok">${esc(senderName)}</span></div>
-<div class="row"><span>OWNER_EMAIL</span><span class="${ownerSet?'ok':'fail'}">${ownerSet?esc(ownerEmail):'✗ NEIN'}</span></div>
-<div class="row"><span>STATUS_UPDATE_SECRET gesetzt</span><span class="${secretSet?'ok':'fail'}">${secretSet?'✓ JA':'✗ NEIN (mind. 10 Zeichen)'}</span></div>
-<div class="row"><span>Telegram-Alarm <small>(optional)</small></span><span class="${telegramSet?'ok':'fail'}">${telegramSet?'✓ aktiv':'– nicht konfiguriert'}</span></div>
-<div class="summary ${allOk?'ok':'fail'}">${allOk
-    ? '✓ Alles bereit. E-Mails werden bei Bestellungen versendet.'
-    : '✗ Konfiguration unvollständig. Bitte in Netlify alle Environment Variables setzen.'}</div>
-<p style="margin-top:1.5rem;color:#9A8E7A;font-size:0.85rem">
-  Endpunkt-URL: <code>/.netlify/functions/send-email</code><br>
-  Status-Update-URL (intern): <code>${siteUrl}/status-update?...</code>
-</p>
-</div></body></html>`);
+    return json(200, { ok: true });
   }
 
   // POST: E-Mail versenden
@@ -1255,7 +1222,7 @@ exports.handler = async (event) => {
 
   let input;
   try {
-    input = JSON.parse(event.body || '{}');
+    input = saeubern(JSON.parse(event.body || '{}'), { maxText: 4000 });
   } catch (e) {
     return json(400, { error: 'Invalid JSON' });
   }
@@ -1263,6 +1230,12 @@ exports.handler = async (event) => {
   const { type } = input;
   if (!type) {
     return json(400, { error: 'Missing type' });
+  }
+  // Gutschein- und Status-Mails löst nur der eigene Server aus (SumUp-Webhook,
+  // Admin-Aktionen, Statuslinks). Von außen ließen sich sonst echt aussehende
+  // Grill'n-Chill-Mails mit erfundenem Inhalt an jede Adresse schicken.
+  if ((type === 'giftcard' || type === 'status_update') && !istIntern(event)) {
+    return json(403, { error: 'forbidden' });
   }
 
   // Catering-Anfrage hat andere Struktur als Bestellungen
@@ -1290,7 +1263,7 @@ exports.handler = async (event) => {
           return json(403, { error: 'Bot-Verifizierung fehlgeschlagen', hint: 'Turnstile-Check nicht bestanden' });
         }
       } catch (err) {
-        return json(502, { error: 'Turnstile-Verifizierung fehlgeschlagen', detail: err.message });
+        { console.error('Turnstile:', err.message); return json(502, { error: 'Turnstile-Verifizierung fehlgeschlagen' }); }
       }
     }
 
@@ -1331,7 +1304,7 @@ exports.handler = async (event) => {
     if (!mailError) return json(200, { sent: 2, type, stored: !!cateringKey });
     // Mail fehlgeschlagen, aber gespeichert → Anfrage ist angekommen, Besucher bekommt Erfolg
     if (cateringKey) return json(200, { sent: 0, type, stored: true });
-    return json(502, { error: 'Catering-Mail fehlgeschlagen', detail: mailError.message });
+    { console.error('Catering-Mail:', mailError.message); return json(502, { error: 'Catering-Mail fehlgeschlagen' }); }
   }
 
     // Type: Geschenkgutschein nach Online-Kauf – Code an den Käufer + Telegram an den Betreiber
@@ -1391,7 +1364,7 @@ exports.handler = async (event) => {
       } catch (e) {}
       return json(200, { sent: 1, type });
     } catch (err) {
-      return json(502, { error: 'Gutschein-Mail fehlgeschlagen', detail: err.message });
+      { console.error('Gutschein-Mail:', err.message); return json(502, { error: 'Gutschein-Mail fehlgeschlagen' }); }
     }
   }
 
@@ -1570,6 +1543,6 @@ exports.handler = async (event) => {
 
     return json(400, { error: 'Unknown type', hint: 'type must be order_confirmation or status_update' });
   } catch (err) {
-    return json(502, { error: 'E-Mail-Versand fehlgeschlagen', detail: err.message });
+    { console.error('E-Mail-Versand:', err.message); return json(502, { error: 'E-Mail-Versand fehlgeschlagen' }); }
   }
 };

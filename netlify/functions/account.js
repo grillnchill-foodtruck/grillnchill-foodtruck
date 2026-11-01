@@ -176,16 +176,21 @@ async function sendCodeMail(email, code) {
    Eigenschaften ("__proto__", "constructor", …) und liess damit jeden
    ohne Anmeldung in fremde Konten. */
 const { tokenGueltig } = require('./lib/kunden-token');
+const { schutz, saeubern } = require('./lib/bremse');
+const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 function checkToken(rec, token) {
   return tokenGueltig(rec, token);
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'konto', max: 60, maxKB: 32 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 
   let input = {};
-  try { input = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'invalid_json' }); }
+  try { input = saeubern(JSON.parse(event.body || '{}'), { maxText: 4000 }); } catch (e) { return json(400, { error: 'invalid_json' }); }
   const action = String(input.action || '');
   const email = normEmail(input.email);
   if (!validEmail(email)) return json(400, { error: 'bad_email' });
@@ -195,6 +200,9 @@ exports.handler = async (event) => {
 
   try {
     if (action === 'request_code') {
+      // Mails an fremde Adressen in Serie verhindern: höchstens 10 Codes je Absender in 15 Minuten
+      const zuViele = await schutz(event, { name: 'konto-code', max: 10, fensterMin: 15 });
+      if (zuViele) return zuViele;
       let rec = (await s.get(key, { type: 'json' })) || {
         email, name: '', phone: '', addresses: [], spent: 0, rewards: 0,
         tokens: {}, createdAt: new Date().toISOString(),
@@ -213,6 +221,10 @@ exports.handler = async (event) => {
     const rec = await s.get(key, { type: 'json' });
 
     if (action === 'verify') {
+      // Falsche Codes zählen je Absender (5 in 15 Minuten, lib/auth-guard.js),
+      // zusätzlich zu den 5 Versuchen je Code
+      const gesperrt = await pruefeSperre(event);
+      if (gesperrt) return gesperrt;
       const code = String(input.code || '').replace(/\D/g, '').slice(0, 6);
       if (!rec || !rec.login) return json(401, { error: 'no_code', hint: 'Bitte zuerst einen Code anfordern.' });
       if (Date.now() > rec.login.exp) return json(401, { error: 'code_expired' });
@@ -220,9 +232,11 @@ exports.handler = async (event) => {
       if (sha(code + '|' + email) !== rec.login.codeHash) {
         rec.login.tries = (rec.login.tries || 0) + 1;
         await s.setJSON(key, rec);
+        await meldeErgebnis(event, false);
         return json(401, { error: 'wrong_code', triesLeft: MAX_TRIES - rec.login.tries });
       }
       delete rec.login;
+      await meldeErgebnis(event, true);
       // Einmalige Übernahme der lokalen Stempelkarte (Browser-Guthaben mitnehmen)
       if (!rec.merged && input.localLoyalty && typeof input.localLoyalty === 'object') {
         // Der Browser-Stand ist nicht prüfbar. Deshalb eng begrenzt: Kartenstand
@@ -367,7 +381,8 @@ exports.handler = async (event) => {
       return json(200, { ok: true });
     }
   } catch (e) {
-    return json(502, { error: 'account_failed', detail: String((e && e.message) || e) });
+    console.error('account:', (e && e.message) || e);
+    return json(502, { error: 'account_failed', hint: 'Da ist etwas schiefgelaufen. Bitte gleich noch einmal versuchen.' });
   }
   return json(400, { error: 'unknown_action' });
 };

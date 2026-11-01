@@ -21,6 +21,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { schutz, saeubern } = require('./lib/bremse');
 
 const GROUP_TTL_MS = 48 * 3600 * 1000;
 const MAX_CONTRIBUTIONS = 30;
@@ -63,11 +64,14 @@ function publicView(g) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'gruppe', max: 120, maxKB: 64 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 
   let input = {};
-  try { input = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'invalid_json' }); }
+  try { input = saeubern(JSON.parse(event.body || '{}'), { maxText: 2000 }); } catch (e) { return json(400, { error: 'invalid_json' }); }
   const action = String(input.action || '');
   const s = store();
 
@@ -140,6 +144,7 @@ exports.handler = async (event) => {
 
     return json(400, { error: 'unknown_action' });
   } catch (e) {
-    return json(500, { error: 'group_failed', detail: String((e && e.message) || e) });
+    console.error('group-order:', (e && e.message) || e);
+    return json(500, { error: 'group_failed' });
   }
 };

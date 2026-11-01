@@ -22,6 +22,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { internHeader } = require('./lib/bremse');
 
 const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 
@@ -143,7 +144,7 @@ exports.handler = async (event) => {
         });
         const notify = await fetch(siteUrl + '/.netlify/functions/send-email', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...internHeader() },
           body: JSON.stringify({ type: 'giftcard', gift: { ...rec.gift, code, validUntil, reference } }),
         });
         rec.status = 'completed';
@@ -157,7 +158,7 @@ exports.handler = async (event) => {
       // ---- Normale Bestellung: Benachrichtigungen auslösen (send-email hebt auf "completed") ----
       const notify = await fetch(siteUrl + '/.netlify/functions/send-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...internHeader() },
         // internalSecret: bindet die Treue-/Umsatz-Gutschrift an den verifizierten Zahlungseingang (S1/S4).
         body: JSON.stringify({ type: 'order_confirmation', order: rec.order, internalSecret: process.env.INTERNAL_HOOK_SECRET || undefined }),
       });

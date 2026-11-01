@@ -994,7 +994,7 @@
     if (!mit) throw stumm();
     var s = null;
     try {
-      var r1 = await fetch(STATUS_URL, { cache: 'no-store' });
+      var r1 = await fetch(STATUS_URL + '?frisch=' + Date.now(), { cache: 'no-store' });   // am CDN-Zwischenspeicher vorbei
       if (r1.ok) s = await r1.json();
     } catch (e) { s = null; }
     if (!s || typeof s !== 'object') throw new Error('Aktueller Stand nicht lesbar. Nichts geändert.');

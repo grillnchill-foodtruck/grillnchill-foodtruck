@@ -101,6 +101,7 @@ const emailKey = (e) => 'c:' + crypto.createHash('sha256')
    liegt deshalb jetzt in lib/kunden-token.js – dort steht die ganze
    Begründung. */
 const { tokenGueltig } = require('./lib/kunden-token');
+const { schutz, saeubern } = require('./lib/bremse');
 async function authCustomer(email, token) {
   if (!email || !token) return null;
   try {
@@ -205,11 +206,14 @@ const slotFehler = (p) => (p.error === 'slot_full'
   : json(400, { ok: false, error: 'bad_slot' }));
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'dauerbestellung', max: 120, maxKB: 32 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 
   let b = {};
-  try { b = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'bad_json' }); }
+  try { b = saeubern(JSON.parse(event.body || '{}'), { maxText: 2000 }); } catch (e) { return json(400, { error: 'bad_json' }); }
   if (!b || typeof b !== 'object') b = {};
 
   /* Freie Fenster eines Wochentags. Ohne Anmeldung, liefert nur Zahlen -

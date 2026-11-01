@@ -9114,7 +9114,7 @@ function updateHeroReviews() {
 async function loadGoogleReviews(lang) {
   lang = lang || (typeof currentLang !== 'undefined' ? currentLang : 'de');
   try {
-    const res = await fetch('/google-reviews?lang=' + encodeURIComponent(lang), { cache: 'no-store' });
+    const res = await fetch('/google-reviews?lang=' + encodeURIComponent(lang));   // Browser darf 6 h zwischenspeichern
     if (!res.ok) { LIVE_REVIEWS[lang] = LIVE_REVIEWS[lang] || []; return; }
     const d = await res.json();
     if (d && d.rating != null && d.total != null) {
@@ -16033,6 +16033,10 @@ window.addEventListener('load', function () {
   try {
     var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced) return; // Poster bleibt stehen
+    // Datensparen eingeschaltet oder langsames Netz: Das Video wiegt 3,6 bis
+    // 4,2 MB, das Standbild reicht. (iOS meldet das nicht, dort läuft es wie bisher.)
+    var netz = navigator.connection;
+    if (netz && (netz.saveData || /2g|3g/.test(netz.effectiveType || ''))) return;
     var v = document.getElementById('heroVideo');
     if (!v) return;
     var sources = v.querySelectorAll('source[data-src]');

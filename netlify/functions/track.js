@@ -65,7 +65,8 @@ function dayKey(offset = 0) {
 // --- Team-Auth: superadmin (ADMIN_PASSWORD) oder Team-Admin (Team-Store) ---
 const _teamCrypto = require('crypto');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
-const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { passwortAusSitzung, nachweis } = require('./lib/admin-sitzung');
+const { schutz } = require('./lib/bremse');
 function _teamStore() {
   const opts = { name: 'team', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -91,6 +92,9 @@ async function authAdmin(pw) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'zaehlen', max: 300, maxKB: 8 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
 
   // ---------- Zählen (öffentlich, anonym) ----------
@@ -116,7 +120,7 @@ exports.handler = async (event) => {
     // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
     const gesperrt = await pruefeSperre(event);
     if (gesperrt) return gesperrt;
-    const erlaubt = await authAdmin(await passwortAusSitzung(params.password));
+    const erlaubt = await authAdmin(await passwortAusSitzung(nachweis(event, params.password)));
     await meldeErgebnis(event, erlaubt);
     if (!erlaubt) return json(401, { error: 'unauthorized' });
     const days = Math.min(parseInt(params.days || '7', 10) || 7, 30);

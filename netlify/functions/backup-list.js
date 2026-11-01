@@ -16,7 +16,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
-const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { passwortAusSitzung, nachweis } = require('./lib/admin-sitzung');
 const { sammle, baueArchiv, store } = require('./lib/sicherung');
 
 /* Grenze der Function-Antwort liegt bei rund 6 MB, und die Base64-Kodierung
@@ -63,7 +63,7 @@ exports.handler = async (event) => {
 
   const gesperrt = await pruefeSperre(event);
   if (gesperrt) return gesperrt;
-  const who = await authRole(await passwortAusSitzung(p.password));
+  const who = await authRole(await passwortAusSitzung(nachweis(event, p.password)));
   await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });
   if (who.role !== 'superadmin' && who.role !== 'admin') {

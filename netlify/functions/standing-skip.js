@@ -15,6 +15,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { naechsterTermin } = require('./lib/standing');
+const { schutz } = require('./lib/bremse');
 
 function store(name) {
   const opts = { name, consistency: 'strong' };
@@ -43,6 +44,9 @@ color:#E9E5D9;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding
 </body></html>`;
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'aussetzen', max: 60, maxKB: 8 });
+  if (bremseHalt) return bremseHalt;
   const p = event.queryStringParameters || {};
   const id = String(p.id || '').replace(/[^a-f0-9]/g, '').slice(0, 24);
   const secret = process.env.STATUS_SECRET || process.env.ADMIN_PASSWORD || 'gnc';

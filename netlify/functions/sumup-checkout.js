@@ -50,6 +50,7 @@ const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 // Zahlung nicht zur Website zurückkehrt (Abgleich: orders-reconcile.js).
 const { getStore } = require('@netlify/blobs');
 const { pruefeUndKorrigiere } = require('./lib/preisberechnung');
+const { schutz, saeubern } = require('./lib/bremse');
 function ordersStore() {
   const opts = { name: 'orders', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -79,6 +80,9 @@ const html = (statusCode, htmlBody) => ({
 });
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'kasse', max: 20, maxKB: 96 });
+  if (bremseHalt) return bremseHalt;
   const apiKey       = process.env.SUMUP_API_KEY || '';
   const merchantCode = process.env.SUMUP_MERCHANT_CODE || '';
   const sandboxMode  = (process.env.SUMUP_SANDBOX || 'true').toLowerCase() === 'true';
@@ -96,46 +100,10 @@ exports.handler = async (event) => {
   }
 
   // ============================================================
-  //  GET: Status-Seite zur Konfigurations-Überprüfung
-  // ============================================================
+  //  GET: früher eine öffentliche Statusseite zur SumUp-Einrichtung.
+  //  Die Einstellungen stehen in Netlify, nicht im offenen Netz.
   if (event.httpMethod === 'GET') {
-    const apiKeySet   = apiKey.length > 10 && !apiKey.startsWith('HIER_');
-    const merchantSet = merchantCode.length > 3 && !merchantCode.startsWith('HIER_');
-    const allOk       = apiKeySet && merchantSet;
-
-    return html(200, `<!DOCTYPE html>
-<html lang="de"><head><meta charset="utf-8"><title>SumUp Backend Status</title>
-<style>
-  body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0A0A0A;color:#F5E9D0;
-       margin:0;padding:2rem;line-height:1.6}
-  .box{max-width:600px;margin:2rem auto;background:#141414;border:1px solid #2A2520;
-       border-radius:14px;padding:2rem}
-  h1{color:#F5E9D0;margin:0 0 1.5rem}
-  .row{display:flex;justify-content:space-between;padding:0.7rem 0;border-bottom:1px solid #2A2520}
-  .ok{color:#6DBE45;font-weight:700}
-  .fail{color:#E04848;font-weight:700}
-  .pending{color:#FFC93C;font-weight:700}
-  .summary{margin-top:1.5rem;padding:1rem;border-radius:8px;font-weight:700;text-align:center}
-  .summary.ok{background:rgba(109,190,69,0.12);color:#6DBE45;border:1px solid #6DBE45}
-  .summary.fail{background:rgba(224,72,72,0.12);color:#E04848;border:1px solid #E04848}
-  small{color:#9A8E7A}
-  code{background:#252220;padding:2px 6px;border-radius:4px;font-size:0.85em}
-</style></head><body><div class="box">
-<h1>🍔 SumUp Backend Status (Netlify)</h1>
-<div class="row"><span>Plattform</span><span class="ok">Netlify Functions</span></div>
-<div class="row"><span>Node-Version</span><span class="ok">${process.version}</span></div>
-<div class="row"><span>SUMUP_API_KEY gesetzt</span><span class="${apiKeySet?'ok':'fail'}">${apiKeySet?'✓ JA':'✗ NEIN'}</span></div>
-<div class="row"><span>SUMUP_MERCHANT_CODE gesetzt</span><span class="${merchantSet?'ok':'fail'}">${merchantSet?'✓ JA':'✗ NEIN'}</span></div>
-<div class="row"><span>Modus</span><span class="${sandboxMode?'pending':'ok'}">${sandboxMode?'🧪 SANDBOX (Tests)':'🟢 LIVE (echte Zahlungen)'}</span></div>
-<div class="row"><span>Return-URL</span><span><small>${escapeHtml(returnUrl)}</small></span></div>
-<div class="summary ${allOk?'ok':'fail'}">${allOk
-    ? '✓ Alles bereit. Du kannst jetzt im Bestellterminal "Online bezahlen" wählen.'
-    : '✗ Konfiguration unvollständig. Trage SUMUP_API_KEY und SUMUP_MERCHANT_CODE in Netlify → Site Settings → Environment Variables ein und deploye neu.'}</div>
-<p style="margin-top:1.5rem;color:#9A8E7A;font-size:0.85rem">
-  Diese Seite siehst NUR du. Sie ist nicht über die Website verlinkt.<br>
-  Endpunkt-URL: <code>/.netlify/functions/sumup-checkout</code>
-</p>
-</div></body></html>`);
+    return json(200, { ok: true });
   }
 
   // ============================================================
@@ -155,7 +123,7 @@ exports.handler = async (event) => {
 
   let input;
   try {
-    input = JSON.parse(event.body || '{}');
+    input = saeubern(JSON.parse(event.body || '{}'), { maxText: 4000 });
 
   // Stiller Rückzieher: Kunde ist aus dem SumUp-Fenster zurückgekehrt, ohne zu zahlen.
   // Der Vorgang wird storniert, als hätte es ihn nie gegeben (kein Phantom im Admin).
@@ -329,7 +297,7 @@ exports.handler = async (event) => {
       reference,
     });
   } catch (err) {
-    return json(502, { error: 'SumUp request failed', detail: err.message });
+    { console.error('SumUp:', err.message); return json(502, { error: 'SumUp request failed' }); }
   }
 };
 

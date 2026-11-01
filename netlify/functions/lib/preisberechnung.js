@@ -117,11 +117,27 @@ function testCode() {
   }
   return code;
 }
+/* Der alte Testcode stand bis August 2026 im Klartext in index.html und ist
+   damit in der öffentlichen Git-Historie für jeden lesbar. Er gilt nie
+   wieder, auch wenn TEST_ORDER_CODE noch auf ihm steht. Hier liegt nur sein
+   SHA-256-Hash, nicht der Code. */
+const VERBRANNTE_TESTCODES = ['9c2e2ccaec85b8d4620e1283c24918731366a5e7c380684521989ee8df9ab1da'];
 function istTestCode(eingabe) {
   const soll = testCode();
   const ist = String(eingabe || '').trim().toUpperCase();
-  return !!ist && ist === soll;
+  if (!ist) return false;
+  const h = require('crypto').createHash('sha256').update(ist).digest('hex');
+  if (VERBRANNTE_TESTCODES.includes(h)) {
+    if (!verbranntGemeldet) {
+      verbranntGemeldet = true;
+      console.warn('preisberechnung: Der alte, öffentlich bekannte Testcode wurde benutzt und abgelehnt.'
+        + (ist === soll ? ' TEST_ORDER_CODE steht noch auf ihm – bitte in Netlify einen neuen Wert setzen.' : ''));
+    }
+    return false;
+  }
+  return ist === soll;
 }
+let verbranntGemeldet = false;
 
 /* ---------------------------------------------------------------------------
    Gutschein: der verbindliche Wert steht im Speicher, nicht in der Anfrage.

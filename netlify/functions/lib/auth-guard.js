@@ -45,9 +45,9 @@ const { getStore } = require('@netlify/blobs');
 
 /* Beobachtungsfenster: so lange zählen Fehlversuche zusammen. */
 const FENSTER_MS = 15 * 60 * 1000;
-/* Ab so vielen Fehlversuchen im Fenster wird gesperrt. Grosszuegig genug,
-   dass ein paar Vertipper des Inhabers folgenlos bleiben. */
-const SPERRE_AB = 8;
+/* Ab so vielen Fehlversuchen im Fenster wird gesperrt (5 in 15 Minuten,
+   seit November 2026; vorher 8). Vier Vertipper bleiben folgenlos. */
+const SPERRE_AB = 5;
 /* Dauer der Sperre. */
 const SPERRE_MS = 15 * 60 * 1000;
 
@@ -99,6 +99,10 @@ const antwort429 = (sekunden) => ({
  * gesperrt ist – sonst null.
  */
 async function pruefeSperre(event) {
+  // Grundschutz für alle Admin-Endpunkte: Anfragen je Absender und Größe
+  // (lib/bremse.js). Großzügig, das Admin-Tool fragt regelmäßig nach.
+  const halt = await require('./bremse').schutz(event, { name: 'admin', max: 600, maxKB: 512 });
+  if (halt) return halt;
   const key = absender(event);
   if (!key) return null;                      // ohne Absender keine Zuordnung
   try {
@@ -127,6 +131,8 @@ async function pruefeSperre(event) {
 --------------------------------------------------------------------------- */
 const TOKEN_FORM = /^gncs_[a-f0-9]{64}$/;
 function nachweisAus(event) {
+  const h = (event && event.headers) || {};
+  if (h['x-gnc-sitzung']) return String(h['x-gnc-sitzung']);
   const q = (event && event.queryStringParameters) || {};
   if (q.password) return String(q.password);
   try { const b = JSON.parse((event && event.body) || '{}'); return b && b.password ? String(b.password) : ''; }

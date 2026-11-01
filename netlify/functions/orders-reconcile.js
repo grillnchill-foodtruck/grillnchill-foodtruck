@@ -20,6 +20,7 @@
  */
 
 const { getStore } = require('@netlify/blobs');
+const { internHeader } = require('./lib/bremse');
 
 const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 const MIN_AGE_MIN = 3;          // Webhook/Kunden-Rückkehr haben Vorrang; Doppelversand verhindert der Idempotenz-Guard in send-email
@@ -95,7 +96,7 @@ exports.handler = async () => {
           try {
             const res = await fetch(siteUrl + '/.netlify/functions/sumup-webhook', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', ...internHeader() },
               body: JSON.stringify({ id: rec.checkoutId }),
             });
             if (res.ok) reconciled++; else errors++;
@@ -106,7 +107,7 @@ exports.handler = async () => {
         try {
           const res = await fetch(siteUrl + '/.netlify/functions/send-email', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...internHeader() },
             // internalSecret: nur PAID-verifizierte Bestellungen landen hier -> Gutschrift erlaubt (S1/S4).
             body: JSON.stringify({ type: 'order_confirmation', order: rec.order, internalSecret: process.env.INTERNAL_HOOK_SECRET || undefined }),
           });

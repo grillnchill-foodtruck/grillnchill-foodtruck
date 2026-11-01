@@ -45,7 +45,7 @@ const STELLEN = 6;
 const EINRICHTUNG_MS = 10 * 60 * 1000;
 // Eigene Bremse je Konto, zusätzlich zur Bremse je Absender in lib/auth-guard.js:
 // Wer das Passwort kennt und den Code über viele Adressen errät, stößt hier an.
-const KONTO_FEHL_MAX = 10;
+const KONTO_FEHL_MAX = 5;
 const KONTO_SPERRE_MS = 15 * 60 * 1000;
 const NOTFALL_ANZAHL = 8;
 

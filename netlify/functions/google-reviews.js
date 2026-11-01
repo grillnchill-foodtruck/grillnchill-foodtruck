@@ -29,6 +29,7 @@
  */
 
 const g = require('./lib/google-bewertungen');
+const { schutz } = require('./lib/bremse');
 
 const RETRY_PAUSE_MS = 60 * 60 * 1000;
 // ?auffrischen=1 holt sofort neu, auch bei frischem Cache. Für alle Besucher
@@ -52,6 +53,9 @@ function json(statusCode, data, extraHeaders) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'bewertungen', max: 120, maxKB: 8 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS, body: '' };
   }
@@ -63,7 +67,13 @@ exports.handler = async (event) => {
   const lang = g.LANGS.indexOf(q.lang) !== -1 ? q.lang : 'de';
 
   // Browser/CDN darf das Ergebnis ein paar Stunden cachen (entlastet die Function).
-  const clientCache = { 'Cache-Control': 'public, max-age=21600' };
+  // Browser 6 Stunden. Das Netlify-CDN hält die Antwort 30 Minuten je Sprache,
+  // damit nicht jeder Seitenaufruf diese Function auslöst (Zahlen ändern sich
+  // ohnehin nur einmal am Tag, google-reviews-daily.js).
+  const clientCache = {
+    'Cache-Control': 'public, max-age=21600',
+    'Netlify-CDN-Cache-Control': 'public, durable, s-maxage=1800, stale-while-revalidate=86400',
+  };
 
   const cached = await g.leseCache(lang);
   const fresh = cached && (Date.now() - cached.fetchedAt < g.CACHE_TTL_MS);

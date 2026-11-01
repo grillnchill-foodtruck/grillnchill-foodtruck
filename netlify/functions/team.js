@@ -239,7 +239,7 @@ exports.handler = async (event) => {
       const name = String(input.name || '').trim().slice(0, 40);
       const pw = String(input.staffPassword || '');
       if (!name) return json(400, { error: 'missing_name' });
-      if (pw.length < 6) return json(400, { error: 'weak_password', hint: 'Mindestens 6 Zeichen' });
+      if (pw.length < 10) return json(400, { error: 'weak_password', hint: 'Mindestens 10 Zeichen' });
       if (pw === (process.env.ADMIN_PASSWORD || '')) return json(400, { error: 'reserved_password' });
       const key = 'u:' + slug(name);
       if (await t.get(key, { type: 'json' })) return json(409, { error: 'name_exists', hint: 'Name schon vergeben – bitte anderen wählen' });
@@ -263,7 +263,7 @@ exports.handler = async (event) => {
       if (!u) return json(404, { error: 'not_found' });
       if (u.role === 'admin' && !isSuper) return json(403, { error: 'forbidden', hint: 'Admin-Passwörter kann nur der Superadmin ändern' });
       const pw = String(input.staffPassword || '');
-      if (pw.length < 6) return json(400, { error: 'weak_password', hint: 'Mindestens 6 Zeichen' });
+      if (pw.length < 10) return json(400, { error: 'weak_password', hint: 'Mindestens 10 Zeichen' });
       if (pw === (process.env.ADMIN_PASSWORD || '')) return json(400, { error: 'reserved_password' });
       // Kollision mit anderem Team-Mitglied verhindern (Passwort = Identität)
       const h = hash(pw);

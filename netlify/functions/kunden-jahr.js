@@ -25,6 +25,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { tokenGueltig } = require('./lib/kunden-token');
 const { badges, jahresRueckblick, berlinTeile } = require('./lib/abzeichen');
+const { schutz } = require('./lib/bremse');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -62,6 +63,9 @@ function standardJahr(jetzt) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'burgerjahr', max: 30, maxKB: 8 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 

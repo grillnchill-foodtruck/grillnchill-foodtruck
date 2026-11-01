@@ -30,6 +30,7 @@ const { getStore } = require('@netlify/blobs');
 const { tokenGueltig } = require('./lib/kunden-token');
 const applePass = require('./lib/apple-pass');
 const praemie = require('./lib/praemie-texte');
+const { schutz } = require('./lib/bremse');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -133,6 +134,9 @@ function buildGoogleSaveUrl(rec, custId) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'wallet', max: 30, maxKB: 8 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
 
   if (event.httpMethod === 'GET') {

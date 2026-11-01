@@ -38,6 +38,7 @@ const { passwortAusSitzung } = require('./lib/admin-sitzung');
 const { sendeApns } = require('./lib/apns');
 const { pruefeTeamToken } = require('./lib/team-device');
 const { sendeTeamPush } = require('./lib/team-push');
+const { schutz, internHeader } = require('./lib/bremse');
 
 const STATES = ['confirmed', 'preparing', 'ready_for_pickup', 'on_the_way', 'picked_up', 'delivered'];
 const PUSH_TEXT = {
@@ -208,6 +209,9 @@ async function sendeLiveUpdates(rec, state) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'bestellstatus', max: 300, maxKB: 16 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
 
   const s = store('orders');
@@ -346,7 +350,7 @@ exports.handler = async (event) => {
           const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
           const mr = await fetch(siteUrl + '/.netlify/functions/send-email', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...internHeader() },
             body: JSON.stringify({ type: 'status_update', status: state, order: rec.order }),
           });
           mailed = mr.ok;

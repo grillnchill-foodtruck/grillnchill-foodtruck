@@ -905,7 +905,7 @@
           <input type="text" id="tmName" maxlength="40" placeholder="z. B. Kutluay" autocomplete="off">
         </div>
         <div class="field">
-          <label for="tmPw">Passwort (mind. 6 Zeichen)</label>
+          <label for="tmPw">Passwort (mind. 10 Zeichen)</label>
           <input type="text" id="tmPw" maxlength="60" placeholder="eigenes Passwort für diese Person" autocomplete="off">
         </div>
         <div class="field">
@@ -1238,7 +1238,7 @@ async function loadStatusRun(){
     $('itemsCard').innerHTML=skelRows(3,36,'Artikel werden geladen …');
   }
   try{
-    const res=await fetch(API,{cache:'no-store'});
+    const res=await fetch(API+'?frisch='+Date.now(),{cache:'no-store'});   // am CDN-Zwischenspeicher vorbei
     const s=await res.json();
     $('pausedToggle').checked=!!s.paused;
     $('pauseCard').classList.toggle('on', !!s.paused);
@@ -1987,7 +1987,7 @@ async function loadStats(){
   if(btn.classList.contains('is-busy')) return;
   gncBusy(btn,true);
   try{
-    const res=await fetch('/track?days=7&password='+encodeURIComponent(currentPw));
+    const res=await fetch('/track?days=7',{headers:{'x-gnc-sitzung':currentPw}});
     if(sperreGemeldet(res)) return;
     if(res.status===401){ toast('Falsches Passwort','err'); return; }
     const d=await res.json();
@@ -2382,7 +2382,7 @@ async function loadOrders(silent){
   // Anmeldung dauerhaft das Skelett da und nur ein Toast wies darauf hin.
   const box=(!silent&&first)?'ordersOut':null;
   try{
-    const res=await fetch('/.netlify/functions/orders-list?days=30&password='+encodeURIComponent(currentPw),{cache:'no-store'});
+    const res=await fetch('/.netlify/functions/orders-list?days=30',{cache:'no-store',headers:{'x-gnc-sitzung':currentPw}});
     if(seq!==ordReqSeq) return;   // veraltete Antwort (z. B. nach Abmelden)
     if(sperreGemeldet(res, box)){ ordStamp(false); return; }
     if(res.status===401){
@@ -2436,7 +2436,7 @@ $('ordCsv').addEventListener('click',()=>{
       String(o.total||'').replace('.',','),
       (o.items||[]).map(it=>it.qty+'x '+it.name).join(' | ')]);
   });
-  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  const csv=rows.map(r=>r.map(c=>'"'+csvSicher(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -2459,7 +2459,7 @@ async function loadCatering(silent){
   }
   const box=(!silent&&first)?'cateringOut':null;
   try{
-    const res=await fetch('/.netlify/functions/catering-list?days=180&password='+encodeURIComponent(currentPw),{cache:'no-store'});
+    const res=await fetch('/.netlify/functions/catering-list?days=180',{cache:'no-store',headers:{'x-gnc-sitzung':currentPw}});
     if(seq!==catSeq) return;
     if(sperreGemeldet(res, box)) return;
     if(res.status===401){
@@ -2680,12 +2680,12 @@ function loadInvoices(btn){ return withBusy(btn, loadInvoicesRun); }
 async function loadInvoicesRun(){
   const seq=++invSeq;
   const jahr=$('invYear').value||'';
-  const url='/.netlify/functions/invoices-list?password='+encodeURIComponent(invPw())
-            +(jahr?('&year='+encodeURIComponent(jahr)):'');
+  const url='/.netlify/functions/invoices-list'
+            +(jahr?('?year='+encodeURIComponent(jahr)):'');
   let d=null;
   let status=0;
   listBusy($('invList'),true);
-  try{ const r=await fetch(url); status=r.status; d=await r.json().catch(()=>({}));
+  try{ const r=await fetch(url,{headers:{'x-gnc-sitzung':invPw()}}); status=r.status; d=await r.json().catch(()=>({}));
        if(seq!==invSeq) return;
        if(status===429){ const t='Zu viele Fehlversuche. Bitte später erneut versuchen.';
          toast(t,'err'); $('invList').innerHTML='<p class="empty">'+t+'</p>'; return; }
@@ -2759,8 +2759,7 @@ async function invoicePdf(nummer, btn){
   if(btn && btn.classList.contains('is-busy')) return;
   gncBusy(btn,true);
   try{
-    const r=await fetch('/.netlify/functions/invoice-pdf?password='+encodeURIComponent(invPw())
-            +'&no='+encodeURIComponent(nummer));
+    const r=await fetch('/.netlify/functions/invoice-pdf?no='+encodeURIComponent(nummer),{headers:{'x-gnc-sitzung':invPw()}});
     if(r.status===404){ toast('Diese Rechnung gibt es nicht mehr'); return; }
     if(sperreGemeldet(r)) return;
     if(r.status===403){ toast('Nur für Admins'); return; }
@@ -2787,7 +2786,7 @@ async function loadBackupsRun(){
   if(!BACKUPS.length) $('bakList').innerHTML='<p class="empty">Lade …</p>';
   listBusy($('bakList'),true);
   try{
-    const r=await fetch('/.netlify/functions/backup-list?password='+encodeURIComponent(invPw()));
+    const r=await fetch('/.netlify/functions/backup-list',{headers:{'x-gnc-sitzung':invPw()}});
     if(seq!==bakSeq) return;
     if(sperreGemeldet(r,'bakList')) return;
     if(r.status===403){ $('bakList').innerHTML='<p class="empty">Datensicherungen sind nur für Admins zugänglich.</p>'; return; }
@@ -2834,8 +2833,7 @@ async function backupLaden(stand, btn){
   if(btn && btn.classList.contains('is-busy')) return;
   gncBusy(btn,true);
   try{
-    const r=await fetch('/.netlify/functions/backup-list?password='+encodeURIComponent(invPw())
-            +'&stand='+encodeURIComponent(stand));
+    const r=await fetch('/.netlify/functions/backup-list?stand='+encodeURIComponent(stand),{headers:{'x-gnc-sitzung':invPw()}});
     if(sperreGemeldet(r)) return;
     if(r.status===403){ toast('Nur für Admins'); return; }
     if(r.status===404){ toast('Diese Sicherung gibt es nicht mehr'); return; }
@@ -2862,8 +2860,7 @@ async function invoicesZip(btn){
   if(btn && btn.classList.contains('is-busy')) return;
   gncBusy(btn,true);
   try{
-    const r=await fetch('/.netlify/functions/invoices-zip?password='+encodeURIComponent(invPw())
-            +(jahr?('&year='+encodeURIComponent(jahr)):''));
+    const r=await fetch('/.netlify/functions/invoices-zip'+(jahr?('?year='+encodeURIComponent(jahr)):''),{headers:{'x-gnc-sitzung':invPw()}});
     if(r.status===404){ toast('Noch keine Rechnungen vorhanden'); return; }
     if(sperreGemeldet(r)) return;
     if(r.status===403){ toast('Nur für Admins'); return; }
@@ -2888,12 +2885,19 @@ const INV_CSV_KOPF=['Rechnungsnummer','Datum','Firma','Strasse','PLZ','Ort','Bes
 function invCsvZeile(r){
   const a=r.invoiceAddress||{};
   const v=k=>(r.vat||[]).find(x=>x.satz===k)||{netto:0,steuer:0};
-  const q=x=>'"'+String(x==null?'':x).replace(/"/g,'""')+'"';
+  const q=x=>'"'+csvSicher(x).replace(/"/g,'""')+'"';
   return [r.invoiceNo,r.invoiceDate,r.company,a.street,a.zip,a.city,r.reference,
           v(7).netto,v(7).steuer,v(19).netto,v(19).steuer,r.total,
           r.payment==='sumup'?'online':'vor Ort'].map(q).join(';');
 }
 /* BOM voran, sonst zeigt Excel unter Windows Umlaute falsch an. */
+/* Kundeneingaben wie „=HYPERLINK(…)“ führt Excel beim Öffnen sonst als
+   Formel aus. Texte mit = + - @ am Anfang bekommen ein Hochkomma davor,
+   echte Zahlen (auch negative Beträge) bleiben unverändert. */
+function csvSicher(x){
+  const t=String(x==null?'':x);
+  return (/^[=+\-@\t\r]/.test(t) && !/^-?\d+([.,]\d+)?$/.test(t)) ? "'"+t : t;
+}
 function csvLaden(zeilen, dateiname){
   const csv='\uFEFF'+[INV_CSV_KOPF.map(h=>'"'+h+'"').join(';'),...zeilen].join('\r\n');
   const a=document.createElement('a');
@@ -3120,9 +3124,9 @@ document.addEventListener('click',async(e)=>{
   const pwBtn=e.target.closest('[data-tm-pw]');
   if(pwBtn){
     const name=pwBtn.dataset.tmPw;
-    const npw=prompt('Neues Passwort für „'+name+'" (mind. 6 Zeichen):\n\nTipp-Schema: wort-wort-zahl, z. B. glut-sesam-42');
+    const npw=prompt('Neues Passwort für „'+name+'" (mind. 10 Zeichen):\n\nTipp-Schema: wort-wort-wort-zahl, z. B. glut-sesam-truck-42');
     if(npw===null) return;
-    if(npw.trim().length<6){ toast('Passwort: mindestens 6 Zeichen','err'); return; }
+    if(npw.trim().length<10){ toast('Passwort: mindestens 10 Zeichen','err'); return; }
     await tmAktion(pwBtn,{action:'setpassword',name,staffPassword:npw.trim()},
       ()=>toast('Passwort geändert. '+name+' meldet sich damit neu an.','ok'),
       r=>r.d.hint||r.d.error||'Ändern fehlgeschlagen');
@@ -3167,7 +3171,7 @@ $('tmAddBtn').addEventListener('click',async()=>{
   const name=$('tmName').value.trim();
   const pw=$('tmPw').value;
   if(!name){ toast('Name fehlt','err'); return; }
-  if(pw.length<6){ toast('Passwort: mindestens 6 Zeichen','err'); return; }
+  if(pw.length<10){ toast('Passwort: mindestens 10 Zeichen','err'); return; }
   // try/finally ueber withBusy: nach einem Netzfehler blieb der Knopf bisher dauerhaft gesperrt.
   await tmAktion($('tmAddBtn'),{action:'add',name,staffPassword:pw,role:$('tmRole').value},
     ()=>{ toast(name+' angelegt','ok'); $('tmName').value=''; $('tmPw').value=''; loadTeam(); },
@@ -3343,7 +3347,7 @@ async function loadAudit(){
   const seq=++auditSeq;
   listBusy($('auditOut'),true);
   try{
-    const res=await fetch('/.netlify/functions/audit-log?days=14&password='+encodeURIComponent(currentPw),{cache:'no-store'});
+    const res=await fetch('/.netlify/functions/audit-log?days=14',{cache:'no-store',headers:{'x-gnc-sitzung':currentPw}});
     if(seq!==auditSeq) return;
     if(!res.ok){ auditFehler(); return; }
     const d=await res.json();
@@ -3365,7 +3369,7 @@ $('logReload').addEventListener('click',()=>withBusy($('logReload'),loadAudit));
 
 /* ---------------- Protokoll-Export (CSV & PDF, volle 30 Tage) ---------------- */
 async function auditFetchAll(){
-  const res=await fetch('/.netlify/functions/audit-log?days=30&password='+encodeURIComponent(currentPw),{cache:'no-store'});
+  const res=await fetch('/.netlify/functions/audit-log?days=30',{cache:'no-store',headers:{'x-gnc-sitzung':currentPw}});
   if(!res.ok) throw new Error('load_failed');
   const d=await res.json();
   return d.entries||[];
@@ -3385,7 +3389,7 @@ $('logCsv').addEventListener('click',()=>withBusy($('logCsv'),async()=>{
       rows.push([w.d,w.t,e.name||'',e.role||'',e.action||'',e.detail||'']);
     });
     // Semikolon-getrennt + BOM: oeffnet in Excel/Numbers direkt korrekt
-    const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+    const csv=rows.map(r=>r.map(c=>'"'+csvSicher(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
     const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);

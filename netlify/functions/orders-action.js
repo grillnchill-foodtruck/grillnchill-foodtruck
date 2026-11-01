@@ -21,6 +21,7 @@
  */
 
 const { getStore } = require('@netlify/blobs');
+const { internHeader } = require('./lib/bremse');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
 
@@ -77,7 +78,7 @@ async function fulfillGiftcard(rec, s, key) {
   const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
   const res = await fetch(siteUrl + '/.netlify/functions/send-email', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...internHeader() },
     body: JSON.stringify({ type: 'giftcard', gift: { ...rec.gift, code, validUntil, reference: key.slice(2) } }),
   });
   rec.status = 'completed';
@@ -92,7 +93,7 @@ async function notify(order) {
   const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
   const res = await fetch(siteUrl + '/.netlify/functions/send-email', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...internHeader() },
     body: JSON.stringify({ type: 'order_confirmation', order }),
   });
   return res.ok;
@@ -275,7 +276,7 @@ exports.handler = async (event) => {
       const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
       const res = await fetch(siteUrl + '/.netlify/functions/send-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...internHeader() },
         body: JSON.stringify({ type: 'giftcard', gift: { ...rec.gift, code: rec.code, validUntil, reference } }),
       });
       if (!res.ok) {
@@ -306,7 +307,7 @@ exports.handler = async (event) => {
           const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
           const wres = await fetch(siteUrl + '/.netlify/functions/sumup-webhook', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...internHeader() },
             body: JSON.stringify({ id: rec.checkoutId }),
           });
           const ok2 = wres.ok;

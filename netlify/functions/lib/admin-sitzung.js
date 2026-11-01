@@ -150,10 +150,20 @@ async function passwortAusSitzung(eingabe) {
   }
 }
 
+/**
+ * Nachweis einer GET-Anfrage: bevorzugt aus dem Header x-gnc-sitzung. In der
+ * Adresse (?password=) landete der Sitzungs-Token in Server-Protokollen und im
+ * Browserverlauf; die Adresse bleibt nur als Rückfall für alte Tabs.
+ */
+function nachweis(event, rueckfall) {
+  const h = (event && event.headers) || {};
+  return h['x-gnc-sitzung'] || rueckfall || '';
+}
+
 /** Abmelden: Sitzung serverseitig löschen. */
 async function beende(eingabe) {
   if (!istToken(eingabe)) return false;
   try { await store().delete('s:' + sha(eingabe)); return true; } catch (e) { return false; }
 }
 
-module.exports = { erstelle, passwortAusSitzung, beende, istToken, GUELTIG_MS };
+module.exports = { erstelle, passwortAusSitzung, beende, istToken, nachweis, GUELTIG_MS };

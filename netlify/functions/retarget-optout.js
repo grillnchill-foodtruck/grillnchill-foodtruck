@@ -13,6 +13,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const { schutz } = require('./lib/bremse');
 
 function store() {
   const opts = { name: 'retarget', consistency: 'strong' };
@@ -40,6 +41,9 @@ function page(title, text) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'abmelden', max: 60, maxKB: 8 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'Method not allowed' };
   const p = event.queryStringParameters || {};
   let email = '';

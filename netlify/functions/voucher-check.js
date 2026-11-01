@@ -15,6 +15,7 @@ const { getStore } = require('@netlify/blobs');
 const { istTestCode } = require('./lib/preisberechnung');
 const { codeNormalisieren } = require('./lib/gutschein-code');
 const nutzung = require('./lib/gutschein-nutzung');
+const { schutz } = require('./lib/bremse');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -64,6 +65,9 @@ async function ensureGrill5(vs) {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'gutschein', max: 40, maxKB: 8 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 

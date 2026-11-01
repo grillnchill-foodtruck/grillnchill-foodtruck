@@ -16,7 +16,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
-const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { passwortAusSitzung, nachweis } = require('./lib/admin-sitzung');
 
 const RETENTION_DAYS = 30;
 
@@ -83,7 +83,7 @@ exports.handler = async (event) => {
   // Bremse gegen Durchprobieren – siehe lib/auth-guard.js
   const gesperrt = await pruefeSperre(event);
   if (gesperrt) return gesperrt;
-  const erlaubt = await authAdmin(await passwortAusSitzung(p.password));
+  const erlaubt = await authAdmin(await passwortAusSitzung(nachweis(event, p.password)));
   await meldeErgebnis(event, erlaubt);
   if (!erlaubt) return json(401, { error: 'unauthorized' });
 

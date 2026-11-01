@@ -25,6 +25,8 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeIdToken } = require('./lib/id-token');
+const { schutz, saeubern } = require('./lib/bremse');
+const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 
 const LOYALTY_GOAL = 100;   // wie account.js
 const MAX_TOKENS = 5;       // wie account.js
@@ -52,22 +54,29 @@ const sha = (x) => crypto.createHash('sha256').update(String(x)).digest('hex');
 const clean = (x, n) => String(x || '').replace(/[<>]/g, '').trim().slice(0, n);
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'konto-sozial', max: 30, maxKB: 16 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'method_not_allowed' });
 
   let input = {};
-  try { input = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'invalid_json' }); }
+  try { input = saeubern(JSON.parse(event.body || '{}'), { maxText: 4000 }); } catch (e) { return json(400, { error: 'invalid_json' }); }
 
   const anbieter = input.anbieter === 'apple' ? 'apple'
     : input.anbieter === 'google' ? 'google' : null;
   if (!anbieter) return json(400, { error: 'bad_provider' });
 
   // 1) Ausweis prüfen – bei jedem Mangel 401, ohne Details nach außen
+  // Ungültige Anmeldenachweise zählen je Absender (5 in 15 Minuten, lib/auth-guard.js)
+  const gesperrt = await pruefeSperre(event);
+  if (gesperrt) return gesperrt;
   let ausweis;
   try {
     ausweis = await pruefeIdToken(anbieter, input.idToken);
   } catch (e) {
     console.warn('social-login abgelehnt (' + anbieter + '):', e.message);
+    await meldeErgebnis(event, false);
     return json(401, { error: 'invalid_token' });
   }
   // Google bestätigt Adressen ausdrücklich; Apple-Adressen sind konstruktions-

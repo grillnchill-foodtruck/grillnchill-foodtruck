@@ -17,6 +17,8 @@
  * ============================================================
  */
 
+const { schutz, internHeader } = require('./lib/bremse');
+
 const VALID_STATUSES = ['preparing', 'on_the_way', 'ready_for_pickup', 'delivered'];
 
 const STATUS_LABELS = {
@@ -50,6 +52,9 @@ function htmlPage(title, message, color = '#6DBE45') {
 }
 
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'statuslink', max: 60, maxKB: 8 });
+  if (bremseHalt) return bremseHalt;
   const statusSecret = process.env.STATUS_UPDATE_SECRET || '';
   const siteUrl      = process.env.URL || 'https://grillnchill-foodtruck.de';
 
@@ -98,7 +103,7 @@ exports.handler = async (event) => {
   try {
     const sendResponse = await fetch(`${siteUrl}/.netlify/functions/send-email`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...internHeader() },
       body: JSON.stringify({
         type: 'status_update',
         status,
@@ -126,7 +131,7 @@ exports.handler = async (event) => {
     const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
     await fetch(siteUrl + '/.netlify/functions/order-status', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...internHeader() },
       body: JSON.stringify({ action: 'set', secret: process.env.STATUS_UPDATE_SECRET || '', reference: ref, state: status }),
     }).catch(() => {});
   } catch (e) {}

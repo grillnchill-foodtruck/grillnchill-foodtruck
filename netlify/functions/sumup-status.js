@@ -28,7 +28,12 @@ const json = (statusCode, body) => ({
   body: JSON.stringify(body),
 });
 
+const { schutz } = require('./lib/bremse');
+
 exports.handler = async (event) => {
+  // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
+  const bremseHalt = await schutz(event, { name: 'zahlstatus', max: 120, maxKB: 8 });
+  if (bremseHalt) return bremseHalt;
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: {
       'Access-Control-Allow-Origin': '*',
@@ -79,6 +84,6 @@ exports.handler = async (event) => {
       })(),
     });
   } catch (err) {
-    return json(502, { error: 'SumUp request failed', detail: err.message });
+    { console.error('SumUp-Status:', err.message); return json(502, { error: 'SumUp request failed' }); }
   }
 };
