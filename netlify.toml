@@ -273,3 +273,11 @@
   to     = "/404.html"
   status = 404
 
+
+# --- Paket schutz ---
+# Einmalige Korrektur der Gutschein-Kundenzähler nach dem Zählfehler vom
+# 29.10.2026 (zaehler-korrektur.js). Der erste Lauf nach dem Deploy korrigiert
+# und setzt den Merker migration:zaehler-2026-11, danach liest jeder Lauf nur
+# noch den Merker. Kann nach erfolgreichem Lauf wieder entfernt werden.
+[functions."zaehler-korrektur"]
+  schedule = "23 * * * *"

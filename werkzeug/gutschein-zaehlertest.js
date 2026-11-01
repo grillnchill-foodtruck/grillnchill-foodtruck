@@ -17,7 +17,8 @@
  *
  * Seit November 2026 auch: Zählung je Telefonnummer neben der E-Mail
  * (lib/gutschein-nutzung.js), Vereinheitlichung der Nummer, eine Bestellung
- * zählt nur einmal, Wegwerf-Adressen zählen nicht.
+ * zählt nur einmal, Wegwerf-Adressen zählen nicht. Dazu die einmalige
+ * Korrektur der Zähler, die der Zählfehler vom 29.10. um eins erhöht hat.
  *
  *   node werkzeug/gutschein-zaehlertest.js
  * ----------------------------------------------------------------------------
@@ -171,6 +172,74 @@ const stand = (code) => SPEICHER['vouchers']['c:' + code];
   await mitKunde('WEGWERF5', 'trick@abc.yopmail.com', '01704445557');
   pruefe('Wegwerf-Adresse (auch Subdomain): keine Einlösung gezählt',
     stand('WEGWERF5').uses === 0 && !Object.keys(SPEICHER.vouchers).some((k) => /^[nt]:WEGWERF5:/.test(k)), 'uses=' + stand('WEGWERF5').uses);
+
+  console.log('\n6) Einmalige Korrektur der Zähler vom Zählfehler (zaehler-korrektur.js)');
+  {
+    const korrektur = require(path.join(__dirname, '..', 'netlify', 'functions', 'zaehler-korrektur.js'));
+    SPEICHER.vouchers = {}; SPEICHER.orders = {};
+    const seit = '2026-07-20T00:00:00.000Z';
+    const H = (mail) => sha(mail);
+    const nach = Date.parse('2026-10-30T12:00:00+01:00');
+    const vor = Date.parse('2026-09-10T12:00:00+01:00');
+    const bestellt = (ms, email, gezaehlt = 'GRILL5') => { SPEICHER.orders['o:GNC-' + ms] = { status: 'completed', gutscheinGezaehlt: gezaehlt, order: { email, voucherCode: 'GRILL5' } }; };
+    // usedBy und Zähler wie nach dem Fehler
+    SPEICHER.vouchers['c:GRILL5'] = { code: 'GRILL5', maxPerCustomer: 3, createdAt: seit, uses: 9, usedBy: {
+      [H('fehler@example.org')]: 1,          // Fall A: n=2, eindeutig zu hoch
+      [H('richtig@example.org')]: 2,         // Fall B: n=2, stimmt
+      [H('maxmuster@gmail.com')]: 1,         // Fall C: Schreibweisen gemischt
+      [H('ohnebeleg@example.org')]: 1,       // Fall E: keine Bestellung im Archiv
+      [H('weniger@example.org')]: 3,         // Fall F: n kleiner als usedBy
+      [H('alt@example.org')]: 2,             // Fall G: andere Fassung des Codes
+    } };
+    const zSetzen = (mail, n, s2 = seit) => { SPEICHER.vouchers['n:GRILL5:' + H(mail)] = { seit: s2, n, zuletzt: '2026-10-30' }; };
+    zSetzen('fehler@example.org', 2); bestellt(nach, 'Fehler@Example.org');
+    zSetzen('richtig@example.org', 2); bestellt(nach + 1, 'richtig@example.org'); bestellt(vor, 'richtig@example.org', null);
+    zSetzen('maxmuster@gmail.com', 2); bestellt(nach + 2, 'maxmuster@gmail.com'); bestellt(vor + 1, 'max.muster@gmail.com', null);
+    zSetzen('ohneusedby@example.org', 2); bestellt(nach + 3, 'ohneusedby@example.org');
+    zSetzen('ohnebeleg@example.org', 2);
+    zSetzen('weniger@example.org', 2); bestellt(nach + 4, 'weniger@example.org');
+    zSetzen('alt@example.org', 3, '2026-01-01T00:00:00.000Z'); bestellt(nach + 5, 'alt@example.org');
+    const vorher = JSON.parse(JSON.stringify(SPEICHER.vouchers));
+
+    const nachrichten = [];
+    const fetchAlt = global.fetch;
+    global.fetch = async (url, o) => { if (String(url).includes('api.telegram.org')) nachrichten.push(JSON.parse(o.body).text); return { ok: true, status: 200, json: async () => ({}), text: async () => '' }; };
+    Object.assign(process.env, { TELEGRAM_BOT_TOKEN: 'test', TELEGRAM_CHAT_ID: '1' });
+    const leise = console.log; console.log = () => {};
+    const r1 = await korrektur.korrigieren();
+    console.log = leise;
+    const n = (mail) => SPEICHER.vouchers['n:GRILL5:' + H(mail)].n;
+    pruefe('Eindeutig zu hoher Zähler wird um eins gesenkt', n('fehler@example.org') === 1 && r1.korrigiert === 1, 'n=' + n('fehler@example.org'));
+    pruefe('Richtige Zähler bleiben', n('richtig@example.org') === 2 && r1.richtig === 1);
+    pruefe('Gemischte Schreibweisen (Gmail-Punkte) bleiben unverändert', n('maxmuster@gmail.com') === 2);
+    pruefe('Ohne usedBy oder ohne Bestellbeleg: unverändert', n('ohneusedby@example.org') === 2 && n('ohnebeleg@example.org') === 2 && r1.ohneQuelle === 2);
+    pruefe('Nie erhöht: Zähler unter usedBy bleibt', n('weniger@example.org') === 2);
+    pruefe('Zähler einer früheren Code-Fassung bleibt', n('alt@example.org') === 3 && r1.veraltet === 1);
+    pruefe('Unklare Fälle werden gezählt', r1.mehrdeutig === 2, JSON.stringify(r1));
+    pruefe('Kein Zähler höher als vorher', Object.keys(vorher).filter((k) => k.startsWith('n:')).every((k) => SPEICHER.vouchers[k].n <= vorher[k].n));
+    pruefe('Telegram an Kubi: eine Nachricht, nur Anzahlen', nachrichten.length === 1 && /1 Kundenzähler/.test(nachrichten[0]) && !/@|[0-9a-f]{64}/.test(nachrichten[0]));
+    const stand1 = JSON.stringify(SPEICHER.vouchers);
+    console.log = () => {};
+    const r2 = await korrektur.korrigieren();
+    console.log = leise;
+    pruefe('Zweiter Lauf ändert nichts und meldet nichts', r2.schon === true && JSON.stringify(SPEICHER.vouchers) === stand1 && nachrichten.length === 1);
+    pruefe('Merker gesetzt', SPEICHER.vouchers[korrektur.MERKER].status === 'fertig');
+    // Selbst ohne Merker fände ein neuer Lauf nichts mehr (Regel ist idempotent)
+    delete SPEICHER.vouchers[korrektur.MERKER];
+    console.log = () => {};
+    const r3 = await korrektur.korrigieren();
+    console.log = leise;
+    pruefe('Auch ohne Merker: nichts mehr zu korrigieren', r3.korrigiert === 0 && n('fehler@example.org') === 1);
+    // Zeit reicht nicht: nichts ändern
+    delete SPEICHER.vouchers[korrektur.MERKER];
+    zSetzen('fehler@example.org', 2);
+    const warn = console.warn; console.warn = () => {};
+    const r4 = await korrektur.korrigieren({ budgetMs: -1 });
+    console.warn = warn;
+    if (process.env.ZEIGEN) leise(nachrichten[0]);
+    pruefe('Zu wenig Zeit: Abbruch ohne Änderung, Merker erlaubt neuen Versuch', r4.abgebrochen === true && n('fehler@example.org') === 2 && SPEICHER.vouchers[korrektur.MERKER].status === 'abgebrochen');
+    global.fetch = fetchAlt; delete process.env.TELEGRAM_BOT_TOKEN; delete process.env.TELEGRAM_CHAT_ID;
+  }
 
   console.log('\n' + '─'.repeat(74));
   console.log(fehler === 0
