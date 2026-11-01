@@ -513,6 +513,111 @@
                   padding:.55rem 0;border-bottom:1px solid var(--border)}
   }
   </style>
+  <style>
+  /* ================= PAKET BESTELLFLUSS =================
+     Abholnummer in der Liste, Wartezeit automatisch, Neue Bestellung
+     (Telefon/Truck), Reiter Feedback. */
+  .bf-neu-btn{display:flex;align-items:center;justify-content:center;gap:.55rem;flex-wrap:wrap;margin:0 0 1rem;min-height:56px}
+  .bf-neu-btn svg{width:20px;height:20px;flex:none}
+  .bf-neu-btn small{font-weight:600;font-size:.78rem;opacity:.85}
+  .bf-ord-nr{flex:none;min-width:50px;text-align:center;color:var(--ember-hi);background:#0E0C0A;border:1px solid var(--border-hi);border-radius:10px;padding:.15rem .4rem .2rem;font-family:'Bowlby One',cursive;font-size:1.25rem;line-height:1.22}
+  .bf-ord-nr small{display:block;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.12em;color:var(--faint);line-height:1.2}
+  .bdg.bf-quelle{color:var(--cream);border-color:var(--border-hi);background:rgba(255,255,255,.04)}
+  .bdg.bf-offen{color:var(--amber);border-color:rgba(255,176,32,.5);background:rgba(255,176,32,.08)}
+  .bdg.bf-bezahlt{color:var(--live);border-color:rgba(109,190,69,.4)}
+
+  /* Wartezeit */
+  .bf-wait-felder{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:.7rem;margin:1rem 0 0}
+  .bf-wait-felder .field{margin:0}
+  .bf-vorschau{margin:.85rem 0 0;font-size:.9rem;font-weight:700;color:var(--cream);line-height:1.45}
+  .bf-vorschau.leise{color:var(--dim);font-weight:600}
+  #waitCard:not(.auto-an) .bf-vorschau{color:var(--dim)}
+  .bf-trenner{height:1px;background:var(--border);margin:1.15rem 0 1rem}
+  #waitChips.gesperrt .chip{opacity:.45;cursor:not-allowed}
+  #waitChips.gesperrt .chip:active{transform:none}
+
+  /* Neue Bestellung: Blatt */
+  .bf-ov{position:fixed;inset:0;z-index:11000;display:flex;align-items:flex-end;justify-content:center;
+    background:rgba(6,5,4,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:cfFade .16s ease-out}
+  .bf-ov[hidden]{display:none}
+  .bf-sheet{width:100%;max-width:760px;max-height:calc(100dvh - env(safe-area-inset-top) - 10px);display:flex;flex-direction:column;
+    background:var(--bg);border:1px solid var(--border-hi);border-bottom:0;border-radius:var(--r-lg) var(--r-lg) 0 0;
+    box-shadow:0 -12px 50px rgba(0,0,0,.5);animation:bfHoch .24s cubic-bezier(.16,1,.3,1)}
+  @keyframes bfHoch{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+  @media (min-width:760px){
+    .bf-ov{align-items:center;padding:1.5rem}
+    .bf-sheet{border-bottom:1px solid var(--border-hi);border-radius:var(--r-lg);max-height:min(92dvh,940px)}
+  }
+  .bf-kopf{display:flex;align-items:center;gap:.7rem;padding:.8rem 1rem .8rem 1.1rem;border-bottom:1px solid var(--border)}
+  .bf-kopf h2{flex:1;margin:0;font-family:'Bowlby One',cursive;font-weight:400;font-size:1.05rem;line-height:1.22;letter-spacing:.01em}
+  .bf-inhalt{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:1rem 1.1rem 1.3rem}
+  .bf-fuss{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;padding:.75rem 1.1rem calc(.75rem + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--card)}
+  .bf-fuss .btn{width:auto;flex:1 1 200px;max-width:360px;margin-left:auto}
+  .bf-fuss .btn-ghost{flex:0 0 auto}
+  .bf-summe{font-size:.75rem;color:var(--dim);line-height:1.3}
+  .bf-summe b{display:block;font-family:var(--mono);font-size:1.25rem;color:var(--cream)}
+  .bf-abschnitt{margin:0 0 1.25rem}
+  .bf-abschnitt>h3{font-size:.74rem;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);margin:0 0 .55rem;font-weight:800}
+  .bf-sheet .chip{min-height:44px}
+  .bf-sheet .bf-optionen .chip{min-height:40px;padding:.4rem .7rem;font-size:.8rem}
+  .bf-kacheln{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin-top:.6rem}
+  @media (min-width:560px){ .bf-kacheln{grid-template-columns:repeat(4,minmax(0,1fr))} }
+  .bf-kachel{min-height:76px;display:flex;flex-direction:column;justify-content:space-between;gap:.3rem;text-align:left;
+    padding:.65rem .75rem;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);color:var(--cream);font:inherit;cursor:pointer}
+  .bf-kachel b{font-size:.88rem;line-height:1.25;overflow-wrap:anywhere}
+  .bf-kachel span{font-family:var(--mono);font-size:.78rem;color:var(--ember-hi)}
+  .bf-kachel .bf-aus{font-family:inherit;color:var(--amber);font-weight:700}
+  .bf-kachel:active{transform:scale(.97)}
+  @media (hover:hover) and (pointer:fine){ .bf-kachel:hover{border-color:var(--border-hi)} }
+  .bf-treffer{list-style:none;margin:.6rem 0 0;padding:0;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden}
+  .bf-treffer li+li{border-top:1px solid var(--border)}
+  .bf-treffer button{display:flex;width:100%;justify-content:space-between;align-items:center;gap:.8rem;min-height:48px;padding:.6rem .85rem;
+    background:var(--card);border:0;color:var(--cream);font:inherit;font-size:.9rem;text-align:left;cursor:pointer}
+  .bf-treffer button span{font-family:var(--mono);font-size:.8rem;color:var(--ember-hi);flex:none}
+  .bf-zeilen{display:flex;flex-direction:column;gap:.55rem}
+  .bf-zeile{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:.7rem .8rem}
+  .bf-zeile-kopf{display:flex;align-items:baseline;gap:.6rem}
+  .bf-zeile-kopf b{flex:1;font-size:.92rem;line-height:1.3;overflow-wrap:anywhere}
+  .bf-zeile-kopf span{font-family:var(--mono);color:var(--ember-hi);font-size:.88rem;flex:none}
+  .bf-optionen{display:flex;flex-direction:column;gap:.5rem;margin:.6rem 0 0}
+  .bf-optionen .chip-grid{gap:.35rem}
+  .bf-opt-titel{font-size:.66rem;color:var(--faint);text-transform:uppercase;letter-spacing:.12em;font-weight:800;margin-bottom:.25rem}
+  .bf-menge{display:flex;align-items:center;gap:.4rem;margin-top:.65rem}
+  .bf-menge button{width:44px;height:44px;flex:none;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--cream);cursor:pointer;display:grid;place-items:center}
+  .bf-menge button svg{width:18px;height:18px}
+  .bf-menge output{min-width:2.4rem;text-align:center;font-family:var(--mono);font-weight:800;font-size:1rem}
+  .bf-menge .bf-weg{margin-left:auto;color:var(--dim)}
+  .bf-leer{color:var(--faint);font-size:.85rem;margin:0}
+  .bf-felder{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:.75rem}
+  .bf-felder .field{margin:0}
+  .bf-hinweis{font-size:.78rem;color:var(--amber);margin:.5rem 0 0;line-height:1.45}
+  .bf-fehler{color:var(--red);font-size:.84rem;font-weight:700;margin:0 0 .3rem;flex:1 0 100%}
+  .bf-fehler:empty{display:none}
+  .bf-sheet input[aria-invalid="true"],.bf-sheet textarea[aria-invalid="true"]{border-color:var(--red)}
+  .bf-ergebnis{text-align:center;padding:1.4rem 0 .6rem}
+  .bf-ergebnis .bf-label{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800}
+  .bf-ergebnis .bf-nr{font-family:'Bowlby One',cursive;font-size:clamp(3.2rem,18vw,4.6rem);line-height:1.22;color:var(--ember-hi);margin:.2rem 0 .4rem}
+  .bf-ergebnis p{color:var(--dim);font-size:.88rem;margin:.2rem 0}
+  .bf-pille{display:inline-flex;align-items:center;gap:.4rem;min-height:44px;padding:.45rem .95rem;margin-top:.9rem;border:1px solid var(--border-hi);border-radius:999px;background:none;color:var(--cream);font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
+  .bf-pille svg{width:15px;height:15px}
+  @media (hover:hover) and (pointer:fine){ .bf-pille:hover{border-color:var(--ember)} }
+
+  /* Feedback */
+  .bf-fb-kopf{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap}
+  .bf-fb-kpi{display:flex;align-items:baseline;gap:.5rem}
+  .bf-fb-schnitt{font-family:'Bowlby One',cursive;font-size:2rem;line-height:1.22;color:var(--cream)}
+  .bf-fb-sterne{color:var(--amber);display:inline-flex;gap:2px}
+  .bf-fb-sterne svg,.bf-fb-eintrag .bf-st svg{width:15px;height:15px}
+  .bf-fb-anzahl{flex:1 1 120px;color:var(--dim);font-size:.82rem;line-height:1.4}
+  .bf-fb-eintrag{border:1px solid var(--border);border-radius:var(--r-md);background:var(--card2);padding:.7rem .85rem;margin-bottom:.55rem}
+  .bf-fb-eintrag.tief{border-color:rgba(255,176,32,.6);box-shadow:inset 3px 0 0 var(--amber)}
+  .bf-fb-zeile{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+  .bf-fb-eintrag .bf-st{display:inline-flex;gap:2px;color:var(--amber)}
+  .bf-fb-eintrag .bf-wann{font-family:var(--mono);font-size:.7rem;color:var(--faint);margin-left:auto}
+  .bf-fb-eintrag p{margin:.45rem 0 0;font-size:.88rem;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+  .bf-fb-eintrag .bf-ref{font-family:var(--mono);font-size:.66rem;color:var(--faint);margin-top:.35rem}
+  @media (prefers-reduced-motion:reduce){ .bf-ov,.bf-sheet{animation:none} .bf-kachel:active{transform:none} }
+  </style>
 <script src="/ereignisse.js"></script>
 </head>
 <body>
@@ -590,6 +695,7 @@
       <button class="tab" role="tab" aria-selected="false" data-tab="stats" id="tabStats">Zahlen</button>
       <button class="tab hidden" role="tab" aria-selected="false" data-tab="invoices" id="tabInvoices">Rechnungen</button>
       <button class="tab hidden" role="tab" aria-selected="false" data-tab="team" id="tabTeam">Team</button>
+      <button class="tab hidden" role="tab" aria-selected="false" data-tab="feedback" id="tabFeedback">Feedback</button>
     </div>
   </nav>
 
@@ -642,8 +748,26 @@
       </div>
 
       <div class="sec"><h3>Live-Wartezeit</h3></div>
-      <div class="card">
-        <p class="hint" style="margin-bottom:.8rem;">Wird Kunden auf der Website angezeigt („Aktuelle Wartezeit: ca. X Min."). Bei viel Betrieb hochsetzen – ab Mitternacht automatisch wieder aus.</p>
+      <div class="card" id="waitCard">
+        <div class="switch-row">
+          <div>
+            <h2 style="font-size:1rem;">Automatisch rechnen</h2>
+            <p class="hint">Grundzeit plus Minuten je offenem Burger von heute (bestätigt oder auf dem Grill), auf 5 Minuten gerundet.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="waitAutoToggle" aria-describedby="waitVorschau">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="bf-wait-felder" id="waitAutoFelder">
+          <div class="field"><label for="waitBase">Grundzeit (Min.)</label><input type="number" id="waitBase" min="0" max="60" step="1" inputmode="numeric" value="10"></div>
+          <div class="field"><label for="waitPerBurger">Je Burger (Min.)</label><input type="number" id="waitPerBurger" min="0" max="15" step="1" inputmode="numeric" value="3"></div>
+          <div class="field"><label for="waitMax">Höchstens (Min.)</label><input type="number" id="waitMax" min="5" max="120" step="5" inputmode="numeric" value="60"></div>
+        </div>
+        <p class="bf-vorschau" id="waitVorschau" aria-live="polite">Vorschau wird geladen …</p>
+        <div class="bf-trenner" aria-hidden="true"></div>
+        <h2 style="font-size:1rem;margin-bottom:.15rem;">Von Hand</h2>
+        <p class="hint" style="margin-bottom:.8rem;" id="waitHandHint">Wird Kunden auf der Website angezeigt („Aktuelle Wartezeit: ca. X Min."). Bei viel Betrieb hochsetzen. Ab Mitternacht automatisch wieder aus.</p>
         <div class="chip-grid" id="waitChips">
           <button type="button" class="chip" data-wait="0" aria-pressed="true">Aus</button>
           <button type="button" class="chip" data-wait="10" aria-pressed="false">~10 Min</button>
@@ -688,6 +812,10 @@
 
     <!-- ============ TAB: BESTELLUNGEN ============ -->
     <section class="tabpane hidden" id="pane-orders" role="tabpanel">
+      <button type="button" class="btn bf-neu-btn" id="bfNeuBtn" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Neue Bestellung</span><small>Telefon oder Truck</small>
+      </button>
       <div class="card" id="ordCard" style="position:relative;overflow:hidden;">
         <div class="loadbar" id="ordBar" aria-hidden="true"></div>
         <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.8rem;">
@@ -950,6 +1078,25 @@
 
     <!-- Änderungs-Protokoll (Team-Tab, nur Admins) -->
     <section class="tabpane hidden" id="pane-team-log-marker" style="display:none"></section>
+
+    <!-- ============ TAB: FEEDBACK (Paket bestellfluss) ============ -->
+    <section class="tabpane hidden" id="pane-feedback" role="tabpanel">
+      <div class="card">
+        <div class="bf-fb-kopf">
+          <div class="bf-fb-kpi">
+            <span class="bf-fb-schnitt" id="fbSchnitt">–</span>
+            <span class="bf-fb-sterne" id="fbSchnittSterne" aria-hidden="true"></span>
+          </div>
+          <div class="bf-fb-anzahl" id="fbAnzahl">Wird geladen …</div>
+          <button class="icon-btn" id="fbReload" aria-label="Feedback neu laden" title="Neu laden">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          </button>
+        </div>
+        <div class="chip-grid" id="fbFilter" style="margin:.9rem 0 .8rem;"></div>
+        <div id="fbOut"><p class="empty">Feedback wird geladen …</p></div>
+        <p class="hint" style="margin-top:.7rem;">Gäste bewerten auf der Statusseite, sobald ihre Bestellung abgeholt oder geliefert ist. Unter 4 Sternen kommt sofort eine Telegram-Nachricht. Gespeichert ohne Name, Mail und Telefon.</p>
+      </div>
+    </section>
     <!-- ============ TAB: ZAHLEN ============ -->
     <section class="tabpane hidden" id="pane-scan" role="tabpanel">
       <div class="card">
@@ -1011,6 +1158,20 @@
   <div class="inner">
     <span class="note">Ungespeicherte Änderungen</span>
     <button class="btn" id="saveBtn">Speichern</button>
+  </div>
+</div>
+
+<!-- ================= NEUE BESTELLUNG (Paket bestellfluss) ================= -->
+<div class="bf-ov" id="bfOv" hidden>
+  <div class="bf-sheet" role="dialog" aria-modal="true" aria-labelledby="bfTitel">
+    <div class="bf-kopf">
+      <h2 id="bfTitel">Neue Bestellung</h2>
+      <button type="button" class="icon-btn" id="bfZu" aria-label="Schließen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="bf-inhalt" id="bfInhalt"></div>
+    <div class="bf-fuss" id="bfFuss"></div>
   </div>
 </div>
 
@@ -1134,6 +1295,7 @@ function setDirty(on){
 
 /* ---------------- Status-Ticket ---------------- */
 let savedWait = 0;
+let savedWaitAuto = false;   // Automatik der Wartezeit (lib/wartezeit.js), gesetzt in loadStatusRun/save
 function paintTicket(paused, updatedAt, waitTime){
   savedPaused = !!paused;
   if (typeof waitTime !== 'undefined') savedWait = parseInt(waitTime,10)||0;
@@ -1144,7 +1306,7 @@ function paintTicket(paused, updatedAt, waitTime){
   $('ticketState').textContent = savedPaused ? 'PAUSIERT' : 'ONLINE';
   $('ticketSub').textContent = savedPaused
     ? 'Keine neuen Online-Bestellungen. Reset um Mitternacht.'
-    : ('Der Grill nimmt Bestellungen an.' + (savedWait ? ' · Wartezeit ~' + savedWait + ' Min' : ''));
+    : ('Der Grill nimmt Bestellungen an.' + (savedWaitAuto ? ' · Wartezeit automatisch' : (savedWait ? ' · Wartezeit ~' + savedWait + ' Min' : '')));
   $('ticketStamp').innerHTML = 'Stand<br>' + fmtDate(updatedAt);
 }
 function fmtDate(iso){
@@ -1184,6 +1346,7 @@ function updateSoldCounts(){
 }
 document.addEventListener('click', (e)=>{
   const wchip=e.target.closest('#waitChips .chip');
+  if(wchip && $('waitAutoToggle').checked) return;   // Von Hand wirkt nur bei AUS
   if(wchip){
     document.querySelectorAll('#waitChips .chip').forEach(c=>c.setAttribute('aria-pressed', c===wchip?'true':'false'));
     setDirty(true);
@@ -1249,11 +1412,14 @@ async function loadStatusRun(){
     updateModeCard();
     $('specialSelect').value=(s.special&&s.special.id)||'';
     $('specialNote').value=(s.special&&s.special.note)||'';
-    const wt=parseInt(s.waitTime,10)||0;
+    // waitManual = Wert von Hand; waitTime ist bei Automatik der gerechnete
+    const wt=parseInt(s.waitManual!=null?s.waitManual:s.waitTime,10)||0;
     document.querySelectorAll('#waitChips .chip').forEach(c=>c.setAttribute('aria-pressed', parseInt(c.dataset.wait,10)===wt?'true':'false'));
+    savedWaitAuto=!!s.waitAuto;
+    waitAutoSetzen(s);
     renderItems(s.soldOut||[]);
     updatePreview();
-    paintTicket(s.paused, s.updatedAt, s.waitTime);
+    paintTicket(s.paused, s.updatedAt, wt);
     setDirty(false);
     statusLoaded=true;
     return true;
@@ -1285,6 +1451,7 @@ async function save(){
     pickupOff: !$('pickupToggle').checked,
     soldOut: collectSoldOut(),
     waitTime: (()=>{ const c=document.querySelector('#waitChips .chip[aria-pressed="true"]'); return c?parseInt(c.dataset.wait,10)||0:0; })(),
+    ...waitAutoWerte(),
     special: $('specialSelect').value
       ? { id: $('specialSelect').value, note: $('specialNote').value.trim() }
       : null,
@@ -1309,7 +1476,7 @@ async function save(){
     toast('Gespeichert','ok');
     // Waehrend des Speicherns geaendert: Leiste bleibt sichtbar, die neue Aenderung ist noch offen.
     if(REV===rev) setDirty(false);
-    if(data.status) paintTicket(data.status.paused, data.status.updatedAt, data.status.waitTime);
+    if(data.status){ savedWaitAuto=!!data.status.waitAuto; paintTicket(data.status.paused, data.status.updatedAt, data.status.waitTime); }
   }catch(e){
     toast('Netzwerkfehler – bitte erneut versuchen','err');
   }finally{
@@ -1352,6 +1519,7 @@ function resetPanelState(){
   document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('hidden', p.id!=='pane-today'));
   try{ stopScan(); }catch(e){}
   try{ devReset(); }catch(e){}
+  try{ bfZuruecksetzen(); }catch(e){}   // Neue Bestellung, Feedback, Wartezeit-Vorschau
 }
 function showLogin(){
   $('panelView').classList.add('hidden');
@@ -1455,6 +1623,8 @@ function applyRole(){
   $('tabTeam').classList.toggle('hidden',staff);
   // Rechnungen enthalten Kunden- und Umsatzdaten – nur Admins
   $('tabInvoices').classList.toggle('hidden',staff);
+  // Feedback: Admins und Inhaber (feedback.js lehnt Mitarbeiter ab)
+  $('tabFeedback').classList.toggle('hidden',staff);
   const b=document.querySelector('.hdr .brand small');
   if(b) b.textContent = currentName ? ('Angemeldet: '+currentName+(staff?' · Mitarbeiter':(currentRole==='superadmin'?' · Superadmin':' · Admin'))) : "Grill'n Chill · Bielefeld";
 }
@@ -2053,6 +2223,7 @@ const ORD_FILTERS=[
   {key:'delivery',label:'Lieferung',      test:r=>((r.order||{}).mode==='delivery')&&r.status==='completed'},
   {key:'preorder',label:'Vorbestellung',  test:r=>{const o=r.order||{};return !!(o.isPreorder||o.scheduledFor)&&r.status==='completed';}},
   {key:'cash',    label:'Bar/EC vor Ort', test:r=>((r.order||{}).payment!=='sumup')&&r.status==='completed'},
+  {key:'intern',  label:'Telefon & Truck',test:r=>(r.quelle==='telefon'||r.quelle==='truck')&&r.status==='completed'},
   {key:'ended',   label:'Storniert & Co.',test:r=>['abandoned','cancelled','refunded'].includes(r.status)},
 ];
 function ordFilterTest(r){
@@ -2087,7 +2258,9 @@ function renderOrders(){
     if(!q) return true;
     const o=r.order||{};
     const g=r.gift||{};
-    return (r.reference||'').toLowerCase().includes(q)
+    const nrQ=q.replace(/^(nr\.?|#)\s*/,'');
+    return (r.abholnr && /^\d+$/.test(nrQ) && String(r.abholnr)===nrQ)
+      || (r.reference||'').toLowerCase().includes(q)
       || (o.name||'').toLowerCase().includes(q)
       || (o.phone||'').toLowerCase().includes(q)
       || (g.buyerName||'').toLowerCase().includes(q)
@@ -2110,17 +2283,22 @@ function renderOrders(){
     ).join('');
     // "Gast ist da": nur solange die Bestellung nicht abgeholt/geliefert ist
     const angekommen=!!r.arrivedAt && !['picked_up','delivered'].includes(r.fstate) && !['cancelled','refunded'].includes(r.status);
+    const intern=r.quelle==='telefon'||r.quelle==='truck';
     const badges=[
       angekommen ? '<span class="bdg arrived">Gast ist da · '+esc2(ordTime(r.arrivedAt).t)+'</span>' : '',
+      r.quelle==='telefon' ? '<span class="bdg bf-quelle">Telefon</span>' : (r.quelle==='truck' ? '<span class="bdg bf-quelle">Truck</span>' : ''),
       o.mode==='delivery' ? '<span class="bdg delivery">Lieferung</span>' : '<span class="bdg">Abholung</span>',
       o.isPreorder||o.scheduledFor ? '<span class="bdg pre">Vorbestellung</span>' : '',
-      o.payment==='sumup' ? '<span class="bdg online">Online bezahlt</span>' : '<span class="bdg">Bar/EC vor Ort</span>',
+      intern ? zahlartBadge(o) : (o.payment==='sumup' ? '<span class="bdg online">Online bezahlt</span>' : '<span class="bdg">Bar/EC vor Ort</span>'),
       r.status==='pending' ? '<span class="bdg pending">Zahlung offen</span>' : '',
       r.status==='abandoned' ? '<span class="bdg abandoned">Abgebrochen</span>' : '',
       r.status==='cancelled' ? '<span class="bdg abandoned">Storniert</span>' : '',
       r.status==='refunded' ? '<span class="bdg refund">Rückerstattet</span>' : '',
     ].join('');
     const meta=[
+      r.abholnr?('Abholnummer: <b>Nr. '+esc2(r.abholnr)+'</b>'+(r.abholTag&&r.abholTag!==ordTag(r)?' für '+esc2(tagKurz(r.abholTag)):'')):'',
+      r.angelegtVon?('Angelegt von: <b>'+esc2(r.angelegtVon)+'</b>'):'',
+      intern&&o.zahlart?('Zahlung: <b>'+esc2(o.zahlart==='offen'?'offen, beim Abholen kassieren':(o.paidWith||o.zahlart))+'</b>'):'',
       o.phone?('Telefon: <b>'+esc2(o.phone)+'</b>'):'',
       o.email?('E-Mail: <b>'+esc2(o.email)+'</b>'):'',
       (o.mode==='delivery'&&o.deliveryAddress)?('Adresse: <b>'+esc2([o.deliveryAddress.street,(o.deliveryAddress.zip||'')+' '+(o.deliveryAddress.city||'')].filter(Boolean).join(', ').trim())+'</b>'):'',
@@ -2135,7 +2313,8 @@ function renderOrders(){
     return '<div class="ord'+(angekommen?' arrived':'')+'" data-ref="'+esc2(r.reference)+'"'+(PENDING.has(r.reference)?' aria-busy="true"':'')+'>'
       +'<div class="ord-head" data-toggle>'
       +'<div class="ord-when">'+when.d+'<br>'+when.t+'</div>'
-      +'<div class="ord-main"><div class="ord-name">'+esc2(o.name||'–')+'</div>'
+      +(r.abholnr?'<div class="bf-ord-nr" aria-label="Abholnummer '+esc2(r.abholnr)+'"><small>Nr.</small>'+esc2(r.abholnr)+'</div>':'')
+      +'<div class="ord-main"><div class="ord-name">'+esc2(o.name||(r.quelle==='truck'?'Laufkundschaft':(r.quelle==='telefon'?'Telefonbestellung':'–')))+'</div>'
       +'<div class="ord-ref">#'+esc2(r.reference)+'</div>'
       +'<div class="badges">'+badges+'</div></div>'
       +'<div class="ord-sum">'+euro(o.total)+'</div>'
@@ -2225,6 +2404,16 @@ function buildOrdActions(r){
     btns.push(b('','check','Zahlung prüfen'));
     btns.push(b('primary','complete',completeLabel));
     btns.push(b('','cancel','Stornieren'));
+  }
+  // Telefon/Truck (bestellung-intern.js): offene Zahlung kassieren, Eingabefehler stornieren
+  if(r.status==='completed' && (r.quelle==='telefon'||r.quelle==='truck')){
+    const ib=(cls,akt,label)=>{
+      const busy=pend==='intern:'+akt;
+      return '<button type="button" class="abtn'+(cls?' '+cls:'')+(busy?' is-busy busy-shown':'')+'" data-intern="'+akt+'" data-ref="'+esc2(r.reference)+'"'
+        +(pend?' disabled':'')+(busy?' aria-busy="true" style="--busy-ink:'+(cls==='primary'?'#fff':'var(--cream)')+'"':'')+'>'+label+(busy?BUSY_SPIN:'')+'</button>';
+    };
+    if((r.order||{}).zahlart==='offen'){ btns.push(ib('primary','bar','Bar kassiert')); btns.push(ib('','karte','Karte kassiert')); }
+    btns.push(ib('','storno','Stornieren (Eingabefehler)'));
   }
   if(istAdmin() && r.status==='completed'){
     btns.push(b('danger','refund','Als rückerstattet markieren'));
@@ -2427,13 +2616,13 @@ $('ordSearch').addEventListener('input',renderOrders);
 $('ordReload').addEventListener('click',()=>loadOrders()); // ohne Event-Arg – sonst wuerde silent=true die Fehlermeldungen unterdruecken
 $('ordCsv').addEventListener('click',()=>{
   if(!ORDERS.length){ toast('Keine Daten zum Export','err'); return; }
-  const rows=[['Datum','Uhrzeit','Bestellnr','Status','Name','Telefon','Modus','Zahlung','Summe','Artikel']];
+  const rows=[['Datum','Uhrzeit','Bestellnr','Abholnr','Quelle','Status','Name','Telefon','Modus','Zahlung','Summe','Artikel']];
   ORDERS.forEach(r=>{
     const o=r.order||{};
     const w=ordTime(r.completedAt||r.createdAt);
-    rows.push([w.d,w.t,r.reference,r.status,(o.name||''),(o.phone||''),
+    rows.push([w.d,w.t,r.reference,(r.abholnr||''),({telefon:'Telefon',truck:'Truck'})[r.quelle]||'Online',r.status,(o.name||''),(o.phone||''),
       o.mode==='delivery'?'Lieferung':'Abholung',
-      o.payment==='sumup'?'Online':'Bar/EC',
+      o.payment==='sumup'?'Online':(o.zahlart?({bar:'Bar',karte:'Karte',offen:'Offen'})[o.zahlart]:'Bar/EC'),
       String(o.total||'').replace('.',','),
       (o.items||[]).map(it=>it.qty+'x '+it.name).join(' | ')]);
   });
@@ -3542,6 +3731,560 @@ if(saved){
     if(btn) setTimeout(()=>btn.click(),80);
   }
 })();
+</script>
+<script src="/speisekarte.js"></script>
+<script>
+/* =====================================================================
+   PAKET BESTELLFLUSS
+   1. Wartezeit automatisch (Heute → Live-Wartezeit; shop-status.js)
+   2. Neue Bestellung für Telefon und Truck (bestellung-intern.js)
+   3. Interne Bestellungen kassieren und stornieren (Bestellungen)
+   4. Reiter Feedback (feedback.js)
+   Nutzt aus dem Hauptskript: $, currentPw, toast, esc2, euro, gncBusy,
+   withBusy, ORDERS, renderOrders, loadOrders, ordersLoaded, PENDING,
+   ORD_TOUCHED, ordAfterPending, setDirty, sperreGemeldet, listBusy, API.
+   ===================================================================== */
+const SKA = window.SPEISEKARTE || null;
+const BF_SVG = {
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>',
+  weg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg>',
+  zu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  kopie: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+  stern: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6-5.38-2.83-5.38 2.83 1.03-6L3.3 9.6l6-.9z"/></svg>',
+  sternLeer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6-5.38-2.83-5.38 2.83 1.03-6L3.3 9.6l6-.9z"/></svg>',
+};
+
+/* ---- Hilfen für die Bestellliste ---- */
+const BF_TAG = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' });
+function ordTag(r) {
+  try { return BF_TAG.format(new Date(r.createdAt || r.completedAt || 0)); } catch (e) { return ''; }
+}
+function tagKurz(tag) {
+  const d = new Date(String(tag) + 'T12:00:00Z');
+  if (isNaN(d)) return String(tag || '');
+  return ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d.getUTCDay()] + ' ' + tag.slice(8, 10) + '.' + tag.slice(5, 7) + '.';
+}
+function zahlartBadge(o) {
+  if (o.zahlart === 'offen') return '<span class="bdg bf-offen">Zahlung offen</span>';
+  if (o.zahlart === 'karte') return '<span class="bdg bf-bezahlt">Karte bezahlt</span>';
+  return '<span class="bdg bf-bezahlt">Bar bezahlt</span>';
+}
+
+/* =====================================================================
+   1. WARTEZEIT AUTOMATISCH
+   ===================================================================== */
+let waBurger = null, waOffen = true, waFehler = false, waSeq = 0, waTimer = null;
+function waZahl(id, min, max, std) {
+  const n = parseInt($(id).value, 10);
+  return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : std;
+}
+function waitAutoWerte() {
+  return {
+    waitAuto: $('waitAutoToggle').checked,
+    waitBase: waZahl('waitBase', 0, 60, 10),
+    waitPerBurger: waZahl('waitPerBurger', 0, 15, 3),
+    waitMax: waZahl('waitMax', 5, 120, 60),
+  };
+}
+function waRechne(w, burger) {
+  return Math.max(0, Math.min(w.waitMax, Math.round((w.waitBase + burger * w.waitPerBurger) / 5) * 5));
+}
+/* Aus dem Serverstand (GET /shop-status) eintragen */
+function waitAutoSetzen(s) {
+  $('waitAutoToggle').checked = !!s.waitAuto;
+  $('waitBase').value = Number.isFinite(+s.waitBase) ? s.waitBase : 10;
+  $('waitPerBurger').value = Number.isFinite(+s.waitPerBurger) ? s.waitPerBurger : 3;
+  $('waitMax').value = Number.isFinite(+s.waitMax) ? s.waitMax : 60;
+  if (Number.isFinite(+s.offeneBurger)) waBurger = +s.offeneBurger;
+  waMalen();
+  waVorschauLaden();
+}
+function waMalen() {
+  const an = $('waitAutoToggle').checked;
+  $('waitCard').classList.toggle('auto-an', an);
+  const chips = $('waitChips');
+  chips.classList.toggle('gesperrt', an);
+  chips.querySelectorAll('.chip').forEach((c) => c.setAttribute('aria-disabled', an ? 'true' : 'false'));
+  $('waitHandHint').textContent = an
+    ? 'Gilt nur, wenn die Automatik aus ist.'
+    : 'Wird Kunden auf der Website angezeigt („Aktuelle Wartezeit: ca. X Min."). Bei viel Betrieb hochsetzen. Ab Mitternacht automatisch wieder aus.';
+  const v = $('waitVorschau');
+  v.classList.toggle('leise', waBurger === null);
+  if (waBurger === null) { v.textContent = waFehler ? 'Vorschau gerade nicht möglich.' : 'Vorschau wird geladen …'; return; }
+  const w = waitAutoWerte();
+  const min = waRechne(w, waBurger);
+  const burger = waBurger === 1 ? '1 offener Burger' : waBurger + ' offene Burger';
+  if (!waOffen) {
+    v.textContent = 'Gerade geschlossen, Kunden sehen keine Wartezeit. Mit ' + burger + ' wären es ' + min + ' Min.';
+  } else {
+    v.textContent = (an ? 'Jetzt sind es ' : 'Jetzt wären es ') + min + ' Min. (' + burger + ')';
+  }
+}
+async function waVorschauLaden() {
+  if (!currentPw) return;
+  const seq = ++waSeq;
+  try {
+    const res = await fetch(API, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: currentPw, action: 'vorschau' }),
+    });
+    if (seq !== waSeq) return;
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !Number.isFinite(+d.offeneBurger)) throw new Error('vorschau');
+    waBurger = +d.offeneBurger; waOffen = d.offen !== false; waFehler = false;
+  } catch (e) {
+    if (seq !== waSeq) return;
+    waFehler = true;
+  }
+  waMalen();
+}
+$('waitAutoToggle').addEventListener('change', () => { waMalen(); setDirty(true); });
+['waitBase', 'waitPerBurger', 'waitMax'].forEach((id) => $(id).addEventListener('input', () => { waMalen(); setDirty(true); }));
+// Vorschau jede Minute auffrischen, solange „Heute" offen ist
+waTimer = setInterval(() => {
+  if (document.hidden || $('panelView').classList.contains('hidden') || $('pane-today').classList.contains('hidden')) return;
+  waVorschauLaden();
+}, 60000);
+
+/* =====================================================================
+   2. NEUE BESTELLUNG (Telefon, Truck)
+   ===================================================================== */
+const BF_STANDARD_KACHELN = ['cheese', 'classic', 'crispy', 'chilicheese', 'kubis', 'pommes', 'nug9', 'fritz-kola'];
+const BF = { offen: false, quelle: 'telefon', mode: 'pickup', zone: 0, zahlart: 'bar', zeilen: [], naechsteId: 1, opener: null, ergebnis: null };
+function bfItem(id) { return SKA ? SKA.MENU.find((m) => m.id === id) : null; }
+function bfName(id) { const m = bfItem(id); return m ? m.name : id; }
+function bfKurz(id) { return bfName(id).replace(/^(Dip|Sos):\s*/, ''); }
+function bfKurzGetraenk(id) { return bfName(id).replace(/^Fritz\s+/, ''); }
+function bfIstBurger(m) { return !!m && m.cat === 'burger'; }
+function bfDoubleMoeglich(m) { return bfIstBurger(m) && SKA.DOUBLE_PATTY_EXCLUDE_IDS.indexOf(m.id) === -1; }
+function bfZeilenpreis(z) { return SKA.einzelpreis({ menuId: z.menuId, double: z.double, isMenu: z.isMenu, side: z.side }) * z.qty; }
+function bfSumme() {
+  const w = BF.zeilen.reduce((x, z) => x + bfZeilenpreis(z), 0);
+  const zone = SKA.DELIVERY_ZONES[BF.zone] || SKA.DELIVERY_ZONES[0];
+  const fee = BF.mode === 'delivery' ? zone.fee : 0;
+  return { w, fee, total: SKA.gesamtbetrag({ warenwert: w, liefergebuehr: fee }), zone };
+}
+function bfAusverkauft() {
+  return new Set([...document.querySelectorAll('#itemsCard .chip[aria-pressed="true"]')].map((c) => c.dataset.id));
+}
+/* Kacheln: die häufigsten Artikel der geladenen Bestellungen (30 Tage),
+   aufgefüllt mit festen Rennern. Dips stehen nie als Kachel da. */
+function bfHaeufigste() {
+  const n = {};
+  (ORDERS || []).forEach((r) => {
+    const k = r.order && r.order.cartSnapshot;
+    if (!k || typeof k !== 'object') return;
+    Object.keys(k).forEach((key) => {
+      const e = k[key];
+      const m = e && bfItem(e.menuId);
+      if (!m || m.cat === 'dips') return;
+      n[m.id] = (n[m.id] || 0) + (parseInt(e.qty, 10) || 0);
+    });
+  });
+  const top = Object.keys(n).sort((a, b) => n[b] - n[a]);
+  BF_STANDARD_KACHELN.forEach((id) => { if (top.indexOf(id) === -1) top.push(id); });
+  return top.filter((id) => bfItem(id)).slice(0, 8);
+}
+function bfMelden(text) { const l = $('bfLive'); if (l) { l.textContent = ''; setTimeout(() => { l.textContent = text; }, 30); } }
+
+function bfOeffnen() {
+  if (!SKA) { toast('Speisekarte nicht geladen. Seite neu laden.', 'err'); return; }
+  if (!ordersLoaded) loadOrders(true);   // für die Kacheln der häufigsten Artikel
+  BF.opener = document.activeElement;
+  BF.offen = true;
+  BF.ergebnis = null;
+  bfAufbauen();
+  $('bfOv').hidden = false;
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => { const f = $('bfSuche'); if (f) f.focus(); }, 60);
+}
+function bfSchliessen(fragen) {
+  if (!BF.offen) return;
+  if (fragen && !BF.ergebnis && (BF.zeilen.length || ($('bfName') && $('bfName').value.trim())) && !confirm('Eingaben verwerfen?')) return;
+  BF.offen = false;
+  $('bfOv').hidden = true;
+  document.body.style.overflow = '';
+  bfLeeren();
+  if (BF.opener && BF.opener.isConnected) BF.opener.focus();
+}
+function bfLeeren() {
+  BF.zeilen = []; BF.mode = 'pickup'; BF.zone = 0; BF.zahlart = 'bar'; BF.ergebnis = null;
+}
+
+/* Gerüst einmal bauen; danach werden nur Teile neu gezeichnet, damit
+   Eingabefelder ihren Fokus behalten. */
+function bfAufbauen() {
+  const chip = (gruppe, wert, label, an) => '<button type="button" class="chip" data-bf="' + gruppe + '" data-wert="' + wert + '" aria-pressed="' + (an ? 'true' : 'false') + '">' + label + '</button>';
+  const zonen = SKA.DELIVERY_ZONES.map((z, i) => chip('zone', i, 'Zone ' + (i + 1) + ' · ' + euro(z.fee), BF.zone === i)).join('');
+  $('bfInhalt').innerHTML =
+    '<p class="sr-only" id="bfLive" aria-live="polite"></p>'
+    + '<div class="bf-abschnitt"><h3 id="bfQuelleT">Woher</h3><div class="chip-grid" role="group" aria-labelledby="bfQuelleT">'
+    + chip('quelle', 'telefon', 'Telefon', BF.quelle === 'telefon') + chip('quelle', 'truck', 'Am Truck', BF.quelle === 'truck') + '</div></div>'
+    + '<div class="bf-abschnitt"><h3><label for="bfSuche" style="margin:0;font:inherit;">Artikel</label></h3>'
+    + '<input type="search" id="bfSuche" placeholder="Suchen, z. B. Chili oder Pommes" autocomplete="off" enterkeyhint="search">'
+    + '<div id="bfTreffer"></div><div class="bf-kacheln" id="bfKacheln"></div></div>'
+    + '<div class="bf-abschnitt"><h3>Bestellung</h3><div class="bf-zeilen" id="bfZeilen"></div></div>'
+    + '<div class="bf-abschnitt"><h3 id="bfModeT">Abholung oder Lieferung</h3><div class="chip-grid" role="group" aria-labelledby="bfModeT" id="bfMode">'
+    + chip('mode', 'pickup', 'Abholung', BF.mode === 'pickup') + chip('mode', 'delivery', 'Lieferung', BF.mode === 'delivery') + '</div>'
+    + '<div id="bfLiefer" hidden style="margin-top:.8rem;">'
+    + '<div class="chip-grid" role="group" aria-label="Lieferzone" id="bfZonen" style="margin-bottom:.75rem;">' + zonen + '</div>'
+    + '<div class="bf-felder">'
+    + '<div class="field"><label for="bfStrasse">Straße und Nr.</label><input type="text" id="bfStrasse" autocomplete="off" maxlength="80"></div>'
+    + '<div class="field"><label for="bfPlz">PLZ</label><input type="text" id="bfPlz" inputmode="numeric" maxlength="5" autocomplete="off"></div>'
+    + '<div class="field"><label for="bfOrt">Ort</label><input type="text" id="bfOrt" value="Bielefeld" maxlength="60" autocomplete="off"></div>'
+    + '</div><p class="bf-hinweis" id="bfMindest" hidden></p></div></div>'
+    + '<div class="bf-abschnitt"><h3>Gast</h3><div class="bf-felder">'
+    + '<div class="field"><label for="bfName">Name (freiwillig)</label><input type="text" id="bfName" maxlength="60" autocomplete="off"></div>'
+    + '<div class="field"><label for="bfTel" id="bfTelLabel">Telefon (freiwillig)</label><input type="tel" id="bfTel" maxlength="30" autocomplete="off"></div>'
+    + '<div class="field"><label for="bfMail">E-Mail für die Bestätigung (freiwillig)</label><input type="email" id="bfMail" maxlength="120" autocomplete="off"></div>'
+    + '</div><div class="field" style="margin-top:.75rem;"><label for="bfNotiz">Notiz</label><textarea id="bfNotiz" maxlength="300" placeholder="z. B. ohne Zwiebeln, kommt um 18:30"></textarea></div></div>'
+    + '<div class="bf-abschnitt" style="margin-bottom:0;"><h3 id="bfZahlT">Zahlung</h3><div class="chip-grid" role="group" aria-labelledby="bfZahlT">'
+    + chip('zahlart', 'bar', 'Bar', BF.zahlart === 'bar') + chip('zahlart', 'karte', 'Karte (Terminal)', BF.zahlart === 'karte') + chip('zahlart', 'offen', 'Offen, zahlt beim Abholen', BF.zahlart === 'offen')
+    + '</div></div>';
+  $('bfFuss').innerHTML = '<p class="bf-fehler" id="bfFehler" role="alert"></p>'
+    + '<div class="bf-summe">Gesamt<b id="bfSumme">0,00 €</b></div>'
+    + '<button type="button" class="btn" id="bfAnlegen">Bestellung anlegen</button>';
+  $('bfSuche').addEventListener('input', bfTrefferMalen);
+  $('bfSuche').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const erster = document.querySelector('#bfTreffer [data-bf="add"]');
+    if (erster) erster.click();
+  });
+  ['bfStrasse', 'bfPlz', 'bfOrt', 'bfTel'].forEach((id) => $(id).addEventListener('input', () => $(id).removeAttribute('aria-invalid')));
+  $('bfAnlegen').addEventListener('click', bfAnlegen);
+  bfKachelnMalen(); bfTrefferMalen(); bfZeilenMalen(); bfModeMalen();
+}
+function bfKachelnMalen() {
+  const aus = bfAusverkauft();
+  $('bfKacheln').innerHTML = bfHaeufigste().map((id) => {
+    const m = bfItem(id);
+    return '<button type="button" class="bf-kachel" data-bf="add" data-id="' + id + '"><b>' + esc2(m.name) + '</b>'
+      + '<span>' + euro(m.price) + (aus.has(id) ? ' · <span class="bf-aus">ausverkauft</span>' : '') + '</span></button>';
+  }).join('');
+}
+function bfTrefferMalen() {
+  const q = ($('bfSuche').value || '').trim().toLowerCase();
+  const box = $('bfTreffer');
+  $('bfKacheln').hidden = !!q;
+  if (!q) { box.innerHTML = ''; return; }
+  const aus = bfAusverkauft();
+  const liste = SKA.MENU.filter((m) => (m.name + ' ' + (m.desc || '')).toLowerCase().indexOf(q) !== -1).slice(0, 10);
+  box.innerHTML = liste.length
+    ? '<ul class="bf-treffer">' + liste.map((m) => '<li><button type="button" data-bf="add" data-id="' + m.id + '">' + esc2(m.name)
+      + (aus.has(m.id) ? ' (ausverkauft)' : '') + '<span>' + euro(m.price) + '</span></button></li>').join('') + '</ul>'
+    : '<p class="bf-leer" style="margin-top:.6rem;">Nichts gefunden.</p>';
+}
+function bfOptChips(z, gruppe, liste) {
+  return '<div class="chip-grid">' + liste.map((o) => '<button type="button" class="chip" data-bf="' + gruppe + '" data-z="' + z.id + '" data-wert="' + o[0] + '" aria-pressed="' + (z[gruppe] === o[0] ? 'true' : 'false') + '">' + esc2(o[1]) + '</button>').join('') + '</div>';
+}
+function bfZeilenMalen() {
+  const box = $('bfZeilen');
+  if (!BF.zeilen.length) { box.innerHTML = '<p class="bf-leer">Noch nichts gewählt. Tipp oben auf einen Artikel.</p>'; bfSummeMalen(); return; }
+  box.innerHTML = BF.zeilen.map((z) => {
+    const m = bfItem(z.menuId);
+    let titel = m.name + (z.isMenu ? '-Menü' : '') + (z.double ? ' (Double Patty)' : '');
+    let opt = '';
+    if (bfIstBurger(m)) {
+      opt += '<div class="chip-grid">'
+        + (bfDoubleMoeglich(m) ? '<button type="button" class="chip" data-bf="double" data-z="' + z.id + '" aria-pressed="' + (z.double ? 'true' : 'false') + '">Double Patty +' + euro(SKA.DOUBLE_PATTY_PRICE) + '</button>' : '')
+        + '<button type="button" class="chip" data-bf="menu" data-z="' + z.id + '" aria-pressed="' + (z.isMenu ? 'true' : 'false') + '">Als Menü +' + euro(SKA.MENU_SURCHARGE) + '</button></div>';
+      if (z.isMenu) {
+        opt += '<div><div class="bf-opt-titel">Beilage</div>' + bfOptChips(z, 'side', SKA.MENU_SIDE_OPTIONS.map((s) => [s.id, s.label + (s.surcharge ? ' +' + euro(s.surcharge) : '')])) + '</div>'
+          + '<div><div class="bf-opt-titel">Getränk</div>' + bfOptChips(z, 'drink', SKA.MENU_DRINK_IDS.map((id) => [id, bfKurzGetraenk(id)])) + '</div>'
+          + '<div><div class="bf-opt-titel">Dip</div>' + bfOptChips(z, 'dip', SKA.MENU_DIP_IDS.map((id) => [id, bfKurz(id)])) + '</div>';
+      }
+    } else if (m.includesDip) {
+      opt += '<div><div class="bf-opt-titel">Dip inklusive</div>' + bfOptChips(z, 'dip', SKA.MENU_DIP_IDS.map((id) => [id, bfKurz(id)])) + '</div>';
+    }
+    return '<div class="bf-zeile" data-zeile="' + z.id + '">'
+      + '<div class="bf-zeile-kopf"><b>' + esc2(titel) + '</b><span>' + euro(bfZeilenpreis(z)) + '</span></div>'
+      + (opt ? '<div class="bf-optionen">' + opt + '</div>' : '')
+      + '<div class="bf-menge">'
+      + '<button type="button" data-bf="minus" data-z="' + z.id + '" aria-label="Eins weniger: ' + esc2(titel) + '">' + BF_SVG.minus + '</button>'
+      + '<output aria-label="Menge">' + z.qty + '</output>'
+      + '<button type="button" data-bf="plus" data-z="' + z.id + '" aria-label="Eins mehr: ' + esc2(titel) + '">' + BF_SVG.plus + '</button>'
+      + '<button type="button" class="bf-weg" data-bf="weg" data-z="' + z.id + '" aria-label="Entfernen: ' + esc2(titel) + '">' + BF_SVG.weg + '</button>'
+      + '</div></div>';
+  }).join('');
+  bfSummeMalen();
+}
+function bfModeMalen() {
+  const lief = BF.mode === 'delivery';
+  $('bfLiefer').hidden = !lief;
+  $('bfTelLabel').textContent = lief ? 'Telefon (Pflicht bei Lieferung)' : 'Telefon (freiwillig)';
+  document.querySelectorAll('#bfMode .chip').forEach((c) => c.setAttribute('aria-pressed', c.dataset.wert === BF.mode ? 'true' : 'false'));
+  document.querySelectorAll('#bfZonen .chip').forEach((c) => c.setAttribute('aria-pressed', +c.dataset.wert === BF.zone ? 'true' : 'false'));
+  bfSummeMalen();
+}
+function bfSummeMalen() {
+  const su = bfSumme();
+  if ($('bfSumme')) $('bfSumme').textContent = euro(su.total);
+  const h = $('bfMindest');
+  if (h) {
+    const zuWenig = BF.mode === 'delivery' && su.w > 0 && su.w < su.zone.minOrder;
+    h.hidden = !zuWenig;
+    if (zuWenig) h.textContent = 'Online gilt in dieser Zone ein Mindestbestellwert von ' + euro(su.zone.minOrder) + '. Hier entscheidest du selbst.';
+  }
+}
+function bfZeile(id) { return BF.zeilen.find((z) => z.id === +id); }
+function bfHinzu(menuId) {
+  const m = bfItem(menuId);
+  if (!m) return;
+  const dip = m.includesDip ? SKA.MENU_DIP_IDS[0] : null;
+  // Gleiche schlichte Zeile vorhanden: Menge hoch statt neuer Zeile
+  const gleich = BF.zeilen.find((z) => z.menuId === menuId && !z.isMenu && !z.double && z.dip === dip);
+  if (gleich) gleich.qty = Math.min(99, gleich.qty + 1);
+  else BF.zeilen.push({ id: BF.naechsteId++, menuId, qty: 1, double: false, isMenu: false, side: SKA.MENU_SIDE_OPTIONS[0].id, drink: SKA.MENU_DRINK_IDS[0], dip });
+  bfZeilenMalen();
+  bfMelden(m.name + ' hinzugefügt');
+  const f = $('bfFehler'); if (f) f.textContent = '';
+}
+$('bfOv').addEventListener('click', (e) => {
+  if (e.target === $('bfOv')) { bfSchliessen(true); return; }
+  const b = e.target.closest('[data-bf]');
+  if (!b) return;
+  const art = b.dataset.bf, z = b.dataset.z ? bfZeile(b.dataset.z) : null;
+  if (art === 'add') { bfHinzu(b.dataset.id); if ($('bfSuche').value) { $('bfSuche').value = ''; bfTrefferMalen(); $('bfSuche').focus(); } return; }
+  if (art === 'quelle') { BF.quelle = b.dataset.wert; document.querySelectorAll('[data-bf="quelle"]').forEach((c) => c.setAttribute('aria-pressed', c === b ? 'true' : 'false')); return; }
+  if (art === 'zahlart') { BF.zahlart = b.dataset.wert; document.querySelectorAll('[data-bf="zahlart"]').forEach((c) => c.setAttribute('aria-pressed', c === b ? 'true' : 'false')); return; }
+  if (art === 'mode') { BF.mode = b.dataset.wert; bfModeMalen(); return; }
+  if (art === 'zone') { BF.zone = +b.dataset.wert; bfModeMalen(); return; }
+  if (art === 'neu') { BF.ergebnis = null; bfLeeren(); bfAufbauen(); $('bfSuche').focus(); return; }
+  if (art === 'fertig') { bfSchliessen(false); return; }
+  if (art === 'kopieren') { bfKopieren(b); return; }
+  if (!z) return;
+  if (art === 'plus') z.qty = Math.min(99, z.qty + 1);
+  else if (art === 'minus') { z.qty -= 1; if (z.qty < 1) BF.zeilen = BF.zeilen.filter((x) => x !== z); }
+  else if (art === 'weg') BF.zeilen = BF.zeilen.filter((x) => x !== z);
+  else if (art === 'double') z.double = !z.double;
+  else if (art === 'menu') {
+    z.isMenu = !z.isMenu;
+    // Menü hat immer einen Dip; ein einzelner Burger nie
+    if (z.isMenu && !z.dip) z.dip = SKA.MENU_DIP_IDS[0];
+    if (!z.isMenu && !(bfItem(z.menuId) || {}).includesDip) z.dip = null;
+  }
+  else if (art === 'side' || art === 'drink' || art === 'dip') z[art] = b.dataset.wert;
+  const fokus = (art === 'plus' || art === 'minus') && BF.zeilen.indexOf(z) !== -1 ? '[data-bf="' + art + '"][data-z="' + z.id + '"]' : null;
+  bfZeilenMalen();
+  if (fokus && document.querySelector(fokus)) document.querySelector(fokus).focus();
+  else if (art === 'weg' || art === 'minus') $('bfSuche').focus();
+  else if (b.dataset.z) { const n = document.querySelector('[data-bf="' + art + '"][data-z="' + b.dataset.z + '"]' + (b.dataset.wert ? '[data-wert="' + b.dataset.wert + '"]' : '')); if (n) n.focus(); }
+});
+$('bfZu').addEventListener('click', () => bfSchliessen(true));
+$('bfNeuBtn').addEventListener('click', bfOeffnen);
+document.addEventListener('keydown', (e) => {
+  if (!BF.offen) return;
+  if (e.key === 'Escape') { e.preventDefault(); bfSchliessen(true); return; }
+  if (e.key !== 'Tab') return;
+  // Fokus im Blatt halten
+  const fokusierbar = [...$('bfOv').querySelectorAll('button:not([disabled]),input:not([disabled]),textarea,select,a[href]')].filter((x) => x.offsetParent !== null);
+  if (!fokusierbar.length) return;
+  const erster = fokusierbar[0], letzter = fokusierbar[fokusierbar.length - 1];
+  if (e.shiftKey && document.activeElement === erster) { e.preventDefault(); letzter.focus(); }
+  else if (!e.shiftKey && document.activeElement === letzter) { e.preventDefault(); erster.focus(); }
+});
+
+function bfPruefen() {
+  const fehler = [];
+  ['bfStrasse', 'bfPlz', 'bfOrt', 'bfTel', 'bfMail'].forEach((id) => $(id).removeAttribute('aria-invalid'));
+  if (!BF.zeilen.length) fehler.push(['bfSuche', 'Mindestens einen Artikel wählen.']);
+  if (BF.mode === 'delivery') {
+    if ($('bfStrasse').value.trim().length < 3) fehler.push(['bfStrasse', 'Straße fehlt.']);
+    if (!/^\d{5}$/.test($('bfPlz').value.trim())) fehler.push(['bfPlz', 'PLZ mit 5 Ziffern.']);
+    if ($('bfOrt').value.trim().length < 2) fehler.push(['bfOrt', 'Ort fehlt.']);
+    if ($('bfTel').value.replace(/\D/g, '').length < 5) fehler.push(['bfTel', 'Lieferung braucht eine Telefonnummer.']);
+  }
+  const mail = $('bfMail').value.trim();
+  if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)) fehler.push(['bfMail', 'E-Mail-Adresse prüfen oder leer lassen.']);
+  fehler.forEach((f) => { if (f[0] !== 'bfSuche') $(f[0]).setAttribute('aria-invalid', 'true'); });
+  return fehler;
+}
+const BF_FEHLER = {
+  adresse_fehlt: 'Lieferung braucht Straße, PLZ und Ort.', telefon_fehlt: 'Lieferung braucht eine Telefonnummer.',
+  telefon_ungueltig: 'Telefonnummer prüfen.', mail_ungueltig: 'E-Mail-Adresse prüfen oder leer lassen.',
+  korb_leer: 'Mindestens einen Artikel wählen.', zone_fehlt: 'Lieferzone wählen.',
+};
+async function bfAnlegen() {
+  const btn = $('bfAnlegen');
+  if (btn.classList.contains('is-busy')) return;
+  const fehler = bfPruefen();
+  if (fehler.length) {
+    $('bfFehler').textContent = fehler.map((f) => f[1]).join(' ');
+    const ziel = $(fehler[0][0]); if (ziel) ziel.focus();
+    return;
+  }
+  $('bfFehler').textContent = '';
+  const lief = BF.mode === 'delivery';
+  const body = {
+    password: currentPw, action: 'anlegen',
+    bestellung: {
+      quelle: BF.quelle, mode: BF.mode, zahlart: BF.zahlart,
+      korb: BF.zeilen.map((z) => ({ menuId: z.menuId, qty: z.qty, double: z.double, isMenu: z.isMenu, side: z.side, drink: z.drink, dip: z.dip })),
+      zone: lief ? BF.zone : undefined,
+      adresse: lief ? { street: $('bfStrasse').value.trim(), zip: $('bfPlz').value.trim(), city: $('bfOrt').value.trim() } : undefined,
+      name: $('bfName').value.trim(), phone: $('bfTel').value.trim(), email: $('bfMail').value.trim(), note: $('bfNotiz').value.trim(),
+    },
+  };
+  await withBusy(btn, async () => {
+    try {
+      const res = await fetch('/.netlify/functions/bestellung-intern', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+      });
+      if (sperreGemeldet(res)) return;
+      const d = await res.json().catch(() => ({}));
+      if (res.status === 401) { $('bfFehler').textContent = 'Anmeldung abgelaufen. Bitte neu anmelden.'; return; }
+      if (!res.ok) { $('bfFehler').textContent = BF_FEHLER[d.error] || d.hint || 'Bestellung wurde nicht angelegt. Bitte noch einmal versuchen.'; return; }
+      BF.ergebnis = d;
+      bfErgebnisMalen(d);
+      if (typeof loadOrders === 'function') loadOrders(true);
+    } catch (e) {
+      $('bfFehler').textContent = 'Keine Verbindung. Bestellung wurde nicht angelegt.';
+    }
+  });
+}
+function bfErgebnisMalen(d) {
+  const nr = Number.isInteger(d.abholnr) ? d.abholnr : null;
+  $('bfInhalt').innerHTML = '<div class="bf-ergebnis" role="status">'
+    + '<div class="bf-label">' + (BF.mode === 'delivery' ? 'Nummer für heute' : 'Abholnummer') + '</div>'
+    + (nr ? '<div class="bf-nr">Nr. ' + nr + '</div>' : '<p style="color:var(--amber);font-weight:700;">Keine Nummer vergeben. Bestellnummer #' + esc2(d.reference) + ' nutzen.</p>')
+    + '<p>' + euro(d.total) + ' · ' + ({ bar: 'Bar bezahlt', karte: 'Karte bezahlt', offen: 'Zahlung offen' })[BF.zahlart] + ' · ' + (BF.quelle === 'telefon' ? 'Telefon' : 'Truck') + '</p>'
+    + '<p style="font-family:var(--mono);font-size:.72rem;">#' + esc2(d.reference) + '</p>'
+    + (d.mailed ? '<p>Bestätigung an den Gast ist raus.</p>' : '')
+    + (d.statusUrl ? '<button type="button" class="bf-pille" data-bf="kopieren" data-url="' + esc2(d.statusUrl) + '">' + BF_SVG.kopie + 'Statuslink kopieren</button>' : '')
+    + '</div>';
+  $('bfFuss').innerHTML = '<button type="button" class="btn-ghost" data-bf="fertig">Fertig</button>'
+    + '<button type="button" class="btn" data-bf="neu">Nächste Bestellung</button>';
+  const neu = document.querySelector('#bfFuss [data-bf="neu"]');
+  if (neu) neu.focus();
+}
+async function bfKopieren(b) {
+  try { await navigator.clipboard.writeText(b.dataset.url); toast('Statuslink kopiert', 'ok'); }
+  catch (e) { prompt('Statuslink:', b.dataset.url); }
+}
+
+/* =====================================================================
+   3. INTERNE BESTELLUNGEN: KASSIEREN, STORNIEREN
+   ===================================================================== */
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-intern]');
+  if (!b) return;
+  const ref = b.dataset.ref, akt = b.dataset.intern;
+  if (PENDING.has(ref)) return;
+  if (akt === 'storno' && !confirm('#' + ref + ' stornieren?\n\nNur für Eingabefehler. Die Bestellung verschwindet aus Liste, Cockpit und Tagesumsatz.')) return;
+  PENDING.set(ref, 'intern:' + akt);
+  renderOrders();
+  try {
+    const res = await fetch('/.netlify/functions/bestellung-intern', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(akt === 'storno'
+        ? { password: currentPw, action: 'stornieren', reference: ref }
+        : { password: currentPw, action: 'bezahlt', reference: ref, zahlart: akt }),
+    });
+    if (sperreGemeldet(res)) return;
+    const d = await res.json().catch(() => ({}));
+    if (res.status === 401) { toast('Anmeldung abgelaufen. Bitte neu anmelden.', 'err'); return; }
+    if (!res.ok) { toast(d.hint || 'Aktion fehlgeschlagen', 'err'); return; }
+    const o = ORDERS.find((x) => x.reference === ref);
+    if (akt === 'storno') {
+      ORDERS = ORDERS.filter((x) => x.reference !== ref);
+      toast('Storniert', 'ok');
+    } else if (o && o.order) {
+      o.order.zahlart = akt; o.order.bezahlt = true; o.order.paidWith = akt === 'bar' ? 'Bar' : 'Karte (SumUp-Terminal)';
+      toast(akt === 'bar' ? 'Bar kassiert' : 'Karte kassiert', 'ok');
+    }
+    ORD_TOUCHED.set(ref, Date.now());
+  } catch (err) {
+    toast('Netzwerkfehler', 'err');
+  } finally {
+    PENDING.delete(ref);
+    ordAfterPending();
+  }
+});
+
+/* =====================================================================
+   4. FEEDBACK
+   ===================================================================== */
+let FB_DATEN = null, fbSeq = 0, fbFilter = 'alle';
+function fbSterne(n) {
+  let h = '';
+  for (let i = 1; i <= 5; i++) h += i <= n ? BF_SVG.stern : BF_SVG.sternLeer;
+  return h;
+}
+async function fbLaden() {
+  const seq = ++fbSeq;
+  const rb = $('fbReload'); rb.classList.add('spin');
+  if (FB_DATEN) listBusy($('fbOut'), true);
+  else $('fbOut').innerHTML = skelRows(3, 70, 'Feedback wird geladen …');
+  try {
+    const res = await fetch('/.netlify/functions/feedback', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'liste', password: currentPw }),
+    });
+    if (seq !== fbSeq) return;
+    if (sperreGemeldet(res, 'fbOut')) return;
+    const d = await res.json().catch(() => ({}));
+    if (res.status === 401) { $('fbOut').innerHTML = '<p class="empty">Anmeldung abgelaufen. Bitte neu anmelden.</p>'; return; }
+    if (res.status === 403) { $('fbOut').innerHTML = '<p class="empty">Feedback sehen Admins und der Inhaber.</p>'; return; }
+    if (!res.ok) throw new Error('liste');
+    FB_DATEN = d;
+    fbMalen();
+  } catch (e) {
+    if (seq !== fbSeq) return;
+    if (FB_DATEN) toast('Feedback konnte nicht geladen werden', 'err');
+    else $('fbOut').innerHTML = '<p class="empty" style="color:var(--red);">Feedback konnte nicht geladen werden. Oben rechts neu laden.</p>';
+  } finally {
+    if (seq === fbSeq) { rb.classList.remove('spin'); listBusy($('fbOut'), false); }
+  }
+}
+function fbMalen() {
+  const d = FB_DATEN || { liste: [], gesamt: 0 };
+  const liste = d.liste || [];
+  const tief = liste.filter((x) => x.stars < 4);
+  $('fbSchnitt').textContent = d.schnitt != null ? String(d.schnitt).replace('.', ',') : '–';
+  $('fbSchnittSterne').innerHTML = d.schnitt != null ? fbSterne(Math.round(d.schnitt)) : '';
+  $('fbAnzahl').textContent = (d.gesamt === 1 ? '1 Bewertung' : (d.gesamt || 0) + ' Bewertungen')
+    + (d.gesamt > d.gelesen ? ' · Schnitt aus den neuesten ' + d.gelesen : '');
+  const kpi = document.querySelector('.bf-fb-kpi');
+  if (d.schnitt != null) { kpi.setAttribute('role', 'img'); kpi.setAttribute('aria-label', 'Durchschnitt ' + String(d.schnitt).replace('.', ',') + ' von 5 Sternen'); }
+  else { kpi.removeAttribute('role'); kpi.removeAttribute('aria-label'); }
+  $('fbFilter').innerHTML =
+    '<button type="button" class="chip" data-fbfilter="alle" aria-pressed="' + (fbFilter === 'alle') + '">Alle (' + liste.length + ')</button>'
+    + '<button type="button" class="chip" data-fbfilter="tief" aria-pressed="' + (fbFilter === 'tief') + '">Unter 4 Sterne (' + tief.length + ')</button>';
+  const zeigen = fbFilter === 'tief' ? tief : liste;
+  if (!zeigen.length) {
+    $('fbOut').innerHTML = '<p class="empty">' + (liste.length ? 'Keine Bewertung unter 4 Sternen.' : 'Noch kein Feedback. Es kommt, sobald Gäste abgeholte oder gelieferte Bestellungen bewerten.') + '</p>';
+    return;
+  }
+  $('fbOut').innerHTML = zeigen.map((x) => {
+    const w = x.at ? new Date(x.at).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    return '<div class="bf-fb-eintrag' + (x.stars < 4 ? ' tief' : '') + '">'
+      + '<div class="bf-fb-zeile"><span class="bf-st" role="img" aria-label="' + x.stars + ' von 5 Sternen">' + fbSterne(x.stars) + '</span>'
+      + '<span class="bdg">' + (x.art === 'delivery' ? 'Lieferung' : 'Abholung') + '</span>'
+      + (x.lang && x.lang !== 'de' ? '<span class="bdg">' + esc2(String(x.lang).toUpperCase()) + '</span>' : '')
+      + '<span class="bf-wann">' + esc2(w) + '</span></div>'
+      + (x.text ? '<p>' + esc2(x.text) + '</p>' : '<p style="color:var(--faint);">Ohne Text</p>')
+      + '<div class="bf-ref">#' + esc2(x.ref) + '</div></div>';
+  }).join('');
+}
+$('tabFeedback').addEventListener('click', () => { if (!FB_DATEN) fbLaden(); });
+$('fbReload').addEventListener('click', () => fbLaden());
+document.addEventListener('click', (e) => {
+  const c = e.target.closest('[data-fbfilter]');
+  if (!c) return;
+  fbFilter = c.dataset.fbfilter;
+  fbMalen();
+});
+
+/* Beim Abmelden alles vergessen (resetPanelState im Hauptskript ruft das) */
+function bfZuruecksetzen() {
+  if (BF.offen) { BF.offen = false; $('bfOv').hidden = true; document.body.style.overflow = ''; }
+  bfLeeren();
+  FB_DATEN = null; fbSeq++; fbFilter = 'alle';
+  $('fbOut').innerHTML = ''; $('fbFilter').innerHTML = ''; $('fbSchnitt').textContent = '–'; $('fbSchnittSterne').innerHTML = ''; $('fbAnzahl').textContent = '';
+  waBurger = null; waFehler = false; waSeq++;
+}
 </script>
 </body>
 </html>

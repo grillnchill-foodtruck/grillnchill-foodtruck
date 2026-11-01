@@ -116,6 +116,12 @@
   .pill-link:hover{border-color:var(--primary-bright);color:var(--primary-bright)}
   .pill-link svg{width:14px;height:14px}
   .pill-link.pill-sm{align-self:flex-start}
+  /* Paket bestellfluss: offene Abholnummern und Wartezeit-Automatik */
+  .nr-liste{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px}
+  .nr-liste li{display:inline-flex;align-items:baseline;gap:5px;padding:4px 10px;border:1px solid var(--border);border-radius:999px;font-size:.8125rem;font-weight:600;color:var(--foreground);background:var(--muted)}
+  .nr-liste li b{font-family:var(--font-display);font-weight:400;font-size:1rem;line-height:1.22;color:var(--primary-bright)}
+  .nr-liste li.grill{border-color:rgba(255,122,61,.55)}
+  .nr-liste li small{font-size:.75rem;color:var(--muted-foreground);font-weight:500}
   .btn{
     position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
     min-height:44px;padding:0 18px;border-radius:calc(var(--radius) - 4px);border:1px solid transparent;
@@ -468,6 +474,7 @@
         <div class="card-content">
           <span class="skeleton sk-kpi" aria-hidden="true"></span>
           <p class="kpi-value num when-ready" id="openValue"></p>
+          <ul class="nr-liste when-ready" id="openNrList" aria-label="Offene Nummern" hidden></ul>
           <p class="card-description">Heute bestellt, noch nicht abgeholt oder geliefert.</p>
           <a class="pill-link pill-sm" href="/admin.html?tab=orders">Zu den Bestellungen</a>
         </div>
@@ -686,7 +693,7 @@
     SCHALTER.forEach(function (id) {
       if (an) $(id).removeAttribute('aria-disabled'); else $(id).setAttribute('aria-disabled', 'true');
     });
-    $('waitRange').disabled = !an;
+    $('waitRange').disabled = !an || warteAuto;
   }
 
   /* Alles leeren: das Tablet am Truck teilen sich mehrere Leute. */
@@ -695,7 +702,9 @@
     clearTimeout(warteTimer); warteTimer = null;
     daten = null; gestoert = false; msgGeaendert = false; warteWartend = null;
     KARTEN.forEach(function (id) { $(id).classList.add('is-loading'); $(id).setAttribute('aria-busy', 'true'); });
-    ['revValue', 'revDesc', 'ordValue', 'openValue'].forEach(function (id) { $(id).textContent = ''; });
+    ['revValue', 'revDesc', 'ordValue', 'openValue', 'openNrList'].forEach(function (id) { $(id).textContent = ''; });
+    $('openNrList').hidden = true;
+    warteAuto = false;
     ['revBadge', 'ordBadge', 'openBadge', 'shopBadge', 'staleBadge'].forEach(function (id) { $(id).hidden = true; });
     $('topList').textContent = '';
     $('topEmpty').hidden = true;
@@ -833,11 +842,32 @@
     $('openValue').classList.toggle('is-hot', offen > 0);
     if (anzahl > 0 && offen === 0) badge($('openBadge'), 'success', 'check', 'Alles raus');
     else $('openBadge').hidden = true;
+    zeichneOffeneNummern(Array.isArray(d.openList) ? d.openList : []);
 
     zeichneRenner(Array.isArray(d.top7d) ? d.top7d : []);
 
     steuerungAktiv(true);
     zeichneStatus(d.status || {});
+  }
+
+  /* Offene Abholnummern als kleine Liste: „Nr. 12 Grill", Telefon/Truck dazu */
+  function zeichneOffeneNummern(liste) {
+    var ul = $('openNrList');
+    ul.textContent = '';
+    var mitNr = liste.filter(function (x) { return x && x.nr; });
+    ul.hidden = !mitNr.length;
+    var STAND = { confirmed: 'neu', preparing: 'Grill', ready_for_pickup: 'fertig', on_the_way: 'unterwegs' };
+    mitNr.forEach(function (x) {
+      var li = document.createElement('li');
+      if (x.fstate === 'preparing') li.className = 'grill';
+      var b = document.createElement('b');
+      b.textContent = 'Nr. ' + x.nr;
+      var sm = document.createElement('small');
+      sm.textContent = (STAND[x.fstate] || 'neu') + (x.mode === 'delivery' ? ' · Lieferung' : '')
+        + (x.quelle === 'telefon' ? ' · Telefon' : (x.quelle === 'truck' ? ' · Truck' : ''));
+      li.append(b, sm);
+      ul.appendChild(li);
+    });
   }
 
   function badge(el, art, icon, text) {
@@ -961,6 +991,7 @@
         paused: !!st.paused,
         pauseMessage: typeof st.pauseMessage === 'string' ? st.pauseMessage : '',
         waitTime: parseInt(st.waitTime, 10) || 0,
+        waitAuto: !!st.waitAuto,
         deliveryOff: !!st.deliveryOff,
         pickupOff: !!st.pickupOff,
       };
@@ -970,8 +1001,12 @@
     if (!speichert.pickup) setzeSchalter($('swPickup'), !st.pickupOff);
     var msg = $('pauseMsg');
     if (!speichert.msg && !msgGeaendert && document.activeElement !== msg) msg.value = st.pauseMessage || '';
-    if (!speichert.wait && !ziehen && !warteTimer) {
-      warteBestaetigt = parseInt(st.waitTime, 10) || 0;
+    warteAuto = !!st.waitAuto;
+    if (warteAuto) {
+      // Automatik (Admin → Heute): Regler ruht, angezeigt wird der gerechnete Wert
+      maleWarte(parseInt(st.waitTime, 10) || 0);
+    } else if (!speichert.wait && !ziehen && !warteTimer) {
+      warteBestaetigt = parseInt(st.waitManual != null ? st.waitManual : st.waitTime, 10) || 0;
       $('waitRange').value = Math.min(60, warteBestaetigt);
       maleWarte(warteBestaetigt);
     }
@@ -1005,7 +1040,8 @@
       deliveryOff: !!s.deliveryOff,
       pickupOff: !!s.pickupOff,
       soldOut: Array.isArray(s.soldOut) ? s.soldOut : [],
-      waitTime: parseInt(s.waitTime, 10) || 0,
+      // waitManual: Wert von Hand. Bei Automatik ist waitTime der gerechnete, der darf nicht als Handwert zurück
+      waitTime: parseInt(s.waitManual != null ? s.waitManual : s.waitTime, 10) || 0,
       special: (s.special && s.special.id) ? { id: s.special.id, note: s.special.note || '' } : null,
     };
     Object.keys(aenderung).forEach(function (k) { payload[k] = aenderung[k]; });
@@ -1112,11 +1148,17 @@
   var warteTimer = null;
   var warteBestaetigt = 0;
   var warteWartend = null;
+  var warteAuto = false;   // Automatik an: Wert kommt vom Server (lib/wartezeit.js)
 
   function maleWarte(v) {
     var w = Math.max(0, parseInt(v, 10) || 0);
     $('waitValue').textContent = w ? w + ' Min' : 'Aus';
-    $('waitDesc').textContent = w ? 'Kunden sehen etwa ' + w + ' Minuten Wartezeit.' : 'Keine Anzeige für Kunden.';
+    $('waitDesc').textContent = warteAuto
+      ? 'Automatisch: ' + (w ? 'Kunden sehen gerade etwa ' + w + ' Minuten.' : 'gerade keine Anzeige, der Truck hat zu.')
+      : (w ? 'Kunden sehen etwa ' + w + ' Minuten Wartezeit.' : 'Keine Anzeige für Kunden.');
+    range.disabled = warteAuto || !daten;
+    $('waitHint').textContent = warteAuto ? 'Automatisch an. Umstellen im Admin unter Heute.' : 'Loslassen speichert sofort.';
+    if (warteAuto) range.value = Math.min(60, w);
     range.setAttribute('aria-valuetext', w ? w + ' Minuten' : 'keine Anzeige');
     range.style.setProperty('--fill', (Math.min(60, w) / 60 * 100) + '%');
   }

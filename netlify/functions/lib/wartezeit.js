@@ -135,7 +135,7 @@ async function offeneBurgerHeute(s, jetzt) {
   return { burger, bestellungen };
 }
 
-let memo = null;   // { at, heute, wert } – überlebt, solange die Function warm ist
+let memo = null;   // { at, heute, wert }, überlebt, solange die Function warm ist
 
 /**
  * Aktuelle automatische Wartezeit.

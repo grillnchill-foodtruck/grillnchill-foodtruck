@@ -91,6 +91,33 @@
     .dot,.dot.lift{transform:none;transition:none}
     .btn{transform:none !important}
   }
+
+  /* ============ ABHOLNUMMER + FEEDBACK (Paket bestellfluss) ============ */
+  .nrcard{display:flex;align-items:center;justify-content:space-between;gap:.9rem;border-color:#4A3E30;background:linear-gradient(180deg,#1A150F,#14110D);}
+  .nrcard .lbl{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#C9BCA4;font-weight:700;}
+  .nrcard .hint{font-size:.74rem;color:#8F8471;margin-top:.25rem;line-height:1.4;}
+  .nrcard .nr{font-family:'Bowlby One','GNC Display Ext',cursive;font-size:clamp(2.2rem,11vw,3rem);line-height:1.22;color:#FF7A3D;white-space:nowrap;flex:none;}
+  .fbcard h2{font-family:'Bowlby One','GNC Display Ext',cursive;font-weight:400;font-size:1.15rem;line-height:1.25;letter-spacing:.02em;margin:0 0 .3rem;}
+  .fbcard .fb-lead{font-size:.82rem;color:#C9BCA4;line-height:1.5;margin:0 0 .7rem;}
+  .stars{display:flex;gap:.25rem;margin:0 0 .85rem;}
+  .star{width:48px;height:48px;display:grid;place-items:center;background:none;border:0;border-radius:12px;color:#6b6357;cursor:pointer;padding:0;}
+  .star svg{width:34px;height:34px;transition:transform 160ms cubic-bezier(0.34,1.56,0.64,1),color 160ms ease;}
+  .star.on{color:#FF7A3D;}
+  .star.on svg{fill:currentColor;}
+  @media (hover:hover) and (pointer:fine){ .star:hover svg{transform:scale(1.08);} }
+  .star:active svg{transform:scale(.92);}
+  .fbcard label{display:block;font-size:.78rem;font-weight:700;color:#C9BCA4;margin:0 0 .35rem;}
+  .fbcard textarea{width:100%;min-height:84px;resize:vertical;background:#0E0C0A;color:#F5E9D0;border:1px solid #3a342b;border-radius:12px;padding:.7rem .8rem;font:inherit;font-size:1rem;line-height:1.45;}
+  .fbcard textarea:focus{outline:none;border-color:#E85A24;}
+  .fb-count{font-size:.7rem;color:#8F8471;text-align:right;margin:.3rem 0 .6rem;font-variant-numeric:tabular-nums;}
+  .fb-msg{font-size:.78rem;color:#FF7A3D;margin:0 0 .6rem;}
+  .fb-msg:empty{display:none;}
+  .fbcard .btn{min-height:44px;padding:.65rem 1.2rem;font-size:.85rem;}
+  .fb-thanks{font-size:.9rem;color:#F5E9D0;line-height:1.5;margin:0 0 .8rem;}
+  .pill-link{display:inline-flex;align-items:center;gap:.45rem;min-height:44px;padding:.5rem 1rem;border:1px solid #3a342b;border-radius:999px;color:#F5E9D0;text-decoration:none;font-size:.82rem;font-weight:700;}
+  .pill-link svg{width:16px;height:16px;flex:none;}
+  .pill-link:hover{border-color:#E85A24;color:#F5E9D0;}
+  @media (prefers-reduced-motion: reduce){ .star svg{transition:none;transform:none !important;} }
 </style>
 </head>
 <body>
@@ -132,6 +159,7 @@ var STR = {
     offline: 'Verbindung gerade nicht möglich. Wir versuchen es weiter.',
     pushBlocked: 'Mitteilungen sind in den Einstellungen blockiert.',
     arrive: 'Schon am Truck? Sag Kubi Bescheid.', arriveBtn: 'Bin da', arrived: 'Kubi weiß Bescheid. Bis gleich.',
+    nrLabel: 'Deine Nummer', nr: 'Nr. ', nrHint: 'Nenn sie am Truck, dann geht es schneller.',
     steps: {
       pickup: [
         { id: 'confirmed', t: 'Bestellung bestätigt' },
@@ -158,6 +186,7 @@ var STR = {
     offline: "Can't connect right now. We'll keep trying.",
     pushBlocked: 'Notifications are blocked in your settings.',
     arrive: 'Already at the truck? Let Kubi know.', arriveBtn: 'I\'m here', arrived: 'Kubi knows you\'re here. See you in a moment.',
+    nrLabel: 'Your number', nr: 'No. ', nrHint: 'Tell us at the truck and it goes faster.',
     steps: {
       pickup: [
         { id: 'confirmed', t: 'Order confirmed' },
@@ -184,6 +213,7 @@ var STR = {
     offline: 'Şu an bağlantı kurulamıyor. Denemeye devam ediyoruz.',
     pushBlocked: 'Bildirimler ayarlarında engellenmiş.',
     arrive: 'Truck\'ın yanında mısın? Kubi\'ye haber ver.', arriveBtn: 'Geldim', arrived: 'Kubi haberdar. Birazdan görüşürüz.',
+    nrLabel: 'Numaran', nr: 'No ', nrHint: 'Truckta numaranı söyle, daha hızlı olur.',
     steps: {
       pickup: [
         { id: 'confirmed', t: 'Sipariş onaylandı' },
@@ -304,6 +334,156 @@ function bindPush() {
   if (pb) pb.addEventListener('click', enablePush);
 }
 
+/* ---- Abholnummer des Tages (lib/abholnummer.js) ---- */
+function nrHtml() {
+  if (!DATA || !DATA.abholnr) return '';
+  return '<div class="card nrcard"><div><div class="lbl">' + T.nrLabel + '</div>'
+    + (DATA.mode === 'pickup' ? '<div class="hint">' + T.nrHint + '</div>' : '')
+    + '</div><div class="nr">' + T.nr + Number(DATA.abholnr) + '</div></div>';
+}
+
+/* ---- Feedback nach Abschluss (feedback.js) ----
+   Texte in 8 Sprachen aus i18n.js und den Sprachpaketen. Die Seite selbst
+   kennt nur de/en/tr; die Pakete werden erst geladen, wenn die Karte
+   gebraucht wird, und mit absolutem Pfad (unter /s/ zeigen relative Pfade
+   auf diese Seite). Rückfall Deutsch, gleich wie in i18n.js. */
+var GOOGLE_BEWERTEN = 'https://search.google.com/local/writereview?placeid=ChIJJ9h4Tk09ukcRAAFxrgGWsSc';
+var FB_DE = {
+  'fb.title': 'Wie war\'s?', 'fb.lead': 'Tipp auf die Sterne. Ein Satz dazu hilft Kubi am meisten.',
+  'fb.stars_label': 'Bewertung in Sternen', 'fb.star_1': '1 Stern', 'fb.star_n': '{n} Sterne',
+  'fb.text_label': 'Was sollen wir wissen? (freiwillig)', 'fb.placeholder': 'Was hat geschmeckt, was nicht?',
+  'fb.chars': '{n} von 500 Zeichen', 'fb.send': 'Feedback senden', 'fb.pick': 'Wähl zuerst die Sterne.',
+  'fb.thanks': 'Danke. Kubi liest jede Rückmeldung selbst.', 'fb.done': 'Du hast diese Bestellung schon bewertet. Danke.',
+  'fb.google': 'Auch bei Google bewerten', 'fb.error': 'Das hat nicht geklappt. Versuch es gleich noch einmal.'
+};
+var FB_SPRACHEN = ['de', 'en', 'tr', 'it', 'es', 'pt', 'fr', 'nl'];
+var FB_LANG = (function () {
+  try { var sv = localStorage.getItem('gnc_lang'); if (FB_SPRACHEN.indexOf(sv) !== -1) return sv; } catch (e) {}
+  var nv = (navigator.language || 'de').toLowerCase();
+  for (var i = 1; i < FB_SPRACHEN.length; i++) { if (nv.indexOf(FB_SPRACHEN[i]) === 0) return FB_SPRACHEN[i]; }
+  return 'de';
+})();
+var FB = { sterne: 0, geladen: false, laedt: null };
+function fbT(key) {
+  var d = window.I18N || null;
+  try { if (d && d[FB_LANG] && d[FB_LANG][key]) return d[FB_LANG][key]; } catch (e) {}
+  try { if (d && d.de && d.de[key]) return d.de[key]; } catch (e) {}
+  return FB_DE[key] || key;
+}
+function fbSkript(src) {
+  return new Promise(function (ok) {
+    var sc = document.createElement('script');
+    sc.src = src;
+    sc.addEventListener('load', function () { ok(true); });
+    sc.addEventListener('error', function () { ok(false); });
+    document.head.appendChild(sc);
+  });
+}
+function fbTexteLaden() {
+  if (FB.laedt) return FB.laedt;
+  var bis = new Promise(function (ok) { setTimeout(ok, 4000); });   // nie ewig warten: dann eben Deutsch
+  var laden = (typeof I18N !== 'undefined' ? Promise.resolve(true) : fbSkript('/i18n.js')).then(function (da) {
+    if (!da || FB_LANG === 'de' || typeof LANG_PACKS === 'undefined' || !LANG_PACKS[FB_LANG]) return;
+    if (window.I18N && window.I18N[FB_LANG]) return;
+    return fbSkript('/' + LANG_PACKS[FB_LANG]);
+  }).then(function () {
+    // i18n.js legt I18N mit const an; fuer fbT() am window bereitstellen
+    try { if (typeof I18N !== 'undefined') window.I18N = I18N; } catch (e) {}
+  });
+  FB.laedt = Promise.race([laden, bis]);
+  return FB.laedt;
+}
+var STERN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6-5.38-2.83-5.38 2.83 1.03-6L3.3 9.6l6-.9z"/></svg>';
+var EXT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M19 14.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4.5"/></svg>';
+function fbEsc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+function fbStart() {
+  fbTexteLaden().then(fbZeichnen);
+}
+function fbGoogleHtml() {
+  return '<a class="pill-link" href="' + GOOGLE_BEWERTEN + '" target="_blank" rel="noopener">' + fbEsc(fbT('fb.google')) + EXT_SVG + '</a>';
+}
+function fbFertig(text) {
+  var c = document.getElementById('fbCard');
+  if (!c) return;
+  c.innerHTML = '<h2>' + fbEsc(fbT('fb.title')) + '</h2><p class="fb-thanks" role="status">' + fbEsc(text) + '</p>' + fbGoogleHtml();
+}
+function fbZeichnen() {
+  var c = document.getElementById('fbCard');
+  if (!c) return;
+  c.setAttribute('lang', FB_LANG);
+  c.removeAttribute('aria-busy');
+  if (DATA && DATA.feedback) { fbFertig(fbT('fb.done')); return; }
+  var sterne = '';
+  for (var i = 1; i <= 5; i++) {
+    var lbl = i === 1 ? fbT('fb.star_1') : fbT('fb.star_n').replace('{n}', i);
+    sterne += '<button type="button" class="star' + (i <= FB.sterne ? ' on' : '') + '" role="radio" data-stern="' + i + '" aria-checked="' + (i === FB.sterne ? 'true' : 'false') + '"'
+      + ' tabindex="' + ((FB.sterne ? i === FB.sterne : i === 1) ? '0' : '-1') + '" aria-label="' + fbEsc(lbl) + '">' + STERN_SVG + '</button>';
+  }
+  c.innerHTML = '<h2 id="fbTitel">' + fbEsc(fbT('fb.title')) + '</h2>'
+    + '<p class="fb-lead">' + fbEsc(fbT('fb.lead')) + '</p>'
+    + '<div class="stars" role="radiogroup" aria-describedby="fbMsg" aria-label="' + fbEsc(fbT('fb.stars_label')) + '">' + sterne + '</div>'
+    + '<label for="fbText">' + fbEsc(fbT('fb.text_label')) + '</label>'
+    + '<textarea id="fbText" maxlength="500" rows="3" placeholder="' + fbEsc(fbT('fb.placeholder')) + '" aria-describedby="fbCount"></textarea>'
+    + '<div class="fb-count" id="fbCount">' + fbEsc(fbT('fb.chars').replace('{n}', '0')) + '</div>'
+    + '<p class="fb-msg" id="fbMsg" role="status" aria-live="polite"></p>'
+    + '<button type="button" class="btn" id="fbSend">' + fbEsc(fbT('fb.send')) + '</button>';
+  var gruppe = c.querySelector('.stars');
+  gruppe.addEventListener('click', function (e) {
+    var b = e.target.closest('.star');
+    if (b) fbWaehle(Number(b.getAttribute('data-stern')), false);
+  });
+  gruppe.addEventListener('keydown', function (e) {
+    var w = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key];
+    if (e.key === 'Home') w = -5;
+    if (e.key === 'End') w = 5;
+    if (!w) return;
+    e.preventDefault();
+    fbWaehle(Math.max(1, Math.min(5, (FB.sterne || 0) + w)), true);
+  });
+  var ta = document.getElementById('fbText');
+  ta.addEventListener('input', function () {
+    document.getElementById('fbCount').textContent = fbT('fb.chars').replace('{n}', ta.value.length);
+  });
+  document.getElementById('fbSend').addEventListener('click', fbSenden);
+}
+function fbWaehle(n, fokus) {
+  FB.sterne = n;
+  var alle = document.querySelectorAll('#fbCard .star');
+  for (var i = 0; i < alle.length; i++) {
+    var s = i + 1;
+    alle[i].classList.toggle('on', s <= n);
+    alle[i].setAttribute('aria-checked', s === n ? 'true' : 'false');
+    alle[i].setAttribute('tabindex', s === n ? '0' : '-1');
+  }
+  if (fokus && alle[n - 1]) alle[n - 1].focus();
+  var m = document.getElementById('fbMsg');
+  if (m) m.textContent = '';
+}
+function fbSenden() {
+  var btn = document.getElementById('fbSend');
+  var msg = document.getElementById('fbMsg');
+  if (!FB.sterne) {
+    msg.textContent = fbT('fb.pick');
+    var erster = document.querySelector('#fbCard .star');
+    if (erster) erster.focus();
+    return;
+  }
+  var text = (document.getElementById('fbText').value || '').slice(0, 500);
+  withBusy(btn, function () {
+    return fetch('/.netlify/functions/feedback', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'senden', reference: REF, k: KEY, stars: FB.sterne, text: text, lang: FB_LANG }),
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) { return { s: r.status, d: d }; });
+    }).catch(function () { return { s: 0, d: {} }; });
+  }).then(function (a) {
+    if (!a) return;
+    if (a.s === 200) { DATA.feedback = { stars: FB.sterne }; fbFertig(fbT('fb.thanks')); return; }
+    if (a.s === 409 && a.d && a.d.error === 'schon_bewertet') { DATA.feedback = { stars: 0 }; fbFertig(fbT('fb.done')); return; }
+    if (msg) msg.textContent = fbT('fb.error');
+  });
+}
+
 function renderNotFound() {
   var el = document.getElementById('app');
   el.innerHTML = '<p class="empty">' + T.notfound + '</p>';
@@ -318,7 +498,7 @@ function renderFull() {
   var isFinal = idx === steps.length - 1;
   var fillPct = fillPctFor(steps, idx);
 
-  var html = '';
+  var html = nrHtml();
   if (DATA.isPreorder && DATA.scheduledFor) {
     html += '<div class="card eta"><div><div class="lbl">' + (DATA.mode === 'delivery' ? T.planDelivery : T.planPickup) + '</div><div class="big">' + DATA.scheduledFor.replace(/</g, '&lt;') + '</div></div></div>';
   }
@@ -334,6 +514,7 @@ function renderFull() {
 
   html += arriveHtml(isFinal);
   html += pushHtml(isFinal);
+  html += isFinal && DATA.completed ? '<div class="card fbcard" id="fbCard" aria-busy="true"></div>' : '';
 
   if (DATA.items && DATA.items.length) {
     html += '<div class="card items">';
@@ -353,7 +534,8 @@ function renderFull() {
   el.setAttribute('aria-busy', 'false');
   bindPush();
   bindArrive();
-  SHOWN = { mode: DATA.mode, state: DATA.state };
+  if (document.getElementById('fbCard')) fbStart();
+  SHOWN = { mode: DATA.mode, state: DATA.state, nr: DATA.abholnr || null };
 }
 
 // Polling: nur Schritte, Balken, Zeiten und Push-Karte anfassen, damit Fokus und Puls bleiben
@@ -382,6 +564,10 @@ function updateSteps() {
 
   var ac = el.querySelector('.arrivecard');
   if (isFinal && ac) ac.remove();
+  if (isFinal && DATA.completed && !document.getElementById('fbCard')) {
+    var tc0 = document.getElementById('tlCard');
+    if (tc0) { tc0.insertAdjacentHTML('afterend', '<div class="card fbcard" id="fbCard" aria-busy="true"></div>'); fbStart(); }
+  }
   var pc = el.querySelector('.pushcard:not(.arrivecard)');
   if (isFinal && pc) { pc.remove(); }
   else if (!isFinal && !pc) {
@@ -395,7 +581,7 @@ function updateSteps() {
 
 function paint() {
   document.getElementById('refPill').textContent = '#' + DATA.reference;
-  if (!SHOWN || SHOWN.mode !== DATA.mode) renderFull();
+  if (!SHOWN || SHOWN.mode !== DATA.mode || (SHOWN.nr || null) !== (DATA.abholnr || null)) renderFull();
   else if (SHOWN.state !== DATA.state) updateSteps();
 }
 

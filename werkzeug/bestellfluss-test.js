@@ -144,7 +144,7 @@ function uhrZurueck() { Date.now = echteZeit; }
   const staff = (await sitzung.erstelle('mitarbeiter-passwort-77', { role: 'staff', name: 'Test Mitarbeiter' }, { zweiFaktor: true })).token;
 
   /* ======================= 1. Abholnummer ============================== */
-  console.log('\n— Abholnummer —');
+  console.log('\n[Abholnummer]');
   let a = await abhol.vergebeAbholnr('GNC-1000000000001', '2026-11-02');
   let b = await abhol.vergebeAbholnr('GNC-1000000000002', '2026-11-02');
   ok('Erste Nummer des Tages ist 1, die zweite 2', a.nr === 1 && b.nr === 2);
@@ -194,7 +194,7 @@ function uhrZurueck() { Date.now = echteZeit; }
   ok('Status-Mail „Geliefert" mit Nummer und Link „Wie war\'s?" zur Statusseite', r.s === 200 && sm && sm.htmlContent.includes('Wie war') && sm.htmlContent.includes('/s/' + refOnline + '?k=' + statusKey(refOnline)) && sm.htmlContent.includes('Nr. ' + nrOnline));
 
   /* ======================= 2. Wartezeit ================================= */
-  console.log('\n— Wartezeit —');
+  console.log('\n[Wartezeit]');
   ok('Rechnung: 10 + 5 × 3 = 25', wz.berechne({ waitBase: 10, waitPerBurger: 3, waitMax: 60 }, 5) === 25);
   ok('Rechnung: auf 5 gerundet (10 + 1 × 3 = 13 → 15)', wz.berechne({ waitBase: 10, waitPerBurger: 3, waitMax: 60 }, 1) === 15);
   ok('Rechnung: begrenzt auf waitMax', wz.berechne({ waitBase: 10, waitPerBurger: 3, waitMax: 45 }, 40) === 45);
@@ -243,7 +243,7 @@ function uhrZurueck() { Date.now = echteZeit; }
   uhrZurueck(); wz.memoLeeren();
 
   /* ======================= 3. Feedback ================================== */
-  console.log('\n— Feedback —');
+  console.log('\n[Feedback]');
   const refFb = 'GNC-' + (Date.now() - 3600000);
   const refFb2 = 'GNC-' + (Date.now() - 3500000);
   lege('orders', 'o:' + refFb, { status: 'completed', fstate: 'preparing', abholnr: 7, createdAt: new Date().toISOString(), order: { mode: 'pickup', name: 'Ali' } });
@@ -280,7 +280,7 @@ function uhrZurueck() { Date.now = echteZeit; }
   ok('Liste: Inhaber sieht 2 Bewertungen, Schnitt 3,5, neueste zuerst', r.s === 200 && r.d.gesamt === 2 && r.d.schnitt === 3.5 && r.d.liste.length === 2 && r.d.liste[0].ref === refFb2, JSON.stringify(r.d).slice(0, 200));
 
   /* ======================= 4. Interne Bestellung ======================== */
-  console.log('\n— Telefon und Laufkundschaft —');
+  console.log('\n[Telefon und Laufkundschaft]');
   const korb = [
     { menuId: 'classic', qty: 2, double: true, isMenu: true, side: 'spommes', drink: 'fritz-zero', dip: 'dip-ket' },
     { menuId: 'pommes', qty: 1, dip: 'dip-mayo' },
@@ -339,6 +339,6 @@ function uhrZurueck() { Date.now = echteZeit; }
   ok('Storno einer Online-Bestellung: 409', (await call(intern, { password: staff, action: 'stornieren', reference: refOnline })).s === 409);
 
   console.error = leiseFehler; console.warn = leiseWarn;
-  console.log('\n' + (n - fehler) + ' von ' + n + (fehler ? ' – ' + fehler + ' FEHLER' : ' grün'));
+  console.log('\n' + (n - fehler) + ' von ' + n + (fehler ? ', ' + fehler + ' FEHLER' : ' grün'));
   process.exit(fehler ? 1 : 0);
 })().catch((e) => { console.error = leiseFehler; console.error(e); process.exit(1); });
