@@ -3545,6 +3545,33 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   padding: 0.15rem 0.5rem;
   border-radius: var(--radius-full);
 }
+/* ---- Paket bezahlen: SumUp-Widget in Schritt 3 und Burger-Pass im Konto ---- */
+.kasse-widget { margin: 0 0 1rem; padding: 1rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.kw-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.3rem; }
+.kw-kopf h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; line-height: 1.3; margin: 0; color: var(--color-cream); }
+.kw-betrag { font-weight: 800; font-size: 1.05rem; color: var(--color-orange-bright); white-space: nowrap; }
+.kw-sub { margin: 0 0 0.9rem; font-size: 0.8rem; line-height: 1.45; color: var(--color-cream-dim); }
+.kw-laden { display: flex; align-items: center; justify-content: center; gap: 0.6rem; min-height: 120px; font-size: 0.85rem; color: var(--color-text-muted); }
+.kw-laden[hidden] { display: none; }
+/* Das Widget bringt eigene, helle Gestaltung mit: auf Weiß bleibt es lesbar */
+.kw-karte { background: #fff; color: #111; border-radius: var(--radius-sm); padding: 0.75rem; overflow: hidden; }
+.kw-karte:empty { display: none; }
+.kw-hinweis { min-height: 1.2em; margin: 0.6rem 0 0; font-size: 0.82rem; line-height: 1.4; color: var(--color-yellow); }
+.kw-sicher { display: flex; align-items: center; gap: 0.4rem; margin: 0.6rem 0 0; font-size: 0.72rem; color: var(--color-text-muted); }
+.kw-sicher svg { width: 14px; height: 14px; flex: none; }
+.kw-zurueck { margin-top: 0.6rem; }
+.kw-zurueck[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+.bp-karte { background: var(--color-bg-elev); border: 1px solid var(--color-border); border-radius: 12px; padding: 0.8rem 0.9rem; margin-bottom: 0.9rem; }
+.bp-karte.hat { border-color: var(--color-yellow); background: rgba(255, 201, 60, 0.07); }
+.bp-kopf { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.35rem; font-weight: 700; font-size: 0.88rem; color: var(--color-cream); }
+.bp-kopf svg { width: 20px; height: 20px; flex: none; color: var(--color-yellow); }
+.bp-stand { margin: 0.25rem 0 0; font-size: 0.82rem; line-height: 1.45; color: var(--color-cream); }
+.bp-punkte { display: flex; gap: 4px; margin: 0.45rem 0 0.2rem; }
+.bp-punkte span { flex: 1; max-width: 34px; height: 8px; border-radius: 999px; background: var(--color-border-bright); }
+.bp-punkte span.voll { background: var(--color-yellow); }
+.bp-angebot { margin: 0.7rem 0 0.2rem; font-size: 0.82rem; line-height: 1.45; color: var(--color-cream-dim); }
+.bp-regel { margin: 0.6rem 0 0; font-size: 0.7rem; line-height: 1.45; color: var(--color-text-muted); }
+.bp-karte .btn { margin-top: 0.6rem; }
 .tip-options {
   display: flex;
   gap: 0.5rem;
@@ -7975,6 +8002,7 @@ function renderAccProfile(el) {
       ${loyLine}
       <p style="font-size:0.7rem;color:var(--color-text-muted);margin:0.5rem 0 0;">${p.level ? `<span style="display:block;color:var(--color-orange-bright);font-weight:700;font-size:0.8rem;margin-bottom:0.35rem;">${t('acc.level')} ${p.level} · ${escG(p.levelName || '')}</span>` : ''}${t('acc.loyalty_sync')}</p>
     </div>
+    ${passKarteHtml(p)}
     <div id="accBadges" class="acc-badges"></div>
     ${p.qrToken ? `
     <div style="background:var(--color-bg-elev);border:1px solid var(--color-border);border-radius:12px;padding:0.8rem 0.9rem;margin-bottom:0.9rem;">
@@ -8978,7 +9006,8 @@ function getLoyalty() {
   // Eingeloggt: Server-Stempelkarte ist die Wahrheit (geräteübergreifend)
   if (typeof ACCOUNT !== 'undefined' && ACCOUNT && ACCOUNT.profile && ACCOUNT.profile.loyalty) {
     const L = ACCOUNT.profile.loyalty;
-    return { spent: Number(L.spent) || 0, menus: Number(L.menus) || 0, bonus: Number(L.rewards) || 0, konto: true };
+    return { spent: Number(L.spent) || 0, menus: Number(L.menus) || 0, bonus: Number(L.rewards) || 0, konto: true,
+             pass: Number(L.passMenus) || 0 };   // Burger-Pass: eigener Zähler, getrennt von der Stempelkarte
   }
   try {
     const o = JSON.parse(localStorage.getItem(LOYALTY_KEY) || 'null');
@@ -8989,7 +9018,7 @@ function getLoyalty() {
 function saveLoyalty(l) {
   try { localStorage.setItem(LOYALTY_KEY, JSON.stringify({ spent: l.spent, menus: l.menus || 0, rewardAvailable: (l.bonus || 0) > 0 })); } catch (e) {}
 }
-function loyaltyRewardAvailable() { const l = getLoyalty(); return l.menus > 0 || l.bonus > 0; }
+function loyaltyRewardAvailable() { const l = getLoyalty(); return l.menus > 0 || (l.pass || 0) > 0 || l.bonus > 0; }
 // Umsatz einer Bestellung auf den Treue-Fortschritt anrechnen (Warenwert vor Rabatt/Gebühr/Trinkgeld).
 function addLoyaltySpend(amount) {
   const amt = Number(amount);
@@ -9014,7 +9043,8 @@ function loyaltyDiscount() {
   if (testPromoApplied || !loyaltyApplied) return 0;
   const l = getLoyalty();
   if (loyaltyKind === 'menu') {
-    if (!accountLoggedIn() || l.menus < 1) return 0;
+    // Menü aufs Haus ODER Burger-Pass-Menü (gleiche Regel, Pass geht vor: lib/burger-pass.js)
+    if (!accountLoggedIn() || (l.menus + (l.pass || 0)) < 1) return 0;
     return SK.gratisMenuWert(cart);   // 0, solange kein berechtigtes Menü im Warenkorb liegt
   }
   if (l.bonus < 1) return 0;
@@ -9022,6 +9052,7 @@ function loyaltyDiscount() {
   return LOYALTY_REWARD;
 }
 function loyaltyLineLabel(kind) {
+  if (kind === 'menu' && passKommtZuerst()) return t('pass.line').replace('{name}', passNameKunde());
   return t(kind === 'menu' ? 'loyalty.menu_line' : 'loyalty.line');
 }
 function applyLoyaltyReward(kind) {
@@ -9142,10 +9173,10 @@ const MW_SYMBOL = {
 function menuWartetHtml() {
   if (typeof groupJoin !== 'undefined' && groupJoin) return '';
   const l = getLoyalty();
-  if (!(l.menus > 0)) return '';
+  if (!((l.menus || 0) + (l.pass || 0) > 0)) return '';
   const eingeloest = (loyaltyApplied && loyaltyKind === 'menu') ? loyaltyDiscount() : 0;
   let zeile, extra = '';
-  if (eingeloest > 0) zeile = t('loyalty.menu_applied').replace('{amount}', formatPrice(eingeloest));
+  if (eingeloest > 0) zeile = t(passKommtZuerst() ? 'pass.applied' : 'loyalty.menu_applied').replace('{amount}', formatPrice(eingeloest));
   else if (!accountLoggedIn()) {
     zeile = t('loyalty.wait_login');
     extra = `<button type="button" class="mini-btn" data-on-click="openAccountOverlay('kompakt')">${t('loyalty.menu_login_btn')}</button>`;
@@ -9154,7 +9185,7 @@ function menuWartetHtml() {
   return `<div class="menu-wartet">
       <span class="mw-icon" aria-hidden="true">${MW_SYMBOL.geschenk}</span>
       <div class="mw-text">
-        <strong>${eingeloest > 0 ? t('loyalty.menu_line') : t('loyalty.wait_title')}</strong>
+        <strong>${eingeloest > 0 || passKommtZuerst() ? loyaltyLineLabel('menu') : t('loyalty.wait_title')}</strong>
         <span>${zeile}</span>
         <div class="mw-akt">${extra}<button type="button" class="mini-btn" data-on-click="menuWieOeffnen(this)">${t('loyalty.how')}</button></div>
       </div>
@@ -9247,12 +9278,12 @@ function loyaltyCardHtml() {
   const menuInfo = `<div class="loy-info">${MW_SYMBOL.info}<span>${t('loyalty.menu_terms')}</span></div>`;
   const wieKnopf = `<button type="button" class="mini-btn loy-wie" data-on-click="menuWieOeffnen(this)">${t('loyalty.how')}</button>`;
   if (loyaltyApplied && aktiv > 0) {
-    const label = loyaltyKind === 'menu' ? t('loyalty.menu_applied') : t('loyalty.applied');
+    const label = loyaltyKind === 'menu' ? t(passKommtZuerst() ? 'pass.applied' : 'loyalty.menu_applied') : t('loyalty.applied');
     teile.push(gruppe(`<div class="loyalty-applied"><span>${label.replace('{amount}', formatPrice(aktiv).replace(/ /g, '\u00a0'))}</span><button type="button" data-on-click="removeLoyaltyReward()">${t('promo.remove')}</button></div>`
       + (loyaltyKind === 'menu' ? menuInfo : '')));
   } else {
     // Menü aufs Haus: nur mit Konto, nur wenn ein berechtigtes Menü im Warenkorb liegt
-    if (l.menus > 0) {
+    if (l.menus > 0 || (l.pass || 0) > 0) {
       const menuWert = SK.gratisMenuWert(cart);
       if (!accountLoggedIn()) {
         teile.push(gruppe(`<div class="loyalty-reward-hint">${t('loyalty.menu_login')}</div>
@@ -9260,7 +9291,7 @@ function loyaltyCardHtml() {
       } else if (!menuWert) {
         teile.push(gruppe(`<div class="loyalty-reward-hint">${t('loyalty.menu_need')}</div>${menuInfo}${wieKnopf}`));
       } else {
-        teile.push(gruppe(`<button type="button" class="loyalty-redeem" data-on-click="applyLoyaltyReward('menu')">${t('loyalty.menu_redeem').replace('{amount}', formatPrice(menuWert))}</button>
+        teile.push(gruppe(`<button type="button" class="loyalty-redeem" data-on-click="applyLoyaltyReward('menu')">${t(passKommtZuerst() ? 'pass.redeem' : 'loyalty.menu_redeem').replace('{amount}', formatPrice(menuWert))}</button>
           ${menuInfo}${wieKnopf}`));
       }
     }
@@ -9276,7 +9307,7 @@ function loyaltyCardHtml() {
   }
   const action = teile.join('');
   return `
-    <div class="loyalty-card${(l.menus > 0 || l.bonus > 0) ? ' has-reward' : ''}">
+    <div class="loyalty-card${(l.menus > 0 || (l.pass || 0) > 0 || l.bonus > 0) ? ' has-reward' : ''}">
       <div class="loyalty-card-head">
         <span class="loyalty-title">${t('loyalty.title')}</span>
         <span class="loyalty-count">${formatPrice(l.spent)} / ${formatPrice(LOYALTY_GOAL_EUR)}</span>
@@ -9407,6 +9438,7 @@ async function loadShopStatus() {
       soldOut: Array.isArray(s.soldOut) ? s.soldOut : [],
       waitTime: Math.max(0, parseInt(s.waitTime, 10) || 0),
       special: (s.special && s.special.id) ? s.special : null,
+      zahlung: (s.zahlung && typeof s.zahlung === 'object') ? s.zahlung : null,   // Paket bezahlen
     };
     applyShopStatus();
     if (typeof applyWeeklySpecial === 'function') applyWeeklySpecial();
@@ -11696,6 +11728,9 @@ function renderCart() {
   }
 
   if (checkoutStep === 'details') {
+    // Paket bezahlen: offenes Widget abbauen, Formular wird neu gebaut. Der
+    // Vorgang bleibt im Zwischenspeicher; die nächste Bestellung ersetzt ihn.
+    if (KASSE_W) { kasseWidgetAufraeumen(); checkoutBusy = false; }
     setCartChrome('details');
     title.textContent = t('co.title_details');
     const usageNote = promoApplied ? `
@@ -11982,7 +12017,9 @@ function renderCart() {
       if (checked.value === 'sumup') {
         btn.className = 'btn btn-primary btn-block btn-lg';
         btn.innerHTML = t('checkout.submit_online');
-        hint.textContent = t('checkout.hint_online');
+        // Paket bezahlen: mit Widget bleibt der Kunde auf der Seite; SDK schon vorladen
+        hint.textContent = t(direktZahlungAktiv() ? 'pay.w_hint' : 'checkout.hint_online');
+        if (direktZahlungAktiv()) kasseSdkLaden();
       } else {
         btn.className = 'btn btn-primary btn-block btn-lg';
         btn.innerHTML = t('checkout.submit_cash');
@@ -12449,17 +12486,21 @@ async function submitOrder(e) {
     }
 
     try {
+      // Paket bezahlen: Widget nur, wenn der Schalter an ist und das SDK lädt
+      const mitWidget = direktZahlungAktiv() && await kasseSdkLaden();
       // Bis zu 2 Versuche: der allererste Aufruf nach dem Laden bzw. aus dem
       // Function-Kaltstart schlägt gelegentlich fehl (bisher half ein manuelles
       // Neuladen). Ein automatischer zweiter Versuch erspart das dem Kunden.
-      let res = null, data = null, lastErr = null;
+      let res = null, data = null, lastErr = null, kasseAnfrage = null;
       for (let attempt = 0; attempt < 2; attempt++) {
         if (attempt > 0) await new Promise(r => setTimeout(r, 700));
         try {
           res = await fetch(SUMUP_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            body: JSON.stringify(kasseAnfrage = {
+              // Paket bezahlen: Wunsch nach dem Widget; ob es gilt, entscheidet der Server
+              zahlweg: mitWidget ? 'widget' : 'weiterleitung',
               amount: amountToCharge,
               description: buildOrderDescription(orderData),
               // In der App: Rueckkehr-URL soll den App-Modus behalten (app=1),
@@ -12495,6 +12536,19 @@ async function submitOrder(e) {
       }
 
       const dataWithRef = { ...orderData, reference: data.reference };
+
+      // Paket bezahlen: Widget direkt in Schritt 3 statt Weiterleitung
+      if (data && data.zahlweg === 'widget' && data.id && mitWidget) {
+        try {
+          localStorage.setItem(PENDING_STORE_KEY, JSON.stringify({
+            reference: data.reference, checkoutId: data.id, order: dataWithRef,
+            cartSnapshot: { ...cart }, zahlweg: 'widget',
+          }));
+        } catch (e) {}
+        clearTimeout(checkoutHintT);
+        kasseWidgetZeigen(data, kasseAnfrage, dataWithRef, amountToCharge);
+        return;
+      }
 
       // Zur SumUp-Zahlungsseite weiterleiten
       if (!data || !data.hosted_checkout_url) {
@@ -15918,6 +15972,430 @@ if (cfDate) {
 }
 
 /* ====================================================================
+   BEZAHLEN OHNE UMWEG (Paket bezahlen)
+   Ist der Admin-Schalter an (shop-status: zahlung.direkt), zeigt die Kasse
+   das SumUp-Widget direkt in Schritt 3: Karte, Apple Pay und Google Pay,
+   ohne Wechsel auf die SumUp-Seite. Der Server legt die Kasse an wie bisher
+   (sumup-checkout, Betrag nachgerechnet) und entscheidet selbst, ob das
+   Widget erlaubt ist. Nach der Zahlung läuft derselbe Abschluss wie nach der
+   Rückkehr von SumUp (handlePaymentReturn: Status bei SumUp, Bestätigung),
+   der Webhook unabhängig davon.
+   Die Weiterleitung bleibt:
+     - wenn der Schalter aus ist (Werkszustand),
+     - in der iOS-App: Apple Pay ist im WKWebView gesperrt, sobald die App
+       Skripte in die Seite gibt (gncAppBuild, Brücken). Der Sprung auf die
+       SumUp-Seite lädt eine neue Seite und zeigt den Apple-Pay-Knopf,
+     - wenn das Widget nicht lädt (Skript blockiert, Netz, Zeitüberschreitung).
+   ==================================================================== */
+const SUMUP_SDK_URL = 'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js';
+var kasseSdkLauf = null;
+var KASSE_W = null;   // laufendes Widget
+const KW_SCHLOSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg>';
+
+function direktZahlungAktiv() {
+  return !!(SHOP_STATUS && SHOP_STATUS.zahlung && SHOP_STATUS.zahlung.direkt)
+    && !istIOSApp() && !TEST_MODE_NO_BACKEND;
+}
+
+// SDK einmal laden. true, sobald window.SumUpCard bereitsteht; nie länger als 8 s.
+function kasseSdkLaden() {
+  if (window.SumUpCard && typeof window.SumUpCard.mount === 'function') return Promise.resolve(true);
+  if (kasseSdkLauf) return kasseSdkLauf;
+  kasseSdkLauf = new Promise(function (fertig) {
+    var erledigt = false, zeit = 0;
+    function ende(ok) {
+      if (erledigt) return;
+      erledigt = true; clearTimeout(zeit);
+      if (!ok) kasseSdkLauf = null;   // beim nächsten Mal neu versuchen
+      fertig(ok);
+    }
+    zeit = setTimeout(function () { ende(false); }, 8000);
+    try {
+      var s = document.createElement('script');
+      s.src = SUMUP_SDK_URL;
+      s.async = true;
+      s.onload = function () { ende(!!(window.SumUpCard && typeof window.SumUpCard.mount === 'function')); };
+      s.onerror = function () { s.remove(); ende(false); };
+      document.head.appendChild(s);
+    } catch (e) { ende(false); }
+  });
+  return kasseSdkLauf;
+}
+
+// SumUp kennt kein Türkisch; dann Deutsch wie die übrige Seite
+function kasseLocale() {
+  return ({ de: 'de-DE', en: 'en-GB', it: 'it-IT', es: 'es-ES', pt: 'pt-PT', fr: 'fr-FR', nl: 'nl-NL' })[currentLang] || 'de-DE';
+}
+
+/* Wallet-Knöpfe je Plattform wie bei der Kundenkarte: iOS nur Apple Pay,
+   Android nur Google Pay, Desktop beide. Zahlarten mit Weiterleitung fallen
+   weg, denn der Widget-Checkout hat bewusst keine redirect_url. */
+const KW_WEITERLEITUNG = ['sofort', 'ideal', 'bancontact', 'giropay', 'p24', 'blik', 'eps', 'mybank', 'satispay', 'paypal', 'boleto', 'pix', 'qr_code_pix'];
+function kasseWidgetMethoden(liste) {
+  var ua = navigator.userAgent || '';
+  var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  var android = !ios && /Android/.test(ua);
+  var ids = (Array.isArray(liste) ? liste : []).map(function (m) {
+    return typeof m === 'string' ? m : String((m && (m.id || m.type || m.name)) || '');
+  }).filter(Boolean);
+  var bleiben = ids.filter(function (id) {
+    var k = id.toLowerCase();
+    if (k === 'apple_pay' && android) return false;
+    if (k === 'google_pay' && ios) return false;
+    return KW_WEITERLEITUNG.indexOf(k) < 0;
+  });
+  return bleiben.length ? bleiben : undefined;
+}
+
+function kasseWidgetHinweis(text) {
+  var h = document.getElementById('kwHinweis');
+  if (h) h.textContent = text || '';
+}
+function kasseZurueckSperren(an) {
+  var z = document.getElementById('kwZurueck');
+  if (z) z.setAttribute('aria-disabled', an ? 'true' : 'false');
+}
+
+/* Widget in Schritt 3 zeigen. Das Formular bleibt im Dokument (nur
+   versteckt): Abbruch und Fehler führen ohne Neuaufbau zurück, alle
+   Eingaben stehen noch da. */
+function kasseWidgetZeigen(data, anfrage, auftrag, betrag) {
+  kasseWidgetAufraeumen();
+  var form = document.getElementById('checkoutForm');
+  KASSE_W = { ref: data.reference, checkoutId: data.id, anfrage: anfrage, auftrag: auftrag,
+              korb: Object.assign({}, cart), laeuft: false, geladen: false, karte: null, ladeT: 0 };
+  if (!form || !window.SumUpCard) { kasseWidgetRueckfall(); return; }
+  var box = document.createElement('section');
+  box.id = 'kasseWidget';
+  box.className = 'kasse-widget';
+  box.setAttribute('aria-labelledby', 'kwTitel');
+  box.innerHTML = '<div class="kw-kopf"><h3 id="kwTitel" tabindex="-1">' + t('pay.w_title') + '</h3>'
+    + '<span class="kw-betrag">' + formatPrice(betrag) + '</span></div>'
+    + '<p class="kw-sub">' + t('pay.w_sub') + '</p>'
+    + '<div class="kw-laden" id="kwLaden"><span class="acc-wait-ring"><span class="busy-spin" aria-hidden="true"></span></span><span>' + t('pay.w_loading') + '</span></div>'
+    + '<div id="sumupKarte" class="kw-karte"></div>'
+    + '<p class="kw-hinweis" id="kwHinweis" role="status" aria-live="polite"></p>'
+    + '<p class="kw-sicher">' + KW_SCHLOSS + '<span>' + t('pay.w_secure') + '</span></p>';
+  form.hidden = true;
+  form.parentNode.insertBefore(box, form);
+  // Fuß: Bestellknopf weg, „Zurück“ her. Summe bleibt stehen.
+  var sb = checkoutSubmitBtn();
+  if (sb) { gncBusy(sb, false); sb.hidden = true; }
+  var hint = document.getElementById('coSubmitHint'); if (hint) hint.hidden = true;
+  clearTimeout(checkoutHintT); setCheckoutHint('');
+  var fuss = document.getElementById('cartFooter');
+  if (fuss) {
+    var zur = document.createElement('button');
+    zur.type = 'button'; zur.id = 'kwZurueck'; zur.className = 'btn btn-ghost btn-block kw-zurueck';
+    zur.setAttribute('data-on-click', 'kasseWidgetZurueck()');
+    zur.textContent = t('pay.w_back');
+    fuss.appendChild(zur);
+  }
+  var cfg = {
+    id: 'sumupKarte', checkoutId: data.id, locale: kasseLocale(), country: 'DE',
+    amount: Number(betrag).toFixed(2), currency: 'EUR',
+    onLoad: kasseWidgetGeladen, onResponse: kasseWidgetAntwort, onPaymentMethodsLoad: kasseWidgetMethoden,
+  };
+  if (auftrag && auftrag.email) cfg.email = auftrag.email;
+  if (data.googlePay && data.googlePay.merchantId) cfg.googlePay = data.googlePay;
+  try {
+    KASSE_W.karte = window.SumUpCard.mount(cfg);
+  } catch (e) {
+    console.error('SumUp-Widget:', e);
+    kasseWidgetRueckfall();
+    return;
+  }
+  KASSE_W.ladeT = setTimeout(function () { if (KASSE_W && !KASSE_W.geladen) kasseWidgetRueckfall(); }, 12000);
+  try { document.getElementById('kwTitel').focus({ preventScroll: true }); box.scrollIntoView({ block: 'start' }); } catch (e) {}
+}
+
+function kasseWidgetGeladen() {
+  if (!KASSE_W) return;
+  KASSE_W.geladen = true;
+  clearTimeout(KASSE_W.ladeT);
+  var l = document.getElementById('kwLaden'); if (l) l.hidden = true;
+}
+
+function kasseWidgetAntwort(typ, inhalt) {
+  if (!KASSE_W) return;
+  if (typ === 'sent' || typ === 'auth-screen') {
+    KASSE_W.laeuft = true; kasseZurueckSperren(true); kasseWidgetHinweis('');
+    return;
+  }
+  if (typ === 'invalid') { KASSE_W.laeuft = false; kasseZurueckSperren(false); return; }
+  if (typ === 'success' || typ === 'fail' || typ === 'error') kasseWidgetPruefen(typ);
+}
+
+/* Ergebnis nie dem Widget glauben: der Server fragt SumUp (sumup-status).
+   Nach „success“ mehrmals, solange SumUp noch PENDING meldet. */
+async function kasseWidgetPruefen(anlass) {
+  var w = KASSE_W;
+  if (!w || w.prueft) return;
+  w.prueft = true;
+  var versuche = anlass === 'success' ? 6 : 1;
+  var st = 'UNKNOWN';
+  if (anlass === 'success') gncWaitOverlay(t('wait.paying'), t('wait.paying_sub'));
+  for (var i = 0; i < versuche; i++) {
+    if (i) await new Promise(function (r) { setTimeout(r, 700 * i); });
+    try {
+      var r = await fetch('/.netlify/functions/sumup-status?id=' + encodeURIComponent(w.checkoutId));
+      var d = await r.json().catch(function () { return null; });
+      if (r.ok && d && d.status) st = String(d.status).toUpperCase();
+    } catch (e) {}
+    if (st === 'PAID' || st === 'FAILED' || st === 'EXPIRED') break;
+  }
+  w.prueft = false;
+  if (KASSE_W !== w) { gncWaitHide(); return; }   // inzwischen geschlossen
+  if (st === 'PAID') {
+    // Abschluss wie nach der Rückkehr von der SumUp-Seite (liest den Zwischenspeicher)
+    kasseWidgetAufraeumen();
+    gncWaitHide();
+    handlePaymentReturn();
+    return;
+  }
+  gncWaitHide();
+  if (st === 'FAILED' || st === 'EXPIRED') {
+    try { var p = JSON.parse(localStorage.getItem(PENDING_STORE_KEY) || 'null'); if (p && p.reference === w.ref) localStorage.removeItem(PENDING_STORE_KEY); } catch (e) {}
+    kasseWidgetSchliessen();
+    flashCartNotice(t('pay.w_declined'));
+    return;
+  }
+  if (anlass === 'fail') {
+    // Abgebrochen oder Zeit abgelaufen: wie der Rückzieher von der SumUp-Seite
+    kasseVorgangStornieren(w);
+    kasseWidgetSchliessen();
+    flashCartNotice(t('co.pay_not_completed'));
+    return;
+  }
+  w.laeuft = false;
+  kasseZurueckSperren(false);
+  if (anlass === 'error') { kasseWidgetHinweis(t('pay.w_error')); return; }
+  // „success“, aber SumUp meldet noch kein Ergebnis: nichts stornieren, einmal später nachfragen
+  kasseWidgetHinweis(t('pay.w_checking'));
+  if (!w.nachgefragt) { w.nachgefragt = true; setTimeout(function () { if (KASSE_W === w) kasseWidgetPruefen('success'); }, 8000); }
+}
+
+function kasseVorgangStornieren(w) {
+  try {
+    fetch(SUMUP_ENDPOINT, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cancelOnly: true, supersedes: { reference: w.ref, checkoutId: w.checkoutId } }),
+    }).catch(function () {});
+  } catch (e) {}
+  try { var p = JSON.parse(localStorage.getItem(PENDING_STORE_KEY) || 'null'); if (p && p.reference === w.ref) localStorage.removeItem(PENDING_STORE_KEY); } catch (e) {}
+}
+
+// „Zurück zu deinen Angaben“: Vorgang stornieren, Formular mit allen Eingaben zeigen
+function kasseWidgetZurueck() {
+  var w = KASSE_W;
+  if (!w) return;
+  if (w.laeuft || w.prueft) { kasseWidgetHinweis(t('pay.w_running')); return; }
+  kasseVorgangStornieren(w);
+  kasseWidgetSchliessen();
+  try { var f = document.getElementById('co-first'); if (f) f.focus({ preventScroll: true }); } catch (e) {}
+}
+
+// Widget entfernen (ohne Formular-Umbau)
+function kasseWidgetAufraeumen() {
+  var w = KASSE_W; KASSE_W = null;
+  if (!w) return;
+  clearTimeout(w.ladeT);
+  try { if (w.karte && typeof w.karte.unmount === 'function') w.karte.unmount(); } catch (e) {}
+  var box = document.getElementById('kasseWidget'); if (box) box.remove();
+  var z = document.getElementById('kwZurueck'); if (z) z.remove();
+}
+// Widget weg, Schritt 3 wieder wie vorher
+function kasseWidgetSchliessen() {
+  kasseWidgetAufraeumen();
+  var form = document.getElementById('checkoutForm'); if (form) form.hidden = false;
+  var sb = checkoutSubmitBtn(); if (sb) sb.hidden = false;
+  var hint = document.getElementById('coSubmitHint'); if (hint) hint.hidden = false;
+  resetCheckoutSubmitLabel();
+}
+
+/* Rückfall: Das Widget lädt nicht. Dann wie bisher zur SumUp-Seite, mit
+   einer neuen gehosteten Kasse; die Widget-Kasse wird dabei storniert. */
+async function kasseWidgetRueckfall() {
+  var w = KASSE_W;
+  if (!w || w.rueckfall) return;
+  w.rueckfall = true;
+  clearTimeout(w.ladeT);
+  kasseWidgetHinweis(t('wait.to_sumup'));
+  var anfrage = Object.assign({}, w.anfrage, {
+    zahlweg: 'weiterleitung',
+    reference: 'GNC-' + Date.now(),
+    supersedes: { reference: w.ref, checkoutId: w.checkoutId },
+  });
+  try {
+    var r = await fetch(SUMUP_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(anfrage) });
+    var d = await r.json().catch(function () { return null; });
+    if (!r.ok || !d || !d.hosted_checkout_url) throw new Error('keine Zahlungs-URL');
+    try {
+      localStorage.setItem(PENDING_STORE_KEY, JSON.stringify({
+        reference: d.reference, checkoutId: d.id || null,
+        order: Object.assign({}, w.auftrag, { reference: d.reference }), cartSnapshot: w.korb,
+      }));
+    } catch (e) {}
+    try { if (w.karte && typeof w.karte.unmount === 'function') w.karte.unmount(); } catch (e) {}
+    window.location.href = d.hosted_checkout_url;
+  } catch (e) {
+    console.error('Rückfall zur SumUp-Seite:', e);
+    if (KASSE_W === w) kasseWidgetSchliessen();
+    flashCartNotice(t('co.submit_error'));
+  }
+}
+
+/* ====================================================================
+   BURGER-PASS IM KUNDENKONTO (Paket bezahlen)
+   Kauf über die gehostete SumUp-Kasse (burger-pass.js), Anzeige
+   „3 von 4 Menüs übrig, gültig bis …“. Eingelöst wird im Warenkorb über
+   denselben Weg wie das Menü aufs Haus, am Truck per Scan.
+   ==================================================================== */
+const PASS_PENDING_KEY = 'gnc_pass_pending_v1';
+const PASS_SYMBOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2.5a2.5 2.5 0 0 0 0 5V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4.5a2.5 2.5 0 0 0 0-5z"/><path d="M14 5v2M14 11v2M14 17v2"/></svg>';
+
+function passAngebot() { return (SHOP_STATUS && SHOP_STATUS.zahlung && SHOP_STATUS.zahlung.pass) || null; }
+function passListe() {
+  return (accountLoggedIn() && Array.isArray(ACCOUNT.profile.paesse)) ? ACCOUNT.profile.paesse : [];
+}
+// Kommt das nächste Gratis-Menü aus einem Pass? (Pass geht vor, frühester Ablauf zuerst)
+function passKommtZuerst() { return (getLoyalty().pass || 0) > 0; }
+function passNameKunde() {
+  var l = passListe();
+  return (l[0] && l[0].name) || (passAngebot() && passAngebot().name) || t('pass.title');
+}
+function passDatum(iso) {
+  try {
+    return new Date(iso).toLocaleDateString((typeof LANG_LOCALES !== 'undefined' && LANG_LOCALES[currentLang]) || 'de-DE',
+      { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Berlin' });
+  } catch (e) { return String(iso || '').slice(0, 10); }
+}
+
+function passKarteHtml(p) {
+  var liste = Array.isArray(p && p.paesse) ? p.paesse : [];
+  var ang = passAngebot();
+  if (!liste.length && !ang) return '';
+  var name = (liste[0] && liste[0].name) || (ang && ang.name) || t('pass.title');
+  var h = '<div class="bp-karte' + (liste.length ? ' hat' : '') + '" id="accPass">'
+    + '<div class="bp-kopf">' + PASS_SYMBOL + '<span>' + escG(name) + '</span></div>';
+  liste.forEach(function (b) {
+    var gesamt = Math.max(1, Number(b.gesamt) || 1);
+    // Name nur davor, wenn mehrere Pässe laufen (sonst steht er schon im Kopf)
+    h += '<p class="bp-stand">' + (liste.length > 1 ? '<strong>' + escG(b.name) + ':</strong> ' : '')
+      + escG(t('pass.status').replace('{left}', b.menus).replace('{total}', gesamt).replace('{date}', passDatum(b.bis))) + '</p>'
+      + '<div class="bp-punkte" aria-hidden="true">'
+      + Array.from({ length: Math.min(gesamt, 20) }, function (_, i) { return '<span class="' + (i < b.menus ? 'voll' : '') + '"></span>'; }).join('')
+      + '</div>';
+  });
+  if (ang) {
+    h += '<p class="bp-angebot">' + escG(t('pass.offer').replace('{menus}', ang.menus).replace('{price}', formatPrice(ang.preis)).replace('{days}', ang.tage)) + '</p>'
+      + '<button type="button" class="btn btn-primary btn-block" data-on-click="passKaufen(this)">'
+      + escG(liste.length ? t('pass.again') + ' · ' + formatPrice(ang.preis) : t('pass.buy').replace('{price}', formatPrice(ang.preis)))
+      + '</button>'
+      + '<p class="bp-regel">' + escG(t('pass.terms')) + '</p>';
+  }
+  return h + '</div>';
+}
+
+async function passKaufen(btn) {
+  if (!accountLoggedIn()) { openAccountOverlay(); return; }
+  if (gncIsBusy(btn)) return;
+  gncBusy(btn, true);
+  var weiter = false;
+  try {
+    var alt = null;
+    try { alt = JSON.parse(localStorage.getItem(PASS_PENDING_KEY) || 'null'); } catch (e) {}
+    var r = await fetch('/burger-pass', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'kaufen', email: ACCOUNT.email, token: ACCOUNT.token, lang: currentLang,
+        appMode: APP_FORCED ? 1 : 0,
+        supersedes: (alt && alt.reference && alt.checkoutId) ? { reference: alt.reference, checkoutId: alt.checkoutId } : null,
+      }),
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.status === 403) {
+      if (SHOP_STATUS.zahlung) SHOP_STATUS.zahlung.pass = null;
+      renderAccount();
+      flashAccMsg(t('pass.off'));
+      return;
+    }
+    if (r.status === 401) { refreshAccount(); flashAccMsg(t('acc.error'), btn); return; }
+    if (!r.ok || !d.hosted_checkout_url) { flashAccMsg(accErrText({ status: r.status }), btn); return; }
+    try { localStorage.setItem(PASS_PENDING_KEY, JSON.stringify({ reference: d.reference, checkoutId: d.id })); } catch (e) {}
+    weiter = true;
+    window.location.href = d.hosted_checkout_url;
+  } catch (e) {
+    flashAccMsg(t('acc.err_network'), btn);
+  } finally {
+    // Beim Sprung zu SumUp bleibt der Knopf im Wartezustand
+    if (!weiter) gncBusy(btn, false);
+    else setTimeout(function () { gncBusy(btn, false); }, 8000);
+  }
+}
+
+// Konto öffnen, zum Pass scrollen. Gute Nachricht als Toast, Fehler rot unter der Karte.
+function passKontoOeffnen(meldung, fehler) {
+  openAccountOverlay();
+  setTimeout(function () {
+    var k = document.getElementById('accPass');
+    if (k) { try { k.scrollIntoView({ block: 'center' }); } catch (e) {} }
+    if (!meldung) return;
+    if (fehler || typeof showToast !== 'function') flashAccMsg(meldung, k || undefined);
+    else showToast(meldung);
+  }, 350);
+}
+
+/* Rückkehr von der SumUp-Seite (?pass=return) und Link aus den
+   Erinnerungsmails (?pass=konto). Ausgestellt wird nur, wenn der Server bei
+   SumUp PAID bestätigt (burger-pass.js, Aktion 'pruefen'). */
+async function passRueckkehr() {
+  var q = new URLSearchParams(location.search);
+  var modus = q.get('pass');
+  if (!modus) return;
+  try { window.history.replaceState({}, '', window.location.pathname); } catch (e) {}
+  if (modus !== 'return') { setTimeout(function () { passKontoOeffnen(); }, 400); return; }
+  var p = null;
+  try { p = JSON.parse(localStorage.getItem(PASS_PENDING_KEY) || 'null'); } catch (e) {}
+  if (!p || !p.reference || !p.checkoutId) { setTimeout(function () { passKontoOeffnen(); }, 400); return; }
+  gncWaitOverlay(t('wait.paying'), t('wait.paying_sub'));
+  var st = 'UNKNOWN', d = null;
+  for (var i = 0; i < 3 && st === 'UNKNOWN'; i++) {
+    if (i) await new Promise(function (r) { setTimeout(r, 900 * i); });
+    try {
+      var r = await fetch('/burger-pass', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pruefen', reference: p.reference, checkoutId: p.checkoutId }),
+      });
+      d = await r.json().catch(function () { return null; });
+      if (r.ok && d && d.status) st = String(d.status).toUpperCase();
+    } catch (e) {}
+  }
+  gncWaitHide();
+  var weg = function () { try { localStorage.removeItem(PASS_PENDING_KEY); } catch (e) {} };
+  if (st === 'PAID') {
+    weg();
+    if (accountLoggedIn()) await refreshAccount();
+    var pa = (d && d.pass) || {};
+    passKontoOeffnen(t('pass.active').replace('{name}', pa.name || passNameKunde()).replace('{menus}', pa.menus || '').replace('{date}', passDatum(pa.bis)));
+    return;
+  }
+  if (st === 'PENDING') {
+    // Zurück ohne Zahlung: Vorgang stornieren, ohne Meldung (wie bei Bestellungen)
+    try {
+      fetch('/burger-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'abbrechen', supersedes: { reference: p.reference, checkoutId: p.checkoutId } }) }).catch(function () {});
+    } catch (e) {}
+    weg();
+    passKontoOeffnen();
+    return;
+  }
+  if (st === 'FAILED' || st === 'EXPIRED') { weg(); passKontoOeffnen(t('pass.failed'), true); return; }
+  // Keine Antwort: Zwischenspeicher behalten, der Webhook stellt bei Zahlung ohnehin aus
+  passKontoOeffnen(t('pass.pending'));
+}
+
+/* ====================================================================
    PAYMENT RETURN HANDLING (für SumUp-Rückkehr)
    ==================================================================== */
 // Kleine Hinweis-Box oben im Warenkorb (z. B. „Zahlung nicht abgeschlossen")
@@ -16340,6 +16818,7 @@ setTimeout(kontoAuffrischen, 1200);   // Stempelkarte nach dem Seitenstart frisc
 initCookies();
 applyLocation();   // Anzeigestellen aus dem Standort-Datensatz füllen
 handlePaymentReturn();
+passRueckkehr();   // Paket bezahlen: Burger-Pass-Kauf, Links aus den Erinnerungsmails
 /* Zurück-Taste aus dem SumUp-Fenster: Die Seite kommt aus dem bfcache, also
    ohne Neuladen und ohne dass irgendein Skript neu läuft – der Bestellknopf
    steht noch auf "Erstelle Zahlungsseite ..." und ist gesperrt.

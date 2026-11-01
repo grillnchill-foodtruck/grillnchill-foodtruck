@@ -162,7 +162,7 @@ function mailBauen(art, pass, extra) {
   if (art === 'kauf') zeilen.push(t.so, t.regel);
   else if (x.kaufOffen) zeilen.push(t.neu);
   const knopfText = art !== 'kauf' && x.kaufOffen ? t.knopf_neu : t.knopf_konto;
-  const knopfZiel = site + '/?pass=konto' + (lang !== 'de' ? '&lang=' + lang : '');
+  const knopfZiel = site + '/?pass=konto';
   const html = `<!DOCTYPE html><html lang="${lang}"><body style="margin:0;padding:0;background:#F5E9D0;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;">
   <div style="max-width:520px;margin:0 auto;background:#0F0D0A;border-radius:14px;overflow:hidden;">
     <div style="background:#CC4715;padding:20px 26px;">

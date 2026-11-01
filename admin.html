@@ -885,6 +885,46 @@
         <div id="vTypeFilter" style="display:flex;gap:.45rem;flex-wrap:wrap;margin:.2rem 0 .8rem;"></div>
         <div id="vList"><p class="empty">Gutscheine werden geladen …</p></div>
       </div>
+
+      <!-- Paket bezahlen: Admin-Schalter (beide ab Werk aus). Eigener Block über
+           die ganze Breite, damit das Raster der Gutschein-Karten bleibt. -->
+      <div id="zahlBereich" style="grid-column:1/-1;">
+      <div class="sec"><h3>Bezahlen und Burger-Pass</h3></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:0 1rem;align-items:start;">
+      <div class="card" id="zahlCard">
+        <div class="switch-row">
+          <div>
+            <h2 style="font-size:1rem;">Bezahlen ohne Umweg</h2>
+            <p class="hint">Karte, Apple Pay und Google Pay direkt in der Kasse, ohne Wechsel auf die SumUp-Seite. In der iPhone-App und wenn das Widget nicht lädt, bleibt die SumUp-Seite. Erst einschalten, wenn Apple Pay im SumUp-Konto für grillnchill-foodtruck.de eingerichtet ist.</p>
+          </div>
+          <label class="switch"><input type="checkbox" id="zDirekt" aria-label="Bezahlen ohne Umweg"><span class="slider"></span></label>
+        </div>
+      </div>
+      <div class="card" id="passCard">
+        <div class="switch-row" style="margin-bottom:.9rem;">
+          <div>
+            <h2 style="font-size:1rem;">Burger-Pass verkaufen</h2>
+            <p class="hint">Menü-Paket ohne automatische Verlängerung. Angemeldete Kunden kaufen es im Konto und lösen online oder am Truck ein. Vorausbezahlte Menüs sind steuerlich ein Gutschein: erst einschalten, wenn der Steuerberater zugestimmt hat. Gekaufte Pässe bleiben einlösbar, auch wenn der Verkauf aus ist.</p>
+          </div>
+          <label class="switch"><input type="checkbox" id="pAktiv" aria-label="Burger-Pass verkaufen"><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label for="pName">Name</label>
+          <input type="text" id="pName" maxlength="40" placeholder="Burger-Pass" autocomplete="off">
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem;">
+          <div class="field"><label for="pPreis">Preis €</label><input type="number" id="pPreis" min="5" max="200" step="0.5" inputmode="decimal" placeholder="39"></div>
+          <div class="field"><label for="pMenus">Menüs</label><input type="number" id="pMenus" min="1" max="20" step="1" inputmode="numeric" placeholder="4"></div>
+          <div class="field"><label for="pTage">Tage gültig</label><input type="number" id="pTage" min="7" max="365" step="1" inputmode="numeric" placeholder="60"></div>
+        </div>
+        <p class="hint" id="pRechnung" style="margin:-.2rem 0 .9rem;"></p>
+        <button class="btn" id="zSpeichern" type="button">Einstellungen speichern</button>
+        <p class="hint" id="zStand" style="margin-top:.6rem;color:var(--faint);font-size:.75rem;"></p>
+        <div class="sec"><h3>Verkaufte Pässe</h3><span class="count" id="pCount"></span></div>
+        <div id="pListe"><p class="empty">Verkäufe werden geladen …</p></div>
+      </div>
+      </div>
+      </div>
     </section>
 
     <!-- ============ TAB: TEAM (nur Admin) ============ -->
@@ -1506,6 +1546,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
     if(tab.dataset.tab==='catering' && !cateringLoaded) loadCatering();
     if(tab.dataset.tab==='team' && !teamLoaded) loadTeam();
     if(tab.dataset.tab==='vouchers' && !vouchersLoaded) loadVouchers();
+    if(tab.dataset.tab==='vouchers' && !zahlGeladen) zahlLaden();   // Paket bezahlen
     if(tab.dataset.tab==='invoices' && !invoicesLoaded){ loadInvoices(); loadBackups(); }
   });
 });
@@ -1741,6 +1782,106 @@ document.addEventListener('click',(e)=>{
   const bak=e.target.closest('[data-bak]');
   if(bak){ backupLaden(bak.dataset.bak, bak); return; }
 });
+/* ================== Bezahlen und Burger-Pass (Paket bezahlen) ==================
+   Einstellungen liegen in shop-status unter bereich 'zahlung' (nur Admins).
+   Gesendet wird immer der ganze Stand, damit nichts auf den Werkswert fällt. */
+let zahlGeladen=false, zahlStand=null;
+async function zahlApi(body){
+  const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:currentPw,bereich:'zahlung',...body})});
+  return {ok:res.ok,status:res.status,d:await res.json().catch(()=>({}))};
+}
+function zahlRechnung(){
+  const preis=parseFloat(String($('pPreis').value||'').replace(',','.')), menus=parseInt($('pMenus').value,10);
+  $('pRechnung').textContent=(preis>0&&menus>0)?('Pro Menü '+eur(preis/menus)+'.'):'';
+}
+function zahlZeigen(z){
+  if(!z||!z.pass) return;
+  zahlStand=z;
+  $('zDirekt').checked=!!z.direktZahlung;
+  $('pAktiv').checked=!!z.pass.aktiv;
+  $('pName').value=z.pass.name||'';
+  $('pPreis').value=z.pass.preis;
+  $('pMenus').value=z.pass.menus;
+  $('pTage').value=z.pass.tage;
+  $('zahlCard').classList.toggle('on',!!z.direktZahlung);
+  $('zStand').textContent=z.updatedAt?('Zuletzt geändert am '+new Date(z.updatedAt).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+' von '+(z.updatedBy||'?')+'.'):'Werkseinstellung: beides aus.';
+  zahlRechnung();
+}
+async function zahlLaden(){
+  zahlGeladen=true;
+  try{
+    const r=await zahlApi({lesen:true});
+    if(r.ok) zahlZeigen(r.d.zahlung);
+    else{ zahlGeladen=false; toast(r.status===403?'Nur Admins sehen die Bezahl-Einstellungen':'Bezahl-Einstellungen nicht geladen','err'); }
+  }catch(e){ zahlGeladen=false; toast('Netzwerkfehler','err'); }
+  passListeLaden();
+}
+let zahlLaeuft=false;
+async function zahlSpeichern(btn){
+  if(zahlLaeuft) return;
+  if(!zahlStand){ toast('Erst laden, dann speichern','err'); return; }
+  zahlLaeuft=true;
+  try{
+    const z={
+      direktZahlung:$('zDirekt').checked,
+      pass:{aktiv:$('pAktiv').checked,name:$('pName').value.trim()||'Burger-Pass',
+        preis:parseFloat(String($('pPreis').value||'').replace(',','.')),menus:parseInt($('pMenus').value,10),tage:parseInt($('pTage').value,10)},
+    };
+    if(!(z.pass.preis>=5&&z.pass.preis<=200)){ toast('Preis zwischen 5 und 200 €','err'); return; }
+    if(!(z.pass.menus>=1&&z.pass.menus<=20)){ toast('Menüs zwischen 1 und 20','err'); return; }
+    if(!(z.pass.tage>=7&&z.pass.tage<=365)){ toast('Gültigkeit zwischen 7 und 365 Tagen','err'); return; }
+    // Einschalten nur mit Rückfrage: beides betrifft Geld und Steuer
+    const an=[];
+    if(z.direktZahlung&&!zahlStand.direktZahlung) an.push('Bezahlen ohne Umweg');
+    if(z.pass.aktiv&&!zahlStand.pass.aktiv) an.push(z.pass.name+' verkaufen');
+    if(an.length){
+      const ok=await confirmBooking({
+        title:'Einschalten?', customer:an.join(' und '),
+        amount:z.pass.aktiv&&!zahlStand.pass.aktiv?(eur(z.pass.preis)+' für '+z.pass.menus+' Menüs\n'+z.pass.tage+' Tage gültig'):'Widget in der Kasse',
+        note:z.pass.aktiv&&!zahlStand.pass.aktiv
+          ?'Gilt sofort für alle Kunden. Steuerfrage vorher mit dem Steuerberater klären (vorausbezahlte Menüs = Gutschein).'
+          :'Gilt sofort für alle Kunden. Vorher im SumUp-Konto Apple Pay für grillnchill-foodtruck.de einrichten.',
+        okLabel:'Einschalten',
+      });
+      if(!ok){ zahlZeigen(zahlStand); return; }
+    }
+    if(btn&&btn.tagName==='BUTTON') gncBusy(btn,true);
+    try{
+      const r=await zahlApi({zahlung:z});
+      if(r.ok){ zahlZeigen(r.d.zahlung); toast('Gespeichert','ok'); }
+      else if(r.status===401){ toast('Anmeldung abgelaufen','err'); }
+      else{ toast(r.d.hint||r.d.error||'Speichern fehlgeschlagen','err'); zahlZeigen(zahlStand); }
+    }catch(e){ toast('Netzwerkfehler','err'); zahlZeigen(zahlStand); }
+    finally{ if(btn&&btn.tagName==='BUTTON') gncBusy(btn,false); }
+  }finally{ zahlLaeuft=false; }
+}
+async function passListeLaden(){
+  const el=$('pListe');
+  try{
+    const res=await fetch('/burger-pass',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'liste',password:currentPw})});
+    const d=await res.json().catch(()=>({}));
+    if(!res.ok){ el.innerHTML='<p class="empty">Verkäufe konnten nicht geladen werden.</p>'; return; }
+    const L=d.liste||[];
+    const aktiv=L.filter(p=>p.status==='aktiv');
+    $('pCount').textContent=L.length?(L.length+' verkauft · '+aktiv.length+' aktiv · '+aktiv.reduce((n,p)=>n+(p.uebrig||0),0)+' Menüs offen'):'';
+    if(!L.length){ el.innerHTML='<p class="empty">Noch kein Pass verkauft.</p>'; return; }
+    const dOnly=x=>x?new Date(x).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}):'-';
+    const ST={aktiv:['Aktiv','bdg online'],verbraucht:['Verbraucht','bdg'],abgelaufen:['Abgelaufen','bdg abandoned']};
+    el.innerHTML=L.slice(0,60).map(p=>{
+      const st=ST[p.status]||[p.status||'?','bdg'];
+      const when=ordTime(p.gekauftAm);
+      return '<div class="ord"><div class="ord-head" style="cursor:default;">'
+        +'<div class="ord-when">'+when.d+'<br>'+when.t+'</div>'
+        +'<div class="ord-main"><div class="ord-name">'+esc2(p.kunde||'-')+'</div>'
+        +'<div class="ord-ref">#'+esc2(p.id)+' · '+esc2(p.email||'')+'</div>'
+        +'<div class="badges"><span class="'+st[1]+'">'+st[0]+'</span><span class="bdg">'+(p.uebrig||0)+' von '+(p.gesamt||0)+' übrig</span><span class="bdg pre">bis '+dOnly(p.bis)+'</span></div>'
+        +'</div><div class="ord-sum">'+eur(p.preis||0)+'</div></div></div>';
+    }).join('');
+  }catch(e){ el.innerHTML='<p class="empty">Verkäufe konnten nicht geladen werden.</p>'; }
+}
+$('zDirekt').addEventListener('change',()=>zahlSpeichern($('zDirekt')));
+$('zSpeichern').addEventListener('click',e=>zahlSpeichern(e.currentTarget));
+['pPreis','pMenus'].forEach(id=>$(id).addEventListener('input',zahlRechnung));
 /* ================== Kundenkarten-Scan ================== */
 let scanStream=null, scanRAF=null, scanBusy=false, scanCard=null, scanToken=null, jsqrLoading=false;
 function scanSetResult(html){ $('scanResult').innerHTML=html; }
@@ -1752,15 +1893,18 @@ function renderScanCard(){
     +'<div class="hint">'+esc2(c.emailMasked||'')+(c.level?(' · <span style="color:'+(c.level>=10?'#E6C15A':'var(--ember-hi)')+';font-weight:700;">'+(c.level>=10?'\u{1F451} ':'')+'Level '+c.level+' – '+esc2(c.levelName||'')+'</span>'):'')+'</div>'
     +'<div style="display:flex;gap:1.2rem;margin:.6rem 0;">'
     +'<div><div style="font-size:1.3rem;font-weight:700;color:var(--ember-hi);">'+(c.menus||0)+'</div><div class="hint">Menüs aufs Haus</div></div>'
+    +((c.passMenus||0)>0?'<div><div style="font-size:1.3rem;font-weight:700;color:var(--amber);">'+(c.passMenus||0)+'</div><div class="hint">Pass-Menüs</div></div>':'')
     +((c.rewards||0)>0?'<div><div style="font-size:1.3rem;font-weight:700;">'+(c.rewards||0)+'</div><div class="hint">Boni (je 5 €)</div></div>':'')
     +'<div><div style="font-size:1.3rem;font-weight:700;">'+(c.spent||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+'</div><div class="hint">noch '+(c.toNext||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+' bis zum Menü</div></div>'
     +'</div>'
+    +((c.paesse||[]).length?'<div class="hint" style="margin:-.2rem 0 .6rem;">'+(c.paesse||[]).map(p=>esc2(p.name)+': '+p.menus+' von '+p.gesamt+', gültig bis '+new Date(p.bis).toLocaleDateString('de-DE',{timeZone:'Europe/Berlin'})).join('<br>')+'</div>':'')
     +'<div style="display:flex;gap:.5rem;align-items:stretch;margin-bottom:.5rem;">'
     +'<input type="number" id="scanAmount" min="0.5" max="500" step="0.5" placeholder="Betrag €" style="flex:1;">'
     +'<button type="button" class="abtn" id="scanCredit">Gutschreiben</button>'
     +'</div>'
     +'<div style="display:flex;gap:.5rem;flex-wrap:wrap;">'
     +'<button type="button" class="abtn" id="scanRedeemMenu"'+((c.menus||0)<1?' disabled':'')+'>Menü aufs Haus einlösen</button>'
+    +((c.passMenus||0)>0?'<button type="button" class="abtn" id="scanRedeemPass">Pass-Menü einlösen</button>':'')
     +((c.rewards||0)>0?'<button type="button" class="abtn" id="scanRedeem">5-€-Bonus einlösen</button>':'')
     +'<button type="button" class="abtn" id="scanAgain">Neu scannen</button>'
     +'</div>'
@@ -1785,6 +1929,7 @@ function renderScanCard(){
   $('scanCredit').addEventListener('click',e=>scanAction('credit',e.currentTarget));
   $('scanRedeemMenu').addEventListener('click',e=>scanAction('redeem',e.currentTarget,'menu'));
   if($('scanRedeem')) $('scanRedeem').addEventListener('click',e=>scanAction('redeem',e.currentTarget,'bonus'));
+  if($('scanRedeemPass')) $('scanRedeemPass').addEventListener('click',e=>scanAction('redeem',e.currentTarget,'pass'));
   $('scanAgain').addEventListener('click',()=>{ scanCard=null; scanToken=null; scanSetResult(''); startScan(); });
   if($('scanAdjGo')) $('scanAdjGo').addEventListener('click',e=>scanAdjust(e.currentTarget));
 }
@@ -1828,7 +1973,7 @@ async function scanAction(action, btn, kind){
 }
 async function scanActionRun(action, btn, kind){
   const body={password:currentPw,action,token:scanToken};
-  if(action==='redeem') body.kind=kind==='menu'?'menu':'bonus';
+  if(action==='redeem') body.kind=kind==='menu'?'menu':(kind==='pass'?'pass':'bonus');
   const cust=(scanCard&&scanCard.name)||'Kunde';
   if(action==='credit'){
     body.amount=parseFloat(($('scanAmount').value||'').replace(',','.'));
@@ -1840,7 +1985,15 @@ async function scanActionRun(action, btn, kind){
     });
     if(!ok) return;
   }
-  if(action==='redeem' && kind==='menu'){
+  if(action==='redeem' && kind==='pass'){
+    const p=(scanCard&&scanCard.paesse||[])[0];
+    const ok=await confirmBooking({
+      title:'Pass-Menü einlösen?', customer:cust, amount:'1 '+((p&&p.name)||'Burger-Pass')+'-Menü', negative:true,
+      note:'Gratis ist das Grundmenü wie beim Menü aufs Haus. Es zählt der Pass, der zuerst abläuft'+(p?(' (gültig bis '+new Date(p.bis).toLocaleDateString('de-DE',{timeZone:'Europe/Berlin'})+')'):'')+'. Pass-Menüs danach: '+Math.max(0,(scanCard&&scanCard.passMenus||0)-1)+'.',
+      okLabel:'Einlösen',
+    });
+    if(!ok) return;
+  } else if(action==='redeem' && kind==='menu'){
     const ok=await confirmBooking({
       title:'Menü aufs Haus einlösen?', customer:cust, amount:'1 Menü aufs Haus', negative:true,
       note:'Gratis ist das Grundmenü: jeder Burger außer Kubis Special, einfaches Patty, Pommes, Getränk, Dip. Double Patty und Süßkartoffelpommes kosten den normalen Aufpreis. Verbleibend danach: '+(Math.max(0,(scanCard&&scanCard.menus||0)-1))+'.',
@@ -1861,7 +2014,7 @@ async function scanActionRun(action, btn, kind){
     const d=await res.json().catch(()=>({}));
     if(!res.ok){ toast(d.hint||d.error||'Fehler','err'); return; }
     scanCard=d.card; renderScanCard();
-    toast(action==='credit'?('Gutgeschrieben'+(d.earned?' · +'+d.earned+' Menü aufs Haus':'')):(kind==='menu'?'Menü aufs Haus eingelöst':'Bonus eingelöst'));
+    toast(action==='credit'?('Gutgeschrieben'+(d.earned?' · +'+d.earned+' Menü aufs Haus':'')):(kind==='menu'?'Menü aufs Haus eingelöst':(kind==='pass'?'Pass-Menü eingelöst':'Bonus eingelöst')));
     if(navigator.vibrate) navigator.vibrate(18);
   }catch(e){ toast('Netzwerkfehler','err'); }
   finally{ gncBusy(btn,false); }

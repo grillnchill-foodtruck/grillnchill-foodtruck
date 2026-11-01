@@ -91,7 +91,7 @@ exports.handler = async () => {
       }
 
       if (payStatus === 'PAID') {
-        // Geschenkgutscheine und Burger-Pässe: komplette Erfüllung liegt im Webhook – dort anstoßen
+        // Geschenkgutscheine und Burger-Pässe: komplette Erfüllung liegt im Webhook, dort anstoßen
         if (rec.kind === 'giftcard' || rec.kind === 'burgerpass') {
           try {
             const res = await fetch(siteUrl + '/.netlify/functions/sumup-webhook', {
