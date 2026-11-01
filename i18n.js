@@ -9,6 +9,7 @@ const I18N = {
   de: {
     "nav.menu": "Speisekarte", "nav.about": "Über uns", "nav.location": "Standort",
     "nav.open": "Geöffnet", "nav.opens": "Öffnet {time}", "nav.closed": "Geschlossen",
+    "nav.location_hours": "Standort & Zeiten", "nav.open_until": "Offen bis {time}", "nav.opens_day": "Öffnet {day} {time}", "nav.open_short": "Offen", "nav.closed_short": "Zu", "nav.order": "Bestellen", "nav.hours_all": "Alle Zeiten", "nav.lang_title": "Sprache", "nav.call": "Anrufen", "nav.mail": "E-Mail", "a11y.menu_close": "Menü schließen", "a11y.menu": "Menü", "a11y.nav_main": "Hauptnavigation",
     "sig.eyebrow": "Chef-Empfehlung", "sig.desc": "Unser Smashburger mit Double Patty, geschmolzenem Käse und Special-Topping, kross gebraten auf heißem Stahl.", "sig.cta": "In den Warenkorb", "sig.note": "100 % Halal · Double Patty inklusive · frisch in ca. 15 Minuten",
     "sig2.eyebrow": "Alltime Classic", "sig2.desc": "Unser Klassiker: Beef-Patty, geschmolzener Käse, knackiger Salat, Tomate, Zwiebel und unsere Burgersauce.", "sig2.note": "100 % Halal · auch als Veggie/Vegan · Double Patty möglich",
     "sig3.eyebrow": "Go-to Beilage", "sig3.desc": "Goldbraun, außen knusprig und innen fluffig. Dazu gibt es einen Dip deiner Wahl.", "sig3.note": "Vegan · inklusive 1 Dip nach Wahl", "fab.view": "Warenkorb ansehen", "toast.offline": "Du bist offline. Bestellen kannst du wieder, sobald du verbunden bist.", "toast.online": "Wieder online.", "a11y.skip": "Direkt zur Speisekarte", "a11y.close": "Schließen", "a11y.more": "Mehr", "a11y.less": "Weniger", "a11y.cart_open": "Warenkorb öffnen", "a11y.prev_review": "Vorherige Bewertung", "a11y.next_review": "Nächste Bewertung", "sig.prev": "Vorheriges Produkt", "sig.next": "Nächstes Produkt", "a11y.lang": "Sprache wählen", "a11y.menu_open": "Menü öffnen", "a11y.zones": "Lieferzonen-Info", "a11y.home": "Grilln Chill Startseite", "a11y.to_top": "Nach oben", "a11y.cookies": "Cookie-Einstellungen", "a11y.guests": "Gästezahl", "a11y.delete": "Löschen", "tab.home": "Start", "tab.menu": "Menü", "tab.catering": "Catering", "tab.location": "Standort", "tab.account": "Konto", "push.enable": "Benachrichtigungen aktivieren", "push.optin_title": "Mitteilungen einschalten?", "push.optin_text": "Wir schreiben dir bei neuen Aktionen, bei Sondermenüs und wenn deine Stempelkarte voll ist.", "push.optin_yes": "Ja, gern", "push.optin_later": "Später", "push.done": "Benachrichtigungen aktiviert.", "push.denied": "Benachrichtigungen sind im Browser blockiert.", "push.error": "Das hat nicht geklappt. Versuch es später noch einmal.", "sig4.eyebrow": "Special der Woche", "sig4.note": "Nur für kurze Zeit",
@@ -234,6 +235,10 @@ function applyTranslations() {
     const val = t(el.getAttribute('data-i18n-aria'));
     if (val) el.setAttribute('aria-label', val);
   });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    const val = t(el.getAttribute('data-i18n-title'));
+    if (val) el.setAttribute('title', val);
+  });
   document.documentElement.setAttribute('lang', currentLang);
   if (typeof updateLangDd === 'function') updateLangDd();
   if (typeof highlightToday === 'function') highlightToday();   // „Heute"-Label mitübersetzen
@@ -334,40 +339,53 @@ const LANG_FLAGS = {
   nl: '<svg viewBox="0 0 60 40" aria-hidden="true"><rect width="60" height="13.33" fill="#AE1C28"/><rect y="13.33" width="60" height="13.33" fill="#fff"/><rect y="26.66" width="60" height="13.34" fill="#21468B"/></svg>',
 };
 
+// Zwei Dropdowns teilen sich diese Logik: oben in der Navigation (#navLang)
+// und unten im Footer (#langSwitch). Dazu die Chips im mobilen Menü.
 function buildLangDd() {
-  const list = document.getElementById('langDdList');
-  if (!list) return;
-  list.innerHTML = LANGS.map(l =>
-    '<li role="option" id="langOpt-' + l.code + '"><button type="button" class="lang-dd-opt" data-lang="' + l.code + '" lang="' + l.code + '" data-on-click="setLang(\'' + l.code + '\'); toggleLangDd(false);">' + LANG_FLAGS[l.code] + '<span>' + l.label + '</span></button></li>'
-  ).join('');
+  document.querySelectorAll('.lang-dd-list').forEach((list) => {
+    list.innerHTML = LANGS.map(l =>
+      '<li role="option"><button type="button" class="lang-dd-opt" data-lang="' + l.code + '" lang="' + l.code + '" data-on-click="setLang(\'' + l.code + '\'); toggleLangDd(false);">' + LANG_FLAGS[l.code] + '<span>' + l.label + '</span></button></li>'
+    ).join('');
+  });
+  const chips = document.getElementById('navLangChips');
+  if (chips) {
+    chips.innerHTML = LANGS.map(l =>
+      '<button type="button" class="nav-lang-chip" data-lang="' + l.code + '" lang="' + l.code + '" aria-label="' + l.label + '" data-on-click="setLang(\'' + l.code + '\')">' + LANG_FLAGS[l.code] + '<span>' + l.code.toUpperCase() + '</span></button>'
+    ).join('');
+  }
   updateLangDd();
 }
 
-function toggleLangDd(force) {
-  const dd = document.getElementById('langSwitch');
-  const btn = document.getElementById('langDdBtn');
-  const list = document.getElementById('langDdList');
-  if (!dd || !btn || !list) return;
-  const open = (typeof force === 'boolean') ? force : list.hidden;
-  list.hidden = !open;
-  dd.classList.toggle('open', open);
-  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-
-function updateLangDd() {
-  const flag = document.getElementById('langDdFlag');
-  const code = document.getElementById('langDdCode');
-  if (flag) flag.innerHTML = LANG_FLAGS[currentLang] || LANG_FLAGS.de;
-  if (code) code.textContent = currentLang.toUpperCase();
-  document.querySelectorAll('.lang-dd-opt').forEach((b) => {
-    b.classList.toggle('active', b.getAttribute('data-lang') === currentLang);
+// force: true/false/null (umschalten); el: Knopf im Dropdown, sonst alle Dropdowns
+function toggleLangDd(force, el) {
+  const dds = (el && el.closest) ? [el.closest('.lang-dd')] : Array.prototype.slice.call(document.querySelectorAll('.lang-dd'));
+  dds.forEach((dd) => {
+    if (!dd) return;
+    const btn = dd.querySelector('.lang-dd-btn');
+    const list = dd.querySelector('.lang-dd-list');
+    if (!btn || !list) return;
+    const open = (typeof force === 'boolean') ? force : list.hidden;
+    list.hidden = !open;
+    dd.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   });
 }
 
-// Außenklick & Escape schließen das Dropdown
+function updateLangDd() {
+  document.querySelectorAll('.lang-dd .lang-dd-flag').forEach((f) => { f.innerHTML = LANG_FLAGS[currentLang] || LANG_FLAGS.de; });
+  document.querySelectorAll('.lang-dd .lang-dd-code').forEach((c) => { c.textContent = currentLang.toUpperCase(); });
+  document.querySelectorAll('.lang-dd-opt, .nav-lang-chip').forEach((b) => {
+    const an = b.getAttribute('data-lang') === currentLang;
+    b.classList.toggle('active', an);
+    if (b.classList.contains('nav-lang-chip')) b.setAttribute('aria-pressed', an ? 'true' : 'false');
+  });
+}
+
+// Außenklick & Escape schließen die Dropdowns
 document.addEventListener('click', function (e) {
-  const dd = document.getElementById('langSwitch');
-  if (dd && !dd.contains(e.target)) toggleLangDd(false);
+  document.querySelectorAll('.lang-dd.open').forEach((dd) => {
+    if (!dd.contains(e.target)) toggleLangDd(false, dd);
+  });
 });
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') toggleLangDd(false);
