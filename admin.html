@@ -512,6 +512,109 @@
     #invList .row,#bakList .row{display:grid;grid-template-columns:minmax(0,1fr) 12rem;
                   padding:.55rem 0;border-bottom:1px solid var(--border)}
   }
+
+  /* ============ CATERING-ANGEBOTE (Paket catering) ============ */
+  .ang-pill{display:inline-flex;align-items:center;gap:.3rem;font-size:.66rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    padding:.2rem .55rem;border-radius:999px;border:1px solid var(--border);color:var(--dim);white-space:nowrap;line-height:1.3}
+  .ang-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .ang-pill.st-entwurf{color:var(--dim)}
+  .ang-pill.st-gesendet{color:var(--amber);border-color:rgba(255,176,32,.5);background:rgba(255,176,32,.08)}
+  .ang-pill.st-angenommen{color:var(--ember-hi);border-color:rgba(255,122,61,.55);background:rgba(232,90,36,.1)}
+  .ang-pill.st-bezahlt{color:#1B2A12;background:var(--live);border-color:var(--live)}
+  .ang-pill.st-abgelehnt{color:#E98A8A;border-color:rgba(224,72,72,.45)}
+  .ang-pill.st-abgelaufen{color:var(--faint);border-style:dashed}
+  .ang-pill.st-keins{color:var(--faint);border-style:dashed}
+  .ang-pill.st-keins::before{display:none}
+  .ang-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+  .ang-kpi{background:var(--card2);border:1px solid var(--border);border-radius:var(--r-md);padding:.8rem .85rem}
+  .ang-kpi .v{font-family:var(--mono);font-size:1.25rem;font-weight:700;color:var(--ember-hi);line-height:1.15;overflow-wrap:anywhere}
+  .ang-kpi .l{font-size:.7rem;color:var(--dim);margin-top:.25rem;font-weight:700}
+  .ang-kopf-akt{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.8rem}
+  .ang-kopf-akt .btn-ghost{display:inline-flex;align-items:center;gap:.45rem}
+  .ang-kopf-akt svg{width:15px;height:15px;flex:none}
+  .ang-zeile{display:flex;flex-wrap:wrap;gap:.35rem .6rem;align-items:center;font-size:.8rem;color:var(--dim);margin:.35rem 0 .1rem}
+  .ang-zeile .nr{font-family:var(--mono);color:var(--cream)}
+  .ang-zeile .sum{font-family:var(--mono);color:var(--ember-hi);font-weight:700}
+  .cat-akt{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.55rem}
+  .cat-akt .btn-ghost.primary{background:var(--ember-solid);border-color:var(--ember-solid);color:#fff}
+  .cat-info{font-size:.85rem;margin:.35rem 0;line-height:1.55}
+  .cat-info .k{color:var(--faint);font-size:.74rem;font-weight:700}
+  .bdg.ok{color:var(--live);border-color:rgba(109,190,69,.4)}
+  .bdg.warn{color:var(--red);border-color:rgba(224,72,72,.45)}
+
+  /* Editor als Fenster über allem */
+  .ang-ov{position:fixed;inset:0;z-index:11000;background:rgba(6,5,4,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    display:flex;align-items:flex-end;justify-content:center;animation:cfFade .16s ease-out}
+  .ang-sheet{background:var(--bg);width:100%;max-width:780px;height:100%;display:flex;flex-direction:column;
+    border:1px solid var(--border-hi);box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  @media (min-width:700px){
+    .ang-ov{align-items:center;padding:2vh 1rem}
+    .ang-sheet{height:auto;max-height:96vh;border-radius:var(--r-lg)}
+  }
+  .ang-hd{display:flex;align-items:center;gap:.6rem;padding:calc(.75rem + env(safe-area-inset-top)) 1rem .75rem;border-bottom:1px solid var(--border);flex:none}
+  @media (min-width:700px){ .ang-hd{padding-top:.8rem} }
+  .ang-hd h2{margin:0;font-size:1rem;flex:1;min-width:0;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .ang-hd .nr{font-family:var(--mono);font-size:.78rem;color:var(--faint);font-weight:600}
+  .ang-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1rem;overscroll-behavior:contain}
+  .ang-ft{flex:none;border-top:1px solid var(--border);padding:.75rem 1rem calc(.75rem + env(safe-area-inset-bottom));display:flex;gap:.5rem;flex-wrap:wrap;background:var(--card)}
+  @media (min-width:700px){ .ang-ft{border-radius:0 0 var(--r-lg) var(--r-lg);padding-bottom:.75rem} }
+  .ang-ft .abtn,.ang-body .abtn{min-height:44px;font-size:.82rem}
+  .ang-ft .abtn{flex:1 1 140px}
+  .ang-sec{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:var(--dim);font-weight:800;margin:1.2rem 0 .55rem}
+  .ang-sec:first-child{margin-top:0}
+  .ang-grid{display:grid;gap:.7rem}
+  @media (min-width:560px){ .ang-grid.zwei{grid-template-columns:repeat(2,minmax(0,1fr))} .ang-grid.drei{grid-template-columns:repeat(3,minmax(0,1fr))} }
+  .ang-grid .field{margin:0}
+  .ang-voll{grid-column:1/-1}
+  .ang-grid label,.ang-zl label{font-size:.76rem;color:var(--dim);margin-bottom:.3rem}
+  .ang-anfrage{background:var(--card);border:1px dashed var(--border-hi);border-radius:var(--r-sm);padding:.65rem .8rem;font-size:.8rem;color:var(--dim);line-height:1.5}
+  .ang-anfrage b{color:var(--cream);font-weight:700}
+  .ang-warn{color:var(--amber);font-size:.78rem;font-weight:600;margin:.5rem 0 0}
+  .ang-warn:empty{display:none}
+  .ang-zl{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:.7rem;margin-bottom:.55rem}
+  .ang-zl-top{display:flex;gap:.5rem;align-items:flex-start}
+  .ang-zl-top .field{flex:1;min-width:0;margin:0}
+  .ang-zl-zahlen{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.2fr);gap:.5rem;margin-top:.5rem;align-items:end}
+  .ang-zl-zahlen .betrag{font-family:var(--mono);font-weight:700;color:var(--cream);text-align:right;padding:.8rem 0;white-space:nowrap}
+  .ang-zl .art{font-size:.64rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:.35rem;display:block}
+  .ang-x{width:44px;height:44px;flex:none;border-radius:10px;border:1px solid var(--border);background:none;color:var(--dim);display:grid;place-items:center;cursor:pointer}
+  .ang-body a{color:var(--ember-hi);text-decoration:none;overflow-wrap:anywhere}
+  .ang-body a.ang-pille-btn{color:var(--cream)}
+  .ang-ft a.abtn{display:flex;align-items:center;justify-content:center;gap:.4rem;text-decoration:none;text-align:center}
+  .ang-ft a.abtn svg{width:15px;height:15px;flex:none}
+  .ang-x:hover{color:var(--red);border-color:rgba(224,72,72,.45)}
+  .ang-x svg{width:16px;height:16px}
+  .ang-add{display:flex;flex-wrap:wrap;gap:.45rem;margin:.2rem 0 .3rem}
+  .ang-add .btn-ghost{display:inline-flex;align-items:center;gap:.4rem}
+  .ang-add svg{width:14px;height:14px}
+  .ang-chips{display:flex;gap:.4rem;flex-wrap:wrap}
+  .ang-chips .chip{min-height:44px}
+  .ang-sum{background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:.8rem .9rem;margin-top:1rem}
+  .ang-sum div{display:flex;justify-content:space-between;gap:1rem;font-size:.86rem;color:var(--dim);padding:.18rem 0}
+  .ang-sum div span:last-child{font-family:var(--mono);color:var(--cream);white-space:nowrap}
+  .ang-sum .gesamt{border-top:1px solid var(--border);margin-top:.35rem;padding-top:.5rem;font-size:1rem;font-weight:800;color:var(--cream)}
+  .ang-sum .gesamt span:last-child{color:var(--ember-hi);font-size:1.15rem}
+  .ang-sum .rab span:last-child{color:var(--live)}
+  .ang-sum small{display:block;font-size:.72rem;color:var(--faint);margin-top:.35rem}
+  .ang-tab{width:100%;border-collapse:collapse;font-family:inherit;font-size:.82rem;white-space:normal}
+  .ang-tab td{padding:.45rem .3rem;border-bottom:1px solid #201B14;color:var(--dim);text-align:right;vertical-align:top}
+  .ang-tab td:first-child{text-align:left;color:var(--cream)}
+  .ang-tab td.m{white-space:nowrap;font-family:var(--mono)}
+  .ang-verlauf{list-style:none;margin:0;padding:0;font-size:.78rem;color:var(--dim)}
+  .ang-verlauf li{display:flex;gap:.7rem;padding:.3rem 0;border-bottom:1px solid #201B14}
+  .ang-verlauf time{font-family:var(--mono);color:var(--faint);flex:none;font-size:.72rem}
+  .ang-link{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+  .ang-link code{font-family:var(--mono);font-size:.72rem;color:var(--dim);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.5rem .6rem;overflow-wrap:anywhere;flex:1 1 240px;min-width:0}
+  .ang-pille-btn{display:inline-flex;align-items:center;gap:.4rem;min-height:44px;padding:.4rem .9rem;border-radius:999px;border:1px solid var(--border-hi);background:none;color:var(--cream);font-size:.8rem;font-weight:700;cursor:pointer;text-decoration:none}
+  .ang-pille-btn:hover{border-color:var(--ember-hi);color:var(--ember-hi)}
+  .ang-pille-btn svg{width:14px;height:14px}
+  .ang-zu{width:44px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--dim);display:grid;place-items:center;cursor:pointer;flex:none}
+  .ang-zu svg{width:17px;height:17px}
+  .ang-schalter{display:flex;gap:1rem;align-items:flex-start;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:.85rem}
+  .ang-schalter.on{border-color:rgba(255,176,32,.55)}
+  .ang-pdf{width:100%;height:70vh;border:1px solid var(--border);border-radius:var(--r-sm);background:#fff}
+  @media (max-width:699px){ .ang-pdf{height:60vh} }
+  @media (prefers-reduced-motion:reduce){ .ang-ov{animation:none} }
   </style>
 <script src="/ereignisse.js"></script>
 </head>
@@ -705,6 +808,21 @@
 
     <!-- ============ TAB: CATERING ============ -->
     <section class="tabpane hidden" id="pane-catering" role="tabpanel">
+      <!-- Angebote: Summen und Einstellungen (nur Admin, Paket catering) -->
+      <div class="card hidden" id="angKopf">
+        <h2 style="margin-bottom:.7rem;">Angebote</h2>
+        <div class="ang-kpis">
+          <div class="ang-kpi"><div class="v" id="angOffenSumme">0,00 €</div><div class="l" id="angOffenTxt">Offen: 0 gesendet, ohne Antwort</div></div>
+          <div class="ang-kpi"><div class="v" id="angAnnSumme">0,00 €</div><div class="l" id="angAnnTxt">Angenommen: 0, Anzahlung offen</div></div>
+        </div>
+        <div class="ang-kopf-akt">
+          <button type="button" class="btn-ghost" data-on-click="angNeu('',this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>Angebot ohne Anfrage</button>
+          <button type="button" class="btn-ghost" data-on-click="angEinstellungenOeffnen(this)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg>Preise und Einstellungen</button>
+          <span class="ang-pill" id="angSchalterPill" title="Anzahlung online">Anzahlung online: aus</span>
+        </div>
+      </div>
       <div class="card">
         <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.8rem;">
           <h2 style="flex:1;margin:0;">Catering-Anfragen</h2>
@@ -713,7 +831,12 @@
           </button>
         </div>
         <div id="cateringOut"><p class="empty">Anfragen werden geladen …</p></div>
-        <p class="hint" style="margin-top:.7rem;">Jede Formular-Anfrage wird hier zusätzlich zur E-Mail gespeichert – auch wenn der Mail-Versand mal ausfällt. Aufbewahrung 12 Monate.<br>✉︎ = E-Mail versendet · ⚠︎ = nur hier gespeichert</p>
+        <p class="hint" style="margin-top:.7rem;">Jede Formular-Anfrage wird hier zusätzlich zur E-Mail gespeichert, auch wenn der Mail-Versand mal ausfällt. Aufbewahrung 12 Monate.<br>„Mail raus“ = Bestätigung an den Kunden ging raus · „Nur gespeichert“ = Mail-Versand ist gescheitert</p>
+      </div>
+      <div class="card hidden" id="angOhne">
+        <h2 style="margin-bottom:.4rem;">Angebote ohne Anfrage</h2>
+        <p class="hint" style="margin-bottom:.6rem;">Am Telefon angelegt oder die Anfrage ist schon gelöscht.</p>
+        <div id="angOhneOut"></div>
       </div>
     </section>
 
@@ -1333,6 +1456,7 @@ function showPanel(){
 function resetPanelState(){
   currentRole='admin'; currentName='';
   ORDERS=[]; INVOICES=[]; VOUCHERS=[]; CATERING=[]; REV_DAYS=[]; BACKUPS=[];
+  ANGEBOTE=[]; ANG_SUMMEN=null; angSchliessen(true);
   ordersLoaded=false; invoicesLoaded=false; vouchersLoaded=false;
   cateringLoaded=false; teamLoaded=false; statsLoaded=false; revLoaded=false;
   statusLoaded=false;
@@ -1457,6 +1581,8 @@ function applyRole(){
   $('tabInvoices').classList.toggle('hidden',staff);
   const b=document.querySelector('.hdr .brand small');
   if(b) b.textContent = currentName ? ('Angemeldet: '+currentName+(staff?' · Mitarbeiter':(currentRole==='superadmin'?' · Superadmin':' · Admin'))) : "Grill'n Chill · Bielefeld";
+  // Catering-Angebote nur für Admins: Liste nach dem Rollenwechsel neu zeichnen
+  if(cateringLoaded) renderCatering();
 }
 function logout(){
   /* Die gemerkte Sitzung auch serverseitig entwerten – sonst bliebe ein
@@ -2471,6 +2597,9 @@ async function loadCatering(silent){
     if(seq!==catSeq) return;
     CATERING=d.requests||[];
     cateringLoaded=true;
+    // Angebote dazu (nur Admin): Status je Anfrage, Summen
+    if(istAdmin()) await angLaden();
+    if(seq!==catSeq) return;
     renderCatering();
   }catch(e){
     if(seq!==catSeq) return;
@@ -2481,24 +2610,32 @@ async function loadCatering(silent){
   }
 }
 function renderCatering(){
+  angKopfZeichnen();
   if(!CATERING.length){ $('cateringOut').innerHTML='<p class="empty">Keine Catering-Anfragen in den letzten 180 Tagen.</p>'; return; }
   $('cateringOut').innerHTML=CATERING.map(r=>{
     const w=new Date(r.receivedAt);
     const when=isNaN(w)?'':w.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+w.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-    const evDate=r.date?r.date.split('-').reverse().join('.'):'–';
+    const evDate=r.date?r.date.split('-').reverse().join('.'):'offen';
+    const angs=istAdmin()?angFuerAnfrage(r.key):[];
+    const neu=angs[0];
     return `<div class="card" style="margin:.55rem 0;padding:.8rem .9rem;${r.done?'opacity:.55;':''}">
-      <div style="display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap;">
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
         <strong>${esc2(r.name)}</strong>
         <span style="font-family:var(--mono);color:var(--faint);font-size:.78rem;">${when}</span>
-        ${r.emailSent?'<span title="E-Mail wurde versendet">✉︎</span>':'<span style="color:var(--red);font-size:.78rem;font-weight:700;" title="E-Mail-Versand fehlgeschlagen – nur hier gespeichert">⚠︎ nur gespeichert</span>'}
-        ${r.done?'<span style="font-size:.78rem;">✓ erledigt</span>':''}
+        ${istAdmin()?angPille(neu?neu.status:''):''}
+        ${r.emailSent?'<span class="bdg ok" title="Bestätigung an den Kunden ging raus">Mail raus</span>':'<span class="bdg warn" title="E-Mail-Versand fehlgeschlagen, nur hier gespeichert">Nur gespeichert</span>'}
+        ${r.done?'<span class="bdg">Erledigt</span>':''}
       </div>
-      <div style="font-size:.85rem;margin:.35rem 0;line-height:1.55;">
-        📅 ${esc2(evDate)} · 👥 ${esc2(r.guests||'–')} Gäste · 📍 ${esc2(r.location||'–')}${r.package?' · 📦 '+esc2(r.package):''}<br>
-        <a href="mailto:${esc2(r.email)}">${esc2(r.email)}</a>${r.phone?' · <a href="tel:'+esc2(r.phone)+'">'+esc2(r.phone)+'</a>':''}${r.contactPref?' · 📲 '+esc2(r.contactPref):''}
+      <div class="cat-info">
+        <span class="k">Datum</span> ${esc2(evDate)} · <span class="k">Gäste</span> ${esc2(r.guests||'offen')} · <span class="k">Ort</span> ${esc2(r.location||'offen')}${r.package?' · <span class="k">Paket</span> '+esc2(r.package):''}<br>
+        <a href="mailto:${esc2(r.email)}">${esc2(r.email)}</a>${r.phone?' · <a href="tel:'+esc2(r.phone)+'">'+esc2(r.phone)+'</a>':''}${r.contactPref?' · <span class="k">Kontakt per</span> '+esc2(r.contactPref):''}
         ${r.msg?'<br><span style="color:var(--faint);">„'+esc2(r.msg)+'“</span>':''}
       </div>
-      <div style="display:flex;gap:.45rem;">
+      ${angs.map(a=>angZeileHtml(a, angs.length>1)).join('')}
+      <div class="cat-akt">
+        ${istAdmin()?(neu
+          ?`<button class="btn-ghost primary" data-on-click="angOeffnen('${esc2(neu.id)}',this)">Angebot öffnen</button>`
+          :`<button class="btn-ghost primary" data-on-click="angNeu('${esc2(r.key)}',this)">Angebot erstellen</button>`):''}
         <button class="btn-ghost" data-on-click="cateringAction('${r.key}','${r.done?'undone':'done'}',this)">${r.done?'Wieder öffnen':'Erledigt'}</button>
         <button class="btn-ghost" data-on-click="cateringAction('${r.key}','delete',this)" style="color:var(--red);">Löschen</button>
       </div>
@@ -2523,6 +2660,566 @@ async function cateringAction(key,action,btn){
   finally{ gncBusy(btn,false); others.forEach(b=>{ b.disabled=false; }); }
 }
 $('catReload').addEventListener('click',()=>{ if(!$('catReload').classList.contains('spin')) loadCatering(); });
+
+/* ---------------- Catering-Angebote (Paket catering) ----------------
+   Server: netlify/functions/catering-angebot.js + lib/catering-angebot.js.
+   Gerechnet wird hier nur zur Anzeige (in Cent wie auf dem Server); was
+   zählt, rechnet der Server beim Speichern. Nur Admins sehen Angebote. */
+var ANGEBOTE=[], ANG_SUMMEN=null, ANG_EINST=null, angLadeSeq=0;
+var ANG=null;   // offenes Fenster: { art:'editor'|'einst', a, dirty, rev, vorher }
+const ANG_STATUS={entwurf:'Entwurf',gesendet:'Gesendet',angenommen:'Angenommen',bezahlt:'Bezahlt',abgelehnt:'Abgelehnt',abgelaufen:'Abgelaufen'};
+const ANG_ART={paket:'Paket',pauschale:'Event-Pauschale',anfahrt:'Anfahrt',stunde:'Zusatzstunde',extra:'Freie Position'};
+const ANG_SVG=(d)=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
+const ANG_ICON={
+  x:ANG_SVG('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
+  plus:ANG_SVG('<path d="M12 5v14"/><path d="M5 12h14"/>'),
+  kopie:ANG_SVG('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'),
+  extern:ANG_SVG('<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>'),
+  laden:ANG_SVG('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>'),
+};
+const ANG_FEHLER={
+  email_fehlt:'Bitte eine gültige E-Mail-Adresse eintragen.', name_fehlt:'Bitte den Namen eintragen.',
+  betrag_fehlt:'Das Angebot hat noch keinen Betrag.', datum_vorbei:'Das Eventdatum liegt in der Vergangenheit.',
+  nur_entwurf:'Nur Entwürfe lassen sich ändern. Zum Ändern bitte duplizieren.', status:'Dieses Angebot lässt sich nicht mehr senden.',
+  status_nicht_moeglich:'Dieser Status passt hier nicht.', online_bezahlt:'Online bezahlt. Eine Erstattung geht nur in SumUp.',
+  mail_fehlgeschlagen:'Die Mail ging nicht raus. Das Angebot ist noch ein Entwurf, bitte gleich noch einmal senden.',
+  anfrage_fehlt:'Die Anfrage gibt es nicht mehr.', nicht_gefunden:'Das Angebot gibt es nicht mehr.', forbidden:'Angebote sind nur für Admins.',
+};
+const angEur=n=>Number(n||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+const angDatum=ymd=>/^\d{4}-\d{2}-\d{2}$/.test(ymd||'')?ymd.split('-').reverse().join('.'):'';
+const angZeit=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); };
+const angHeute=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin'}).format(new Date());
+const angMenge=n=>Number(n||0).toLocaleString('de-DE',{maximumFractionDigits:2});
+const angMailOk=m=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m||'');
+function angSetze(id,wert){ const el=$(id); if(el && document.activeElement!==el) el.value=wert; }
+
+async function angAntwort(res){
+  if(sperreGemeldet(res)) return null;
+  if(res.status===401){ toast('Anmeldung abgelaufen. Bitte neu anmelden.','err'); return null; }
+  const d=await res.json().catch(()=>({}));
+  if(!res.ok){ toast(ANG_FEHLER[d.error]||'Das hat nicht geklappt. Bitte noch einmal versuchen.','err'); return null; }
+  return d;
+}
+async function angPost(body){
+  try{
+    const res=await fetch('/.netlify/functions/catering-angebot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:currentPw,...body})});
+    return await angAntwort(res);
+  }catch(e){ toast('Netzwerkfehler. Bitte noch einmal versuchen.','err'); return null; }
+}
+async function angLaden(){
+  const seq=++angLadeSeq;
+  try{
+    const res=await fetch('/.netlify/functions/catering-angebot?liste=1&frisch='+Date.now(),{cache:'no-store',headers:{'x-gnc-sitzung':currentPw}});
+    if(seq!==angLadeSeq || !res.ok) return;   // ohne Angebote bleiben die Anfragen trotzdem sichtbar
+    const d=await res.json();
+    if(seq!==angLadeSeq) return;
+    ANGEBOTE=d.angebote||[]; ANG_SUMMEN=d.summen||null; ANG_EINST=d.einstellungen||ANG_EINST;
+  }catch(e){}
+}
+function angNeuZeichnen(){ angLaden().then(()=>{ if(cateringLoaded) renderCatering(); }); }
+function angFuerAnfrage(key){ return ANGEBOTE.filter(a=>a.anfrage===key); }   // neueste zuerst (Server)
+function angPille(st){
+  return st?'<span class="ang-pill st-'+esc2(st)+'">'+esc2(ANG_STATUS[st]||st)+'</span>':'<span class="ang-pill st-keins">Kein Angebot</span>';
+}
+function angZeileHtml(a, mitPille){
+  const z=[];
+  if(a.status==='gesendet'&&a.gueltigBis) z.push('gültig bis '+angDatum(a.gueltigBis));
+  if(a.status==='gesendet'&&a.erinnertAm) z.push('erinnert');
+  if(a.ersetztDurch) z.push('ersetzt durch '+a.ersetztDurch);
+  return '<div class="ang-zeile"><button type="button" class="ang-pille-btn" style="min-height:36px;padding:.25rem .7rem" data-on-click="angOeffnen(\''+esc2(a.id)+'\',this)" aria-label="Angebot '+esc2(a.nummer)+' öffnen"><span class="nr">'+esc2(a.nummer)+'</span></button>'
+    +(mitPille===false?'':angPille(a.status))+'<span class="sum">'+angEur(a.gesamt)+'</span>'+(z.length?'<span>'+esc2(z.join(' · '))+'</span>':'')+'</div>';
+}
+function angKopfZeichnen(){
+  const zeigen=istAdmin();
+  $('angKopf').classList.toggle('hidden',!zeigen);
+  const ohne=zeigen?ANGEBOTE.filter(a=>!a.anfrage||!CATERING.some(r=>r.key===a.anfrage)):[];
+  $('angOhne').classList.toggle('hidden',!ohne.length);
+  $('angOhneOut').innerHTML=ohne.map(a=>'<div class="card" style="margin:.5rem 0;padding:.75rem .85rem;background:var(--card2)"><strong>'+esc2(a.kunde.name||'Ohne Namen')+'</strong>'
+    +(a.event&&a.event.datum?' <span style="color:var(--faint);font-size:.8rem">'+angDatum(a.event.datum)+'</span>':'')+angZeileHtml(a)+'</div>').join('');
+  if(!zeigen) return;
+  const s=ANG_SUMMEN||{offen:{anzahl:0,summe:0},angenommen:{anzahl:0,summe:0}};
+  $('angOffenSumme').textContent=angEur(s.offen.summe);
+  $('angOffenTxt').textContent='Offen: '+s.offen.anzahl+' gesendet, ohne Antwort';
+  $('angAnnSumme').textContent=angEur(s.angenommen.summe);
+  $('angAnnTxt').textContent='Angenommen: '+s.angenommen.anzahl+', Anzahlung offen';
+  const an=!!(ANG_EINST&&ANG_EINST.anzahlungOnline);
+  const p=$('angSchalterPill'); p.textContent='Anzahlung online: '+(an?'an':'aus'); p.className='ang-pill '+(an?'st-gesendet':'st-entwurf');
+}
+
+/* ---- Fenster ---- */
+function angFenster(inhalt, titelId, zustand){
+  angSchliessen(true);
+  ANG=zustand;
+  const ov=document.createElement('div');
+  ov.className='ang-ov'; ov.id='angOv';
+  ov.innerHTML='<div class="ang-sheet" role="dialog" aria-modal="true" aria-labelledby="'+titelId+'">'+inhalt+'</div>';
+  ov.addEventListener('click',e=>{ if(e.target===ov) angSchliessen(); });
+  ov.addEventListener('input',angEingabe);
+  ov.addEventListener('change',angEingabe);
+  document.body.appendChild(ov);
+  document.body.style.overflow='hidden';
+  document.addEventListener('keydown',angTaste);
+  setTimeout(()=>{ const f=ov.querySelector('.ang-body input, .ang-body select, .ang-body button, .ang-zu'); if(f) try{ f.focus({preventScroll:true}); }catch(e){} },40);
+  return ov;
+}
+function angSchliessen(still){
+  angPdfZu();
+  const ov=document.getElementById('angOv');
+  if(!ov){ ANG=null; return; }
+  if(!still && ANG && ANG.dirty && !confirm('Ungespeicherte Änderungen verwerfen?')) return;
+  ov.remove();
+  document.body.style.overflow='';
+  document.removeEventListener('keydown',angTaste);
+  const vorher=ANG&&ANG.vorher; ANG=null;
+  if(!still && vorher && document.body.contains(vorher)) try{ vorher.focus(); }catch(e){}
+}
+function angTaste(e){
+  if(document.querySelector('.confirm-ov')) return;   // Bestätigung hat eigene Tasten
+  const pdf=$('angPdfOv');
+  if(e.key==='Escape'){ e.preventDefault(); if(pdf) angPdfZu(); else angSchliessen(); return; }
+  if(e.key!=='Tab') return;
+  const box=pdf||$('angOv'); if(!box) return;
+  const f=[...box.querySelectorAll('a[href],button:not([disabled]),input,select,textarea,iframe')].filter(x=>x.offsetParent!==null);
+  if(!f.length) return;
+  if(e.shiftKey&&document.activeElement===f[0]){ e.preventDefault(); f[f.length-1].focus(); }
+  else if(!e.shiftKey&&document.activeElement===f[f.length-1]){ e.preventDefault(); f[0].focus(); }
+}
+
+/* ---- Öffnen ---- */
+async function angNeu(key, btn){
+  await withBusy(btn, async()=>{
+    const d=await angPost({action:'neu', anfrage:key||undefined});
+    if(!d) return;
+    if(!ANG_EINST) await angLaden();
+    toast('Entwurf '+d.angebot.nummer+' angelegt','ok');
+    angEditor(d.angebot, btn);
+    angNeuZeichnen();
+  });
+}
+async function angOeffnen(id, btn){
+  await withBusy(btn, async()=>{
+    try{
+      const res=await fetch('/.netlify/functions/catering-angebot?id='+encodeURIComponent(id)+'&frisch='+Date.now(),{cache:'no-store',headers:{'x-gnc-sitzung':currentPw}});
+      const d=await angAntwort(res); if(!d) return;
+      ANG_EINST=d.einstellungen||ANG_EINST;
+      angEditor(d.angebot, btn);
+    }catch(e){ toast('Netzwerkfehler. Bitte noch einmal versuchen.','err'); }
+  });
+}
+function angKopfHtml(a){
+  return (a.status==='entwurf'?'Angebot bearbeiten':'Angebot')+' <span class="nr">'+esc2(a.nummer)+'</span>'+angPille(a.status);
+}
+function angEditor(a, vorher){
+  if(!ANG_EINST){ toast('Preise konnten nicht geladen werden. Bitte neu laden.','err'); return; }
+  const kopf='<div class="ang-hd"><h2 id="angTitel">'+angKopfHtml(a)+'</h2>'
+    +'<button type="button" class="ang-zu" aria-label="Schließen" data-on-click="angSchliessen()">'+ANG_ICON.x+'</button></div>';
+  angFenster(kopf+'<div class="ang-body" id="angBody"></div><div class="ang-ft" id="angFuss"></div>','angTitel',
+    {art:'editor', a:JSON.parse(JSON.stringify(a)), dirty:false, rev:0, vorher});
+  angBodyNeu();
+}
+function angBodyNeu(fokusId){
+  if(!ANG||ANG.art!=='editor') return;
+  const a=ANG.a, b=$('angBody'), top=b.scrollTop;
+  b.innerHTML=a.status==='entwurf'?angFormHtml(a):angAnsichtHtml(a);
+  $('angFuss').innerHTML=angFussHtml(a);
+  $('angTitel').innerHTML=angKopfHtml(a);
+  if(a.status==='entwurf') angNeuRechnen();
+  b.scrollTop=top;
+  if(fokusId&&$(fokusId)) try{ $(fokusId).focus({preventScroll:true}); }catch(e){}
+}
+
+/* ---- Entwurf bearbeiten ---- */
+function angStdText(z){
+  const e=ANG_EINST, dez=n=>String(n).replace('.',',');
+  if(z.art==='paket'){ const p=e.pakete[z.paket]; return p?'Paket '+p.name+': '+p.text:''; }
+  if(z.art==='pauschale') return 'Event-Pauschale: Anfahrt bis '+e.inklKm+' km, Auf- und Abbau, Personal, bis '+dez(e.inklStunden)+' Std. Ausgabe';
+  if(z.art==='anfahrt') return 'Anfahrt über '+e.inklKm+' km (je km)';
+  if(z.art==='stunde') return 'Zusätzliche Stunde Ausgabe';
+  return '';
+}
+function angPauschale(datum){
+  const wt=/^\d{4}-\d{2}-\d{2}$/.test(datum||'')?new Date(datum+'T12:00:00Z').getUTCDay():-1;
+  return wt===5||wt===6?ANG_EINST.pauschaleWochenende:ANG_EINST.pauschale;
+}
+function angFeld(label, f, wert, typ, extra){
+  const id='angF_'+f.replace(/\W/g,'_');
+  return '<div class="field"><label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+(typ||'text')+'" data-f="'+f+'" value="'+esc2(wert==null?'':wert)+'"'+(extra||'')+'></div>';
+}
+function angMengeLabel(z){
+  return {paket:'Personen',pauschale:'Anzahl',anfahrt:'km über '+ANG_EINST.inklKm,stunde:'Stunden',extra:'Menge'}[z.art]||'Menge';
+}
+function angZeilenHtml(){
+  const z=ANG.a.zeilen||[];
+  if(!z.length) return '<p class="empty" style="padding:.6rem 0">Noch keine Position.</p>';
+  return z.map((r,i)=>'<div class="ang-zl">'
+    +'<span class="art">'+esc2(ANG_ART[r.art]||'Position')+(r.art==='pauschale'?' (Fr, Sa, Feiertag '+angEur(ANG_EINST.pauschaleWochenende)+')':'')+'</span>'
+    +'<div class="ang-zl-top"><div class="field"><label class="sr-only" for="angZ'+i+'t">Text der Position</label>'
+    +'<input id="angZ'+i+'t" type="text" maxlength="200" data-z="'+i+'" data-zf="text" value="'+esc2(r.text)+'"></div>'
+    +'<button type="button" class="ang-x" aria-label="Position entfernen" data-on-click="angZeileWeg('+i+')">'+ANG_ICON.x+'</button></div>'
+    +'<div class="ang-zl-zahlen">'
+    +'<div class="field"><label for="angZ'+i+'m">'+esc2(angMengeLabel(r))+'</label><input id="angZ'+i+'m" type="number" min="0" step="any" inputmode="decimal" data-z="'+i+'" data-zf="menge" value="'+esc2(r.menge)+'"></div>'
+    +'<div class="field"><label for="angZ'+i+'e">Einzelpreis €</label><input id="angZ'+i+'e" type="number" min="0" step="0.01" inputmode="decimal" data-z="'+i+'" data-zf="einzel" value="'+esc2(r.einzel)+'"></div>'
+    +'<div class="betrag" id="angZ'+i+'b"></div></div></div>').join('');
+}
+function angFormHtml(a){
+  const e=ANG_EINST, ai=a.anfrageInfo;
+  let h='';
+  if(ai) h+='<div class="ang-anfrage"><b>Anfrage:</b> '+esc2(ai.gaeste||'?')+' Gäste · '+(ai.paket?'Wunsch: '+esc2(ai.paket):'Paket noch offen')
+    +(ai.kontaktweg?' · Kontakt per '+esc2(ai.kontaktweg):'')+(ai.nachricht?'<br>„'+esc2(ai.nachricht)+'“':'')+'</div>';
+  if(a.vorgaengerNummer) h+='<p class="hint" style="margin:.6rem 0 0">Kopie von '+esc2(a.vorgaengerNummer)+'. Ist das alte Angebot noch offen, ersetzt dieses es beim Senden.</p>';
+  h+='<div class="ang-sec" style="margin-top:1rem">Kunde</div><div class="ang-grid zwei">'
+    +angFeld('Name *','kunde.name',a.kunde.name,'text',' maxlength="80" autocomplete="off"')
+    +angFeld('Firma (optional)','kunde.firma',a.kunde.firma,'text',' maxlength="80" autocomplete="off"')
+    +angFeld('E-Mail *','kunde.email',a.kunde.email,'email',' maxlength="120" autocomplete="off"')
+    +angFeld('Telefon','kunde.telefon',a.kunde.telefon,'tel',' maxlength="40" autocomplete="off"')+'</div>';
+  h+='<div class="ang-sec">Event</div><div class="ang-grid zwei">'
+    +angFeld('Datum','event.datum',a.event.datum,'date')
+    +angFeld('Uhrzeit (optional)','event.zeit',a.event.zeit,'text',' maxlength="60" placeholder="z. B. 18 bis 21 Uhr"')
+    +'<div class="ang-voll">'+angFeld('Ort','event.ort',a.event.ort,'text',' maxlength="160"')+'</div>'
+    +angFeld('Personen','event.personen',a.event.personen,'number',' min="0" max="5000" step="1" inputmode="numeric"')
+    +'<div class="field"><label for="angF_paket">Paket</label><select id="angF_paket" data-f="event.paket">'
+    +Object.keys(e.pakete).map(k=>'<option value="'+k+'"'+(a.event.paket===k?' selected':'')+'>'+esc2(e.pakete[k].name)+' ('+angEur(e.pakete[k].preis)+' p. P.)</option>').join('')
+    +'</select></div></div><p class="ang-warn" id="angWarn" role="status"></p>';
+  h+='<div class="ang-sec">Positionen</div><div id="angZeilen">'+angZeilenHtml()+'</div><div class="ang-add">'
+    +'<button type="button" class="btn-ghost" data-on-click="angZeileNeu(\'extra\')">'+ANG_ICON.plus+'Freie Position</button>'
+    +'<button type="button" class="btn-ghost" data-on-click="angZeileNeu(\'stunde\')">'+ANG_ICON.plus+'Zusatzstunde</button>'
+    +'<button type="button" class="btn-ghost" data-on-click="angZeileNeu(\'anfahrt\')">'+ANG_ICON.plus+'Anfahrt in km</button></div>';
+  const rArt=a.rabatt&&a.rabatt.art||'keiner';
+  h+='<div class="ang-sec">Rabatt</div><div class="ang-grid zwei"><div class="ang-chips" id="angRabattArt" role="group" aria-label="Rabattart">'
+    +[['keiner','Kein Rabatt'],['prozent','Prozent'],['betrag','Betrag in €']].map(([r,l])=>'<button type="button" class="chip" data-r="'+r+'" aria-pressed="'+(rArt===r)+'" data-on-click="angRabattArt(\''+r+'\')">'+l+'</button>').join('')
+    +'</div><div class="field" id="angRabattFeld"'+(rArt==='keiner'?' hidden':'')+'><label for="angF_rabatt_wert" id="angRabattLabel">'+(rArt==='prozent'?'Rabatt in %':'Rabatt in €')+'</label>'
+    +'<input id="angF_rabatt_wert" type="number" min="0" step="0.01" inputmode="decimal" data-f="rabatt.wert" value="'+esc2(a.rabatt&&a.rabatt.wert||'')+'"></div></div>';
+  h+='<div class="ang-sec">Bedingungen</div><div class="ang-grid zwei">'
+    +angFeld('Gültig (Tage ab Versand)','gueltigTage',a.gueltigTage,'number',' min="1" max="90" step="1" inputmode="numeric"')
+    +angFeld('Anzahlung in %','anzahlungProzent',a.anzahlungProzent,'number',' min="0" max="100" step="1" inputmode="numeric"')
+    +'</div><div class="field" style="margin-top:.7rem"><label for="angF_hinweis">Hinweis an den Kunden (optional, steht im PDF und auf der Angebotsseite)</label>'
+    +'<textarea id="angF_hinweis" data-f="hinweis" maxlength="1000">'+esc2(a.hinweis||'')+'</textarea></div>';
+  h+='<div class="ang-sum" id="angSumme" aria-live="polite"></div>';
+  h+='<div class="ang-sec">Ohne Mail</div><div class="ang-add">'
+    +'<button type="button" class="btn-ghost" data-on-click="angStatus(\'angenommen\',this)">Am Telefon angenommen</button>'
+    +'<button type="button" class="btn-ghost" data-on-click="angLoeschen(this)" style="color:var(--red)">Entwurf löschen</button></div>';
+  return h;
+}
+function angRechnen(a){
+  const cent=x=>Math.round((Number(x)||0)*100);
+  let summe=0;
+  const betraege=(a.zeilen||[]).map(z=>{ const b=Math.round(cent(z.einzel)*(Number(z.menge)||0)); summe+=b; return b; });
+  const r=a.rabatt||{};
+  let rab=r.art==='prozent'?Math.round(summe*(Number(r.wert)||0)/100):r.art==='betrag'?Math.min(cent(r.wert),summe):0;
+  rab=Math.max(0,Math.min(rab,summe));
+  const ges=summe-rab, anz=Math.round(ges*(Number(a.anzahlungProzent)||0)/100);
+  return {betraege, summe:summe/100, rabatt:rab/100, gesamt:ges/100, anzahlung:anz/100, rest:(ges-anz)/100};
+}
+function angSummeHtml(a, r){
+  return '<div><span>Zwischensumme</span><span>'+angEur(r.summe)+'</span></div>'
+    +(r.rabatt>0?'<div class="rab"><span>Rabatt'+(a.rabatt.art==='prozent'?' '+String(a.rabatt.wert).replace('.',',')+' %':'')+'</span><span>- '+angEur(r.rabatt)+'</span></div>':'')
+    +'<div class="gesamt"><span>Gesamt inkl. MwSt.</span><span>'+angEur(r.gesamt)+'</span></div>'
+    +(r.anzahlung>0?'<div><span>Anzahlung '+(a.anzahlungProzent||0)+' %</span><span>'+angEur(r.anzahlung)+'</span></div><div><span>Rest nach dem Event</span><span>'+angEur(r.rest)+'</span></div>':'')
+    +'<small>Endpreise inklusive gesetzlicher MwSt., ohne eigene Steueraufteilung. Positionen mit Menge 0 stehen nicht im Angebot.</small>';
+}
+function angNeuRechnen(){
+  if(!ANG||!$('angSumme')) return;
+  const a=ANG.a, r=angRechnen(a);
+  r.betraege.forEach((b,i)=>{ const el=$('angZ'+i+'b'); if(el) el.textContent=angEur(b/100); });
+  $('angSumme').innerHTML=angSummeHtml(a,r);
+  const w=[], p=ANG_EINST.pakete[a.event.paket];
+  if(p && a.event.personen && a.event.personen<p.ab) w.push('Paket '+p.name+' gibt es ab '+p.ab+' Personen.');
+  if(a.event.datum && a.event.datum<angHeute()) w.push('Das Datum liegt in der Vergangenheit.');
+  if(!angMailOk(a.kunde.email)) w.push('Zum Senden fehlt eine gültige E-Mail-Adresse.');
+  $('angWarn').textContent=w.join(' ');
+  const s=$('angSenden'); if(s) setBtnLabel(s,'Senden: '+angEur(r.gesamt));
+}
+function angEingabe(e){
+  const t=e.target;
+  if(!ANG) return;
+  if(ANG.art==='einst'){ if(t.dataset.e) ANG.dirty=true; return; }
+  const a=ANG.a;
+  if(!a || a.status!=='entwurf') return;
+  if(t.dataset.f){
+    const f=t.dataset.f, teile=f.split('.');
+    let v=t.value;
+    if(t.type==='number') v=v===''?0:Number(v);
+    if(teile[1]){ a[teile[0]]=a[teile[0]]||{}; a[teile[0]][teile[1]]=v; } else a[f]=v;
+    if(f==='event.personen') a.zeilen.forEach((z,i)=>{ if(z.art==='paket'){ z.menge=v; angSetze('angZ'+i+'m',v); } });
+    if(f==='event.paket') a.zeilen.forEach((z,i)=>{
+      if(z.art!=='paket') return;
+      const std=z.standard!==false && z.text===angStdText(z);
+      z.paket=v; z.einzel=ANG_EINST.pakete[v].preis; angSetze('angZ'+i+'e',z.einzel);
+      if(std){ z.text=angStdText(z); angSetze('angZ'+i+'t',z.text); }
+    });
+    if(f==='event.datum') a.zeilen.forEach((z,i)=>{
+      if(z.art==='pauschale' && (z.einzel===ANG_EINST.pauschale || z.einzel===ANG_EINST.pauschaleWochenende)){ z.einzel=angPauschale(v); angSetze('angZ'+i+'e',z.einzel); }
+    });
+  } else if(t.dataset.z!==undefined){
+    const z=a.zeilen[+t.dataset.z]; if(!z) return;
+    if(t.dataset.zf==='text') z.text=t.value;
+    else z[t.dataset.zf]=t.value===''?0:Number(t.value);
+  } else return;
+  ANG.dirty=true; ANG.rev++;
+  angNeuRechnen();
+}
+function angRabattArt(art){
+  if(!ANG||!ANG.a||ANG.a.status!=='entwurf') return;
+  const alt=ANG.a.rabatt||{};
+  ANG.a.rabatt={art, wert:art===alt.art?alt.wert:0};
+  document.querySelectorAll('#angRabattArt .chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.r===art)));
+  $('angRabattFeld').hidden=art==='keiner';
+  $('angRabattLabel').textContent=art==='prozent'?'Rabatt in %':'Rabatt in €';
+  $('angF_rabatt_wert').value=ANG.a.rabatt.wert||'';
+  ANG.dirty=true; ANG.rev++;
+  angNeuRechnen();
+  if(art!=='keiner') $('angF_rabatt_wert').focus();
+}
+function angZeileNeu(art){
+  if(!ANG||!ANG.a||ANG.a.status!=='entwurf') return;
+  const e=ANG_EINST;
+  const z={art, menge:art==='anfahrt'?10:1, einzel:art==='stunde'?e.stundenPreis:art==='anfahrt'?e.kmPreis:0, text:''};
+  z.text=angStdText(z);
+  ANG.a.zeilen.push(z); ANG.dirty=true; ANG.rev++;
+  $('angZeilen').innerHTML=angZeilenHtml(); angNeuRechnen();
+  const el=$('angZ'+(ANG.a.zeilen.length-1)+(art==='extra'?'t':'m')); if(el) el.focus();
+}
+function angZeileWeg(i){
+  if(!ANG||!ANG.a||ANG.a.status!=='entwurf') return;
+  ANG.a.zeilen.splice(i,1); ANG.dirty=true; ANG.rev++;
+  $('angZeilen').innerHTML=angZeilenHtml(); angNeuRechnen();
+}
+function angDaten(){
+  const a=ANG.a;
+  return {kunde:a.kunde, event:a.event, zeilen:a.zeilen, rabatt:a.rabatt, gueltigTage:a.gueltigTage, anzahlungProzent:a.anzahlungProzent, hinweis:a.hinweis};
+}
+async function angSpeichernIntern(){
+  const rev=ANG.rev, id=ANG.a.id;
+  const d=await angPost({action:'speichern', id, angebot:angDaten()});
+  if(!d || !ANG || ANG.a.id!==id) return false;
+  // Während des Speicherns weitergetippt: lokale Fassung behalten, bleibt "ungespeichert"
+  if(ANG.rev!==rev) return true;
+  const fokus=document.activeElement&&document.activeElement.id;
+  ANG.a=d.angebot; ANG.dirty=false;
+  angBodyNeu(fokus);
+  return true;
+}
+async function angSpeichern(btn){
+  await withBusy(btn, async()=>{ if(await angSpeichernIntern()){ toast('Gespeichert','ok'); angNeuZeichnen(); } });
+}
+
+/* ---- Senden, Status, Kopie ---- */
+async function angSenden(btn){
+  if(!ANG||!ANG.a) return;
+  const a=ANG.a, erneut=a.status==='gesendet';
+  const r=angRechnen(a);
+  if(!erneut){
+    if(!a.kunde.name){ toast(ANG_FEHLER.name_fehlt,'err'); const f=$('angF_kunde_name'); if(f) f.focus(); return; }
+    if(!angMailOk(a.kunde.email)){ toast(ANG_FEHLER.email_fehlt,'err'); const f=$('angF_kunde_email'); if(f) f.focus(); return; }
+    if(!(r.gesamt>0)){ toast(ANG_FEHLER.betrag_fehlt,'err'); return; }
+  }
+  const ok=await confirmBooking({
+    title: erneut?'Angebot noch einmal senden?':'Angebot jetzt senden?',
+    customer: (a.kunde.name||'')+' · '+(a.kunde.email||''),
+    amount: angEur(erneut?a.gesamt:r.gesamt),
+    note: erneut?'Gleiche Fassung, gleiche Gültigkeit. Die Mail geht noch einmal raus.'
+      :'Mail mit PDF im Anhang und Link zum Annehmen, gültig '+a.gueltigTage+' Tage. Danach lässt sich das Angebot nicht mehr ändern, nur duplizieren.',
+    okLabel:'Senden',
+  });
+  if(!ok) return;
+  await withBusy(btn, async()=>{
+    if(ANG.dirty && !await angSpeichernIntern()) return;
+    const d=await angPost({action:'senden', id:a.id});
+    if(!d||!ANG) return;
+    ANG.a=d.angebot; ANG.dirty=false;
+    angBodyNeu();
+    toast(erneut?'Noch einmal gesendet':'Angebot '+d.angebot.nummer+' ist raus','ok');
+    angNeuZeichnen();
+  });
+}
+async function angStatus(ziel, btn){
+  if(!ANG||!ANG.a) return;
+  const a=ANG.a, zurueck=ziel==='angenommen'&&a.status==='bezahlt';
+  const r=a.status==='entwurf'?angRechnen(a):{gesamt:a.gesamt, anzahlung:a.anzahlung};
+  const t={
+    angenommen: zurueck?['Zahlung zurücknehmen?','Die von Hand eingetragene Anzahlung wird gelöscht. Status wieder angenommen.']
+      :['Als angenommen eintragen?','Zum Beispiel am Telefon zugesagt. Online annehmen geht danach nicht mehr.'],
+    bezahlt:['Anzahlung als bezahlt eintragen?','Zum Beispiel bar oder per Überweisung. Die Online-Zahlung ist danach aus.'],
+    abgelehnt:['Als abgelehnt eintragen?','Der Kunde kann das Angebot danach nicht mehr annehmen.'],
+  }[ziel];
+  if(!t) return;
+  const ok=await confirmBooking({ title:t[0], customer:(a.kunde.name||'Ohne Namen')+' · '+a.nummer,
+    amount: ziel==='bezahlt'||zurueck?angEur(r.anzahlung):angEur(r.gesamt), note:t[1], okLabel:'Eintragen', negative:ziel==='abgelehnt'||zurueck });
+  if(!ok) return;
+  await withBusy(btn, async()=>{
+    if(ANG.dirty && ANG.a.status==='entwurf' && !await angSpeichernIntern()) return;
+    const d=await angPost({action:'status', id:a.id, status:ziel});
+    if(!d||!ANG) return;
+    ANG.a=d.angebot; ANG.dirty=false;
+    angBodyNeu();
+    toast('Status: '+ANG_STATUS[d.angebot.status],'ok');
+    angNeuZeichnen();
+  });
+}
+async function angDuplizieren(btn){
+  if(!ANG||!ANG.a) return;
+  await withBusy(btn, async()=>{
+    const d=await angPost({action:'duplizieren', id:ANG.a.id});
+    if(!d) return;
+    toast('Kopie '+d.angebot.nummer+' angelegt','ok');
+    angEditor(d.angebot, ANG&&ANG.vorher);
+    angNeuZeichnen();
+  });
+}
+async function angLoeschen(btn){
+  if(!ANG||!ANG.a||!confirm('Entwurf '+ANG.a.nummer+' löschen?')) return;
+  await withBusy(btn, async()=>{
+    const d=await angPost({action:'loeschen', id:ANG.a.id});
+    if(!d) return;
+    angSchliessen(true);
+    toast('Entwurf gelöscht','ok');
+    angNeuZeichnen();
+  });
+}
+async function angLinkKopieren(){
+  if(!ANG||!ANG.a||!ANG.a.link) return;
+  try{ await navigator.clipboard.writeText(ANG.a.link); toast('Link kopiert','ok'); }
+  catch(e){ toast('Kopieren ging nicht. Bitte den Link markieren und kopieren.','err'); }
+}
+function angKnopf(fn, label, klasse, id){
+  // fn ist immer ein fester Aufruf aus diesem Skript (z. B. 'angPdf(this)'), nie Nutzereingabe
+  return `<button type="button" class="abtn${klasse?' '+klasse:''}"${id?' id="'+id+'"':''} data-on-click="${fn}">${label}</button>`;
+}
+function angFussHtml(a){
+  if(a.status==='entwurf') return angKnopf('angPdf(this)','PDF-Vorschau')+angKnopf('angSpeichern(this)','Speichern')
+    +angKnopf('angSenden(this)','Senden','primary','angSenden');
+  return angKnopf('angPdf(this)','PDF')+angKnopf('angDuplizieren(this)','Duplizieren')
+    +(a.status==='gesendet'?angKnopf('angSenden(this)','Noch einmal senden'):'');
+}
+function angStatusKnoepfe(a){
+  const k=(ziel,label,rot)=>'<button type="button" class="btn-ghost"'+(rot?' style="color:var(--red)"':'')+' data-on-click="angStatus(\''+ziel+'\',this)">'+label+'</button>';
+  const st=a.status, l=[];
+  if(['gesendet','abgelaufen','abgelehnt'].includes(st)) l.push(k('angenommen',st==='abgelehnt'?'Doch angenommen (Telefon)':'Am Telefon angenommen'));
+  if(['gesendet','angenommen','abgelaufen'].includes(st)) l.push(k('bezahlt','Anzahlung bar bezahlt'));
+  if(st==='bezahlt' && !(a.zahlung&&a.zahlung.weg==='online')) l.push(k('angenommen','Zahlung zurücknehmen',true));
+  if(['gesendet','angenommen','abgelaufen'].includes(st)) l.push(k('abgelehnt','Abgelehnt',true));
+  return l.join('');
+}
+function angAnsichtHtml(a){
+  const info=[];
+  if(a.gesendetAm) info.push('gesendet '+angZeit(a.gesendetAm));
+  if(a.gueltigBis) info.push('gültig bis '+angDatum(a.gueltigBis));
+  if(a.erinnertAm) info.push('erinnert '+angZeit(a.erinnertAm));
+  if(a.angenommenAm) info.push('angenommen '+angZeit(a.angenommenAm)+(a.annahme&&a.annahme.weg==='telefon'?' (von Hand)':' (online)'));
+  if(a.bezahltAm) info.push('Anzahlung '+(a.zahlung&&a.zahlung.weg==='online'?'online':'von Hand')+' '+angZeit(a.bezahltAm));
+  if(a.ersetztDurch) info.push('ersetzt durch '+a.ersetztDurch);
+  if(a.zahlung&&a.zahlung.doppelt&&a.zahlung.doppelt.length) info.push('Achtung: doppelt bezahlt, bitte in SumUp erstatten');
+  let h='<p class="hint" style="margin:0 0 .4rem">'+esc2(info.join(' · '))+'</p>';
+  if(a.link) h+='<div class="ang-sec">Kundenlink</div><div class="ang-link"><code>'+esc2(a.link)+'</code>'
+    +'<button type="button" class="ang-pille-btn" data-on-click="angLinkKopieren()">'+ANG_ICON.kopie+'Kopieren</button>'
+    +'<a class="ang-pille-btn" href="'+esc2(a.link)+'" target="_blank" rel="noopener">'+ANG_ICON.extern+'Ansehen</a></div>';
+  const k=a.kunde||{}, ev=a.event||{};
+  h+='<div class="ang-sec">Kunde</div><p class="cat-info" style="margin:0">'+esc2(k.name)+(k.firma?' · '+esc2(k.firma):'')+'<br>'
+    +(k.email?'<a href="mailto:'+esc2(k.email)+'">'+esc2(k.email)+'</a>':'')+(k.telefon?' · <a href="tel:'+esc2(k.telefon)+'">'+esc2(k.telefon)+'</a>':'')+'</p>';
+  const evz=[ev.datum?angDatum(ev.datum):'', ev.zeit, ev.ort, ev.personen?ev.personen+' Personen':''].filter(Boolean);
+  if(evz.length) h+='<div class="ang-sec">Event</div><p class="cat-info" style="margin:0">'+esc2(evz.join(' · '))+'</p>';
+  h+='<div class="ang-sec">Positionen</div><table class="ang-tab"><tbody>'
+    +(a.zeilen||[]).filter(z=>Number(z.menge)>0).map(z=>'<tr><td>'+esc2(z.text)+'</td><td class="m">'+angMenge(z.menge)+' × '+angEur(z.einzel)+'</td><td class="m">'+angEur(z.betrag)+'</td></tr>').join('')
+    +'</tbody></table>';
+  h+='<div class="ang-sum">'+angSummeHtml(a,{summe:a.summe, rabatt:a.rabattBetrag, gesamt:a.gesamt, anzahlung:a.anzahlung, rest:a.rest})+'</div>';
+  if(a.hinweis) h+='<div class="ang-sec">Hinweis an den Kunden</div><p class="cat-info" style="margin:0;white-space:pre-line">'+esc2(a.hinweis)+'</p>';
+  const akt=angStatusKnoepfe(a);
+  if(akt) h+='<div class="ang-sec">Status von Hand</div><div class="ang-add">'+akt+'</div>';
+  if(a.verlauf&&a.verlauf.length) h+='<div class="ang-sec">Verlauf</div><ul class="ang-verlauf">'
+    +a.verlauf.slice().reverse().map(v=>'<li><time>'+esc2(angZeit(v.at))+'</time><span>'+esc2(v.was)+(v.wer?' · '+esc2(v.wer):'')+'</span></li>').join('')+'</ul>';
+  return h;
+}
+
+/* ---- PDF-Vorschau ----
+   Der Server gibt einen signierten Link (10 Minuten) aus. So zeigt der
+   iframe das PDF ohne Sitzungs-Header, und "In neuem Tab" funktioniert auch
+   auf dem iPhone. Ein blob:-PDF zeigt Chrome unter object-src 'none' nicht an. */
+async function angPdf(btn){
+  if(!ANG||!ANG.a) return;
+  await withBusy(btn, async()=>{
+    if(ANG.dirty && ANG.a.status==='entwurf' && !await angSpeichernIntern()) return;
+    const d=await angPost({action:'pdfLink', id:ANG.a.id});
+    if(!d||!d.url||!ANG) return;
+    angPdfZeigen(d.url, ANG.a.nummer);
+  });
+}
+function angPdfZeigen(url, nummer){
+  angPdfZu();
+  const ov=document.createElement('div');
+  ov.className='ang-ov'; ov.id='angPdfOv'; ov.style.zIndex='11500';
+  ov.innerHTML='<div class="ang-sheet" role="dialog" aria-modal="true" aria-labelledby="angPdfTitel">'
+    +'<div class="ang-hd"><h2 id="angPdfTitel">PDF-Vorschau <span class="nr">'+esc2(nummer)+'</span></h2>'
+    +'<button type="button" class="ang-zu" aria-label="Vorschau schließen" data-on-click="angPdfZu()">'+ANG_ICON.x+'</button></div>'
+    +'<div class="ang-body"><iframe class="ang-pdf" title="Angebot '+esc2(nummer)+' als PDF" src="'+esc2(url)+'"></iframe>'
+    +'<p class="hint" style="margin-top:.6rem">Auf dem Handy zeigt die Vorschau oft nur die erste Seite. „In neuem Tab“ zeigt alles. Der Link gilt 10 Minuten.</p></div>'
+    +'<div class="ang-ft"><a class="abtn" href="'+esc2(url)+'" target="_blank" rel="noopener">'+ANG_ICON.extern+'In neuem Tab</a>'
+    +'<a class="abtn primary" href="'+esc2(url)+'&amp;download=1" download="Angebot-'+esc2(nummer)+'.pdf">'+ANG_ICON.laden+'Herunterladen</a></div></div>';
+  ov.addEventListener('click',e=>{ if(e.target===ov) angPdfZu(); });
+  document.body.appendChild(ov);
+  if(!$('angOv')){ document.body.style.overflow='hidden'; document.addEventListener('keydown',angTaste); }
+  setTimeout(()=>{ const z=ov.querySelector('.ang-zu'); if(z) z.focus(); },40);
+}
+function angPdfZu(){
+  const ov=$('angPdfOv'); if(!ov) return;
+  ov.remove();
+  if(!$('angOv')){ document.body.style.overflow=''; document.removeEventListener('keydown',angTaste); }
+  else { const b=document.querySelector('#angFuss .abtn'); if(b) try{ b.focus(); }catch(e){} }
+}
+
+/* ---- Einstellungen ---- */
+async function angEinstellungenOeffnen(btn){
+  await withBusy(btn, async()=>{
+    if(!ANG_EINST) await angLaden();
+    if(!ANG_EINST){ toast('Einstellungen konnten nicht geladen werden.','err'); return; }
+    const e=ANG_EINST;
+    const fld=(label,key,wert,typ,extra)=>'<div class="field"><label for="angE_'+key.replace(/\W/g,'_')+'">'+label+'</label><input id="angE_'+key.replace(/\W/g,'_')+'" type="'+(typ||'number')+'" data-e="'+key+'" value="'+esc2(wert)+'"'+(extra||' min="0" step="0.01" inputmode="decimal"')+'></div>';
+    let h='<div class="ang-sec">Pakete (Preis pro Person)</div>';
+    Object.keys(e.pakete).forEach(k=>{
+      const p=e.pakete[k];
+      h+='<div class="ang-zl"><div class="ang-grid drei">'+fld('Name','pakete.'+k+'.name',p.name,'text',' maxlength="40"')
+        +fld('Preis pro Person €','pakete.'+k+'.preis',p.preis)+fld('ab Personen','pakete.'+k+'.ab',p.ab,'number',' min="0" step="1" inputmode="numeric"')+'</div>'
+        +'<div style="margin-top:.6rem">'+fld('Beschreibung im Angebot','pakete.'+k+'.text',p.text,'text',' maxlength="160"')+'</div></div>';
+    });
+    h+='<div class="ang-sec">Pauschale, Anfahrt, Zeit</div><div class="ang-grid zwei">'
+      +fld('Event-Pauschale €','pauschale',e.pauschale)+fld('Pauschale Fr, Sa, Feiertag €','pauschaleWochenende',e.pauschaleWochenende)
+      +fld('Anfahrt inklusive (km)','inklKm',e.inklKm,'number',' min="0" step="1" inputmode="numeric"')+fld('Preis je weiterem km €','kmPreis',e.kmPreis)
+      +fld('Ausgabe inklusive (Std.)','inklStunden',e.inklStunden,'number',' min="0" step="0.5" inputmode="decimal"')+fld('Preis je weiterer Stunde €','stundenPreis',e.stundenPreis)+'</div>';
+    h+='<div class="ang-sec">Standard für neue Angebote</div><div class="ang-grid zwei">'
+      +fld('Gültigkeit (Tage)','gueltigTage',e.gueltigTage,'number',' min="1" max="90" step="1" inputmode="numeric"')
+      +fld('Anzahlung (%)','anzahlungProzent',e.anzahlungProzent,'number',' min="0" max="100" step="1" inputmode="numeric"')+'</div>';
+    h+='<div class="ang-sec">Anzahlung online</div><div class="ang-schalter'+(e.anzahlungOnline?' on':'')+'" id="angSchalterBox"><div>'
+      +'<label for="angE_anzahlungOnline" style="font-size:.95rem;margin-bottom:.3rem">Anzahlung online per SumUp</label>'
+      +'<p class="hint">Aus: Kunden nehmen nur an, du kassierst die Anzahlung wie bisher. An: Nach der Annahme zahlen Kunden die Anzahlung auf der Angebotsseite per SumUp.</p>'
+      +'<p class="hint" style="color:var(--amber);margin-top:.4rem">Vor dem Einschalten mit dem Steuerberater klären: Eine Anzahlung kann eine Anzahlungsrechnung mit ausgewiesener MwSt. verlangen.</p></div>'
+      +'<label class="switch"><input type="checkbox" id="angE_anzahlungOnline" data-e="anzahlungOnline"'+(e.anzahlungOnline?' checked':'')+'><span class="slider"></span></label></div>'
+      +'<p class="hint" style="margin-top:.8rem">Neue Preise gelten für neue Angebote. Schon angelegte Angebote behalten ihre Positionen.</p>';
+    const kopf='<div class="ang-hd"><h2 id="angETitel">Preise und Einstellungen</h2><button type="button" class="ang-zu" aria-label="Schließen" data-on-click="angSchliessen()">'+ANG_ICON.x+'</button></div>';
+    const fuss='<div class="ang-ft">'+angKnopf('angSchliessen()','Abbrechen')+angKnopf('angEinstellungenSpeichern(this)','Speichern','primary')+'</div>';
+    angFenster(kopf+'<div class="ang-body">'+h+'</div>'+fuss,'angETitel',{art:'einst', a:null, dirty:false, vorher:btn});
+    $('angE_anzahlungOnline').addEventListener('change',ev=>$('angSchalterBox').classList.toggle('on',ev.target.checked));
+  });
+}
+async function angEinstellungenSpeichern(btn){
+  const roh={};
+  document.querySelectorAll('#angOv [data-e]').forEach(el=>{
+    const p=el.dataset.e.split('.'); let o=roh;
+    for(let i=0;i<p.length-1;i++){ o[p[i]]=o[p[i]]||{}; o=o[p[i]]; }
+    o[p[p.length-1]]=el.type==='checkbox'?el.checked:el.value;
+  });
+  if(roh.anzahlungOnline && !(ANG_EINST&&ANG_EINST.anzahlungOnline)){
+    const ok=await confirmBooking({ title:'Anzahlung online einschalten?', customer:'Kunden zahlen nach der Annahme per SumUp',
+      amount:(roh.anzahlungProzent||0)+' % Anzahlung', note:'Bitte vorher mit dem Steuerberater klären, ob dafür eine Anzahlungsrechnung nötig ist.', okLabel:'Einschalten' });
+    if(!ok) return;
+  }
+  await withBusy(btn, async()=>{
+    const d=await angPost({action:'einstellungen', einstellungen:roh});
+    if(!d) return;
+    ANG_EINST=d.einstellungen;
+    angSchliessen(true);
+    toast('Einstellungen gespeichert','ok');
+    angKopfZeichnen();
+  });
+}
 
 /* ---------------- Gutscheine (Admin) ---------------- */
 let vouchersLoaded=false, VOUCHERS=[];

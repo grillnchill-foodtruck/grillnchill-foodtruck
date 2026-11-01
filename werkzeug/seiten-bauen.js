@@ -412,7 +412,8 @@ const CSP = [
   "img-src 'self' data: blob:",
   "font-src 'self' https://fonts.gstatic.com",
   "connect-src 'self' https://nominatim.openstreetmap.org https://accounts.google.com https://appleid.apple.com",
-  "frame-src https://maps.google.com https://www.google.com https://challenges.cloudflare.com https://accounts.google.com",
+  // 'self' für die PDF-Vorschau der Catering-Angebote im Admin-Tool (Paket catering)
+  "frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com https://accounts.google.com",
   "worker-src 'self'",
   "manifest-src 'self'",
   "base-uri 'self'",

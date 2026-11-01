@@ -182,6 +182,19 @@ const TAG = 864e5;
     r.s === 200 && r.r.isBase64Encoded && r.r.headers['Content-Type'] === 'application/pdf'
     && pdf.slice(0, 5).toString() === '%PDF-' && pdf.slice(-8).toString().includes('%%EOF'), { s: r.s, kopf: pdf.slice(0, 8).toString() });
   ok('PDF hat Seiten und Nummer im Titel', /\/Type \/Page\b/.test(pdf.toString('latin1')) && pdf.toString('latin1').includes('A-' + jahr + '-0001'));
+  r = await adminPost({ action: 'pdfLink', id: a1.id });
+  const pl = new URL('https://x' + (r.d.url || '/'));
+  const q = Object.fromEntries(pl.searchParams);
+  const ohneSitzung = async (qq) => antwort(await admin.handler({ httpMethod: 'GET', headers: { 'x-nf-client-connection-ip': neueIp() }, queryStringParameters: qq }));
+  r = await ohneSitzung(q);
+  ok('Signierter PDF-Link (für iframe und neuen Tab) liefert das PDF ohne Sitzung',
+    r.s === 200 && Buffer.from(r.r.body, 'base64').slice(0, 5).toString() === '%PDF-' && /inline/.test(r.r.headers['Content-Disposition']));
+  ok('… mit download=1 als Anhang', /attachment/.test((await ohneSitzung({ ...q, download: '1' })).r.headers['Content-Disposition']));
+  ok('Signatur verändert -> 403', (await ohneSitzung({ ...q, sig: q.sig.replace(/^./, (c) => (c === 'a' ? 'b' : 'a')) })).s === 403);
+  ok('Andere Angebots-ID mit derselben Signatur -> 403', (await ohneSitzung({ ...q, pdf: '0123456789ab' })).s === 403);
+  ok('Abgelaufener Link -> 403', !L.pdfLinkGueltig(q.pdf, q.exp, q.sig, new Date(Number(q.exp) + 1000)));
+  ok('Link länger als 10 Minuten gültig gemacht -> 403', (await ohneSitzung({ ...q, exp: String(Number(q.exp) + 36e5) })).s === 403);
+  ok('PDF ohne Sitzung und ohne Signatur -> 401', (await ohneSitzung({ pdf: a1.id })).s === 401);
   ok('Kunde sieht Entwurf nicht (PDF und Ansicht -> 404)',
     (await kundeGet({ id: a1.id, t: tokenVon(a1.id), pdf: '1' })).s === 404 && (await kundeGet({ id: a1.id, t: tokenVon(a1.id) })).s === 404);
 

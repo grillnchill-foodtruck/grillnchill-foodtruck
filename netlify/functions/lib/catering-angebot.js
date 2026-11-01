@@ -327,6 +327,29 @@ function kundenLink(a, basis) {
   return (basis || seite()) + '/angebot?id=' + a.id + '&t=' + a.token;
 }
 
+/* ---- Signierter PDF-Link fürs Admin-Tool ---------------------------------- */
+/* Die Vorschau läuft in einem iframe und in einem neuen Tab. Dort lässt sich
+   kein Sitzungs-Header mitschicken, und ein blob:-PDF unter der strengen CSP
+   (object-src 'none') zeigt Chrome nicht an. Deshalb holt das Admin-Tool mit
+   seiner Sitzung einen Link, der 10 Minuten gilt und nur dieses eine PDF
+   öffnet. Geheimnis wie bei internHeader (lib/bremse.js). */
+const PDF_LINK_MS = 10 * 60 * 1000;
+function pdfSignatur(id, exp) {
+  const g = process.env.INTERNAL_HOOK_SECRET || process.env.STATUS_UPDATE_SECRET || process.env.ADMIN_PASSWORD || '';
+  return g ? crypto.createHmac('sha256', g).update('angebot-pdf|' + id + '|' + exp).digest('hex').slice(0, 40) : '';
+}
+function pdfLink(id, jetzt) {
+  const exp = String((jetzt || new Date()).getTime() + PDF_LINK_MS);
+  return '/.netlify/functions/catering-angebot?pdf=' + id + '&exp=' + exp + '&sig=' + pdfSignatur(id, exp);
+}
+function pdfLinkGueltig(id, exp, sig, jetzt) {
+  if (!ID_FORM.test(String(id || '')) || !/^\d{13}$/.test(String(exp || '')) || !/^[a-f0-9]{40}$/.test(String(sig || ''))) return false;
+  const t = (jetzt || new Date()).getTime();
+  if (Number(exp) < t || Number(exp) > t + PDF_LINK_MS + 60000) return false;
+  const soll = pdfSignatur(id, exp);
+  return !!soll && crypto.timingSafeEqual(Buffer.from(soll), Buffer.from(String(sig)));
+}
+
 /* ---- Laden, Speichern ----------------------------------------------------- */
 async function laden(s, id) {
   if (!ID_FORM.test(String(id || ''))) return null;
@@ -797,7 +820,8 @@ function kundenAnsicht(a, e, jetzt) {
       personen: a.event && a.event.personen || 0, paket: a.event && a.event.paket || '', paketName: p ? p.name : '',
     },
     zeilen: (a.zeilen || []).filter((z) => Number(z.menge) > 0).map((z) => ({
-      art: z.art, paket: z.paket || '', text: z.text, standard: !!z.standard, menge: z.menge, einzel: z.einzel, betrag: z.betrag,
+      art: z.art, paket: z.paket || '', paketName: z.art === 'paket' && e.pakete[z.paket] ? e.pakete[z.paket].name : '',
+      text: z.text, standard: !!z.standard, menge: z.menge, einzel: z.einzel, betrag: z.betrag,
     })),
     summe: a.summe, rabatt: { art: a.rabatt && a.rabatt.art || 'keiner', wert: a.rabatt && a.rabatt.wert || 0, betrag: a.rabattBetrag || 0 },
     gesamt: a.gesamt, anzahlungProzent: a.anzahlungProzent, anzahlung: a.anzahlung, rest: a.rest,
@@ -962,7 +986,7 @@ module.exports = {
   einstellungenLesen, einstellungenSpeichern, einstellungenMischen,
   heute, plusTage, tageSeit, deDatum, deDatumLang, eur, dez,
   standardText, rechnen, entwurfBereinigen, entwurfAusAnfrage, pauschaleFuer,
-  naechsteNummer, tokenStimmt, kundenLink, laden, wirksamerStatus, istAbgelaufen,
+  naechsteNummer, tokenStimmt, kundenLink, laden, wirksamerStatus, istAbgelaufen, pdfLink, pdfLinkGueltig,
   anlegen, speichern, loeschen, duplizieren, senden, annehmen, statusSetzen,
   zahlungStarten, zahlungVerbuchen, zahlungPruefen, sumupCheckout, taeglicherLauf,
   alle, kurz, summen, adminAnsicht, kundenAnsicht, bedingungen,

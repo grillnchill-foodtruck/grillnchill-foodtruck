@@ -6,7 +6,9 @@
  *
  *   GET  ?liste=1              -> { angebote, summen, einstellungen }
  *   GET  ?id=<id>              -> { angebot, einstellungen }
- *   GET  ?pdf=<id>             -> application/pdf (Vorschau)
+ *   GET  ?pdf=<id>             -> application/pdf (mit Sitzung im Header)
+ *   GET  ?pdf=<id>&exp=…&sig=… -> application/pdf (signierter 10-Minuten-Link,
+ *                                 für iframe-Vorschau und neuen Tab)
  *   POST { password, action, … }
  *        neu          { anfrage? }          Entwurf, vorbefüllt aus der Anfrage
  *        speichern    { id, angebot }       nur Entwürfe
@@ -15,6 +17,7 @@
  *        duplizieren  { id }
  *        loeschen     { id }                nur Entwürfe
  *        einstellungen { einstellungen }
+ *        pdfLink      { id }                -> { url } signierter Link (10 Minuten)
  *
  * Anmeldung wie catering-list.js (Sitzungs-Token mit Zwei-Faktor, Bremse
  * über lib/auth-guard.js). Logik in lib/catering-angebot.js.
@@ -25,7 +28,7 @@ const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung, nachweis } = require('./lib/admin-sitzung');
 const { mitglied } = require('./lib/team-passwort');
-const { saeubern } = require('./lib/bremse');
+const { saeubern, schutz } = require('./lib/bremse');
 const A = require('./lib/catering-angebot');
 
 const json = (statusCode, data) => ({
@@ -59,10 +62,38 @@ async function authRole(pw) {
 const BEKANNT = ['bad_key', 'anfrage_fehlt', 'nicht_gefunden', 'nur_entwurf', 'status', 'email_fehlt', 'name_fehlt',
   'betrag_fehlt', 'datum_vorbei', 'status_nicht_moeglich', 'online_bezahlt'];
 
+async function pdfAntwort(id, herunterladen) {
+  const s = A.store();
+  const a = await A.laden(s, id);
+  if (!a) return json(404, { error: 'nicht_gefunden' });
+  const e = await A.einstellungenLesen(s);
+  const pdf = await require('./lib/angebot-pdf').angebotPdf(a, e);
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': (herunterladen ? 'attachment' : 'inline') + '; filename="Angebot-' + a.nummer + '.pdf"',
+      'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex',
+    },
+    body: pdf.toString('base64'),
+    isBase64Encoded: true,
+  };
+}
+
 exports.handler = async (event) => {
   const methode = event.httpMethod;
   if (methode !== 'GET' && methode !== 'POST') return json(405, { error: 'method_not_allowed' });
   const p = event.queryStringParameters || {};
+
+  // Signierter PDF-Link (ohne Sitzung): nur dieses PDF, 10 Minuten
+  if (methode === 'GET' && p.pdf && p.sig) {
+    const halt = await schutz(event, { name: 'angebot-pdf', max: 60, maxKB: 4 });
+    if (halt) return halt;
+    if (!A.pdfLinkGueltig(p.pdf, p.exp, p.sig)) return json(403, { error: 'link_ungueltig' });
+    try { return await pdfAntwort(p.pdf, p.download === '1'); }
+    catch (err) { console.error('catering-angebot pdf:', (err && err.stack) || err); return json(500, { error: 'server_error' }); }
+  }
   let input = {};
   if (methode === 'POST') {
     try { input = saeubern(JSON.parse(event.body || '{}'), { maxText: 2000 }); } catch (e) { return json(400, { error: 'bad_json' }); }
@@ -79,23 +110,7 @@ exports.handler = async (event) => {
 
   try {
     if (methode === 'GET') {
-      if (p.pdf) {
-        const s = A.store();
-        const a = await A.laden(s, p.pdf);
-        if (!a) return json(404, { error: 'nicht_gefunden' });
-        const e = await A.einstellungenLesen(s);
-        const pdf = await require('./lib/angebot-pdf').angebotPdf(a, e);
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': 'inline; filename="Angebot-' + a.nummer + '.pdf"',
-            'Cache-Control': 'no-store',
-          },
-          body: pdf.toString('base64'),
-          isBase64Encoded: true,
-        };
-      }
+      if (p.pdf) return await pdfAntwort(p.pdf, p.download === '1');
       const e = await A.einstellungenLesen();
       if (p.id) {
         const a = await A.laden(A.store(), p.id);
@@ -131,6 +146,10 @@ exports.handler = async (event) => {
       case 'loeschen': {
         await A.loeschen(id);
         return json(200, { ok: true });
+      }
+      case 'pdfLink': {
+        if (!(await A.laden(A.store(), id))) return json(404, { error: 'nicht_gefunden' });
+        return json(200, { ok: true, url: A.pdfLink(id) });
       }
       case 'einstellungen': {
         const e = await A.einstellungenSpeichern(input.einstellungen, wer);

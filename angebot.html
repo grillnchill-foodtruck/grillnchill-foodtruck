@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dein Catering-Angebot | Grill'n Chill</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0C0B09">
+<link rel="icon" href="/logo.png">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/bowlby-one-latin-400-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-400-normal.woff2" crossorigin>
+<style>
+@font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+@font-face{font-family:'GNC Display Ext';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/gnc-display-ext-400.woff2')format('woff2');unicode-range:U+011E-011F,U+0130,U+015E-015F}
+@font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400-normal.woff2')format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/inter-latin-600-normal.woff2')format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/inter-latin-700-normal.woff2')format('woff2')}
+@font-face{font-family:'Inter';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/inter-latin-800-normal.woff2')format('woff2')}
+:root{
+  --bg:#0C0B09; --card:#17140F; --card2:#1D1913; --border:#2E2820; --border-hi:#4A3E30;
+  --cream:#F5E9D0; --dim:#C9BCA4; --muted:#A2957D;
+  --orange:#E85A24; --orange-b:#FF7A3D; --orange-s:#CC4715; --ok:#6DBE45; --err:#E86A6A; --amber:#FFB020;
+  --display:'Bowlby One','GNC Display Ext','Anton',Impact,sans-serif;
+  --body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --ease-out:cubic-bezier(0.16,1,0.3,1);
+}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+@supports (-webkit-touch-callout:none){ html{font:-apple-system-body} }
+body{min-height:100svh;background:var(--bg);color:var(--cream);font-family:var(--body);font-size:1rem;line-height:1.6;
+  background-image:radial-gradient(circle at 50% -12%,rgba(232,90,36,.12),transparent 55%);
+  padding-bottom:env(safe-area-inset-bottom)}
+[hidden]{display:none!important}
+a{color:var(--orange-b)}
+.wrap{max-width:720px;margin:0 auto;padding:0 max(1rem,env(safe-area-inset-left)) 0 max(1rem,env(safe-area-inset-right))}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+:focus-visible{outline:3px solid var(--orange-b);outline-offset:3px;border-radius:8px}
+
+/* Kopf */
+.kopf{display:flex;align-items:center;gap:.75rem;padding:calc(.9rem + env(safe-area-inset-top)) 0 .9rem}
+.kopf img{width:40px;height:40px;border-radius:10px;flex:none}
+.marke{flex:1;min-width:0;min-height:44px;display:flex;flex-direction:column;justify-content:center;text-decoration:none;color:var(--cream)}
+.marke b{display:block;font-family:var(--display);font-weight:400;font-size:1rem;letter-spacing:.02em;line-height:1.25}
+.marke small{display:block;color:var(--orange-b);font-size:.62rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lang-dd{position:relative;flex:none}
+.lang-dd-btn{display:inline-flex;align-items:center;gap:.4rem;background:var(--card);border:1px solid var(--border);border-radius:999px;
+  padding:.55rem .85rem;min-height:44px;cursor:pointer;color:var(--cream);font:700 .78rem/1 var(--body);letter-spacing:.03em}
+.lang-dd-btn:hover{border-color:var(--orange)}
+.lang-dd-flag svg,.lang-dd-opt svg{width:20px;height:13px;border-radius:2px;display:block;flex-shrink:0}
+.lang-dd-caret{width:10px;height:6px;color:var(--muted);transition:transform .15s}
+.lang-dd.open .lang-dd-caret{transform:rotate(180deg)}
+.lang-dd-list{position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:.3rem;margin:0;list-style:none;min-width:170px;box-shadow:0 10px 30px rgba(0,0,0,.45);z-index:50}
+.lang-dd-opt{display:flex;align-items:center;gap:.55rem;width:100%;min-height:44px;padding:.45rem .6rem;border-radius:10px;cursor:pointer;
+  color:var(--dim);font:600 .86rem var(--body);background:none;border:none;text-align:left}
+.lang-dd-opt:hover{background:rgba(255,255,255,.06);color:var(--cream)}
+.lang-dd-opt.active{color:var(--orange-b)}
+.lang-dd-opt.active::after{content:"";margin-left:auto;width:8px;height:8px;border-radius:50%;background:currentColor}
+
+/* Titel */
+.held{padding:1.4rem 0 1.2rem}
+.eyebrow{color:var(--orange-b);font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,6vw,2.5rem);line-height:1.22;margin:.4rem 0 .5rem;overflow-wrap:anywhere}
+.lead{color:var(--dim);font-size:1.02rem;max-width:60ch}
+.pillen{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:1rem}
+.pille{display:inline-flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:700;color:var(--dim);background:var(--card);
+  border:1px solid var(--border);border-radius:999px;padding:.4rem .8rem;white-space:nowrap}
+.pille.nr{font-family:ui-monospace,Menlo,monospace;font-weight:600}
+
+/* Karten */
+.karte{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.15rem 1.2rem;margin-bottom:1rem}
+.karte h2{font-family:var(--display);font-weight:400;font-size:1.15rem;line-height:1.3;margin-bottom:.8rem}
+.fakten{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.9rem 1rem}
+@media (min-width:600px){ .fakten{grid-template-columns:repeat(3,minmax(0,1fr))} }
+.fakt span{display:block;font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.fakt b{display:block;font-weight:700;font-size:.98rem;overflow-wrap:anywhere;margin-top:.1rem}
+.fakt.breit{grid-column:1/-1}
+
+.zeilen{list-style:none;padding:0;margin:0}
+.zeile{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.15rem 1rem;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.zeile:first-child{padding-top:0}
+.zeile .t{font-weight:700;font-size:.95rem;overflow-wrap:anywhere}
+.zeile .u{grid-column:1;color:var(--muted);font-size:.85rem}
+.zeile .b{grid-row:1;grid-column:2;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+.summen{margin-top:.8rem}
+.summen div{display:flex;justify-content:space-between;gap:1rem;padding:.2rem 0;color:var(--dim);font-variant-numeric:tabular-nums}
+.summen .rab span:last-child{color:var(--ok)}
+.gesamt{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;border-top:1px solid var(--border-hi);margin-top:.6rem;padding-top:.8rem}
+.gesamt span{font-weight:800}
+.gesamt b{font-family:var(--display);font-weight:400;font-size:clamp(1.5rem,6vw,1.9rem);color:var(--orange-b);line-height:1.2;white-space:nowrap}
+.mwst{color:var(--muted);font-size:.8rem;margin-top:.3rem}
+.anz{margin-top:.9rem;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:.7rem .85rem}
+.anz div{display:flex;justify-content:space-between;gap:1rem;font-variant-numeric:tabular-nums}
+.anz div:first-child{font-weight:700;color:var(--cream)}
+.anz div+div{color:var(--dim);font-size:.9rem;margin-top:.15rem}
+
+.hinweis{border-left:3px solid var(--orange);padding-left:.9rem;color:var(--cream);white-space:pre-line;overflow-wrap:anywhere}
+.liste{padding:0;margin:0;list-style:none}
+.liste li{position:relative;padding:.3rem 0 .3rem 1.2rem;color:var(--dim);font-size:.92rem}
+.liste li::before{content:"";position:absolute;left:0;top:.85em;width:6px;height:6px;border-radius:50%;background:var(--orange)}
+
+/* Annehmen */
+.annehmen{border-color:rgba(232,90,36,.55);box-shadow:0 0 34px rgba(232,90,36,.10)}
+.haken{display:flex;gap:.8rem;align-items:flex-start;cursor:pointer;padding:.55rem .1rem;min-height:44px;font-weight:600}
+.haken input{flex:none;width:24px;height:24px;margin:.1rem 0 0;accent-color:var(--orange);cursor:pointer}
+.haken.fehler input{outline:2px solid var(--err);outline-offset:2px}
+.fehltext{color:var(--err);font-size:.88rem;font-weight:600;margin:.3rem 0 0}
+.fehltext:empty{display:none}
+.btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;min-height:52px;margin-top:.9rem;padding:.9rem 1.2rem;
+  border:none;border-radius:14px;background:var(--orange-s);color:#fff;font:800 1.02rem/1.25 var(--body);cursor:pointer;text-decoration:none;text-align:center;
+  transition:transform .2s var(--ease-out),box-shadow .2s var(--ease-out),filter .2s}
+@media (hover:hover) and (pointer:fine){ .btn:not([disabled]):hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(232,90,36,.35)} }
+.btn:not([disabled]):active{transform:scale(.98)}
+.btn svg{width:18px;height:18px;flex:none}
+.klein{color:var(--muted);font-size:.82rem;margin-top:.6rem;text-align:center}
+.mini{display:inline-flex;align-items:center;gap:.45rem;min-height:44px;padding:.45rem .95rem;border:1px solid var(--border-hi);border-radius:999px;
+  color:var(--cream);font:700 .86rem var(--body);text-decoration:none;background:none;cursor:pointer}
+.mini:hover{border-color:var(--orange-b);color:var(--orange-b)}
+.mini svg{width:16px;height:16px;flex:none}
+.reihe{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+
+/* Statusbanner */
+.banner{display:flex;gap:.9rem;align-items:flex-start;border-radius:18px;padding:1rem 1.1rem;margin-bottom:1rem;border:1px solid var(--border);background:var(--card)}
+.banner .ico{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--card2);border:1px solid var(--border)}
+.banner .ico svg{width:20px;height:20px}
+.banner h2{font-family:var(--display);font-weight:400;font-size:1.15rem;line-height:1.3;margin:0 0 .25rem}
+.banner p{color:var(--dim);font-size:.95rem}
+.banner.ok{border-color:rgba(109,190,69,.5)} .banner.ok .ico{color:var(--ok);border-color:rgba(109,190,69,.5)}
+.banner.warn{border-color:rgba(255,176,32,.45)} .banner.warn .ico{color:var(--amber);border-color:rgba(255,176,32,.45)}
+.banner.aus .ico{color:var(--muted)}
+.gedimmt{opacity:.62}
+
+/* Warten */
+@keyframes gncSpin{to{transform:rotate(360deg)}}
+@keyframes gncBreath{0%,100%{opacity:.4}50%{opacity:1}}
+.is-busy{position:relative;cursor:progress!important;color:transparent!important;opacity:1!important}
+.is-busy>:not(.busy-spin){visibility:hidden}
+.busy-spin{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:2px solid var(--busy-ink,currentColor);
+  border-right-color:transparent;opacity:0;animation:gncSpin .8s linear infinite;transition:opacity 150ms var(--ease-out)}
+.is-busy.busy-shown .busy-spin{opacity:1}
+.skel{background:rgba(255,255,255,.06);border-radius:14px}
+@media (prefers-reduced-motion:no-preference){ .skel{background:linear-gradient(90deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.11) 50%,rgba(255,255,255,.05) 100%);background-size:260% 100%;animation:shimmer 1.4s linear infinite} }
+@keyframes shimmer{from{background-position:130% 0}to{background-position:-130% 0}}
+.rein{animation:rein .32s var(--ease-out)}
+@keyframes rein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .busy-spin{animation:gncBreath 1.2s ease-in-out infinite;border-right-color:var(--busy-ink,currentColor)}
+  .rein{animation:none} .btn{transition:none} .lang-dd-caret{transition:none}
+}
+
+footer{color:var(--muted);font-size:.78rem;padding:1.6rem 0 2.2rem;border-top:1px solid var(--border);margin-top:1.4rem}
+footer .reihe{margin-top:.7rem}
+</style>
+<script src="/ereignisse.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="kopf">
+    <img src="/logo.png" alt="" width="40" height="40">
+    <a class="marke" href="/"><b lang="en">GRILL'N CHILL</b><small data-i18n="footer.menu_catering">Foodtruck Catering</small></a>
+    <div class="lang-dd">
+      <button type="button" class="lang-dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sprache wählen" data-i18n-aria="a11y.lang" data-on-click="spracheWaehlen(this)">
+        <span class="lang-dd-flag"></span>
+        <span class="lang-dd-code">DE</span>
+        <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <ul class="lang-dd-list" role="listbox" hidden></ul>
+    </div>
+  </header>
+
+  <main id="app" aria-busy="true">
+    <p class="sr-only" data-i18n="ang.loading">Angebot wird geladen …</p>
+    <div class="held" aria-hidden="true">
+      <div class="skel" style="height:14px;width:140px"></div>
+      <div class="skel" style="height:38px;width:80%;margin-top:.8rem"></div>
+      <div class="skel" style="height:16px;width:60%;margin-top:.8rem"></div>
+    </div>
+    <div class="skel" style="height:150px;margin-bottom:1rem" aria-hidden="true"></div>
+    <div class="skel" style="height:260px" aria-hidden="true"></div>
+  </main>
+  <p class="sr-only" aria-live="polite" id="ansage"></p>
+
+  <footer>
+    <span lang="en">Grill'n Chill</span> Yildiz und Öztas GbR · Gütersloher Straße 122, 33649 Bielefeld
+    <div class="reihe">
+      <a class="mini" href="/" data-i18n="ang.home">Zur Startseite</a>
+      <a class="mini" href="/#agb" data-i18n="footer.service_terms">AGB</a>
+      <a class="mini" href="/#datenschutz" data-i18n="catering.f_privacy">Datenschutz</a>
+    </div>
+  </footer>
+</div>
+
+<script src="/i18n.js"></script>
+<script>
+/* Kundenseite eines Catering-Angebots (/angebot?id=…&t=…).
+   Daten: netlify/functions/angebot.js. Texte: Schlüssel ang.* in i18n.js
+   und den 7 Sprachpaketen. Positionen, die Kubi selbst geschrieben hat,
+   bleiben deutsch; Vorgabepositionen werden übersetzt. */
+var PARAM = new URLSearchParams(location.search);
+var ANG_ID = PARAM.get('id') || '';
+var ANG_T = PARAM.get('t') || '';
+var ZURUECK = PARAM.get('zahlung') === 'zurueck';
+var ANGEBOT = null;
+var ZUSTAND = 'laden';   // laden | da | fehlt | fehler
+var MELDUNG = '';        // Hinweis im Zahlbereich: i18n-Schlüssel (ang.pay_fail, ang.pay_pending, ang.busy) oder 'warten'
+var TEL = '+4915118540604', TEL_TXT = '0151 18 54 06 04', MAIL = 'info@grillnchill-foodtruck.de';
+var API = '/.netlify/functions/angebot';
+
+// Rückkehr von SumUp: Parameter aus der Adresse nehmen, damit ein Neuladen nicht wieder prüft
+if (ZURUECK) { try { PARAM.delete('zahlung'); history.replaceState(null, '', location.pathname + '?' + PARAM.toString()); } catch (e) {} }
+
+var SVG = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>'; };
+var ICON = {
+  ok: SVG('<path d="M20 6 9 17l-5-5"/>'),
+  uhr: SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  aus: SVG('<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>'),
+  karte: SVG('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'),
+  pdf: SVG('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>'),
+  tel: SVG('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>'),
+  mail: SVG('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>'),
+};
+
+function h(x) { return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function f(key, werte) {
+  var s = t(key);
+  Object.keys(werte || {}).forEach(function (k) { s = s.split('{' + k + '}').join(werte[k]); });
+  return s;
+}
+function locale() { return (typeof LANG_LOCALES !== 'undefined' && LANG_LOCALES[currentLang]) || 'de-DE'; }
+function geld(n) { return new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' }).format(Number(n) || 0); }
+function zahl(n) { return new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 }).format(Number(n) || 0); }
+function datum(ymd, lang) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd || '')) return '';
+  var o = lang ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' } : { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' };
+  return new Intl.DateTimeFormat(locale(), o).format(new Date(ymd + 'T12:00:00Z'));
+}
+function tagVon(iso) { var d = new Date(iso); return isNaN(d) ? '' : new Intl.DateTimeFormat(locale(), { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d); }
+
+/* ---- Warten sichtbar machen (wie auf den anderen Seiten) ---- */
+function gncBusy(btn, on) {
+  if (!btn) return;
+  if (on) {
+    if (btn.classList.contains('is-busy')) return;
+    btn.style.setProperty('--busy-ink', getComputedStyle(btn).color);
+    btn.disabled = true; btn.classList.add('is-busy'); btn.setAttribute('aria-busy', 'true');
+    var sp = document.createElement('span'); sp.className = 'busy-spin'; sp.setAttribute('aria-hidden', 'true'); btn.appendChild(sp);
+    btn._busyT = setTimeout(function () { btn.classList.add('busy-shown'); }, 150);
+    return;
+  }
+  clearTimeout(btn._busyT);
+  btn.classList.remove('is-busy', 'busy-shown'); btn.removeAttribute('aria-busy'); btn.style.removeProperty('--busy-ink');
+  var s = btn.querySelector(':scope > .busy-spin'); if (s) s.remove();
+  btn.disabled = false;
+}
+
+/* ---- Positionen: Vorgaben übersetzen, eigene Texte so lassen ---- */
+var PAKET_TEXT = { classic: ['catp.p1f1', 'catp.p1f2'], gnc: ['catp.p2f1', 'catp.p1f2'], flat: ['catp.p3f1', 'catp.p3f2'] };
+function zeilenText(z, w) {
+  if (currentLang === 'de' || !z.standard) return { t: z.text, u: '' };
+  var stunden = zahl(w.inklStunden);
+  if (z.art === 'paket') return { t: f('ang.row_pkg', { name: z.paketName || '' }), u: (PAKET_TEXT[z.paket] || []).map(t).join(' · ') };
+  if (z.art === 'pauschale') return { t: f('ang.row_pausch', { km: w.inklKm, h: stunden }), u: '' };
+  if (z.art === 'anfahrt') return { t: f('ang.row_km', { km: w.inklKm }), u: '' };
+  if (z.art === 'stunde') return { t: t('ang.row_hour'), u: '' };
+  return { t: z.text, u: '' };
+}
+
+function bannerHtml(art, ico, titel, text) {
+  return '<div class="banner ' + art + ' rein" role="status"><span class="ico">' + ico + '</span><div><h2>' + h(titel) + '</h2>' + (text ? '<p>' + text + '</p>' : '') + '</div></div>';
+}
+function kontaktHtml() {
+  return '<div class="karte"><p style="color:var(--dim);margin-bottom:.7rem">' + h(t('ang.questions')) + '</p><div class="reihe">'
+    + '<a class="mini" href="tel:' + TEL + '">' + ICON.tel + '<span>' + h(t('ang.call')) + ': ' + TEL_TXT + '</span></a>'
+    + '<a class="mini" href="mailto:' + MAIL + '">' + ICON.mail + '<span>' + h(t('ang.mail')) + '</span></a></div></div>';
+}
+
+function zeichnen() {
+  var app = document.getElementById('app');
+  document.title = t('ang.doc_title') + " | Grill'n Chill";
+  if (ZUSTAND === 'laden') return;
+  app.removeAttribute('aria-busy');
+  if (ZUSTAND !== 'da') {
+    var fehlt = ZUSTAND === 'fehlt';
+    app.innerHTML = '<div class="held"><span class="eyebrow">' + h(t('ang.eyebrow')) + '</span><h1>' + h(t(fehlt ? 'ang.invalid_title' : 'ang.err_title')) + '</h1>'
+      + '<p class="lead">' + h(t(fehlt ? 'ang.invalid_text' : 'ang.err')) + '</p></div>' + kontaktHtml();
+    return;
+  }
+  var a = ANGEBOT, w = a.werte || {};
+  var st = a.status;
+  var html = '<div class="held"><h1>' + h(t('ang.title')) + '</h1>'
+    + '<p class="lead">' + h(a.vorname ? f('ang.hello', { name: a.vorname }) : t('ang.hello_anon')) + '</p>'
+    + '<div class="pillen"><span class="pille nr">' + h(f('ang.nr', { nr: a.nummer })) + '</span>'
+    + (st === 'gesendet' && a.gueltigBis ? '<span class="pille">' + ICON.uhr.replace('<svg', '<svg width="14" height="14"') + h(f('ang.valid_until', { date: datum(a.gueltigBis) })) + '</span>' : '')
+    + '</div></div>';
+
+  // Status oben
+  if (st === 'angenommen' && MELDUNG === 'warten') {
+    html += bannerHtml('warn', ICON.uhr, t('ang.pay_wait'), '');
+  } else if (st === 'angenommen') {
+    var txt = h(t('ang.ok_text'));
+    if (a.angenommenAm) txt += ' ' + h(f('ang.accepted_on', { date: tagVon(a.angenommenAm) })) + '.';
+    html += bannerHtml('ok', ICON.ok, t('ang.ok_title'), txt);
+    if (a.anzahlung > 0) {
+      if (a.anzahlungOnline) {
+        var zahlTxt = MELDUNG && MELDUNG !== 'warten'
+          ? '<p class="' + (MELDUNG === 'ang.pay_pending' ? '' : 'fehltext') + '" role="alert" style="margin:0 0 .5rem;font-weight:600' + (MELDUNG === 'ang.pay_pending' ? ';color:var(--amber)' : '') + '">' + h(t(MELDUNG)) + '</p>' : '';
+        html += '<div class="karte annehmen rein"><h2>' + h(t('ang.pay_title')) + '</h2>' + zahlTxt
+          + '<p style="color:var(--dim)">' + h(f('ang.pay_text', { amount: geld(a.anzahlung) })) + '</p>'
+          + '<button type="button" class="btn" id="zahlKnopf" data-on-click="anzahlungZahlen(this)">' + ICON.karte + '<span>' + h(f('ang.pay_btn', { amount: geld(a.anzahlung) })) + '</span></button>'
+          + '<p class="klein">' + h(t('ang.pay_hint')) + '</p></div>';
+      } else {
+        html += '<div class="karte"><p style="color:var(--dim)">' + h(f('ang.ok_deposit_off', { amount: geld(a.anzahlung) })) + '</p></div>';
+      }
+    }
+  } else if (st === 'bezahlt') {
+    html += bannerHtml('ok', ICON.ok, t('ang.paid_title'), h(t('ang.paid_text')));
+  } else if (st === 'abgelaufen') {
+    html += bannerHtml('warn', ICON.uhr, t('ang.expired_title'), h(t('ang.expired_text')));
+  } else if (st === 'abgelehnt') {
+    html += bannerHtml('aus', ICON.aus, t('ang.declined_title'), h(t(a.ersetzt ? 'ang.replaced_text' : 'ang.declined_text')));
+  }
+  var aktiv = st === 'gesendet' || st === 'angenommen' || st === 'bezahlt';
+
+  // Eckdaten
+  var ev = a.event || {};
+  var fakten = [];
+  if (ev.datum) fakten.push(['ang.date', datum(ev.datum, true), true]);
+  if (ev.zeit) fakten.push(['ang.time', ev.zeit]);
+  if (ev.personen) fakten.push(['ang.guests', zahl(ev.personen)]);
+  if (ev.paketName) fakten.push(['ang.package', ev.paketName]);
+  if (ev.ort) fakten.push(['ang.place', ev.ort, true]);
+  html += '<div class="' + (aktiv ? '' : 'gedimmt') + '">';
+  if (fakten.length) {
+    html += '<section class="karte" aria-labelledby="hEvent"><h2 id="hEvent">' + h(t('ang.event')) + '</h2><div class="fakten">'
+      + fakten.map(function (x) { return '<div class="fakt' + (x[2] ? ' breit' : '') + '"><span>' + h(t(x[0])) + '</span><b' + (x[0] === 'ang.package' ? ' lang="en"' : '') + '>' + h(x[1]) + '</b></div>'; }).join('')
+      + '</div></section>';
+  }
+
+  // Positionen und Summen
+  html += '<section class="karte" aria-labelledby="hLeist"><h2 id="hLeist">' + h(t('ang.items')) + '</h2><ul class="zeilen">'
+    + (a.zeilen || []).map(function (z) {
+      var tx = zeilenText(z, w);
+      var unter = (tx.u ? h(tx.u) + '<br>' : '') + zahl(z.menge) + ' × ' + (Number(z.einzel) > 0 ? geld(z.einzel) : h(t('ang.incl')));
+      return '<li class="zeile"><span class="t">' + h(tx.t) + '</span><span class="b">' + (Number(z.betrag) > 0 ? geld(z.betrag) : h(t('ang.incl'))) + '</span><span class="u">' + unter + '</span></li>';
+    }).join('') + '</ul><div class="summen">';
+  if (a.rabatt && a.rabatt.betrag > 0) {
+    html += '<div><span>' + h(t('ang.subtotal')) + '</span><span>' + geld(a.summe) + '</span></div>'
+      + '<div class="rab"><span>' + h(t('ang.discount')) + (a.rabatt.art === 'prozent' ? ' ' + zahl(a.rabatt.wert) + ' %' : '') + '</span><span>- ' + geld(a.rabatt.betrag) + '</span></div>';
+  }
+  html += '</div><div class="gesamt"><span>' + h(t('ang.total')) + '</span><b>' + geld(a.gesamt) + '</b></div><p class="mwst">' + h(t('ang.vat')) + '</p>';
+  if (a.anzahlung > 0) {
+    html += '<div class="anz"><div><span>' + h(f('ang.deposit', { p: zahl(a.anzahlungProzent) })) + '</span><span>' + geld(a.anzahlung) + '</span></div>'
+      + '<div><span>' + h(t('ang.rest')) + '</span><span>' + geld(a.rest) + '</span></div></div>';
+  }
+  html += '</section>';
+
+  if (a.hinweis) html += '<section class="karte" aria-labelledby="hHinw"><h2 id="hHinw">' + h(t('ang.note')) + '</h2><p class="hinweis" lang="de">' + h(a.hinweis) + '</p></section>';
+
+  // Bedingungen
+  var bed = [];
+  if (a.gueltigBis) bed.push(f('ang.term_valid', { date: datum(a.gueltigBis) }));
+  bed.push(a.anzahlung > 0 ? f('ang.term_deposit', { p: zahl(a.anzahlungProzent), amount: geld(a.anzahlung) }) : t('ang.term_nodeposit'));
+  bed.push(t('ang.term_drinks'));
+  bed.push(f('ang.term_hours', { h: zahl(w.inklStunden), price: geld(w.stundenPreis) }));
+  html += '<section class="karte" aria-labelledby="hBed"><h2 id="hBed">' + h(t('ang.terms')) + '</h2><ul class="liste">'
+    + bed.map(function (x) { return '<li>' + h(x) + '</li>'; }).join('')
+    + '<li>' + h(t('ang.term_agb')) + ' <a href="/#agb">' + h(t('ang.agb_read')) + '</a></li></ul></section>';
+  html += '</div>';
+
+  // Annehmen
+  if (st === 'gesendet') {
+    html += '<section class="karte annehmen" aria-labelledby="hAnn"><h2 id="hAnn">' + h(t('ang.accept_title')) + '</h2>'
+      + '<label class="haken" id="hakenZeile"><input type="checkbox" id="haken" aria-describedby="hakenFehler"><span>' + h(t('ang.check')) + '</span></label>'
+      + '<p class="fehltext" id="hakenFehler" role="alert"></p>'
+      + '<button type="button" class="btn" id="annehmenKnopf" data-on-click="angebotAnnehmen(this)">' + ICON.ok + '<span>' + h(t('ang.accept')) + '</span></button>'
+      + '<p class="klein">' + h(f('ang.total_short', { amount: geld(a.gesamt) })) + '</p></section>';
+  }
+  html += '<div class="reihe" style="margin:0 0 1rem"><a class="mini" href="' + h(API + '?id=' + encodeURIComponent(ANG_ID) + '&t=' + encodeURIComponent(ANG_T) + '&pdf=1')
+    + '" target="_blank" rel="noopener">' + ICON.pdf + '<span>' + h(t('ang.pdf')) + '</span></a></div>';
+  html += kontaktHtml();
+  app.innerHTML = html;
+  var cb = document.getElementById('haken');
+  if (cb) cb.addEventListener('change', function () {
+    if (cb.checked) { document.getElementById('hakenZeile').classList.remove('fehler'); cb.removeAttribute('aria-invalid'); document.getElementById('hakenFehler').textContent = ''; }
+  });
+}
+
+/* ---- Laden ---- */
+async function laden(pruefen) {
+  if (!/^[a-f0-9]{12}$/.test(ANG_ID) || !/^[A-Za-z0-9_-]{32}$/.test(ANG_T)) { ZUSTAND = 'fehlt'; zeichnen(); return; }
+  try {
+    var r = await fetch(API + '?id=' + encodeURIComponent(ANG_ID) + '&t=' + encodeURIComponent(ANG_T) + (pruefen ? '&pruefen=1' : ''), { cache: 'no-store' });
+    if (r.status === 404) { ZUSTAND = 'fehlt'; zeichnen(); return; }
+    var d = await r.json().catch(function () { return null; });
+    if (!r.ok || !d || !d.angebot) { ZUSTAND = 'fehler'; zeichnen(); return; }
+    ANGEBOT = d.angebot; ZUSTAND = 'da';
+  } catch (e) { ZUSTAND = 'fehler'; }
+  zeichnen();
+}
+
+/* Rückkehr von SumUp: ein paar Mal nachsehen, bis die Zahlung da ist */
+async function zahlungAbwarten() {
+  MELDUNG = 'warten';
+  await laden(true);
+  for (var i = 0; i < 5 && ANGEBOT && ANGEBOT.status === 'angenommen' && ANGEBOT.zahlungLaeuft; i++) {
+    await new Promise(function (r) { setTimeout(r, 3000); });
+    await laden(true);
+  }
+  MELDUNG = ANGEBOT && ANGEBOT.status === 'angenommen' ? (ANGEBOT.zahlungLaeuft ? 'ang.pay_pending' : 'ang.pay_fail') : '';
+  zeichnen();
+  if (ANGEBOT && ANGEBOT.status === 'bezahlt') ansagen(t('ang.paid_title'));
+}
+
+function ansagen(text) { var el = document.getElementById('ansage'); if (el) { el.textContent = ''; setTimeout(function () { el.textContent = text; }, 50); } }
+
+/* ---- Annehmen ---- */
+async function angebotAnnehmen(btn) {
+  var cb = document.getElementById('haken');
+  if (!cb || !cb.checked) {
+    var z = document.getElementById('hakenZeile'); if (z) z.classList.add('fehler');
+    if (cb) { cb.setAttribute('aria-invalid', 'true'); cb.focus(); }
+    document.getElementById('hakenFehler').textContent = t('ang.check_err');
+    return;
+  }
+  if (btn.classList.contains('is-busy')) return;
+  gncBusy(btn, true);
+  try {
+    var r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: ANG_ID, t: ANG_T, aktion: 'annehmen', haken: true, lang: currentLang }) });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.status === 429) { gncBusy(btn, false); document.getElementById('hakenFehler').textContent = t('ang.busy'); return; }
+    if (r.status === 404) { ZUSTAND = 'fehlt'; zeichnen(); return; }
+    if (d && d.angebot) {
+      ANGEBOT = d.angebot; MELDUNG = '';
+      zeichnen();
+      window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      if (r.ok) ansagen(t('ang.ok_title'));
+      return;
+    }
+    gncBusy(btn, false);
+    document.getElementById('hakenFehler').textContent = t('ang.err');
+  } catch (e) {
+    gncBusy(btn, false);
+    document.getElementById('hakenFehler').textContent = t('ang.err');
+  }
+}
+
+/* ---- Anzahlung (nur mit Schalter "Anzahlung online") ---- */
+async function anzahlungZahlen(btn) {
+  if (btn.classList.contains('is-busy')) return;
+  gncBusy(btn, true);
+  try {
+    var r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: ANG_ID, t: ANG_T, aktion: 'zahlen' }) });
+    var d = await r.json().catch(function () { return {}; });
+    if (r.ok && d.url) { location.href = d.url; return; }
+    gncBusy(btn, false);
+    MELDUNG = r.status === 429 ? 'ang.busy' : 'ang.pay_fail';
+    if (r.status === 409 || r.status === 403) { MELDUNG = ''; await laden(false); return; }
+    zeichnen();
+  } catch (e) { gncBusy(btn, false); MELDUNG = 'ang.pay_fail'; zeichnen(); }
+}
+// Zurück aus dem Kassenfenster über den Verlauf (bfcache): Knopf wieder bedienbar
+window.addEventListener('pageshow', function (e) { if (e.persisted) { var b = document.getElementById('zahlKnopf'); if (b) gncBusy(b, false); } });
+
+/* ---- Sprache: Auswahl aus i18n.js, bei jedem Wechsel neu zeichnen ---- */
+function spracheWaehlen(el) { toggleLangDd(null, el); }
+new MutationObserver(function () { zeichnen(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+initI18n();
+if (ZURUECK) zahlungAbwarten(); else laden(false);
+</script>
+</body>
+</html>
