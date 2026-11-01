@@ -86,6 +86,7 @@
   .rechnung{border:1px dashed var(--border-hi);border-radius:var(--r-sm);padding:.7rem .8rem;margin-top:.7rem}
   .hinweisbox{background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.35);border-radius:var(--r-sm);padding:.6rem .8rem;font-size:.84rem;color:var(--cream);margin:.9rem 0 0}
   .leer{color:var(--faint);font-size:.85rem;padding:.4rem 0}
+  .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
   details.erledigt summary{cursor:pointer;color:var(--dim);font-size:.85rem;min-height:44px;display:flex;align-items:center}
 
   .login{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.4rem 1.2rem;margin-top:2.2rem;text-align:center}
@@ -416,10 +417,11 @@ function statusChip(s) {
     : '<span class="chip">erstellt</span>';
 }
 
+const STATUS_TEXT = { refunded: 'erstattet', cancelled: 'storniert', abandoned: 'abgebrochen' };
 function monatHtml(f, m) {
   const zeilen = m.bestellungen.length ? m.bestellungen.map((b) =>
     '<div class="best' + (b.zaehlt ? '' : ' raus') + '"><span class="zeit">' + esc(datum(b.at)) + '</span>'
-    + '<span>' + esc(b.name) + ' <span class="leise">' + esc(b.artikel) + ' Artikel · #' + esc(b.ref) + (b.zaehlt ? '' : ' · ' + esc(b.status)) + '</span></span>'
+    + '<span>' + esc(b.name) + ' <span class="leise">' + esc(b.artikel) + ' Artikel · #' + esc(b.ref) + (b.zaehlt ? '' : ' · ' + esc(STATUS_TEXT[b.status] || b.status) + ', nicht auf der Rechnung') + '</span></span>'
     + '<span class="betrag">' + eur(b.total) + '</span></div>').join('') : '<p class="leer">Keine Bestellungen.</p>';
   let rechnung = '';
   const r = m.rechnung;
