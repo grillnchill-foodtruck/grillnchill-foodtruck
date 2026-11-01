@@ -138,6 +138,7 @@ const mittag = (d) => tw.berlinMitternacht(d) + 12 * 3600000;
   ok('Zugpferd-Hinweis nennt den nötigen Aufpreis (1,30 €)', /1,30 €/.test(t4.punkte.B.hinweis) && /Preis prüfen/.test(t4.punkte.B.hinweis), t4.punkte.B.hinweis);
   ok('Hinweise: Rätsel besser platzieren, Ladenhüter von der Karte nehmen?',
     /platzieren/.test(t4.punkte.C.hinweis) && /Von der Karte nehmen\?/.test(t4.punkte.D.hinweis));
+  ok('Tafel "Alle" (Dip neben Burger): Zugpferd ohne Preis-Betrag', !/€/.test(ma.vierFelder(bsp, { gemischt: true }).punkte.B.hinweis));
   ok('Gleichstand zählt als beliebt bzw. hohe Marge', ma.vierFelder([{ id: 'x', qty: 35, db: 3, satz: 7 }, { id: 'y', qty: 165, db: 3, satz: 7 }, { id: 'z', qty: 0, db: 3, satz: 7 }, { id: 'w', qty: 0, db: 3, satz: 7 }]).punkte.x.feld === 'renner');
 
   /* ---- 4. Fehlender Wareneinsatz ----------------------------------------- */

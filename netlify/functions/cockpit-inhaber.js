@@ -68,7 +68,7 @@ function teamPruefer() {
   }
 }
 
-/* Inhaber? Liefert { who, antwort } – antwort ist gesetzt, wenn abgelehnt wird. */
+/* Inhaber? Liefert { who, antwort }. antwort ist gesetzt, wenn abgelehnt wird. */
 async function anmeldung(event, input) {
   let who = null;
   if (input.password) {

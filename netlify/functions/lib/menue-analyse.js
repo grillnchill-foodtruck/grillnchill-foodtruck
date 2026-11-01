@@ -29,6 +29,9 @@
  *   Rätsel       hohe Marge, wenig gekauft
  *   Ladenhüter   wenig gekauft, niedrige Marge
  *
+ * Die Tafel "alle" mischt Burger, Dips und Getränke. Sie zeigt die Lage,
+ * aber keine Preis-Beträge; die stehen nur in der eigenen Gruppe.
+ *
  * Artikel ohne Wareneinsatz bekommen kein Feld und zählen nicht in den
  * Durchschnitt der Marge. In die Beliebtheit gehen sie ein, denn die hängt
  * nicht am Wareneinsatz.
@@ -93,7 +96,8 @@ function kostenWert(kosten, id) {
  * Vier-Felder-Einordnung einer Gruppe.
  * @param {Array<{id, qty, db, satz}>} liste  db = null, wenn der Wareneinsatz fehlt
  */
-function vierFelder(liste) {
+function vierFelder(liste, optionen) {
+  const o = optionen || {};
   const n = liste.length;
   const gesamt = liste.reduce((s, a) => s + (a.qty > 0 ? a.qty : 0), 0);
   const schwelleAnteil = n ? BELIEBT_FAKTOR / n : 0;
@@ -124,7 +128,7 @@ function vierFelder(liste) {
     }
     tafel.punkte[a.id] = {
       anteil: r3(anteil), beliebt, hoch, feld,
-      hinweis: hinweisText(feld, a, tafel, schnittDb, ohneKosten),
+      hinweis: hinweisText(feld, a, tafel, schnittDb, ohneKosten, o.gemischt),
     };
   }
   return tafel;
@@ -132,11 +136,13 @@ function vierFelder(liste) {
 
 /* Ein konkreter Satz je Feld. Beim Zugpferd steht dabei, wie viel mehr der
    Preis bräuchte, um den Durchschnitt der Gruppe zu erreichen. */
-function hinweisText(feld, a, tafel, schnittDb, ohneKosten) {
+function hinweisText(feld, a, tafel, schnittDb, ohneKosten, gemischt) {
   if (ohneKosten) return 'Wareneinsatz fehlt.';
   if (tafel.leer) return 'Keine Verkäufe im Zeitraum.';
   if (feld === 'renner') return 'Halten. Gut sichtbar lassen, Rezept und Preis nicht ändern.';
   if (feld === 'zugpferd') {
+    // Über alle Gruppen hinweg wäre ein Betrag schief (Dip gegen Burger)
+    if (gemischt) return 'Preis prüfen oder Rezept günstiger machen. Genauer in der eigenen Gruppe.';
     const fehlt = Math.max(0.1, Math.ceil((schnittDb - a.db) * (1 + (a.satz || SATZ_SPEISE) / 100) * 10 - 1e-9) / 10);
     return 'Preis prüfen: rund ' + fmtEur(fehlt) + ' mehr bringt den Schnitt der Gruppe. Oder Rezept günstiger machen.';
   }
@@ -177,7 +183,7 @@ function auswerten(sk, summe, kosten) {
   const tafeln = {};
   for (const g of GRUPPEN.concat([{ id: 'alle' }])) {
     const liste = artikel.filter((a) => !a.extra && (g.id === 'alle' || a.cat === g.id));
-    tafeln[g.id] = vierFelder(liste);
+    tafeln[g.id] = vierFelder(liste, { gemischt: g.id === 'alle' });
   }
   return { artikel, tafeln };
 }
