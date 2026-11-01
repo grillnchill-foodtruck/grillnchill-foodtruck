@@ -431,7 +431,9 @@ const CSP = [
   "img-src 'self' data: blob: https://tile.openstreetmap.org https://static.sumup.com https://api.sumup.com https://ltxup.sumup.com https://www.gstatic.com",
   "font-src 'self' https://fonts.gstatic.com",
   "connect-src 'self' https://nominatim.openstreetmap.org https://accounts.google.com https://appleid.apple.com https://*.sumup.com https://pay.google.com",
-  "frame-src https://maps.google.com https://www.google.com https://challenges.cloudflare.com https://accounts.google.com https:",
+  // 'self' für die PDF-Vorschau der Catering-Angebote im Admin-Tool (Paket catering),
+  // https: für die 3-D-Secure-Abfrage im SumUp-Widget (siehe oben)
+  "frame-src 'self' https://maps.google.com https://www.google.com https://challenges.cloudflare.com https://accounts.google.com https:",
   "worker-src 'self'",
   "manifest-src 'self'",
   "base-uri 'self'",

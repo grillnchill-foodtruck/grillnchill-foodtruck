@@ -81,6 +81,9 @@ exports.handler = async (event) => {
     const reference = String(data.checkout_reference || '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 60);
     if (!reference) return json(200, { ok: true, ignored: 'no_reference' });
 
+    // Catering-Anzahlung (GNC-AN-…): liegt im Store "catering", eigene Logik
+    if (/^GNC-AN-/.test(reference)) return json(200, await require('./lib/catering-angebot').zahlungVerbuchen(data, 'webhook'));
+
     const s = store();
     const key = 'o:' + reference;
     const rec = await s.get(key, { type: 'json' });

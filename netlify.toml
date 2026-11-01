@@ -338,6 +338,30 @@
 [functions."zaehler-korrektur"]
   schedule = "23 * * * *"
 
+# --- Paket catering ---
+# Catering-Angebote: Kundenseite /angebot (Link mit ID und Token aus der Mail).
+# Hinweis fürs Zusammenführen: Netlify nimmt die erste passende Regel. Diese
+# Regeln müssen VOR der 404-Regel "/*" stehen, sonst greift die zuerst.
+[[redirects]]
+  from   = "/angebot"
+  to     = "/angebot.html"
+  status = 200
+
+[[headers]]
+  for = "/angebot.html"
+  [headers.values]
+    X-Robots-Tag    = "noindex, nofollow"
+    Cache-Control   = "no-store"
+    Referrer-Policy = "no-referrer"
+
+# Täglich 08:00 UTC: Erinnerung nach 3 Tagen, Ablauf, offene Anzahlungen
+[functions."catering-angebot-taeglich"]
+  schedule = "0 8 * * *"
+
+# Das Angebots-PDF braucht das Logo: logo.png steht schon im globalen
+# included_files unter [functions], eine eigene Liste je Function würde die
+# globale ersetzen.
+
 # Gebrandete 404-Seite. Muss der LETZTE Redirect bleiben: Regeln gelten in
 # Reihenfolge, neue Redirects also immer davor eintragen.
 [[redirects]]
