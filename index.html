@@ -16556,7 +16556,9 @@ function kasseWidgetMethoden(liste) {
   var ua = navigator.userAgent || '';
   var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
   var android = !ios && /Android/.test(ua);
-  var ids = (Array.isArray(liste) ? liste : []).map(function (m) {
+  // SumUp ruft mit { eligible: [{ id: 'card' }, { id: 'apple_pay' }, …] } auf (sdk.js v2)
+  var roh = Array.isArray(liste) ? liste : (liste && Array.isArray(liste.eligible) ? liste.eligible : []);
+  var ids = roh.map(function (m) {
     return typeof m === 'string' ? m : String((m && (m.id || m.type || m.name)) || '');
   }).filter(Boolean);
   var bleiben = ids.filter(function (id) {
