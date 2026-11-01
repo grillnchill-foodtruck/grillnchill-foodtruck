@@ -118,6 +118,18 @@
   .pill-link svg{width:16px;height:16px;flex:none;}
   .pill-link:hover{border-color:#E85A24;color:#F5E9D0;}
   @media (prefers-reduced-motion: reduce){ .star svg{transition:none;transform:none !important;} }
+  /* ============ LIVE-LIEFERUNG: Karte mit Kubis Punkt (status-live.js, karte.js) ============ */
+  .livecard{border-color:#E85A24;}
+  .lk-kopf{display:flex;align-items:flex-start;justify-content:space-between;gap:.8rem;margin-bottom:.8rem;}
+  .livecard .lbl{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#C9BCA4;}
+  .livecard .big{font-size:1.35rem;font-weight:700;line-height:1.25;margin-top:.2rem;}
+  .lk-badge{display:inline-flex;align-items:center;gap:.4rem;flex:none;font-size:.72rem;font-weight:700;color:#8FD46A;border:1px solid rgba(109,190,69,.5);border-radius:999px;padding:.25rem .65rem;white-space:nowrap;}
+  .lk-dot{width:8px;height:8px;border-radius:50%;background:#6DBE45;animation:lkPuls 1.8s ease-out infinite;}
+  @keyframes lkPuls{0%{box-shadow:0 0 0 0 rgba(109,190,69,.55)}70%{box-shadow:0 0 0 7px rgba(109,190,69,0)}100%{box-shadow:0 0 0 0 rgba(109,190,69,0)}}
+  .lk-karte{height:230px;}
+  .lk-info{font-size:.78rem;line-height:1.45;color:#C9BCA4;margin-top:.65rem;}
+  .lk-karte[hidden] + .lk-info{margin-top:0;}
+  @media (prefers-reduced-motion: reduce){ .lk-dot{animation:none} }
 </style>
 </head>
 <body>
@@ -127,6 +139,7 @@
     <span class="refpill" id="refPill">…</span>
   </header>
   <p class="conn" id="connMsg" aria-live="polite"></p>
+  <section class="card livecard" id="liveKarte" hidden></section>
   <div id="app" aria-busy="true">
     <p class="visually-hidden" id="loadingTxt">Status wird geladen …</p>
     <div class="card" aria-hidden="true">
@@ -140,6 +153,8 @@
   <p class="visually-hidden" aria-live="polite" id="stLive"></p>
   <footer id="footTxt">Diese Seite aktualisiert sich automatisch.</footer>
 </div>
+<script src="/karte.js"></script>
+<script src="/status-live.js"></script>
 <script>
 var LANG = (function () {
   try { var sv = localStorage.getItem('gnc_lang'); if (sv === 'en' || sv === 'tr') return sv; if (sv === 'de') return 'de'; } catch (e) {}
@@ -583,6 +598,7 @@ function paint() {
   document.getElementById('refPill').textContent = '#' + DATA.reference;
   if (!SHOWN || SHOWN.mode !== DATA.mode || (SHOWN.nr || null) !== (DATA.abholnr || null)) renderFull();
   else if (SHOWN.state !== DATA.state) updateSteps();
+  if (window.gncLiveSync) window.gncLiveSync(DATA);   // Live-Karte bei Lieferung unterwegs
 }
 
 function setConn(off) {

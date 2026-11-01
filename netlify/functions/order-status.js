@@ -7,6 +7,10 @@
  *   GET  ?ref=GNC-…&ck=<checkoutId>→ wie oben, Nachweis über geheime SumUp-ID
  *   POST { action:'set', password|secret, reference, state }
  *        → Team setzt Status (alle Rollen); Push an den Kunden, falls abonniert
+ *          Optional ankunftMin (1-120) bei state 'on_the_way': Ankunftszeit aus
+ *          der Fahrer-Ansicht, steht dann in rec.fahrt { start, ankunft, minuten, von }
+ *          und im Push/Mail. Jeder andere Status beendet die Fahrt (rec.fahrt.ende)
+ *          und löscht die Live-Positionen (Store "fahrt", lib/lieferung.js).
  *   POST { action:'subscribe', reference, k, subscription }
  *        → Kunde abonniert Push für genau diese Bestellung (am Datensatz gespeichert)
  *   POST { action:'set', teamToken, reference, state }
@@ -44,6 +48,7 @@ const { sendeApns } = require('./lib/apns');
 const { pruefeTeamToken } = require('./lib/team-device');
 const { sendeTeamPush } = require('./lib/team-push');
 const { schutz, internHeader } = require('./lib/bremse');
+const { positionenLoeschen } = require('./lib/lieferung');
 
 const STATES = ['confirmed', 'preparing', 'ready_for_pickup', 'on_the_way', 'picked_up', 'delivered'];
 const PUSH_TEXT = {
@@ -141,6 +146,15 @@ function publicStatus(rec, ref) {
     arrivedAt: rec.arrivedAt || null,
     abholnr: Number.isInteger(rec.abholnr) ? rec.abholnr : null,
   };
+}
+
+/* Ankunftszeit aus der Fahrer-Ansicht als Zusatz zum Push "Unterwegs" */
+const ANKUNFT_TEXT = { de: ' Ankunft gegen {t}.', en: ' Arriving around {t}.', tr: ' Tahmini varış {t}.' };
+function ankunftSatz(rec, state) {
+  const a = state === 'on_the_way' && rec.fahrt && rec.fahrt.ankunft;
+  if (!a) return '';
+  const t = new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date(a));
+  return (ANKUNFT_TEXT[rec.pushLang] || ANKUNFT_TEXT.de).replace('{t}', t);
 }
 
 /* ---------- Live Activity in der iOS-App ----------
@@ -320,8 +334,24 @@ exports.handler = async (event) => {
     rec.fstateAt = rec.fstateAt || {};
     if (!rec.fstateAt.confirmed) rec.fstateAt.confirmed = rec.completedAt || rec.createdAt || new Date().toISOString();
     rec.fstateAt[state] = new Date().toISOString();
+    // Lieferfahrt (Paket lieferung, fahrer.html): Ankunftszeit merken. Mit
+    // jedem anderen Status endet die Fahrt, Live-Positionen werden gelöscht.
+    const fahrtLief = !!(rec.fahrt && rec.fahrt.start && !rec.fahrt.ende);
+    if (state === 'on_the_way') {
+      const alt = fahrtLief ? rec.fahrt : {};
+      rec.fahrt = { ...alt, start: alt.start || rec.fstateAt.on_the_way, von: String(who.name || '?').slice(0, 40) };
+      const min = parseInt(input.ankunftMin, 10);
+      if (min >= 1 && min <= 120) {
+        rec.fahrt.minuten = min;
+        rec.fahrt.ankunft = new Date(Date.now() + min * 60000).toISOString();
+      }
+    } else if (fahrtLief) {
+      rec.fahrt = { ...rec.fahrt, ende: new Date().toISOString() };
+    }
     await s.setJSON(key, rec);
-    await auditLog(who, 'Bestellstatus', '#' + ref + ' → ' + state + (who.geraet ? ' · über ' + who.geraet : ''));
+    if (state !== 'on_the_way' && fahrtLief) await positionenLoeschen(ref);
+    await auditLog(who, 'Bestellstatus', '#' + ref + ' → ' + state + (who.geraet ? ' · über ' + who.geraet : '')
+      + (state === 'on_the_way' && rec.fahrt && rec.fahrt.minuten ? ' · Ankunft in ' + rec.fahrt.minuten + ' Min.' : ''));
 
     // Live Activities laufen parallel zu Web-Push und Mail; Ergebnis erst am Ende
     const liveLauf = sendeLiveUpdates(rec, state);
@@ -336,7 +366,7 @@ exports.handler = async (event) => {
           webpush.setVapidDetails('mailto:info@grillnchill-foodtruck.de', pub, priv);
           await webpush.sendNotification(rec.pushSub, JSON.stringify({
             title: pl[state].title,
-            body: pl[state].body,
+            body: pl[state].body + ankunftSatz(rec, state),
             url: '/s/' + ref + '?k=' + statusKey(ref),
           }), { TTL: 3600 });
           pushed = true;
@@ -362,7 +392,7 @@ exports.handler = async (event) => {
           const mr = await fetch(siteUrl + '/.netlify/functions/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...internHeader() },
-            body: JSON.stringify({ type: 'status_update', status: state, order: rec.order }),
+            body: JSON.stringify({ type: 'status_update', status: state, order: (state === 'on_the_way' && rec.fahrt && rec.fahrt.ankunft) ? { ...rec.order, ankunft: rec.fahrt.ankunft } : rec.order }),
           });
           mailed = mr.ok;
           if (mailed) { rec.mailedStates[state] = true; await s.setJSON(key, rec); }

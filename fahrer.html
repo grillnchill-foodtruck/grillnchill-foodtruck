@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0C0B09">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GNC Fahrer">
+<title>Grill'n Chill · Fahrer</title>
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/bowlby-one-latin-400-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-400-normal.woff2" crossorigin>
+<style>
+  @font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/inter-latin-600-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/inter-latin-700-normal.woff2')format('woff2')}
+
+  /* Farben wie im Admin-Tool (admin.html) */
+  :root{
+    --bg:#0C0B09; --card:#17140F; --card2:#1D1913; --border:#2E2820; --border-hi:#4A3E30;
+    --cream:#F5E9D0; --dim:#C9BCA4; --faint:#A2957D;
+    --ember:#E85A24; --ember-hi:#FF7A3D; --ember-solid:#CC4715;
+    --live:#6DBE45; --live-hi:#8FD46A; --amber:#FFB020; --red:#E04848;
+    --r-sm:10px; --r-md:14px; --r-lg:18px;
+    --font-display:'Bowlby One','GNC Display Ext',Impact,'Arial Black',sans-serif;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;color-scheme:dark;touch-action:manipulation}
+  body{margin:0;min-height:100dvh;background:var(--bg);color:var(--cream);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:calc(env(safe-area-inset-bottom) + 32px)}
+  h1,h2,h3,p{margin:0}
+  button,input{font:inherit;color:inherit}
+  button{-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+  :focus-visible{outline:3px solid var(--ember-hi);outline-offset:2px}
+  .display{font-family:var(--font-display);font-weight:400;letter-spacing:.01em;line-height:1.22}
+  .num{font-variant-numeric:tabular-nums}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  svg{flex:none}
+
+  /* ================= Kopf ================= */
+  .hdr{position:sticky;top:0;z-index:30;background:rgba(12,11,9,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding-top:env(safe-area-inset-top)}
+  .hdr-inner{max-width:560px;margin:0 auto;padding:.6rem max(1rem,env(safe-area-inset-right)) .6rem max(1rem,env(safe-area-inset-left));display:flex;align-items:center;gap:.6rem}
+  .hdr img{width:34px;height:34px;border-radius:9px;flex:none}
+  .brand{flex:1;min-width:0}
+  .brand .display{font-size:1rem}
+  .brand small{display:block;color:var(--faint);font-size:.75rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .icon-btn{width:44px;height:44px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--card);color:var(--dim);display:inline-grid;place-items:center;cursor:pointer;flex:none;text-decoration:none;padding:0}
+  .icon-btn:hover{border-color:var(--border-hi);color:var(--cream)}
+  .icon-btn svg{width:18px;height:18px}
+  @media (max-width:359px){ .hdr img{display:none} }
+
+  /* Live-Leiste unter dem Kopf */
+  .live-bar{border-top:1px solid var(--border)}
+  .live-inner{max-width:560px;margin:0 auto;padding:.55rem max(1rem,env(safe-area-inset-right)) .6rem max(1rem,env(safe-area-inset-left));display:flex;align-items:center;gap:.7rem}
+  .live-dot{width:12px;height:12px;border-radius:50%;background:var(--faint);flex:none}
+  .live-bar.an{background:rgba(109,190,69,.1)}
+  .live-bar.an .live-dot{background:var(--live);animation:puls 1.8s ease-out infinite}
+  .live-bar.warn{background:rgba(255,176,32,.1)}
+  .live-bar.warn .live-dot{background:var(--amber)}
+  @keyframes puls{0%{box-shadow:0 0 0 0 rgba(109,190,69,.6)}70%{box-shadow:0 0 0 9px rgba(109,190,69,0)}100%{box-shadow:0 0 0 0 rgba(109,190,69,0)}}
+  .live-text{flex:1;min-width:0}
+  .live-text strong{display:block;font-size:1rem;line-height:1.3}
+  .live-bar.an .live-text strong{color:var(--live-hi)}
+  .live-bar.warn .live-text strong{color:var(--amber)}
+  .live-text small{display:block;font-size:.8rem;color:var(--dim);line-height:1.35}
+
+  /* ================= Knöpfe ================= */
+  .k{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:56px;padding:0 1.1rem;border-radius:var(--r-md);border:1px solid transparent;font-weight:700;font-size:1.05rem;line-height:1.2;text-decoration:none;cursor:pointer;text-align:center;transition:background-color .15s,border-color .15s,transform .1s}
+  .k:active{transform:scale(.98)}
+  .k svg{width:20px;height:20px}
+  .k-haupt{background:var(--ember-solid);color:#fff;width:100%}
+  .k-haupt:hover{background:#B83E10}
+  .k-zu{background:var(--live);color:#0C1A05;width:100%}
+  .k-zu:hover{background:#7FCB57}
+  .k-zu.bestaetigen{background:#FFC93C;color:#140D06}
+  .k-neben{background:var(--card2);border-color:var(--border-hi);color:var(--cream)}
+  .k-neben:hover{border-color:var(--ember-hi)}
+  .k-klein{min-height:48px;font-size:.95rem;padding:0 1rem}
+  .k-stopp{min-height:48px;background:var(--cream);color:#140D06;font-size:1rem;padding:0 1.2rem;flex:none}
+  .k-teilen{min-height:48px;background:var(--live);color:#0C1A05;font-size:1rem;padding:0 1.2rem;flex:none}
+  .k[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+  .is-busy{cursor:progress!important}
+  .is-busy > :not(.spinner){visibility:hidden}
+  .is-busy > .spinner{position:absolute;inset:0;margin:auto;border-color:var(--busy-ink,currentColor);border-right-color:transparent}
+  .spinner{display:inline-block;width:20px;height:20px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ================= Liste ================= */
+  .wrap{max-width:560px;margin:0 auto;padding:1rem max(1rem,env(safe-area-inset-right)) 0 max(1rem,env(safe-area-inset-left))}
+  .abschnitt{display:flex;align-items:baseline;justify-content:space-between;gap:.6rem;margin:1.3rem 0 .6rem}
+  .abschnitt:first-child{margin-top:.2rem}
+  .abschnitt h2{font-family:var(--font-display);font-weight:400;font-size:1.05rem;line-height:1.22;letter-spacing:.02em}
+  .abschnitt small{color:var(--faint);font-size:.8rem}
+  .stapel{display:flex;flex-direction:column;gap:.8rem}
+
+  .tipp{display:flex;gap:.7rem;align-items:flex-start;background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.35);border-radius:var(--r-md);padding:.8rem .9rem;font-size:.92rem;line-height:1.45;color:var(--cream)}
+  .tipp svg{width:20px;height:20px;color:var(--amber);margin-top:1px}
+
+  .lf{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:1rem;display:flex;flex-direction:column;gap:.75rem}
+  .lf.unterwegs{border-color:var(--ember);box-shadow:inset 0 0 0 1px rgba(232,90,36,.35)}
+  .lf-kopf{display:flex;align-items:flex-start;gap:.75rem}
+  .lf-nr{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card2);border:1px solid var(--border-hi);font-family:var(--font-display);font-size:1.15rem;line-height:1}
+  .lf.unterwegs .lf-nr{background:var(--ember-solid);border-color:var(--ember-solid);color:#fff}
+  .lf-nr svg{width:20px;height:20px}
+  .lf-wer{flex:1;min-width:0}
+  .lf-name{font-size:1.15rem;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+  .lf-meta{font-size:.85rem;color:var(--dim);margin-top:.1rem}
+  .chip{display:inline-flex;align-items:center;gap:.3rem;border-radius:999px;padding:.15rem .6rem;font-size:.78rem;font-weight:700;border:1px solid var(--border-hi);color:var(--cream);vertical-align:2px;white-space:nowrap}
+  .chip-nr{background:var(--cream);color:#140D06;border-color:var(--cream)}
+  .chip-test{border-color:rgba(255,176,32,.5);color:var(--amber)}
+  .lf-adresse{font-size:1.1rem;line-height:1.4;font-weight:600}
+  .lf-adresse small{display:block;font-size:.82rem;font-weight:400;color:var(--amber);margin-top:.15rem}
+  .geld{border-radius:var(--r-md);padding:.7rem .9rem;font-weight:700;line-height:1.3}
+  .geld.bar{background:var(--ember-solid);color:#fff;font-size:1.35rem}
+  .geld.bar small{display:block;font-size:.8rem;font-weight:600;opacity:.92}
+  .geld.ok{background:rgba(109,190,69,.12);border:1px solid rgba(109,190,69,.4);color:var(--live-hi);font-size:1rem}
+  .geld.warn{background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.45);color:var(--amber);font-size:1rem}
+  .lf-zeile{font-size:.95rem;line-height:1.45;color:var(--cream)}
+  .lf-zeile b{color:var(--dim);font-weight:600}
+  .lf-notiz{background:rgba(255,201,60,.1);border-left:3px solid #FFC93C;border-radius:8px;padding:.55rem .75rem;font-size:.95rem;line-height:1.45;overflow-wrap:anywhere}
+  .lf-eta{font-size:1.05rem;font-weight:700;color:var(--ember-hi)}
+  .lf-eta small{display:block;font-size:.82rem;font-weight:400;color:var(--dim)}
+  .lf-knoepfe{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+  .lf-knoepfe .k{min-width:0;padding:0 .6rem}
+  .lf-knoepfe .k:only-child{grid-column:1 / -1}
+
+  .leer{background:var(--card);border:1px dashed var(--border-hi);border-radius:var(--r-lg);padding:1.6rem 1.2rem;text-align:center;color:var(--dim);line-height:1.55}
+  .leer strong{display:block;color:var(--cream);font-size:1.05rem;margin-bottom:.2rem}
+  .skel{border-radius:var(--r-lg);height:210px;background:linear-gradient(90deg,#17140F 0%,#221D16 50%,#17140F 100%);background-size:220% 100%;animation:shimmer 1.4s linear infinite}
+  @keyframes shimmer{from{background-position:120% 0}to{background-position:-120% 0}}
+  .fuss{color:var(--faint);font-size:.78rem;text-align:center;margin:1.4rem 0 0;line-height:1.5}
+
+  /* ================= Losfahren: Blatt von unten ================= */
+  .sheet-ov{position:fixed;inset:0;z-index:60;background:rgba(8,7,5,.7);display:flex;align-items:flex-end;justify-content:center}
+  .sheet{width:100%;max-width:560px;background:var(--card);border:1px solid var(--border-hi);border-bottom:0;border-radius:22px 22px 0 0;padding:.6rem 1.1rem calc(1rem + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:.85rem;animation:hoch .26s cubic-bezier(.16,1,.3,1);max-height:92dvh;overflow:auto}
+  @keyframes hoch{from{transform:translateY(40px);opacity:0}}
+  .sheet-griff{width:44px;height:5px;border-radius:3px;background:var(--border-hi);margin:0 auto .2rem}
+  .sheet h2{font-family:var(--font-display);font-weight:400;font-size:1.2rem;line-height:1.25}
+  .sheet p{color:var(--dim);font-size:.92rem;line-height:1.45}
+  .wahl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem}
+  .wahl button{position:relative;min-height:68px;border-radius:var(--r-md);border:1px solid var(--border-hi);background:var(--card2);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;padding:.3rem 0}
+  .wahl button b{font-size:1.45rem;line-height:1;font-variant-numeric:tabular-nums}
+  .wahl button small{font-size:.75rem;color:var(--dim)}
+  .wahl button[aria-checked="true"]{background:var(--ember-solid);border-color:var(--ember-solid);color:#fff}
+  .wahl button[aria-checked="true"] small{color:#fff}
+  .wahl .vorschlag{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--cream);color:#140D06;font-size:.66rem;font-weight:800;border-radius:999px;padding:.08rem .45rem;white-space:nowrap;letter-spacing:.02em}
+  .sheet-zeit{font-size:1.05rem;color:var(--cream)!important;font-weight:700}
+  .check-row{display:flex;gap:.75rem;align-items:flex-start;min-height:48px;padding:.4rem 0;cursor:pointer;font-size:.95rem;line-height:1.4}
+  .check-row input{width:24px;height:24px;margin:0;accent-color:var(--ember);flex:none}
+  .check-row small{display:block;color:var(--dim);font-size:.8rem}
+
+  /* ================= Anmeldung (wie Cockpit) ================= */
+  .login{min-height:100dvh;display:grid;place-items:center;padding:24px 16px}
+  .login-card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);display:flex;flex-direction:column;gap:20px;padding:28px 22px}
+  .login-head{display:flex;align-items:center;gap:14px}
+  .login-head img{width:56px;height:56px;border-radius:14px;flex:none}
+  .login-title{font-size:1.75rem}
+  .login-head p{color:var(--dim);font-size:.9rem;line-height:1.45}
+  .stack{display:flex;flex-direction:column;gap:14px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .label{font-size:.9rem;font-weight:600}
+  .input{width:100%;height:52px;padding:0 52px 0 14px;border-radius:var(--r-sm);border:1px solid #706250;background:var(--bg);color:var(--cream);font-size:16px}
+  .input:focus-visible{outline:2px solid var(--ember-hi);outline-offset:1px;border-color:var(--ember-hi)}
+  .input[aria-invalid="true"]{border-color:var(--red)}
+  .pw-row{position:relative}
+  .pw-eye{position:absolute;top:4px;right:4px;width:44px;height:44px;display:grid;place-items:center;background:transparent;border:0;border-radius:8px;color:var(--dim);cursor:pointer}
+  .pw-eye svg{width:18px;height:18px}
+  .pw-eye[aria-pressed="true"]{color:var(--ember-hi)}
+  .field-error{color:#F07070;font-size:.9rem}
+  .shake{animation:shake .35s}
+  @keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+
+  /* ================= Toast ================= */
+  .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));z-index:80;transform:translate(-50%,16px);opacity:0;pointer-events:none;width:max-content;max-width:min(calc(100vw - 32px),480px);background:#1C1C1C;color:var(--cream);border:1px solid var(--border);border-left:4px solid var(--faint);border-radius:12px;padding:12px 16px;font-size:.95rem;font-weight:600;line-height:1.4;box-shadow:0 12px 32px rgba(0,0,0,.55);transition:opacity .2s,transform .2s}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .toast.ok{border-left-color:var(--live)}
+  .toast.err{border-left-color:var(--red)}
+
+  @media (prefers-reduced-motion: reduce){
+    .live-bar.an .live-dot{animation:none}
+    .sheet{animation:none}
+    .skel{animation:none}
+    .k,.toast{transition:none}
+    .k:active{transform:none}
+    .shake{animation:none}
+  }
+</style>
+</head>
+<body>
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ================= Anmeldung ================= -->
+<main id="loginView" class="login" hidden>
+  <section class="login-card" id="loginCard" aria-labelledby="loginTitle">
+    <div class="login-head">
+      <img src="/logo.png" alt="" width="56" height="56">
+      <div>
+        <h1 class="display login-title" id="loginTitle">Fahrer</h1>
+        <p>Gleiche Anmeldung wie im Admin-Tool, mit Code aus deiner Authenticator-App.</p>
+      </div>
+    </div>
+    <form id="loginForm" class="stack" novalidate>
+      <div class="field">
+        <label class="label" for="pw">Passwort</label>
+        <div class="pw-row">
+          <input class="input" type="password" id="pw" name="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" aria-describedby="pwError">
+          <button type="button" class="pw-eye" id="pwEye" aria-label="Passwort anzeigen" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <p class="field-error" id="pwError" hidden></p>
+      </div>
+      <label class="check-row">
+        <input type="checkbox" id="pwStay">
+        <span>Angemeldet bleiben<small>30 Tage, nur auf diesem Gerät</small></span>
+      </label>
+      <button type="submit" class="k k-haupt" id="loginBtn"><span>Anmelden</span></button>
+    </form>
+  </section>
+</main>
+
+<!-- ================= Fahrer-Ansicht ================= -->
+<div id="app" hidden>
+  <header class="hdr">
+    <div class="hdr-inner">
+      <img src="/logo.png" alt="" width="34" height="34">
+      <div class="brand">
+        <h1 class="display">FAHRER</h1>
+        <small id="kopfZeile">Lieferungen heute</small>
+      </div>
+      <button type="button" class="icon-btn" id="refreshBtn" aria-label="Liste neu laden" title="Neu laden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <a class="icon-btn" href="/admin.html" aria-label="Zum Admin-Tool" title="Admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      </a>
+      <button type="button" class="icon-btn" id="logoutBtn" aria-label="Abmelden" title="Abmelden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
+    <div class="live-bar" id="liveBar" hidden>
+      <div class="live-inner">
+        <span class="live-dot" aria-hidden="true"></span>
+        <div class="live-text" aria-live="polite"><strong id="liveTitel"></strong><small id="liveSub"></small></div>
+        <button type="button" class="k" id="liveBtn"></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" id="liste" aria-busy="true">
+    <div class="stapel" aria-hidden="true"><div class="skel"></div><div class="skel"></div></div>
+  </main>
+</div>
+
+<!-- ================= Losfahren ================= -->
+<div class="sheet-ov" id="losSheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="losTitel">
+    <div class="sheet-griff" aria-hidden="true"></div>
+    <h2 id="losTitel">Losfahren</h2>
+    <p id="losText"></p>
+    <div class="wahl" role="radiogroup" aria-label="Ankunft in Minuten" id="losWahl"></div>
+    <p class="sheet-zeit" id="losZeit" aria-live="polite"></p>
+    <label class="check-row" id="losTeilenZeile">
+      <input type="checkbox" id="losTeilen" checked>
+      <span>Live-Standort teilen<small>Der Kunde sieht dich auf der Karte, bis du „Zugestellt“ tippst.</small></span>
+    </label>
+    <button type="button" class="k k-haupt" id="losOk"><span>Losfahren</span></button>
+    <button type="button" class="k k-neben" id="losAbbr">Abbrechen</button>
+  </div>
+</div>
+
+<script src="/admin-anmeldung.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* Anmeldung wie admin.html und cockpit.html: Token im Tab oder 30 Tage */
+  var PW_KEY = 'gnc_admin_pw';
+  var TEIL_KEY = 'gnc_fahrer_teilen';
+  var URL_FAHRER = '/.netlify/functions/fahrer';
+  var URL_STATUS = '/.netlify/functions/order-status';
+  var URL_TEAM = '/.netlify/functions/team';
+  var LISTE_MS = 30000;
+  var POS_MS = 15000;
+  var TZ = 'Europe/Berlin';
+  var WAHL = [10, 15, 20, 30];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fmtZeit = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+  var fmtEUR = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+  var fmtKm = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+
+  var ICON = {
+    nav: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 21 3l-8 18-2-8-8-2z"/></svg>',
+    tel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+    los: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-3-7H8"/><path d="M15 17l-2-5h4l2 5"/><path d="M14 6h3"/></svg>',
+    fertig: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+    uhr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    weg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16"/></svg>',
+  };
+
+  var cred = '';
+  var daten = null;
+  var letzteSig = '';
+  var laedt = false;
+  var listeTimer = null;
+  var losRef = null, losMin = 15;
+  var teilen = { an: false, watch: null, takt: null, letzte: null, gesendet: 0, sendet: false, grund: '', wake: null };
+
+  /* ---------------- Kleinkram ---------------- */
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function toast(text, art) {
+    var t = $('toast');
+    t.textContent = text;
+    t.className = 'toast show' + (art ? ' ' + art : '');
+    clearTimeout(t._t);
+    t._t = setTimeout(function () { t.className = 'toast' + (art ? ' ' + art : ''); }, art === 'err' ? 5000 : 3200);
+  }
+  function busy(btn, an) {
+    if (!btn) return;
+    if (an) {
+      if (btn.classList.contains('is-busy')) return;
+      btn.style.setProperty('--busy-ink', getComputedStyle(btn).color);
+      btn.classList.add('is-busy');
+      btn.setAttribute('aria-busy', 'true');
+      var sp = document.createElement('span');
+      sp.className = 'spinner'; sp.setAttribute('aria-hidden', 'true');
+      btn.appendChild(sp);
+      return;
+    }
+    btn.classList.remove('is-busy');
+    btn.removeAttribute('aria-busy');
+    btn.style.removeProperty('--busy-ink');
+    var s = btn.querySelector(':scope > .spinner');
+    if (s) s.remove();
+  }
+  var istBusy = function (btn) { return !!(btn && btn.classList.contains('is-busy')); };
+  function wartezeitText(sek) {
+    var m = Math.ceil(Math.max(60, Number(sek) || 900) / 60);
+    return m + (m === 1 ? ' Minute' : ' Minuten');
+  }
+  function kmText(km) { return km == null ? '' : fmtKm.format(km) + ' km'; }
+  function luftlinie(a, b) {
+    var R = 6371, r = Math.PI / 180;
+    var dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+    var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+  /* Wie lib/lieferung.js: rund 25 km/h plus 3 Minuten, kleinste Wahl, die reicht */
+  function vorschlagAus(km) {
+    var min = Math.ceil(km / 25 * 60 + 3);
+    for (var i = 0; i < WAHL.length; i++) if (WAHL[i] >= min) return WAHL[i];
+    return WAHL[WAHL.length - 1];
+  }
+  function istIOS() {
+    var ua = navigator.userAgent || '';
+    return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+  function navUrl(a) {
+    var ziel = [a.street, [a.zip, a.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    return istIOS()
+      ? 'https://maps.apple.com/?daddr=' + encodeURIComponent(ziel) + '&dirflg=d'
+      : 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(ziel) + '&travelmode=driving';
+  }
+  function finde(ref) {
+    var l = (daten && daten.lieferungen) || [];
+    for (var i = 0; i < l.length; i++) if (l[i].ref === ref) return l[i];
+    return null;
+  }
+  function unterwegsRefs() {
+    return ((daten && daten.lieferungen) || []).filter(function (z) { return z.fstate === 'on_the_way'; }).map(function (z) { return z.ref; });
+  }
+
+  /* ---------------- Anmeldung ---------------- */
+  function gemerkteAnmeldung() {
+    var s = null;
+    try { s = sessionStorage.getItem(PW_KEY); } catch (e) {}
+    if (s && GNCAnmeldung.istToken(s)) return s;
+    if (s) { try { sessionStorage.removeItem(PW_KEY); } catch (e) {} }
+    try {
+      var p = JSON.parse(localStorage.getItem(PW_KEY + '_p') || 'null');
+      if (p && p.t && p.exp > Date.now()) return p.t;
+      if (p) localStorage.removeItem(PW_KEY + '_p');
+    } catch (e) {}
+    return '';
+  }
+  function feldFehler(text) {
+    var p = $('pwError');
+    p.textContent = text; p.hidden = !text;
+    if (text) $('pw').setAttribute('aria-invalid', 'true'); else $('pw').removeAttribute('aria-invalid');
+  }
+  function schuetteln() { var c = $('loginCard'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
+  function zeigeLogin() { $('app').hidden = true; $('loginView').hidden = false; $('pw').value = ''; feldFehler(''); try { $('pw').focus({ preventScroll: true }); } catch (e) {} }
+  function zeigeApp() { $('loginView').hidden = true; $('app').hidden = false; }
+
+  var meldetAn = false;
+  $('loginForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var btn = $('loginBtn');
+    if (meldetAn || istBusy(btn)) return;
+    var pw = $('pw').value.trim();
+    if (!pw) { feldFehler('Bitte Passwort eingeben.'); schuetteln(); $('pw').focus(); return; }
+    feldFehler('');
+    meldetAn = true;
+    busy(btn, true);
+    try {
+      var merken = $('pwStay').checked;
+      var an = await GNCAnmeldung.anmelden(pw, { merken: merken });
+      if (!an.ok) {
+        if (an.grund === 'abbruch') return;
+        if (an.grund === 'passwort') { feldFehler('Passwort falsch.'); schuetteln(); $('pw').focus(); return; }
+        if (an.grund === 'gesperrt') { feldFehler('Zu viele Fehlversuche. Bitte in ' + wartezeitText(an.retryAfter) + ' erneut versuchen.'); return; }
+        feldFehler(an.grund === 'netz' ? 'Keine Verbindung. Bitte erneut versuchen.' : (an.hinweis || 'Server gerade nicht erreichbar. Bitte erneut versuchen.'));
+        return;
+      }
+      cred = an.token;
+      try {
+        sessionStorage.setItem(PW_KEY, an.token);
+        if (merken) localStorage.setItem(PW_KEY + '_p', JSON.stringify({ t: an.token, exp: new Date(an.exp).getTime() }));
+        else localStorage.removeItem(PW_KEY + '_p');
+      } catch (e2) {}
+      $('pw').value = '';
+      zeigeApp();
+      laden(false);
+    } catch (err) {
+      feldFehler('Keine Verbindung. Bitte erneut versuchen.');
+    } finally {
+      meldetAn = false;
+      busy(btn, false);
+    }
+  });
+  $('pwEye').addEventListener('click', function () {
+    var f = $('pw'), zeigen = f.type === 'password';
+    f.type = zeigen ? 'text' : 'password';
+    this.setAttribute('aria-pressed', zeigen ? 'true' : 'false');
+    this.setAttribute('aria-label', zeigen ? 'Passwort verbergen' : 'Passwort anzeigen');
+  });
+
+  function abmelden(text, serverAuch) {
+    stoppTeilen(false);
+    var g = null;
+    try { g = JSON.parse(localStorage.getItem(PW_KEY + '_p') || 'null'); } catch (e) {}
+    var weg = [g && g.t, cred].filter(function (t, i, a) { return GNCAnmeldung.istToken(t) && a.indexOf(t) === i; });
+    if (serverAuch) weg.forEach(function (t) {
+      fetch(URL_TEAM, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: t, action: 'abmelden' }) }).catch(function () {});
+    });
+    try { sessionStorage.removeItem(PW_KEY); sessionStorage.removeItem(TEIL_KEY); } catch (e) {}
+    try { if (serverAuch || (g && g.t === cred)) localStorage.removeItem(PW_KEY + '_p'); } catch (e) {}
+    cred = ''; daten = null; letzteSig = '';
+    clearTimeout(listeTimer); listeTimer = null;
+    $('liste').innerHTML = '<div class="stapel" aria-hidden="true"><div class="skel"></div><div class="skel"></div></div>';
+    zeigeLogin();
+    if (text) toast(text, 'err');
+  }
+  $('logoutBtn').addEventListener('click', function () { abmelden('', true); });
+
+  /* ---------------- Server ---------------- */
+  async function rufe(url, body) {
+    var res = await fetch(url, { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ password: cred }, body)) });
+    if (res.status === 401) { abmelden('Anmeldung abgelaufen. Bitte neu anmelden.', false); var e1 = new Error(''); e1.stumm = true; throw e1; }
+    var d = await res.json().catch(function () { return {}; });
+    if (res.status === 429) throw new Error('Zu viele Anfragen. Bitte in ' + wartezeitText(d.retryAfter || res.headers.get('Retry-After')) + ' erneut versuchen.');
+    if (!res.ok) { var e2 = new Error(d.hint || 'Hat nicht geklappt. Bitte erneut versuchen.'); e2.status = res.status; throw e2; }
+    return d;
+  }
+
+  async function laden(manuell) {
+    if (!cred || laedt) return;
+    laedt = true;
+    clearTimeout(listeTimer); listeTimer = null;
+    var btn = $('refreshBtn');
+    if (manuell) busy(btn, true);
+    var nachsten = LISTE_MS;
+    try {
+      var d = await rufe(URL_FAHRER, { action: 'liste' });
+      // Nur neu zeichnen, wenn sich etwas geändert hat und kein "Nochmal
+      // tippen" gerade wartet. Sonst springt die Liste unter dem Daumen.
+      var sig = JSON.stringify([d.lieferungen, d.buendel, d.offen]);
+      var wartet = !!document.querySelector('#liste .bestaetigen');
+      daten = d;
+      if (sig !== letzteSig && !wartet) { letzteSig = sig; male(); }
+      else maleKopf();
+      if (d.offen > 0) nachsten = 2500;   // Adressen werden noch verortet
+      // Nach Neuladen der Seite: Teilen fortsetzen, wenn es vorher lief
+      var gemerkt = false;
+      try { gemerkt = sessionStorage.getItem(TEIL_KEY) === '1'; } catch (e) {}
+      if (!teilen.an && gemerkt && unterwegsRefs().length) startTeilen();
+      if (teilen.an && !unterwegsRefs().length) stoppTeilen(false);
+      maleLiveLeiste();
+    } catch (e) {
+      if (!e.stumm) {
+        if (!daten) $('liste').innerHTML = '<div class="leer"><strong>Liste nicht geladen</strong>Keine Verbindung. Neuer Versuch in 30 Sekunden.</div>';
+        toast(e.message || 'Keine Verbindung.', 'err');
+      }
+    } finally {
+      laedt = false;
+      if (manuell) busy(btn, false);
+      if (cred && !document.hidden) listeTimer = setTimeout(function () { laden(false); }, nachsten);
+    }
+  }
+  $('refreshBtn').addEventListener('click', function () { if (!istBusy(this)) laden(true); });
+  document.addEventListener('visibilitychange', function () {
+    if (!cred) return;
+    if (document.hidden) { clearTimeout(listeTimer); listeTimer = null; return; }
+    laden(false);
+    if (teilen.an) { wachHalten(); sende(); }
+  });
+
+  /* ---------------- Zeichnen ---------------- */
+  function karte(z) {
+    var unterwegs = z.fstate === 'on_the_way';
+    var nr = unterwegs ? ICON.los : (z.tourNr ? String(z.tourNr) : ICON.uhr);
+    var meta = [];
+    if (z.km != null) meta.push(kmText(z.km) + (z.richtung ? ' · ' + z.richtung : ''));
+    meta.push(z.artikel + ' Artikel');
+    var a = z.adresse || {};
+    var h = '<article class="lf' + (unterwegs ? ' unterwegs' : '') + '" data-ref="' + esc(z.ref) + '" aria-label="Lieferung an ' + esc(z.name) + '">';
+    h += '<div class="lf-kopf"><span class="lf-nr" aria-hidden="true">' + nr + '</span><div class="lf-wer">'
+      + '<div class="lf-name">' + esc(z.name || 'Ohne Namen')
+      + (z.abholnr ? ' <span class="chip chip-nr">Nr. ' + esc(z.abholnr) + '</span>' : '')
+      + (z.test ? ' <span class="chip chip-test">Test</span>' : '') + '</div>'
+      + '<div class="lf-meta">' + esc(meta.join(' · ')) + '</div></div></div>';
+    h += '<div class="lf-adresse">' + esc(a.street) + '<br>' + esc([a.zip, a.city].filter(Boolean).join(' '))
+      + (z.nichtGefunden ? '<small>Adresse nicht auf der Karte gefunden. Bitte selbst einordnen.</small>' : '') + '</div>';
+    if (unterwegs && z.fahrt) {
+      h += '<div class="lf-eta">' + (z.fahrt.ankunft ? 'Ankunft gegen ' + esc(fmtZeit.format(new Date(z.fahrt.ankunft))) : 'Unterwegs')
+        + (z.fahrt.start ? '<small>Losgefahren um ' + esc(fmtZeit.format(new Date(z.fahrt.start))) + '</small>' : '') + '</div>';
+    }
+    if (z.zahlung === 'bar') h += '<div class="geld bar">' + esc(fmtEUR.format(z.total || 0)) + ' kassieren<small>Bar oder Karte an der Tür</small></div>';
+    else if (z.zahlung === 'online_offen') h += '<div class="geld warn">Online-Zahlung noch offen. Vor der Übergabe im Admin prüfen.</div>';
+    else h += '<div class="geld ok">Online bezahlt</div>';
+    if (z.wunschzeit) h += '<p class="lf-zeile"><b>Wunschzeit:</b> ' + esc(z.wunschzeit) + '</p>';
+    if (z.notiz) h += '<p class="lf-notiz"><b>Notiz:</b> ' + esc(z.notiz) + '</p>';
+    h += '<div class="lf-knoepfe">';
+    if (z.telefon) h += '<a class="k k-neben k-klein" href="tel:' + esc(z.telefon.replace(/[^\d+]/g, '')) + '">' + ICON.tel + '<span>Anrufen</span></a>';
+    h += '<a class="k k-neben k-klein" href="' + esc(navUrl(a)) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Navigation</span></a>';
+    h += '</div>';
+    if (unterwegs) h += '<button type="button" class="k k-zu" data-aktion="zu">' + ICON.fertig + '<span>Zugestellt</span></button>';
+    else h += '<button type="button" class="k k-haupt" data-aktion="los">' + ICON.los + '<span>Losfahren</span></button>';
+    h += '</article>';
+    return h;
+  }
+
+  function maleKopf() {
+    var l = (daten && daten.lieferungen) || [];
+    var u = l.filter(function (z) { return z.gruppe === 'unterwegs'; }).length;
+    var stand = daten && daten.jetzt ? fmtZeit.format(new Date(daten.jetzt)) : '';
+    $('kopfZeile').textContent = !l.length ? 'Keine offenen Lieferungen' + (stand ? ' · Stand ' + stand : '')
+      : (u ? u + ' unterwegs · ' + (l.length - u) + ' offen' : l.length + ' offen' + (stand ? ' · Stand ' + stand : ''));
+  }
+
+  function male() {
+    var l = (daten && daten.lieferungen) || [];
+    var unterwegs = l.filter(function (z) { return z.gruppe === 'unterwegs'; });
+    var jetzt = l.filter(function (z) { return z.gruppe === 'jetzt'; });
+    var spaeter = l.filter(function (z) { return z.gruppe === 'spaeter'; });
+    maleKopf();
+
+    var h = '';
+    if (!l.length) {
+      h = '<div class="leer"><strong>Alles zugestellt</strong>Neue Lieferungen erscheinen hier von selbst.</div>';
+    }
+    if (unterwegs.length) {
+      h += '<div class="abschnitt"><h2>Unterwegs</h2><small>' + unterwegs.length + '</small></div><div class="stapel">' + unterwegs.map(karte).join('') + '</div>';
+    }
+    if (jetzt.length) {
+      h += '<div class="abschnitt"><h2>Tourvorschlag</h2><small>nächste zuerst</small></div><div class="stapel">';
+      (daten.buendel || []).forEach(function (b) {
+        var x = finde(b.a), y = finde(b.b);
+        if (!x || !y) return;
+        h += '<p class="tipp">' + ICON.weg + '<span><b>' + esc(x.tourNr) + ' und ' + esc(y.tourNr) + '</b> liegen beide im ' + esc(b.richtung)
+          + ' (' + esc(x.name) + ', ' + esc(y.name) + '). Zusammen fahren spart etwa ' + esc(kmText(b.sparKm)) + '.</span></p>';
+      });
+      h += jetzt.map(karte).join('') + '</div>';
+    }
+    if (spaeter.length) {
+      h += '<div class="abschnitt"><h2>Später</h2><small>Vorbestellungen</small></div><div class="stapel">' + spaeter.map(karte).join('') + '</div>';
+    }
+    if (daten && daten.offen > 0) h += '<p class="fuss">' + daten.offen + (daten.offen === 1 ? ' Adresse wird' : ' Adressen werden') + ' noch auf der Karte gesucht. Die Reihenfolge kann sich gleich ändern.</p>';
+    h += '<p class="fuss">Tour ab dem Truck nach Luftlinie, Ankunft bei rund 25 km/h plus 3 Minuten. Die Liste lädt alle 30 Sekunden neu.</p>';
+    var el = $('liste');
+    el.innerHTML = h;
+    el.setAttribute('aria-busy', 'false');
+  }
+
+  /* Klicks in der Liste */
+  var bestaetigenT = null;
+  $('liste').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-aktion]');
+    if (!b || istBusy(b)) return;
+    var ref = b.closest('[data-ref]').getAttribute('data-ref');
+    if (b.getAttribute('data-aktion') === 'los') oeffneLos(ref, b);
+    else if (b.getAttribute('data-aktion') === 'zu') zugestellt(ref, b);
+  });
+
+  /* ---------------- Losfahren ---------------- */
+  var losAusloeser = null;
+  function oeffneLos(ref, ausloeser) {
+    var z = finde(ref);
+    if (!z) return;
+    losRef = ref;
+    losAusloeser = ausloeser;
+    var km = z.km, quelle = 'vom Truck';
+    if (teilen.letzte && typeof z.lat === 'number') { km = Math.round(luftlinie(teilen.letzte, z) * 10) / 10; quelle = 'von deinem Standort'; }
+    var vorschlag = km != null ? vorschlagAus(km) : ((z.vorschlag && z.vorschlag.wahl) || 15);
+    losMin = vorschlag;
+    $('losTitel').textContent = 'Losfahren zu ' + (z.name || 'Kunde');
+    $('losText').textContent = km != null
+      ? 'Wann bist du da? Vorschlag aus ' + kmText(km) + ' Luftlinie ' + quelle + ': ' + vorschlag + ' Minuten.'
+      : 'Wann bist du da? Die Adresse ist nicht auf der Karte, also bitte schätzen.';
+    $('losWahl').innerHTML = WAHL.map(function (m) {
+      return '<button type="button" role="radio" aria-checked="' + (m === losMin ? 'true' : 'false') + '" data-min="' + m + '">'
+        + (m === vorschlag ? '<span class="vorschlag">Vorschlag</span>' : '') + '<b>' + m + '</b><small>Min.</small></button>';
+    }).join('');
+    $('losTeilenZeile').hidden = !('geolocation' in navigator);
+    $('losTeilen').checked = 'geolocation' in navigator;
+    maleLosZeit();
+    $('losSheet').hidden = false;
+    document.body.style.overflow = 'hidden';
+    var gewaehlt = $('losWahl').querySelector('[aria-checked="true"]');
+    try { (gewaehlt || $('losOk')).focus({ preventScroll: true }); } catch (e) {}
+  }
+  function maleLosZeit() {
+    $('losZeit').textContent = 'Ankunft gegen ' + fmtZeit.format(new Date(Date.now() + losMin * 60000));
+    $('losOk').querySelector('span').textContent = 'Losfahren, ' + losMin + ' Min.';
+  }
+  function schliesseLos() {
+    $('losSheet').hidden = true;
+    document.body.style.overflow = '';
+    losRef = null;
+    if (losAusloeser && document.body.contains(losAusloeser)) { try { losAusloeser.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  $('losWahl').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-min]');
+    if (!b) return;
+    losMin = Number(b.getAttribute('data-min'));
+    this.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-checked', x === b ? 'true' : 'false'); });
+    maleLosZeit();
+  });
+  $('losWahl').addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var i = WAHL.indexOf(losMin) + (e.key === 'ArrowRight' ? 1 : -1);
+    if (i < 0 || i >= WAHL.length) return;
+    e.preventDefault();
+    var b = this.querySelector('[data-min="' + WAHL[i] + '"]');
+    if (b) { b.click(); b.focus(); }
+  });
+  $('losAbbr').addEventListener('click', schliesseLos);
+  $('losSheet').addEventListener('click', function (e) { if (e.target === this) schliesseLos(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('losSheet').hidden) schliesseLos(); });
+
+  $('losOk').addEventListener('click', async function () {
+    var btn = this;
+    if (!losRef || istBusy(btn)) return;
+    var ref = losRef, min = losMin, mitTeilen = $('losTeilen').checked && !$('losTeilenZeile').hidden;
+    busy(btn, true);
+    try {
+      // Vorhandener Weg: order-status setzt den Status und benachrichtigt den Kunden
+      var d = await rufe(URL_STATUS, { action: 'set', reference: ref, state: 'on_the_way', ankunftMin: min });
+      schliesseLos();
+      var wie = d.pushed ? 'per Mitteilung' : (d.mailed ? 'per Mail' : '');
+      toast('Unterwegs. Ankunft gegen ' + fmtZeit.format(new Date(Date.now() + min * 60000)) + (wie ? '. Kunde ist ' + wie + ' informiert.' : '. Der Kunde sieht es auf seiner Statusseite.'), 'ok');
+      var z = finde(ref);
+      if (z) {
+        z.fstate = 'on_the_way'; z.gruppe = 'unterwegs'; z.tourNr = null;
+        z.fahrt = { start: new Date().toISOString(), ankunft: new Date(Date.now() + min * 60000).toISOString(), minuten: min };
+        letzteSig = '';
+        male();
+      }
+      if (mitTeilen) startTeilen();
+      await laden(false);
+    } catch (e) {
+      if (!e.stumm) toast(e.message || 'Hat nicht geklappt.', 'err');
+    } finally {
+      busy(btn, false);
+    }
+  });
+
+  /* ---------------- Zugestellt: zweimal tippen ---------------- */
+  async function zugestellt(ref, btn) {
+    if (!btn.classList.contains('bestaetigen')) {
+      btn.classList.add('bestaetigen');
+      btn.querySelector('span').textContent = 'Nochmal tippen: zugestellt';
+      clearTimeout(bestaetigenT);
+      bestaetigenT = setTimeout(function () {
+        if (!document.body.contains(btn)) return;
+        btn.classList.remove('bestaetigen');
+        btn.querySelector('span').textContent = 'Zugestellt';
+      }, 4000);
+      return;
+    }
+    clearTimeout(bestaetigenT);
+    busy(btn, true);
+    try {
+      await rufe(URL_STATUS, { action: 'set', reference: ref, state: 'delivered' });
+      var z = finde(ref);
+      toast('Zugestellt' + (z && z.name ? ': ' + z.name : '') + '. Live-Standort für diese Fahrt gelöscht.', 'ok');
+      if (daten) daten.lieferungen = daten.lieferungen.filter(function (x) { return x.ref !== ref; });
+      if (!unterwegsRefs().length) stoppTeilen(false);
+      letzteSig = '';
+      male();
+      maleLiveLeiste();
+      laden(false);
+    } catch (e) {
+      busy(btn, false);
+      if (!e.stumm) toast(e.message || 'Hat nicht geklappt.', 'err');
+    }
+  }
+
+  /* ---------------- Live-Standort ----------------
+     Nach "Losfahren": watchPosition, an den Server höchstens alle 15 s.
+     Gespeichert wird je Bestellung im Store "fahrt" (fahrer.js), nicht am
+     Bestelldatensatz. "Zugestellt" löscht serverseitig, der Stopp-Knopf auch. */
+  async function wachHalten() {
+    try {
+      if (teilen.an && 'wakeLock' in navigator && (!teilen.wake || teilen.wake.released)) teilen.wake = await navigator.wakeLock.request('screen');
+    } catch (e) { teilen.wake = null; }
+  }
+  function startTeilen() {
+    if (!('geolocation' in navigator)) { teilen.grund = 'fehlt'; maleLiveLeiste(); return; }
+    if (teilen.an) return;
+    teilen.an = true;
+    teilen.grund = '';
+    try { sessionStorage.setItem(TEIL_KEY, '1'); } catch (e) {}
+    teilen.watch = navigator.geolocation.watchPosition(function (p) {
+      teilen.letzte = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, at: Date.now() };
+      if (teilen.grund) { teilen.grund = ''; }
+      if (Date.now() - teilen.gesendet >= POS_MS - 500) sende();
+      maleLiveLeiste();
+    }, function (err) {
+      if (err && err.code === 1) {
+        teilen.grund = 'verweigert';
+        stoppTeilen(false, true);
+      } else {
+        teilen.grund = 'suche';
+        maleLiveLeiste();
+      }
+    }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 30000 });
+    teilen.takt = setInterval(sende, POS_MS);
+    wachHalten();
+    maleLiveLeiste();
+  }
+  async function sende() {
+    if (!teilen.an || !teilen.letzte || teilen.sendet || !cred) return;
+    var refs = unterwegsRefs();
+    if (!refs.length) { stoppTeilen(false); return; }
+    teilen.sendet = true;
+    teilen.gesendet = Date.now();
+    try {
+      var d = await rufe(URL_FAHRER, { action: 'position', refs: refs, lat: teilen.letzte.lat, lng: teilen.letzte.lng, acc: teilen.letzte.acc });
+      teilen.ok = Date.now();
+      if (d && Array.isArray(d.gespeichert) && !d.gespeichert.length) laden(false);   // inzwischen zugestellt
+    } catch (e) {
+      teilen.fehler = Date.now();
+    } finally {
+      teilen.sendet = false;
+      maleLiveLeiste();
+    }
+  }
+  function stoppTeilen(serverLoeschen, behalteGrund) {
+    if (teilen.watch != null) { try { navigator.geolocation.clearWatch(teilen.watch); } catch (e) {} }
+    clearInterval(teilen.takt);
+    if (teilen.wake) { try { teilen.wake.release(); } catch (e) {} }
+    var refs = unterwegsRefs();
+    var warAn = teilen.an;
+    teilen.an = false; teilen.watch = null; teilen.takt = null; teilen.wake = null; teilen.letzte = null; teilen.gesendet = 0;
+    if (!behalteGrund) teilen.grund = '';
+    try { sessionStorage.removeItem(TEIL_KEY); } catch (e) {}
+    if (serverLoeschen && warAn && refs.length && cred) {
+      rufe(URL_FAHRER, { action: 'stopp', refs: refs }).then(function () {
+        toast('Live-Standort aus. Gespeicherte Positionen gelöscht.', 'ok');
+      }).catch(function (e) { if (!e.stumm) toast('Stopp nicht gespeichert. Bitte erneut tippen.', 'err'); });
+    }
+    maleLiveLeiste();
+  }
+
+  function maleLiveLeiste() {
+    var bar = $('liveBar'), btn = $('liveBtn');
+    var refs = unterwegsRefs();
+    if (!refs.length && !teilen.an) { bar.hidden = true; return; }
+    bar.hidden = false;
+    bar.className = 'live-bar';
+    btn.className = 'k';
+    if (teilen.an) {
+      bar.classList.add('an');
+      btn.classList.add('k-stopp');
+      btn.textContent = 'Stopp';
+      btn.setAttribute('aria-label', 'Live-Standort stoppen');
+      $('liveTitel').textContent = 'Live-Standort an';
+      var sub;
+      if (teilen.grund === 'suche') sub = 'Suche GPS. Seite bitte offen lassen.';
+      else if (teilen.ok) sub = 'Kunde sieht dich. Zuletzt gesendet ' + fmtZeit.format(new Date(teilen.ok)) + '. Seite offen lassen.';
+      else sub = 'Wird gestartet. Seite offen lassen.';
+      if (teilen.fehler && (!teilen.ok || teilen.fehler > teilen.ok)) sub = 'Senden klappt gerade nicht. Neuer Versuch in 15 Sekunden.';
+      $('liveSub').textContent = sub;
+    } else {
+      var fehlt = teilen.grund === 'fehlt' || !('geolocation' in navigator);
+      if (teilen.grund === 'verweigert' || fehlt) bar.classList.add('warn');
+      btn.classList.add('k-teilen');
+      btn.textContent = 'Teilen';
+      btn.setAttribute('aria-label', 'Live-Standort teilen');
+      btn.hidden = fehlt;
+      $('liveTitel').textContent = teilen.grund === 'verweigert' ? 'Standort nicht freigegeben' : 'Live-Standort aus';
+      $('liveSub').textContent = teilen.grund === 'verweigert'
+        ? 'Kunden sehen nur die Ankunftszeit. Freigabe in den Einstellungen des Browsers.'
+        : (fehlt ? 'Dieses Gerät kann keinen Standort teilen. Kunden sehen die Ankunftszeit.' : 'Kunden sehen nur die Ankunftszeit.');
+    }
+    if (!teilen.an) btn.hidden = btn.hidden || !refs.length;
+  }
+  $('liveBtn').addEventListener('click', function () {
+    if (teilen.an) stoppTeilen(true);
+    else startTeilen();
+  });
+
+  /* ---------------- Start ---------------- */
+  cred = gemerkteAnmeldung();
+  if (cred) { zeigeApp(); laden(false); }
+  else zeigeLogin();
+})();
+</script>
+</body>
+</html>
