@@ -338,7 +338,7 @@ function buildLangDd() {
   const list = document.getElementById('langDdList');
   if (!list) return;
   list.innerHTML = LANGS.map(l =>
-    '<li role="option" id="langOpt-' + l.code + '"><button type="button" class="lang-dd-opt" data-lang="' + l.code + '" lang="' + l.code + '" onclick="setLang(\'' + l.code + '\'); toggleLangDd(false);">' + LANG_FLAGS[l.code] + '<span>' + l.label + '</span></button></li>'
+    '<li role="option" id="langOpt-' + l.code + '"><button type="button" class="lang-dd-opt" data-lang="' + l.code + '" lang="' + l.code + '" data-on-click="setLang(\'' + l.code + '\'); toggleLangDd(false);">' + LANG_FLAGS[l.code] + '<span>' + l.label + '</span></button></li>'
   ).join('');
   updateLangDd();
 }

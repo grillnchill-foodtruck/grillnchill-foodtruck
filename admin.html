@@ -513,6 +513,7 @@
                   padding:.55rem 0;border-bottom:1px solid var(--border)}
   }
   </style>
+<script src="/ereignisse.js"></script>
 </head>
 <body>
 <div id="toast" class="toast" role="status"></div>
@@ -764,10 +765,10 @@
         <div class="card-hd">
           <h2>Rechnungen</h2>
           <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
-            <select id="invYear" onchange="loadInvoices()" style="width:auto;min-width:9rem;"></select>
-            <button type="button" class="abtn" onclick="loadInvoices(this)">Aktualisieren</button>
-            <button type="button" class="abtn" onclick="invoicesCsv()">CSV</button>
-            <button type="button" class="abtn primary" onclick="invoicesZip(this)">Alle als PDF (ZIP)</button>
+            <select id="invYear" data-on-change="loadInvoices()" style="width:auto;min-width:9rem;"></select>
+            <button type="button" class="abtn" data-on-click="loadInvoices(this)">Aktualisieren</button>
+            <button type="button" class="abtn" data-on-click="invoicesCsv()">CSV</button>
+            <button type="button" class="abtn primary" data-on-click="invoicesZip(this)">Alle als PDF (ZIP)</button>
           </div>
         </div>
         <p class="muted" style="margin:0 0 .8rem;font-size:.85rem;">
@@ -782,8 +783,8 @@
         <div class="card-hd">
           <h2>Datensicherung</h2>
           <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
-            <button type="button" class="abtn" onclick="loadBackups(this)">Aktualisieren</button>
-            <button type="button" class="abtn primary" onclick="backupJetzt(event)">Jetzt sichern &amp; laden</button>
+            <button type="button" class="abtn" data-on-click="loadBackups(this)">Aktualisieren</button>
+            <button type="button" class="abtn primary" data-on-click="backupJetzt(event)">Jetzt sichern &amp; laden</button>
           </div>
         </div>
         <p class="muted" style="margin:0 0 .8rem;font-size:.85rem;">
@@ -880,7 +881,7 @@
           <h2 style="margin:0">Aktive &amp; vergangene Gutscheine</h2>
           <button class="btn-ghost" id="vReload">Neu laden</button>
         </div>
-        <input type="search" id="vSearch" placeholder="Suche: Code, Notiz, Konto-E-Mail" oninput="renderVouchers()" style="width:100%;margin:.2rem 0 .6rem;padding:.6rem .8rem;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--cream);font-size:.9rem;">
+        <input type="search" id="vSearch" placeholder="Suche: Code, Notiz, Konto-E-Mail" data-on-input="renderVouchers()" style="width:100%;margin:.2rem 0 .6rem;padding:.6rem .8rem;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--cream);font-size:.9rem;">
         <div id="vTypeFilter" style="display:flex;gap:.45rem;flex-wrap:wrap;margin:.2rem 0 .8rem;"></div>
         <div id="vList"><p class="empty">Gutscheine werden geladen …</p></div>
       </div>
@@ -2498,8 +2499,8 @@ function renderCatering(){
         ${r.msg?'<br><span style="color:var(--faint);">„'+esc2(r.msg)+'“</span>':''}
       </div>
       <div style="display:flex;gap:.45rem;">
-        <button class="btn-ghost" onclick="cateringAction('${r.key}','${r.done?'undone':'done'}',this)">${r.done?'Wieder öffnen':'Erledigt'}</button>
-        <button class="btn-ghost" onclick="cateringAction('${r.key}','delete',this)" style="color:var(--red);">Löschen</button>
+        <button class="btn-ghost" data-on-click="cateringAction('${r.key}','${r.done?'undone':'done'}',this)">${r.done?'Wieder öffnen':'Erledigt'}</button>
+        <button class="btn-ghost" data-on-click="cateringAction('${r.key}','delete',this)" style="color:var(--red);">Löschen</button>
       </div>
     </div>`;
   }).join('');

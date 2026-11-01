@@ -26,10 +26,10 @@
  * ----------------------------------------------------------------------------
  */
 
-const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung, erstelle, beende, istToken } = require('./lib/admin-sitzung');
+const { hashen, mitglied } = require('./lib/team-passwort');
 const zf = require('./lib/zweifaktor');
 
 const CORS = {
@@ -73,7 +73,6 @@ async function auditLog(who, action, detail) {
   } catch (e) {}
 }
 
-const hash = (pw) => crypto.createHash('sha256').update(String(pw)).digest('hex');
 const slug = zf.slug;   // dieselbe Regel wie für die Zwei-Faktor-Konten
 
 async function authRole(pw) {
@@ -82,12 +81,8 @@ async function authRole(pw) {
   if (admin && pw === admin) return { role: 'superadmin', name: 'Kubi' };
   try {
     const t = teamStore();
-    const { blobs } = await t.list({ prefix: 'u:' });
-    const h = hash(pw);
-    for (const b of blobs) {
-      const u = await t.get(b.key, { type: 'json' });
-      if (u && u.pwHash === h) return { role: u.role === 'admin' ? 'admin' : 'staff', name: u.name || b.key.slice(2) };
-    }
+    const { key, u } = (await mitglied(t, pw)) || {};
+    if (u) return { role: u.role === 'admin' ? 'admin' : 'staff', name: u.name || key.slice(2) };
   } catch (e) {}
   return null;
 }
@@ -244,15 +239,10 @@ exports.handler = async (event) => {
       const key = 'u:' + slug(name);
       if (await t.get(key, { type: 'json' })) return json(409, { error: 'name_exists', hint: 'Name schon vergeben – bitte anderen wählen' });
       // Passwort-Kollision mit anderem Mitarbeiter verhindern (Passwort = Identität)
-      const { blobs } = await t.list({ prefix: 'u:' });
-      const h = hash(pw);
-      for (const b of blobs) {
-        const u = await t.get(b.key, { type: 'json' });
-        if (u && u.pwHash === h) return json(409, { error: 'password_exists', hint: 'Dieses Passwort ist bereits vergeben' });
-      }
+      if (await mitglied(t, pw)) return json(409, { error: 'password_exists', hint: 'Dieses Passwort ist bereits vergeben' });
       const role = input.role === 'admin' ? 'admin' : 'staff';
       if (role === 'admin' && !isSuper) return json(403, { error: 'forbidden', hint: 'Admins kann nur der Superadmin anlegen' });
-      await t.setJSON(key, { name, pwHash: h, role, createdAt: new Date().toISOString() });
+      await t.setJSON(key, { name, pwHash: await hashen(pw), role, createdAt: new Date().toISOString() });
       await auditLog(who, 'Team', 'Zugang angelegt: ' + name + ' (' + (role === 'admin' ? 'Admin' : 'Mitarbeiter') + ')');
       return json(200, { ok: true, name, role });
     }
@@ -266,14 +256,9 @@ exports.handler = async (event) => {
       if (pw.length < 10) return json(400, { error: 'weak_password', hint: 'Mindestens 10 Zeichen' });
       if (pw === (process.env.ADMIN_PASSWORD || '')) return json(400, { error: 'reserved_password' });
       // Kollision mit anderem Team-Mitglied verhindern (Passwort = Identität)
-      const h = hash(pw);
       const { blobs } = await t.list({ prefix: 'u:' });
-      for (const b of blobs) {
-        if (b.key === key) continue;
-        const other = await t.get(b.key, { type: 'json' });
-        if (other && other.pwHash === h) return json(409, { error: 'password_exists', hint: 'Dieses Passwort ist bereits vergeben' });
-      }
-      u.pwHash = h;
+      if (await mitglied(t, pw, blobs.filter((b) => b.key !== key))) return json(409, { error: 'password_exists', hint: 'Dieses Passwort ist bereits vergeben' });
+      u.pwHash = await hashen(pw);
       u.passwordChangedAt = new Date().toISOString();
       await t.setJSON(key, u);
       await auditLog(who, 'Team', 'Passwort geändert für: ' + u.name);

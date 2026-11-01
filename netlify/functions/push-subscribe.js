@@ -15,6 +15,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { mitglied } = require('./lib/team-passwort');
 const { schutz } = require('./lib/bremse');
 
 const STORE_NAME = 'push-subs';
@@ -57,11 +58,8 @@ async function authRole(pw) {
   try {
     const t = _teamStore();
     const { blobs } = await t.list({ prefix: 'u:' });
-    const h = crypto.createHash('sha256').update(String(pw)).digest('hex');
-    for (const b of blobs) {
-      const u = await t.get(b.key, { type: 'json' });
-      if (u && u.pwHash === h) return { role: u.role === 'admin' ? 'admin' : 'staff', name: u.name || b.key.slice(2) };
-    }
+    const { key, u } = (await mitglied(t, pw, blobs)) || {};
+    if (u) return { role: u.role === 'admin' ? 'admin' : 'staff', name: u.name || key.slice(2) };
   } catch (e) {}
   return null;
 }

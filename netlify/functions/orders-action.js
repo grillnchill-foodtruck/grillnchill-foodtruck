@@ -24,6 +24,7 @@ const { getStore } = require('@netlify/blobs');
 const { internHeader } = require('./lib/bremse');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { mitglied } = require('./lib/team-passwort');
 
 const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 
@@ -101,7 +102,6 @@ async function notify(order) {
 
 
 // --- Team-Auth: admin (ADMIN_PASSWORD) oder staff (Team-Store, siehe team.js) ---
-const _teamCrypto = require('crypto');
 function _teamStore() {
   const opts = { name: 'team', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
@@ -117,11 +117,8 @@ async function authRole(pw) {
   try {
     const t = _teamStore();
     const { blobs } = await t.list({ prefix: 'u:' });
-    const h = _teamCrypto.createHash('sha256').update(String(pw)).digest('hex');
-    for (const b of blobs) {
-      const u = await t.get(b.key, { type: 'json' });
-      if (u && u.pwHash === h) return { role: u.role === 'admin' ? 'admin' : 'staff', name: u.name || b.key.slice(2) };
-    }
+    const { key, u } = (await mitglied(t, pw, blobs)) || {};
+    if (u) return { role: u.role === 'admin' ? 'admin' : 'staff', name: u.name || key.slice(2) };
   } catch (e) {}
   return null;
 }

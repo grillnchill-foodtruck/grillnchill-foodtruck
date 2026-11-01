@@ -29,8 +29,17 @@
  *    stimmt die Seite nach dem nächsten Deploy. Beide Seiten bekommen ihre
  *    FAQ-Daten für Google aus den sichtbaren <details>.
  *
- * tr/ steht in .gitignore: Die Datei entsteht bei jedem Deploy neu und kann
- * deshalb nie hinter index.html zurückbleiben. index.html selbst wird mit der
+ * 4. CONTENT-SECURITY-POLICY (_headers)
+ *    Skripte laufen nur aus eigenen Dateien und aus den Inline-Blöcken, deren
+ *    Hash in der Policy steht. 'unsafe-inline' fehlt: Eingeschleustes HTML
+ *    kann keinen Code mehr ausführen und keine Anmelde-Tokens auslesen.
+ *    Deshalb gibt es kein onclick="…" mehr, sondern data-on-click="…"
+ *    (ereignisse.js). Jede Änderung an einem Inline-Skript ändert seinen
+ *    Hash; darum schreibt jeder Build _headers neu, nach allen anderen
+ *    Schritten. Die übrigen Sicherheits-Header stehen in netlify.toml.
+ *
+ * tr/ und _headers stehen in .gitignore: Sie entstehen bei jedem Deploy neu
+ * und können deshalb nie hinter index.html zurückbleiben. index.html selbst wird mit der
  * eingebauten Karte committet, damit die lokale Vorschau sie auch zeigt.
  * ----------------------------------------------------------------------------
  */
@@ -394,6 +403,50 @@ fs.writeFileSync(lgPfad, liefergebietBauen(fs.readFileSync(lgPfad, 'utf8')));
 const halalPfad = path.join(WURZEL, 'halal.html');
 fs.writeFileSync(halalPfad, faqDaten(fs.readFileSync(halalPfad, 'utf8'), SEITE + '/halal'));
 
+/* ---- Content-Security-Policy ---------------------------------------------- */
+const crypto = require('crypto');
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' %HASHES% https://challenges.cloudflare.com https://accounts.google.com https://appleid.cdn-apple.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
+  "img-src 'self' data: blob:",
+  "font-src 'self' https://fonts.gstatic.com",
+  "connect-src 'self' https://nominatim.openstreetmap.org https://accounts.google.com https://appleid.apple.com",
+  "frame-src https://maps.google.com https://www.google.com https://challenges.cloudflare.com https://accounts.google.com",
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+  'upgrade-insecure-requests',
+].join('; ');
+
+// Ausführbare Inline-Skripte: ohne src, ohne Datentyp wie application/ld+json
+function inlineSkripte(html) {
+  const aus = [];
+  for (const m of html.matchAll(/<script(\s[^>]*)?>([\s\S]*?)<\/script>/gi)) {
+    const attr = m[1] || '';
+    if (/\ssrc\s*=/i.test(attr)) continue;
+    const typ = (/\stype\s*=\s*["']?([^"'\s>]+)/i.exec(attr) || [])[1];
+    if (typ && !/^(text\/javascript|application\/javascript|module)$/i.test(typ)) continue;
+    aus.push(m[2]);
+  }
+  return aus;
+}
+
+const seiten = fs.readdirSync(WURZEL).filter((f) => f.endsWith('.html')).concat('tr/index.html');
+const hashes = new Set();
+for (const f of seiten) {
+  for (const code of inlineSkripte(lies(f))) {
+    hashes.add("'sha256-" + crypto.createHash('sha256').update(code, 'utf8').digest('base64') + "'");
+  }
+}
+const policy = CSP.replace('%HASHES%', [...hashes].join(' '));
+fs.writeFileSync(path.join(WURZEL, '_headers'),
+  '# Entsteht bei jedem Build (werkzeug/seiten-bauen.js). Nicht von Hand ändern.\n'
+  + '/*\n  Content-Security-Policy: ' + policy + '\n');
+
 const reste = (trHtml.match(/data-i18n="[^"]+"/g) || []).length;
 console.log('seiten-bauen: Speisekarte mit ' + SK.MENU.length + ' Artikeln in index.html, tr/index.html geschrieben ('
-  + Math.round(trHtml.length / 1024) + ' KB, ' + reste + ' data-i18n-Stellen), liefergebiet.html und halal.html aktualisiert.');
+  + Math.round(trHtml.length / 1024) + ' KB, ' + reste + ' data-i18n-Stellen), liefergebiet.html und halal.html aktualisiert, '
+  + '_headers mit ' + hashes.size + ' Skript-Hashes aus ' + seiten.length + ' Seiten.');

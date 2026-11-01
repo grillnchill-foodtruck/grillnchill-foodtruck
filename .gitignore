@@ -5,6 +5,7 @@ node_modules/
 .claude/
 # entsteht beim Build (werkzeug/seiten-bauen.js)
 /tr/
+/_headers
 # Geheimnisse nie committen (Werte stehen in Netlify)
 .env
 .env.*

@@ -63,9 +63,9 @@ function dayKey(offset = 0) {
 
 
 // --- Team-Auth: superadmin (ADMIN_PASSWORD) oder Team-Admin (Team-Store) ---
-const _teamCrypto = require('crypto');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung, nachweis } = require('./lib/admin-sitzung');
+const { mitglied } = require('./lib/team-passwort');
 const { schutz } = require('./lib/bremse');
 function _teamStore() {
   const opts = { name: 'team', consistency: 'strong' };
@@ -82,11 +82,8 @@ async function authAdmin(pw) {
   try {
     const t = _teamStore();
     const { blobs } = await t.list({ prefix: 'u:' });
-    const h = _teamCrypto.createHash('sha256').update(String(pw)).digest('hex');
-    for (const b of blobs) {
-      const u = await t.get(b.key, { type: 'json' });
-      if (u && u.pwHash === h) return u.role === 'admin';
-    }
+    const { u } = (await mitglied(t, pw, blobs)) || {};
+    if (u) return u.role === 'admin';
   } catch (e) {}
   return false;
 }

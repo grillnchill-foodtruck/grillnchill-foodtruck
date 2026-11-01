@@ -168,6 +168,7 @@
     .skel{animation:none!important}
   }
 </style>
+<script src="/ereignisse.js"></script>
 </head>
 <body>
 <header>
@@ -185,17 +186,17 @@
     <p style="color:var(--dim);font-size:.85rem;margin:.4rem 0 0;">Admin-Passwort zum Planen, Team-Passwort zum Ansehen. Danach fragen wir nach dem Code aus deiner Authenticator-App.</p>
     <input type="password" id="pw" autocomplete="current-password" placeholder="Passwort">
     <label><input type="checkbox" id="pwStay" checked> Angemeldet bleiben</label>
-    <button id="loginBtn" onclick="anmelden(this)">Anmelden</button>
+    <button id="loginBtn" data-on-click="anmelden(this)">Anmelden</button>
     <p class="fehler" id="loginFehler" role="alert"></p>
   </section>
 
   <section id="plan" hidden>
     <div class="wnav">
-      <button onclick="wocheWechseln(-1)" aria-label="Vorherige Woche">‹</button>
+      <button data-on-click="wocheWechseln(-1)" aria-label="Vorherige Woche">‹</button>
       <div class="wtitel"><b id="wTitel"></b><span id="wDatum"></span><span class="speichert" id="speichert" aria-live="polite"></span></div>
-      <button onclick="wocheWechseln(1)" aria-label="Nächste Woche">›</button>
+      <button data-on-click="wocheWechseln(1)" aria-label="Nächste Woche">›</button>
     </div>
-    <button class="heute-btn" id="heuteBtn" onclick="zuHeute()" hidden>Zur aktuellen Woche</button>
+    <button class="heute-btn" id="heuteBtn" data-on-click="zuHeute()" hidden>Zur aktuellen Woche</button>
     <p class="hinweis-lesen" id="nurLesen" hidden>Du siehst den Plan – ändern kann ihn nur der Chef. 🔒</p>
 
     <div id="tage"></div>
@@ -206,15 +207,15 @@
     </div>
 
     <div class="aktionen" id="aktionen" hidden>
-      <button class="a-rand" onclick="vorwocheUebernehmen(this)">↺ Vorwoche übernehmen</button>
-      <button class="a-rand" onclick="teamSheetOeffnen()">👥 Team verwalten</button>
-      <button class="a-hell a-breit" onclick="planTeilen()">Plan teilen (WhatsApp)</button>
+      <button class="a-rand" data-on-click="vorwocheUebernehmen(this)">↺ Vorwoche übernehmen</button>
+      <button class="a-rand" data-on-click="teamSheetOeffnen()">👥 Team verwalten</button>
+      <button class="a-hell a-breit" data-on-click="planTeilen()">Plan teilen (WhatsApp)</button>
     </div>
   </section>
 </main>
 
 <!-- Schicht anlegen -->
-<div class="sheet-hg" id="schichtHg" onclick="schichtSheetZu()"></div>
+<div class="sheet-hg" id="schichtHg" data-on-click="schichtSheetZu()"></div>
 <div class="sheet" id="schichtSheet" role="dialog" aria-modal="true" aria-labelledby="schichtTitel">
   <div class="griff" aria-hidden="true"></div>
   <h2 id="schichtTitel">Schicht hinzufügen</h2>
@@ -224,25 +225,25 @@
     <div><label for="bis">Bis</label><input type="time" id="bis" value="20:30" step="900"></div>
   </div>
   <div class="presets">
-    <button onclick="preset('11:30','20:30')">Ganzer Tag</button>
-    <button onclick="preset('11:30','16:00')">Früh</button>
-    <button onclick="preset('16:00','20:30')">Spät</button>
-    <button onclick="preset('17:00','21:00')">Abend</button>
+    <button data-on-click="preset('11:30','20:30')">Ganzer Tag</button>
+    <button data-on-click="preset('11:30','16:00')">Früh</button>
+    <button data-on-click="preset('16:00','20:30')">Spät</button>
+    <button data-on-click="preset('17:00','21:00')">Abend</button>
   </div>
   <input type="text" id="notiz" maxlength="80" placeholder="Notiz (optional, z. B. Lieferfahrer)">
-  <button class="ok" onclick="schichtSpeichern()">Eintragen</button>
-  <button class="zu" onclick="schichtSheetZu()">Abbrechen</button>
+  <button class="ok" data-on-click="schichtSpeichern()">Eintragen</button>
+  <button class="zu" data-on-click="schichtSheetZu()">Abbrechen</button>
 </div>
 
 <!-- Team verwalten -->
-<div class="sheet-hg" id="teamHg" onclick="teamSheetZu()"></div>
+<div class="sheet-hg" id="teamHg" data-on-click="teamSheetZu()"></div>
 <div class="sheet" id="teamSheet" role="dialog" aria-modal="true" aria-labelledby="teamTitel">
   <div class="griff" aria-hidden="true"></div>
   <h2 id="teamTitel">Team verwalten</h2>
   <div id="teamListe"></div>
-  <button class="plus" onclick="mitarbeiterHinzufuegen()" style="margin-bottom:1rem;">+ Person hinzufügen</button>
-  <button class="ok" onclick="teamSpeichern(this)">Speichern</button>
-  <button class="zu" onclick="teamSheetZu()">Abbrechen</button>
+  <button class="plus" data-on-click="mitarbeiterHinzufuegen()" style="margin-bottom:1rem;">+ Person hinzufügen</button>
+  <button class="ok" data-on-click="teamSpeichern(this)">Speichern</button>
+  <button class="zu" data-on-click="teamSheetZu()">Abbrechen</button>
 </div>
 
 <div class="toast" id="toast" role="status"></div>
@@ -402,7 +403,7 @@ async function laden() {
     if (status) toast(d.hint || 'Plan konnte nicht geladen werden', 'err');
     if (geladeneWoche === null) {
       $('tage').innerHTML = '<p class="leer">Plan konnte nicht geladen werden.</p>'
-        + '<button class="plus" onclick="laden()">Erneut versuchen</button>';
+        + '<button class="plus" data-on-click="laden()">Erneut versuchen</button>';
       return;
     }
     // Zurueck zu der Woche, deren Schichten noch angezeigt werden: Titel und Plan passen so zusammen.
@@ -463,10 +464,10 @@ function render() {
       html += '<div class="schicht"><span class="punkt" style="background:' + p.farbe + '"></span>'
         + '<span class="wer"><b>' + esc(p.name) + '</b>' + (s.notiz ? '<span>' + esc(s.notiz) + '</span>' : '') + '</span>'
         + '<span class="zeit">' + s.von + '–' + s.bis + '</span>'
-        + (istAdmin ? '<button class="weg" aria-label="Schicht von ' + esc(p.name) + ' entfernen" onclick="schichtWeg(\'' + tag + '\',' + idx + ')">×</button>' : '')
+        + (istAdmin ? '<button class="weg" aria-label="Schicht von ' + esc(p.name) + ' entfernen" data-on-click="schichtWeg(\'' + tag + '\',' + idx + ')">×</button>' : '')
         + '</div>';
     }
-    if (istAdmin) html += '<button class="plus" onclick="schichtSheetOeffnen(\'' + tag + '\')">+ Schicht</button>';
+    if (istAdmin) html += '<button class="plus" data-on-click="schichtSheetOeffnen(\'' + tag + '\')">+ Schicht</button>';
     html += '</div>';
   }
   $('tage').innerHTML = html;
@@ -507,7 +508,7 @@ function schichtSheetOeffnen(tag) {
   sheetTag = tag; sheetPid = personal[0].id;
   sheetVorherFokus = document.activeElement;
   $('mitarbeiterChips').innerHTML = personal.map(p =>
-    '<button type="button" class="' + (p.id===sheetPid?'aktiv':'') + '" data-pid="' + p.id + '" onclick="chipWahl(this)">'
+    '<button type="button" class="' + (p.id===sheetPid?'aktiv':'') + '" data-pid="' + p.id + '" data-on-click="chipWahl(this)">'
     + '<span class="punkt" style="background:' + p.farbe + '"></span>' + esc(p.name) + '</button>').join('');
   const idx = TAGE_NAMEN[((new Date(tag+'T12:00:00').getDay())+6)%7];
   $('schichtTitel').textContent = 'Schicht am ' + idx;
@@ -612,12 +613,13 @@ function teamSheetOeffnen() {
   $('teamHg').classList.add('offen'); $('teamSheet').classList.add('offen');
   const erster = $('teamListe').querySelector('input[type=text]'); if (erster) erster.focus();
 }
+function elternEntfernen(el) { el.parentElement.remove(); }
 function teamZeile(p) {
   const div = document.createElement('div');
   div.className = 'mzeile';
   div.innerHTML = '<input type="color" value="' + (p.farbe || FARBEN[$('teamListe').children.length % FARBEN.length]) + '" aria-label="Farbe">'
     + '<input type="text" maxlength="40" placeholder="Name" aria-label="Name">'
-    + '<button class="weg" aria-label="Person entfernen" onclick="this.parentElement.remove()">×</button>';
+    + '<button class="weg" aria-label="Person entfernen" data-on-click="elternEntfernen(this)">×</button>';
   div.querySelector('input[type=text]').value = p.name || '';
   div.dataset.pid = p.id || '';
   $('teamListe').appendChild(div);

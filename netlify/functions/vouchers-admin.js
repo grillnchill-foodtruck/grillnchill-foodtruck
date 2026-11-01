@@ -31,10 +31,10 @@
  * ----------------------------------------------------------------------------
  */
 
-const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
+const { mitglied } = require('./lib/team-passwort');
 const { codeNormalisieren } = require('./lib/gutschein-code');
 
 /* Reservierte Codes: die Aktion und der Code für Testbestellungen. Letzterer
@@ -74,11 +74,8 @@ async function authAdmin(pw) {
   try {
     const t = store('team');
     const { blobs } = await t.list({ prefix: 'u:' });
-    const h = crypto.createHash('sha256').update(String(pw)).digest('hex');
-    for (const b of blobs) {
-      const u = await t.get(b.key, { type: 'json' });
-      if (u && u.pwHash === h) return u.role === 'admin' ? { role: 'admin', name: u.name || '?' } : null;
-    }
+    const { u } = (await mitglied(t, pw, blobs)) || {};
+    if (u) return u.role === 'admin' ? { role: 'admin', name: u.name || '?' } : null;
   } catch (e) {}
   return null;
 }

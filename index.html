@@ -5734,6 +5734,7 @@ body.onb-lock { overflow: hidden; }
   .nav-cart-badge.bump { transform: none; }
 }
 </style>
+<script src="/ereignisse.js"></script>
 </head>
 <body>
 <div id="brandLoader" aria-hidden="true">
@@ -5786,17 +5787,17 @@ body.onb-lock { overflow: hidden; }
       <li><a href="#location" data-i18n="nav.location">Standort</a></li>
       <li><a href="#catering" data-i18n="nav.catering">Catering</a></li>
       <li><a href="#faq" data-i18n="nav.faq">FAQ</a></li>
-      <li><a href="#" onclick="openAccountOverlay(); return false;" data-i18n="acc.nav">Mein Konto</a></li>
+      <li><a href="#" data-on-click="openAccountOverlay(); return false;" data-i18n="acc.nav">Mein Konto</a></li>
     </ul>
     <div class="nav-actions">
       <span class="nav-status" id="navStatus" hidden>
         <svg class="status-flame" viewBox="0 0 16 20" aria-hidden="true"><path class="flame-body" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="flame-core" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg>
         <span class="nav-status-text" id="navStatusText"></span>
       </span>
-      <button type="button" class="nav-icon-btn" id="accountBtn" onclick="openAccountOverlay('kompakt')" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto">
+      <button type="button" class="nav-icon-btn" id="accountBtn" data-on-click="openAccountOverlay('kompakt')" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M21 14v3"/><path d="M14 21h3"/><path d="M21 21v.01"/></svg>
       </button>
-      <button class="nav-cart-btn" onclick="openCart()" aria-label="Warenkorb öffnen" data-i18n-aria="a11y.cart_open">
+      <button class="nav-cart-btn" data-on-click="openCart()" aria-label="Warenkorb öffnen" data-i18n-aria="a11y.cart_open">
         <span class="nav-cart-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="19" cy="21" r="1.6"/><path d="M2.5 3h2l2.4 12.2a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L22 7H6"/></svg></span>
         <span class="nav-cart-text" data-i18n="nav.cart">Warenkorb</span>
         <span class="nav-cart-badge" id="navCartBadge">0</span>
@@ -5815,12 +5816,12 @@ body.onb-lock { overflow: hidden; }
       </div>
     </div>
     <ul>
-      <li><a href="#menu" onclick="closeMobileMenu()" data-i18n="nav.menu">Speisekarte</a></li>
-      <li><a href="#story" onclick="closeMobileMenu()" data-i18n="nav.about">Über uns</a></li>
-      <li><a href="#location" onclick="closeMobileMenu()" data-i18n="nav.location">Standort</a></li>
-      <li><a href="#catering" onclick="closeMobileMenu()" data-i18n="nav.catering">Catering</a></li>
-      <li><a href="#kontakt" onclick="closeMobileMenu()" data-i18n="nav.contact">Kontakt</a></li>
-      <li><a href="#" onclick="closeMobileMenu(); openAccountOverlay(); return false;" data-i18n="acc.nav">Mein Konto</a></li>
+      <li><a href="#menu" data-on-click="closeMobileMenu()" data-i18n="nav.menu">Speisekarte</a></li>
+      <li><a href="#story" data-on-click="closeMobileMenu()" data-i18n="nav.about">Über uns</a></li>
+      <li><a href="#location" data-on-click="closeMobileMenu()" data-i18n="nav.location">Standort</a></li>
+      <li><a href="#catering" data-on-click="closeMobileMenu()" data-i18n="nav.catering">Catering</a></li>
+      <li><a href="#kontakt" data-on-click="closeMobileMenu()" data-i18n="nav.contact">Kontakt</a></li>
+      <li><a href="#" data-on-click="closeMobileMenu(); openAccountOverlay(); return false;" data-i18n="acc.nav">Mein Konto</a></li>
     </ul>
   </div>
 </nav>
@@ -5832,8 +5833,10 @@ body.onb-lock { overflow: hidden; }
   <!-- full-bleed background video -->
   <div class="hero-bg" aria-hidden="true">
     <!-- still shown before the video loads / under reduced-motion -->
-    <img class="hero-video-poster" src="hero/poster.webp" alt="" decoding="async" fetchpriority="high"
-         onerror="this.onerror=null;this.src='hero/poster.jpg'" />
+    <picture>
+      <source srcset="hero/poster.webp" type="image/webp" />
+      <img class="hero-video-poster" src="hero/poster.jpg" alt="" decoding="async" fetchpriority="high" />
+    </picture>
     <!-- DEFAULT: looping background video – deferred until after load (Performance) -->
     <video class="hero-video" muted loop playsinline preload="none" id="heroVideo"
            poster="hero/poster.webp">
@@ -5934,8 +5937,8 @@ body.onb-lock { overflow: hidden; }
         <div style="font-size:0.8rem;color:var(--color-cream-dim);line-height:1.5;" data-i18n="grp.entry_sub">Du teilst den Link, jede Person wählt ihr Essen selbst. Am Ende schickst du alles als eine Bestellung ab und zahlst einmal.</div>
       </div>
       <div class="grp-entry-actions">
-        <button type="button" id="groupEntryBtn" onclick="openGroupOverlay()" style="background:var(--color-orange-solid);border:none;color:#fff;font-family:inherit;font-size:0.88rem;font-weight:800;padding:0.7rem 1.25rem;border-radius:10px;cursor:pointer;" data-i18n="grp.entry">Gruppenlink erstellen</button>
-        <button type="button" id="groupDiscardBtn" class="grp-discard-btn" onclick="discardGroup()" hidden data-i18n="grp.discard">Gruppe verwerfen</button>
+        <button type="button" id="groupEntryBtn" data-on-click="openGroupOverlay()" style="background:var(--color-orange-solid);border:none;color:#fff;font-family:inherit;font-size:0.88rem;font-weight:800;padding:0.7rem 1.25rem;border-radius:10px;cursor:pointer;" data-i18n="grp.entry">Gruppenlink erstellen</button>
+        <button type="button" id="groupDiscardBtn" class="grp-discard-btn" data-on-click="discardGroup()" hidden data-i18n="grp.discard">Gruppe verwerfen</button>
       </div>
     </div>
 
@@ -6315,9 +6318,9 @@ body.onb-lock { overflow: hidden; }
       <p class="section-subtitle"><span style="color: var(--color-yellow); letter-spacing: 2px;" id="reviewsStars">★★★★★</span> <span data-i18n="reviews.subtitle" id="reviewsSubtitle">5,0 bei 255 Bewertungen auf Google</span></p>
     </div>
     <div class="reviews-carousel reveal">
-      <button class="reviews-nav prev" onclick="moveReview(-1)" aria-label="Vorherige Bewertung" data-i18n-aria="a11y.prev_review">‹</button>
+      <button class="reviews-nav prev" data-on-click="moveReview(-1)" aria-label="Vorherige Bewertung" data-i18n-aria="a11y.prev_review">‹</button>
       <div class="reviews-track" id="reviewsTrack"><!-- per JS gefüllt --></div>
-      <button class="reviews-nav next" onclick="moveReview(1)" aria-label="Nächste Bewertung" data-i18n-aria="a11y.next_review">›</button>
+      <button class="reviews-nav next" data-on-click="moveReview(1)" aria-label="Nächste Bewertung" data-i18n-aria="a11y.next_review">›</button>
     </div>
     <div class="reviews-dots" id="reviewsDots"></div>
     <div style="text-align: center; margin-top: 2rem;">
@@ -6388,7 +6391,7 @@ body.onb-lock { overflow: hidden; }
         <div id="mapConsent" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.7rem;background:linear-gradient(160deg,#17140F,#0F0D0A);border-radius:inherit;text-align:center;padding:1.2rem;">
           <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange-bright)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
           <p style="margin:0;font-size:0.85rem;color:var(--color-cream-dim);max-width:34ch;line-height:1.5;" data-i18n="map.consent_text">Gütersloher Str. 122, 33649 Bielefeld. Mit dem Laden der Karte werden Daten an Google übertragen.</p>
-          <button type="button" class="btn btn-primary" onclick="loadMap()" data-i18n="map.load_btn">Karte laden</button>
+          <button type="button" class="btn btn-primary" data-on-click="loadMap()" data-i18n="map.load_btn">Karte laden</button>
           <a href="https://maps.google.com/maps?cid=2860232172322750720" target="_blank" rel="noopener" style="font-size:0.75rem;color:var(--color-text-muted);" data-i18n="map.open_ext">In Google Maps öffnen</a>
         </div>
       </div>
@@ -6396,7 +6399,7 @@ body.onb-lock { overflow: hidden; }
 
     <div class="zones reveal">
       <div class="zones-title" data-i18n="location.zones_title">🛵 Wir liefern in folgende Stadtteile</div>
-      <button class="zones-toggle" id="zonesToggle" type="button" onclick="toggleZones()" aria-expanded="false" aria-controls="zonesList">
+      <button class="zones-toggle" id="zonesToggle" type="button" data-on-click="toggleZones()" aria-expanded="false" aria-controls="zonesList">
         <span class="zones-toggle-label" data-i18n="location.zones_show">Liefergebiete anzeigen</span> <span aria-hidden="true">▾</span>
       </button>
       <div class="zones-list" id="zonesList">
@@ -6446,7 +6449,7 @@ body.onb-lock { overflow: hidden; }
           <li data-i18n="catp.p1f1">1 Burger nach Wahl aus der Event-Karte</li>
           <li data-i18n="catp.p1f2">Pommes mit Dip nach Wahl</li>
         </ul>
-        <button type="button" class="btn btn-secondary btn-block" onclick="selectCateringPackage('classic')" data-i18n="catp.cta">Paket anfragen</button>
+        <button type="button" class="btn btn-secondary btn-block" data-on-click="selectCateringPackage('classic')" data-i18n="catp.cta">Paket anfragen</button>
       </div>
       <div class="cat-card cat-featured reveal">
         <div class="cat-badge" data-i18n="catp.badge">Beliebteste Wahl</div>
@@ -6457,7 +6460,7 @@ body.onb-lock { overflow: hidden; }
           <li data-i18n="catp.p2f1">1 Burger nach Wahl mit Double Patty</li>
           <li data-i18n="catp.p1f2">Pommes mit Dip nach Wahl</li>
         </ul>
-        <button type="button" class="btn btn-primary btn-block" onclick="selectCateringPackage('gnc')" data-i18n="catp.cta">Paket anfragen</button>
+        <button type="button" class="btn btn-primary btn-block" data-on-click="selectCateringPackage('gnc')" data-i18n="catp.cta">Paket anfragen</button>
       </div>
       <div class="cat-card reveal">
         <h3>All-in Flat</h3>
@@ -6468,7 +6471,7 @@ body.onb-lock { overflow: hidden; }
           <li data-i18n="catp.p3f2">Pommes inklusive</li>
           <li data-i18n="catp.p3f3">Double Patty optional +2,50&nbsp;€</li>
         </ul>
-        <button type="button" class="btn btn-secondary btn-block" onclick="selectCateringPackage('flat')" data-i18n="catp.cta">Paket anfragen</button>
+        <button type="button" class="btn btn-secondary btn-block" data-on-click="selectCateringPackage('flat')" data-i18n="catp.cta">Paket anfragen</button>
       </div>
     </div>
 
@@ -6585,7 +6588,7 @@ body.onb-lock { overflow: hidden; }
             <div class="form-group" style="display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.85rem; color: var(--color-cream-dim);">
               <input type="checkbox" id="cf-consent" required style="margin-top: 4px; accent-color: var(--color-orange); width: 20px; height: 20px;" />
               <label for="cf-consent" style="font-weight: 400; margin: 0;">
-                <span data-i18n="catering.f_consent">Ich bin damit einverstanden, dass meine Angaben zur Bearbeitung der Anfrage verwendet werden.</span> <a href="#" onclick="openModal('datenschutz'); return false;" data-i18n="catering.f_privacy">Datenschutz</a>
+                <span data-i18n="catering.f_consent">Ich bin damit einverstanden, dass meine Angaben zur Bearbeitung der Anfrage verwendet werden.</span> <a href="#" data-on-click="openModal('datenschutz'); return false;" data-i18n="catering.f_privacy">Datenschutz</a>
               </label>
             </div>
             <!-- Cloudflare Turnstile (optional). Wird nur angezeigt, wenn unten ein Sitekey gesetzt ist. -->
@@ -6636,56 +6639,56 @@ body.onb-lock { overflow: hidden; }
     </div>
     <div class="faq-list">
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q1">Sind eure Burger halal?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a1">Ja, zu 100 %. Halal Certification Germany (HCG) hat uns zertifiziert, Zertifikat Nr. HCG00279. Das gilt für unser ganzes Sortiment, am Truck, bei Lieferung und beim Catering. Das Original-Siegel hängt an unserer Ausgabe.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q2">Gibt es alle Burger auch als Double Patty?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a2">Ja. Im Bestellterminal wählst du auf der Karte des Burgers „Double Patty“. Der Aufpreis beträgt 2,50 €. Beim Kubis Special ist das Double Patty schon dabei.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q3">Wohin liefert ihr?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a3">Wir liefern nach Brackwede, Senne, Sennestadt, Gadderbaum, Quelle, Ummeln, Schildesche, Jöllenbeck, Heepen, Stieghorst, Avenwedde und Isselhorst.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q4">Wie funktioniert der Rabatt mit Code GRILL5?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a4">Mit dem Code GRILL5 bekommst du 5 € Rabatt ab 20 € Bestellwert. Du löst ihn online auf dieser Website ein, bis zu 3× pro Kunde, und er gilt bis auf Widerruf. Tipp im Warenkorb auf „GRILL5 anwenden“ oder gib den Code ins Feld ein.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q5">Wofür sind wir bekannt?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a5">Für unsere Burger: saftige Patties frisch vom Grill, dazu knusprige Nuggets und Pommes. Auf der Karte stehen Klassiker wie der Classic Burger und eigene Kreationen wie der Kubis Special oder der Sucuk Burger.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q6">Habt ihr Optionen bei Allergien?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a6">Sag uns bei der Bestellung, welche Allergie du hast. Wir sagen dir, was in jedem Gericht steckt. Classic, Cheese, Chili-Cheese und White BBQ gibt es ohne Aufpreis auch vegetarisch oder vegan.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q7">Warum direkt bestellen statt über Lieferando?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a7">Lieferando und Uber Eats nehmen pro Bestellung 14 bis 30 % Provision von uns. Bestellst du direkt, fällt diese Provision weg, und wir geben dir dafür 5 € Rabatt mit dem Code GRILL5 (ab 20 € Bestellwert, nur online). Das Geld bleibt in Bielefeld.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q8">Wie wird die Liefergebühr berechnet?</span>
           <span class="faq-toggle">+</span>
         </button>
@@ -6700,28 +6703,28 @@ body.onb-lock { overflow: hidden; }
         </div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q9">Wie lange dauert die Zubereitung &amp; Lieferung?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a9">Wir grillen alles frisch. Plane bei Abholung etwa 15 Minuten ein, bei Lieferung je nach Stadtteil 30 bis 45 Minuten. Nach deiner Bestellung schicken wir dir die voraussichtliche Zeit.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q10">Kann ich für ein Event vorbestellen?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a10">Für eine Familie oder ein Team bestellst du im Bestellterminal und gibst deine Abholzeit an. Ab 30 Personen passt unser Foodtruck-Catering besser, dafür füllst du das Catering-Formular aus.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q11">Kann ich Gutscheine kaufen oder verschenken?</span>
           <span class="faq-toggle">+</span>
         </button>
         <div class="faq-answer" data-i18n="faq.a11">Ja. Unter grillnchill-foodtruck.de/gutscheine wählst du einen Betrag zwischen 10 und 200 € und zahlst online. Den Code schicken wir dir per E-Mail. Einlösen kannst du ihn im Warenkorb, sobald dein Bestellwert den Gutscheinbetrag erreicht. Der Gutschein gilt 3 Jahre, auszahlen können wir ihn nicht.</div>
       </div>
       <div class="faq-item">
-        <button class="faq-question" onclick="toggleFaq(this)" aria-expanded="false">
+        <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
           <span data-i18n="faq.q12">Wann hat Grilln Chill geöffnet?</span>
           <span class="faq-toggle">+</span>
         </button>
@@ -6777,10 +6780,10 @@ body.onb-lock { overflow: hidden; }
         <h4 data-i18n="footer.col_service">Service</h4>
         <ul>
           <li><a href="#faq">FAQ</a></li>
-          <li><a href="#" onclick="openModal('agb'); return false;">AGB</a></li>
-          <li><a href="#" onclick="openModal('widerruf'); return false;" data-i18n="footer.service_withdrawal">Widerrufsbelehrung</a></li>
-          <li><a href="#" onclick="openModal('cookies'); return false;" data-i18n="footer.service_cookies">Cookies</a></li>
-          <li><a href="#" onclick="openModal('barrierefreiheit'); return false;" data-i18n="footer.service_a11y">Barrierefreiheit</a></li>
+          <li><a href="#" data-on-click="openModal('agb'); return false;">AGB</a></li>
+          <li><a href="#" data-on-click="openModal('widerruf'); return false;" data-i18n="footer.service_withdrawal">Widerrufsbelehrung</a></li>
+          <li><a href="#" data-on-click="openModal('cookies'); return false;" data-i18n="footer.service_cookies">Cookies</a></li>
+          <li><a href="#" data-on-click="openModal('barrierefreiheit'); return false;" data-i18n="footer.service_a11y">Barrierefreiheit</a></li>
           <li id="pushEnableLi" hidden><a href="#" id="pushEnableLink" data-i18n="push.enable">Benachrichtigungen aktivieren</a></li>
         </ul>
       </div>
@@ -6797,13 +6800,13 @@ body.onb-lock { overflow: hidden; }
       <div class="footer-wordmark" aria-hidden="true">GRILL'N CHILL</div>
       <div>© <span id="year"></span> Grill'n Chill Yildiz und Öztas GbR · Alle Rechte vorbehalten</div>
       <div class="footer-bottom-links">
-        <a href="#" onclick="openModal('impressum'); return false;">Impressum</a>
-        <a href="#" onclick="openModal('datenschutz'); return false;">Datenschutz</a>
-        <a href="#" onclick="openModal('agb'); return false;">AGB</a>
+        <a href="#" data-on-click="openModal('impressum'); return false;">Impressum</a>
+        <a href="#" data-on-click="openModal('datenschutz'); return false;">Datenschutz</a>
+        <a href="#" data-on-click="openModal('agb'); return false;">AGB</a>
       </div>
       <!-- Sprachwahl: im Footer, klappt nach oben auf -->
       <div class="lang-dd lang-dd-up" id="langSwitch">
-        <button type="button" class="lang-dd-btn" id="langDdBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sprache wählen" data-i18n-aria="a11y.lang" onclick="toggleLangDd()">
+        <button type="button" class="lang-dd-btn" id="langDdBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sprache wählen" data-i18n-aria="a11y.lang" data-on-click="toggleLangDd()">
           <span class="lang-dd-flag" id="langDdFlag"></span>
           <span class="lang-dd-code" id="langDdCode">DE</span>
           <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -6825,9 +6828,9 @@ body.onb-lock { overflow: hidden; }
 <!-- ============================================
      MENÜ-KONFIGURATOR POPUP
      ============================================ -->
-<div class="upsell-overlay" id="upsellOverlay" onclick="if(event.target===this) closeUpsell()">
+<div class="upsell-overlay" id="upsellOverlay" data-on-click="if(event.target===this) closeUpsell()">
   <div class="upsell-modal" role="dialog" aria-modal="true" aria-labelledby="upsellTitle">
-    <button class="upsell-close" onclick="closeUpsell()" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
+    <button class="upsell-close" data-on-click="closeUpsell()" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
     <div class="upsell-icon">🍟🥤</div>
     <h3 id="upsellTitle" data-i18n="config.title">Mach ein Menü draus</h3>
     <p id="upsellSubtitle">Wähle deine Beilage, dein Getränk und deinen Dip.</p>
@@ -6848,15 +6851,15 @@ body.onb-lock { overflow: hidden; }
     <div class="config-section config-qty-section">
       <div class="config-section-title" data-i18n="config.qty">Menge</div>
       <div class="qty-stepper">
-        <button type="button" onclick="changeConfigQty(-1)" aria-label="Weniger" data-i18n-aria="a11y.less">−</button>
+        <button type="button" data-on-click="changeConfigQty(-1)" aria-label="Weniger" data-i18n-aria="a11y.less">−</button>
         <span id="configQtyVal">1</span>
-        <button type="button" onclick="changeConfigQty(1)" aria-label="Mehr" data-i18n-aria="a11y.more">+</button>
+        <button type="button" data-on-click="changeConfigQty(1)" aria-label="Mehr" data-i18n-aria="a11y.more">+</button>
       </div>
     </div>
 
     <div class="upsell-actions">
-    <button class="upsell-confirm" id="upsellConfirm" onclick="confirmMenuConfig(event)" data-i18n="config.add">Als Menü hinzufügen</button>
-    <button class="upsell-skip" id="upsellSkip" onclick="skipUpsell(event)" data-i18n="config.skip">Nein danke, nur den Burger</button>
+    <button class="upsell-confirm" id="upsellConfirm" data-on-click="confirmMenuConfig(event)" data-i18n="config.add">Als Menü hinzufügen</button>
+    <button class="upsell-skip" id="upsellSkip" data-on-click="skipUpsell(event)" data-i18n="config.skip">Nein danke, nur den Burger</button>
     </div>
   </div>
 </div>
@@ -6864,9 +6867,9 @@ body.onb-lock { overflow: hidden; }
 <!-- ============================================
      DIP-AUSWAHL POPUP (Pommes / Süßkartoffelpommes)
      ============================================ -->
-<div class="upsell-overlay" id="dipOverlay" onclick="if(event.target===this) closeDipConfig()">
+<div class="upsell-overlay" id="dipOverlay" data-on-click="if(event.target===this) closeDipConfig()">
   <div class="upsell-modal" role="dialog" aria-modal="true" aria-labelledby="dipTitle">
-    <button class="upsell-close" onclick="closeDipConfig()" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
+    <button class="upsell-close" data-on-click="closeDipConfig()" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
     <div class="upsell-icon">🍟🥫</div>
     <h3 id="dipTitle" data-i18n="dip.title">Wähle deinen Dip</h3>
     <p id="dipSubtitle"></p>
@@ -6877,22 +6880,22 @@ body.onb-lock { overflow: hidden; }
     <div class="config-section config-qty-section">
       <div class="config-section-title" data-i18n="config.qty">Menge</div>
       <div class="qty-stepper">
-        <button type="button" onclick="changeDipQty(-1)" aria-label="Weniger" data-i18n-aria="a11y.less">−</button>
+        <button type="button" data-on-click="changeDipQty(-1)" aria-label="Weniger" data-i18n-aria="a11y.less">−</button>
         <span id="dipQtyVal">1</span>
-        <button type="button" onclick="changeDipQty(1)" aria-label="Mehr" data-i18n-aria="a11y.more">+</button>
+        <button type="button" data-on-click="changeDipQty(1)" aria-label="Mehr" data-i18n-aria="a11y.more">+</button>
       </div>
     </div>
 
     <div class="upsell-actions">
-    <button class="upsell-confirm" id="dipConfirm" onclick="confirmDipConfig(event)" data-i18n="dip.add">Hinzufügen</button>
+    <button class="upsell-confirm" id="dipConfirm" data-on-click="confirmDipConfig(event)" data-i18n="dip.add">Hinzufügen</button>
     </div>
   </div>
 </div>
 
-<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-overlay" id="cartOverlay" data-on-click="closeCart()"></div>
 <aside class="cart-drawer" id="cartDrawer" role="dialog" aria-modal="true" aria-label="Warenkorb" data-i18n-aria="nav.cart">
   <div class="cart-header">
-    <button class="cart-back" id="cartBack" onclick="cartGoBack()" aria-label="Zurück" data-i18n-aria="a11y.back" hidden>
+    <button class="cart-back" id="cartBack" data-on-click="cartGoBack()" aria-label="Zurück" data-i18n-aria="a11y.back" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
     </button>
     <div class="cart-head-main">
@@ -6902,7 +6905,7 @@ body.onb-lock { overflow: hidden; }
         <span class="cart-step-label"></span>
       </div>
     </div>
-    <button class="cart-close" onclick="closeCart()" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
+    <button class="cart-close" data-on-click="closeCart()" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
   </div>
   <div class="cart-body" id="cartBody">
     <!-- populated by JS -->
@@ -6915,7 +6918,7 @@ body.onb-lock { overflow: hidden; }
 <!-- ============================================
      STICKY CART (Mobile)
      ============================================ -->
-<button class="sticky-cart" id="stickyCart" onclick="openCart()" aria-label="Warenkorb öffnen" data-i18n-aria="a11y.cart_open">
+<button class="sticky-cart" id="stickyCart" data-on-click="openCart()" aria-label="Warenkorb öffnen" data-i18n-aria="a11y.cart_open">
   <span><span id="stickyCount">0</span> <span id="stickyLabel">Artikel</span></span>
   <span id="stickyTotal">0,00 €</span>
 </button>
@@ -6940,7 +6943,7 @@ body.onb-lock { overflow: hidden; }
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.5-6.5-10.6A6.5 6.5 0 0 1 12 4a6.5 6.5 0 0 1 6.5 6.4C18.5 15.5 12 21 12 21z"/><circle cx="12" cy="10.4" r="2.3"/></svg>
     <span data-i18n="tab.location">Standort</span>
   </a>
-  <button type="button" class="app-tab" data-tabtarget="account" onclick="openAccountOverlay()">
+  <button type="button" class="app-tab" data-tabtarget="account" data-on-click="openAccountOverlay()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c1.2-3.2 4-5 7.5-5s6.3 1.8 7.5 5"/></svg>
     <span data-i18n="tab.account">Konto</span>
   </button>
@@ -6960,11 +6963,11 @@ body.onb-lock { overflow: hidden; }
 <!-- ============================================
      LEGAL MODALS
      ============================================ -->
-<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" onclick="if(event.target===this) closeModal()">
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" data-on-click="if(event.target===this) closeModal()">
   <div class="modal">
     <div class="modal-header">
       <h3 id="modalTitle">Titel</h3>
-      <button class="cart-close" onclick="closeModal()" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
+      <button class="cart-close" data-on-click="closeModal()" aria-label="Schließen" data-i18n-aria="a11y.close">×</button>
     </div>
     <div class="modal-body" id="modalBody">
       <!-- populated by JS -->
@@ -6998,18 +7001,18 @@ if (typeof window.t !== 'function') {
 </script>
 
 <!-- Kundenkonto: Overlay (Login-/Profil-Ansicht wird per JS in #accountBody gerendert) -->
-<div id="accountOverlay" role="dialog" aria-modal="true" aria-labelledby="accountTitle" onclick="if(event.target===this)closeAccountOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
+<div id="accountOverlay" role="dialog" aria-modal="true" aria-labelledby="accountTitle" data-on-click="if(event.target===this)closeAccountOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
   <div style="background:var(--color-bg-card,#17140F);border:1px solid var(--color-border,#2E2820);border-radius:16px;max-width:460px;width:100%;max-height:88vh;overflow:auto;position:relative;padding:1.5rem 1.4rem;">
-    <button type="button" onclick="closeAccountOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" style="position:absolute;top:0.7rem;right:0.8rem;background:none;border:none;color:var(--color-text-muted,#8F8471);font-size:1.5rem;line-height:1;cursor:pointer;padding:0.3rem;">×</button>
+    <button type="button" data-on-click="closeAccountOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" style="position:absolute;top:0.7rem;right:0.8rem;background:none;border:none;color:var(--color-text-muted,#8F8471);font-size:1.5rem;line-height:1;cursor:pointer;padding:0.3rem;">×</button>
     <h3 id="accountTitle" style="font-family:var(--font-display);font-weight:400;font-size:1.15rem;margin:0 0 1rem;padding-right:2rem;" data-i18n="acc.title">Mein Konto</h3>
     <div id="accountBody"></div>
   </div>
 </div>
 
 <!-- Gruppenbestellung: Overlay (Host-/Teilnehmer-Ansicht wird per JS in #groupBody gerendert) -->
-<div id="groupOverlay" role="dialog" aria-modal="true" aria-labelledby="groupTitle" onclick="if(event.target===this)closeGroupOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
+<div id="groupOverlay" role="dialog" aria-modal="true" aria-labelledby="groupTitle" data-on-click="if(event.target===this)closeGroupOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
   <div style="background:var(--color-bg-card,#17140F);border:1px solid var(--color-border,#2E2820);border-radius:16px;max-width:460px;width:100%;max-height:86vh;overflow:auto;position:relative;padding:1.5rem 1.4rem;">
-    <button type="button" onclick="closeGroupOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" style="position:absolute;top:0.7rem;right:0.8rem;background:none;border:none;color:var(--color-text-muted,#8F8471);font-size:1.5rem;line-height:1;cursor:pointer;padding:0.3rem;">×</button>
+    <button type="button" data-on-click="closeGroupOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" style="position:absolute;top:0.7rem;right:0.8rem;background:none;border:none;color:var(--color-text-muted,#8F8471);font-size:1.5rem;line-height:1;cursor:pointer;padding:0.3rem;">×</button>
     <h3 id="groupTitle" style="font-family:var(--font-display,'Bowlby One');font-weight:400;font-size:1.15rem;margin:0 0 1rem;padding-right:2rem;" data-i18n="grp.title">Gruppenbestellung</h3>
     <div id="groupBody"></div>
   </div>
@@ -7339,6 +7342,14 @@ function closeAccountOverlay() {
   try { if (accVorherFokus && accVorherFokus.focus) accVorherFokus.focus(); } catch (e) {}
 }
 let accLoginEmail = '';
+/* Für data-on-* (ereignisse.js), dort sind nur einfache Aufrufe erlaubt */
+function accSprache(code) { setLang(code); setTimeout(renderAccount, 150); }
+function accEinfuehrungZeigen() { closeAccountOverlay(); setTimeout(function () { gncOnbOpen({ replay: true }); }, 260); }
+function accVollAnsicht() { accountKompakt = false; renderAccount(); }
+function accOrdTaste(ev, i) {
+  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); accToggleOrd(i); }
+}
+
 function renderAccount(step) {
   const el = document.getElementById('accountBody');
   if (!el) return;
@@ -7371,10 +7382,10 @@ function accSettingsHtml() {
   const cur = (typeof LANGS !== 'undefined' && LANGS.find(l => l.code === currentLang)) || { code: currentLang, label: currentLang.toUpperCase() };
   const flag = c => (typeof LANG_FLAGS !== 'undefined' && LANG_FLAGS[c]) || '';
   const langOpts = (typeof LANGS !== 'undefined' ? LANGS : []).map(l =>
-    `<li><button type="button" class="lang-dd-opt${l.code === currentLang ? ' active' : ''}" onclick="setLang('${l.code}'); setTimeout(renderAccount, 150);">${flag(l.code)}<span>${l.label}</span></button></li>`).join('');
+    `<li><button type="button" class="lang-dd-opt${l.code === currentLang ? ' active' : ''}" data-on-click="accSprache('${l.code}')">${flag(l.code)}<span>${l.label}</span></button></li>`).join('');
   const langBtns = `
     <div class="acc-lang-dd">
-      <button type="button" class="acc-lang-btn" aria-haspopup="listbox" aria-expanded="false" onclick="accLangToggle(this)">
+      <button type="button" class="acc-lang-btn" aria-haspopup="listbox" aria-expanded="false" data-on-click="accLangToggle(this)">
         <span class="lang-dd-flag">${flag(cur.code)}</span><span>${escG(cur.label)}</span>
         <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
@@ -7385,7 +7396,7 @@ function accSettingsHtml() {
   const pushHtml = pushState === 'on'
     ? `<p style="margin:0 0 .9rem;font-size:.85rem;color:var(--color-success, #6DBE45);">✓ ${t('push.done')}</p>`
     : pushState === 'off'
-      ? `<button type="button" class="acc-push-btn" onclick="accEnablePush(this)">${t('push.enable')}</button>`
+      ? `<button type="button" class="acc-push-btn" data-on-click="accEnablePush(this)">${t('push.enable')}</button>`
       : `<p style="margin:0 0 .9rem;font-size:.8rem;color:var(--color-text-muted);">${pushState === 'blocked' ? t('push.denied') : t('acc.set_push_na')}</p>`;
   return `
   <div style="border-top:1px solid var(--color-border);margin-top:1.3rem;padding-top:1rem;">
@@ -7397,7 +7408,7 @@ function accSettingsHtml() {
     <p style="margin:0 0 .35rem;font-size:.76rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">${t('acc.set_pay')}</p>
     <p style="margin:0;font-size:.82rem;color:var(--color-cream-dim);line-height:1.55;">${t('acc.set_pay_info')}</p>
     ${typeof teamHtml === 'function' ? teamHtml() : ''}
-    ${(typeof onbEnabled === 'function' && onbEnabled()) ? `<button type="button" class="mini-btn" style="margin-top:1rem;" onclick="closeAccountOverlay(); setTimeout(function () { gncOnbOpen({ replay: true }); }, 260);">
+    ${(typeof onbEnabled === 'function' && onbEnabled()) ? `<button type="button" class="mini-btn" style="margin-top:1rem;" data-on-click="accEinfuehrungZeigen()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>
       <span>${t('onb.replay')}</span>
     </button>` : ''}
@@ -7408,8 +7419,8 @@ function renderAccLogin(el, step) {
     el.innerHTML = `
       <p id="accCodeHint" style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('acc.code_sent').replace('{email}', escG(accLoginEmail))}</p>
       <input type="text" id="accCode" class="form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-labelledby="accCodeHint" placeholder="000000" style="width:100%;text-align:center;font-size:1.5rem;letter-spacing:0.4em;font-family:ui-monospace,Menlo,monospace;">
-      <button class="btn btn-primary btn-block" style="margin-top:0.9rem;" onclick="accVerify(this)">${t('acc.login_btn')}</button>
-      <p style="text-align:center;margin:0.8rem 0 0;font-size:0.78rem;"><a href="#" onclick="renderAccount('email');return false;" style="color:var(--color-text-muted);">${t('acc.back')}</a></p>`;
+      <button class="btn btn-primary btn-block" style="margin-top:0.9rem;" data-on-click="accVerify(this)">${t('acc.login_btn')}</button>
+      <p style="text-align:center;margin:0.8rem 0 0;font-size:0.78rem;"><a href="#" data-on-click="renderAccount('email');return false;" style="color:var(--color-text-muted);">${t('acc.back')}</a></p>`;
     setTimeout(() => { const c = document.getElementById('accCode'); if (c) c.focus(); }, 80);
     return;
   }
@@ -7417,7 +7428,7 @@ function renderAccLogin(el, step) {
     <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('acc.intro')}</p>
     <input type="email" id="accEmail" class="form-input" autocomplete="email" aria-label="${t('co.email').replace(' *', '')}" placeholder="${t('co.email_ph')}" value="${escG(accLoginEmail)}" style="width:100%;">
     <div class="login-weg" style="margin-top:0.9rem;">${loginChip('email')}
-      <button class="btn btn-primary btn-block" onclick="accRequestCode(this)">${t('acc.send_code')}</button>
+      <button class="btn btn-primary btn-block" data-on-click="accRequestCode(this)">${t('acc.send_code')}</button>
     </div>
     ${socialButtonsHtml()}
     <p style="color:var(--color-text-muted);font-size:0.75rem;margin:0.9rem 0 0;line-height:1.5;">${t('acc.privacy_hint')}</p>`;
@@ -7461,7 +7472,7 @@ function socialButtonsHtml() {
   const trenner = `<div style="display:flex;align-items:center;gap:0.7rem;margin:1rem 0 0.9rem;color:var(--color-text-muted);font-size:0.75rem;">
       <span style="flex:1;height:1px;background:var(--color-border);"></span>${t('acc.login_or')}<span style="flex:1;height:1px;background:var(--color-border);"></span>
     </div>`;
-  const appleKnopf = (klick) => `<div class="login-weg">${loginChip('apple')}<button type="button" onclick="${klick}" style="display:flex;align-items:center;justify-content:center;gap:0.55rem;width:100%;padding:0.85rem;border-radius:12px;border:none;background:#fff;color:#000;font:inherit;font-weight:700;font-size:0.95rem;cursor:pointer;">
+  const appleKnopf = (klick) => `<div class="login-weg">${loginChip('apple')}<button type="button" data-on-click="${klick}" style="display:flex;align-items:center;justify-content:center;gap:0.55rem;width:100%;padding:0.85rem;border-radius:12px;border:none;background:#fff;color:#000;font:inherit;font-weight:700;font-size:0.95rem;cursor:pointer;">
         <svg width="17" height="20" viewBox="0 0 17 20" fill="currentColor" aria-hidden="true"><path d="M14.13 10.62c.02 3.06 2.68 4.08 2.71 4.09-.02.07-.42 1.45-1.4 2.87-.84 1.23-1.72 2.45-3.1 2.48-1.36.02-1.79-.8-3.34-.8-1.55 0-2.03.78-3.31.83-1.33.05-2.35-1.33-3.2-2.55C.75 15.03-.55 10.47 1.23 7.42c.88-1.51 2.46-2.47 4.17-2.5 1.31-.02 2.54.88 3.34.88.8 0 2.3-1.09 3.87-.93.66.03 2.51.27 3.7 2-.1.06-2.21 1.29-2.18 3.85M11.58 3.2c.71-.85 1.18-2.04 1.05-3.2-1.02.04-2.24.68-2.97 1.53-.65.75-1.23 1.96-1.07 3.11 1.13.09 2.29-.58 2.99-1.44"/></svg>
         ${t('acc.login_apple')}
       </button></div>`;
@@ -7679,15 +7690,15 @@ function renderAccProfile(el) {
         ${addrTagRow('accAdrRename')}
         <input type="text" id="accAdrRename" class="form-input" maxlength="24" style="margin:0.5rem 0;" value="${escG(addressLabel(a))}" placeholder="${t('acc.adr_label_ph')}">
         <div style="display:flex;gap:0.45rem;">
-          <button type="button" class="btn btn-primary btn-sm" style="flex:1;" onclick="accSaveLabel(${i}, this)">${t('acc.adr_save_name')}</button>
-          <button type="button" class="mini-btn" onclick="accCancelRename()">${t('acc.adr_cancel')}</button>
+          <button type="button" class="btn btn-primary btn-sm" style="flex:1;" data-on-click="accSaveLabel(${i}, this)">${t('acc.adr_save_name')}</button>
+          <button type="button" class="mini-btn" data-on-click="accCancelRename()">${t('acc.adr_cancel')}</button>
         </div>
       </div>`;
     }
     return `<div class="acc-adr">
       <div class="acc-adr-main"><b>${escG(addressLabel(a))}</b><br><span>${escG(a.street)}, ${escG(a.zip)} ${escG(a.city)}</span></div>
-      <button type="button" class="acc-adr-act" onclick="accRenameAddress(${i})" aria-label="${t('acc.adr_rename')}" title="${t('acc.adr_rename')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l4 4"/></svg></button>
-      <button type="button" class="acc-adr-act act-del" onclick="accDeleteAddress(${i}, this)" aria-label="${t('a11y.delete')}" title="${t('a11y.delete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg></button>
+      <button type="button" class="acc-adr-act" data-on-click="accRenameAddress(${i})" aria-label="${t('acc.adr_rename')}" title="${t('acc.adr_rename')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M13.5 6.5l4 4"/></svg></button>
+      <button type="button" class="acc-adr-act act-del" data-on-click="accDeleteAddress(${i}, this)" aria-label="${t('a11y.delete')}" title="${t('a11y.delete')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg></button>
     </div>`;
   }).join('');
   const addForm = (p.addresses || []).length < 3 ? `
@@ -7701,7 +7712,7 @@ function renderAccProfile(el) {
           <input type="text" id="accAdrZip" class="form-input" maxlength="10" placeholder="PLZ">
           <input type="text" id="accAdrCity" class="form-input" maxlength="40" placeholder="${t('co.city')}">
         </div>
-        <button class="btn btn-primary" type="button" onclick="accAddAddress(this)">${t('acc.save_address')}</button>
+        <button class="btn btn-primary" type="button" data-on-click="accAddAddress(this)">${t('acc.save_address')}</button>
       </div>
     </details>` : '';
   const voll = !accountKompakt;
@@ -7718,7 +7729,7 @@ function renderAccProfile(el) {
     <div style="background:var(--color-bg-elev);border:1px solid var(--color-border);border-radius:12px;padding:0.8rem 0.9rem;margin-bottom:0.9rem;">
       <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.25rem;">${t('acc.qr_title')}</div>
       <p style="font-size:0.75rem;color:var(--color-cream-dim);margin:0 0 0.6rem;line-height:1.5;">${t('acc.qr_text')}</p>
-      <div id="accQr" onclick="openQrZoom()" role="button" tabindex="0" aria-label="${t('acc.qr_zoom')}" style="background:#fff;border-radius:10px;width:168px;height:168px;margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:zoom-in;"><span style="color:#999;font-size:0.7rem;">…</span></div><p style="text-align:center;font-size:0.68rem;color:var(--color-text-muted);margin:0.45rem 0 0;">${t('acc.qr_zoom')}</p><div id="walletBtns" style="display:none;gap:0.5rem;justify-content:center;align-items:center;margin-top:0.7rem;flex-wrap:wrap;"></div>
+      <div id="accQr" data-on-click="openQrZoom()" role="button" tabindex="0" aria-label="${t('acc.qr_zoom')}" style="background:#fff;border-radius:10px;width:168px;height:168px;margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:zoom-in;"><span style="color:#999;font-size:0.7rem;">…</span></div><p style="text-align:center;font-size:0.68rem;color:var(--color-text-muted);margin:0.45rem 0 0;">${t('acc.qr_zoom')}</p><div id="walletBtns" style="display:none;gap:0.5rem;justify-content:center;align-items:center;margin-top:0.7rem;flex-wrap:wrap;"></div>
     </div>` : ''}
     ${(p.orders && p.orders.length) ? `
     <div style="margin-bottom:0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.history')}</div>
@@ -7726,15 +7737,15 @@ function renderAccProfile(el) {
       ${p.orders.map((o, i) => `
         <div style="background:var(--color-bg-elev);border:1px solid var(--color-border);border-radius:10px;padding:0.55rem 0.8rem;margin-bottom:0.45rem;">
           <div style="display:flex;align-items:center;gap:0.6rem;">
-            <div style="flex:1;min-width:0;${o.snap ? 'cursor:pointer;' : ''}" ${o.snap ? `onclick="accToggleOrd(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();accToggleOrd(${i});}" role="button" tabindex="0" aria-expanded="false" aria-controls="accOrdD${i}"` : ''}>
+            <div style="flex:1;min-width:0;${o.snap ? 'cursor:pointer;' : ''}" ${o.snap ? `data-on-click="accToggleOrd(${i})" data-on-keydown="accOrdTaste(event, ${i})" role="button" tabindex="0" aria-expanded="false" aria-controls="accOrdD${i}"` : ''}>
               <span style="font-size:0.8rem;font-weight:700;">${o.at ? new Date(o.at).toLocaleDateString((typeof LANG_LOCALES !== 'undefined' && LANG_LOCALES[currentLang]) || 'de-DE', { day: '2-digit', month: '2-digit' }) : ''}</span>
               <span style="font-size:0.78rem;color:var(--color-cream-dim);"> · ${o.mode === 'delivery' ? t('cart.delivery') : t('cart.pickup')}${typeof o.total === 'number' ? ' · ' + formatPrice(o.total) : ''}</span>
               ${o.snap ? `<span style="font-size:0.65rem;color:var(--color-orange-bright);margin-left:0.3rem;">▾</span>` : ''}
             </div>
             ${o.snap
-              ? `<button type="button" class="mini-btn" style="flex:none;" onclick="accReorder(${i})">${t('acc.reorder')}</button>`
+              ? `<button type="button" class="mini-btn" style="flex:none;" data-on-click="accReorder(${i})">${t('acc.reorder')}</button>`
               : (i === 0 && getLastOrder()
-                ? `<button type="button" class="mini-btn" style="flex:none;" onclick="accReorderFallback()">${t('acc.reorder')}</button>`
+                ? `<button type="button" class="mini-btn" style="flex:none;" data-on-click="accReorderFallback()">${t('acc.reorder')}</button>`
                 : '')}
           </div>
           ${o.snap
@@ -7744,7 +7755,7 @@ function renderAccProfile(el) {
     </div>` : ''}
 ${voll ? `    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">${t('acc.biz_title')}</div>
     <label class="standing-remind" style="margin:0 0 0.5rem;">
-      <input type="checkbox" id="accBizOn" ${(p.business && p.business.isBusiness) ? 'checked' : ''} onchange="accBizToggle()">
+      <input type="checkbox" id="accBizOn" ${(p.business && p.business.isBusiness) ? 'checked' : ''} data-on-change="accBizToggle()">
       <span>${t('acc.biz_optin')}</span>
     </label>
     <div id="accBizBox" class="invoice-addr" ${(p.business && p.business.isBusiness) ? '' : 'hidden'}>
@@ -7756,7 +7767,7 @@ ${voll ? `    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">
           <input type="text" id="accBizZip" class="form-input" maxlength="10" inputmode="numeric" placeholder="33649" value="${escG((p.business||{}).zip || '')}">
           <input type="text" id="accBizCity" class="form-input" maxlength="40" placeholder="${t('co.city')}" value="${escG((p.business||{}).city || '')}">
         </div>
-        <button type="button" class="mini-btn" style="justify-self:start;" onclick="accSaveBiz(false, this)">${t('acc.save')}</button>
+        <button type="button" class="mini-btn" style="justify-self:start;" data-on-click="accSaveBiz(false, this)">${t('acc.save')}</button>
       </div>
       <p class="field-note">${t('acc.biz_note')}</p>
     </div>
@@ -7776,8 +7787,8 @@ ${voll ? `    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">
       <div style="display:flex;gap:0.5rem;align-items:stretch;">
         <input type="text" id="accBirthday" class="form-input" maxlength="6" inputmode="numeric"
                placeholder="${t('acc.birthday_ph')}" value="${escG(p.birthday || '')}" style="flex:1;"
-               oninput="accBdayFmt(this)"${p.birthdayLocked ? ' disabled' : ''}>
-        ${p.birthdayLocked ? '' : `<button type="button" class="mini-btn" onclick="accSaveBirthday(this)" style="align-self:stretch;">${t('acc.save')}</button>`}
+               data-on-input="accBdayFmt(this)"${p.birthdayLocked ? ' disabled' : ''}>
+        ${p.birthdayLocked ? '' : `<button type="button" class="mini-btn" data-on-click="accSaveBirthday(this)" style="align-self:stretch;">${t('acc.save')}</button>`}
       </div>
       <p style="font-size:0.7rem;color:var(--color-text-muted);margin:0.35rem 0 0;line-height:1.4;">${
         p.birthdayLocked ? t('acc.birthday_locked')
@@ -7789,7 +7800,7 @@ ${voll ? `    <div style="margin:0 0 0.3rem;font-weight:700;font-size:0.85rem;">
       <p style="font-size:0.75rem;color:var(--color-cream-dim);margin:0 0 0.55rem;line-height:1.5;">${t('acc.ref_text')}</p>
       <div style="display:flex;align-items:stretch;gap:0.6rem;flex-wrap:wrap;">
         <code style="display:inline-flex;align-items:center;font-family:ui-monospace,Menlo,monospace;font-size:0.95rem;letter-spacing:0.12em;color:var(--color-orange-bright);background:rgba(232,90,36,0.1);border:1px dashed var(--color-orange-bright);border-radius:999px;padding:0 0.9rem;">${escG(p.refCode)}</code>
-        <button type="button" class="mini-btn" onclick="accShareRef()" style="align-self:stretch;">${t('acc.ref_share')}</button>
+        <button type="button" class="mini-btn" data-on-click="accShareRef()" style="align-self:stretch;">${t('acc.ref_share')}</button>
       </div>
       ${p.referrals ? `<p style="font-size:0.72rem;color:var(--color-cream-dim);margin:0.55rem 0 0;">${t('acc.ref_earned').replace('{n}', p.referrals)}</p>` : ''}
     </div>` : ''}
@@ -7799,19 +7810,19 @@ ${voll ? `    <div style="margin-bottom:0.3rem;font-weight:700;font-size:0.85rem
     <div style="margin:1rem 0 0.25rem;font-weight:700;font-size:0.85rem;">${t('acc.dnote_title')}</div>
     <p style="font-size:0.72rem;color:var(--color-text-muted);margin:0 0 0.4rem;line-height:1.45;">${t('acc.dnote_hint')}</p>
     <textarea id="accDeliveryNote" class="form-input" rows="2" maxlength="200" placeholder="${t('acc.dnote_ph')}" style="width:100%;resize:vertical;">${escG(p.deliveryNote || '')}</textarea>
-    <button class="btn btn-primary btn-block" id="accSaveProfileBtn" style="margin-top:1rem;" onclick="accSaveProfile(this)">${t('acc.save')}</button>
+    <button class="btn btn-primary btn-block" id="accSaveProfileBtn" style="margin-top:1rem;" data-on-click="accSaveProfile(this)">${t('acc.save')}</button>
     <div id="standingBox"></div>
 ` : ''}
     <div class="acc-actions">
-      ${voll ? '' : `<button type="button" class="mini-btn" onclick="accountKompakt=false; renderAccount();">
+      ${voll ? '' : `<button type="button" class="mini-btn" data-on-click="accVollAnsicht()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>${t('acc.all_settings')}</span>
       </button>`}
-      <button type="button" class="mini-btn" onclick="accLogout()">
+      <button type="button" class="mini-btn" data-on-click="accLogout()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/></svg>
         <span>${t('acc.logout')}</span>
       </button>
-      ${voll ? `<button type="button" class="mini-btn mini-btn-danger" onclick="accDeleteAccount(this)">
+      ${voll ? `<button type="button" class="mini-btn mini-btn-danger" data-on-click="accDeleteAccount(this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg>
         <span>${t('acc.delete')}</span>
       </button>` : ''}
@@ -7879,11 +7890,11 @@ async function renderWalletBtns() {
     // 8 px Freiraum. Kompakte Fassung, weil das Konto-Fenster schmal ist.
     // Sprachdateien liegen in img/google-wallet/ (aus Googles Paket add-to-wallet-svg).
     const gwSprache = ['de', 'en', 'tr', 'it', 'es', 'pt', 'fr', 'nl'].indexOf(currentLang) !== -1 ? currentLang : 'en';
-    if (d.google && !istIOS) btns.push('<button type="button" class="gw-btn" onclick="addToWallet(\'google\', this)" aria-label="' + t('acc.wallet_google') + '"><img src="img/google-wallet/' + gwSprache + '.svg" alt="" width="174" height="48"></button>');
+    if (d.google && !istIOS) btns.push('<button type="button" class="gw-btn" data-on-click="addToWallet(\'google\', this)" aria-label="' + t('acc.wallet_google') + '"><img src="img/google-wallet/' + gwSprache + '.svg" alt="" width="174" height="48"></button>');
     // Apple ebenso: offizielles Abzeichen aus Apples Paket (Add-to-Apple-Wallet.zip,
     // Lizenz von Kubis Entwicklerkonto angenommen), Fassung mit grauer Kontur für
     // dunklen Grund, unverändert, nie abgedunkelt.
-    if (d.apple && !istAndroid) btns.push('<button type="button" class="gw-btn aw-btn" onclick="addToWallet(\'apple\', this)" aria-label="' + t('acc.wallet_apple') + '"><img src="img/apple-wallet/' + gwSprache + '.svg" alt="" width="153" height="48"></button>');
+    if (d.apple && !istAndroid) btns.push('<button type="button" class="gw-btn aw-btn" data-on-click="addToWallet(\'apple\', this)" aria-label="' + t('acc.wallet_apple') + '"><img src="img/apple-wallet/' + gwSprache + '.svg" alt="" width="153" height="48"></button>');
     if (btns.length) { row.innerHTML = btns.join(''); row.style.display = 'flex'; }
   } catch (e) {}
 }
@@ -8092,25 +8103,25 @@ function renderStanding() {
         ${o.paused ? ' · ' + t('so.paused') : ' · ' + t('so.next').replace('{when}', naechster)}
       </div>
       <label class="standing-remind">
-        <input type="checkbox" ${o.remind ? 'checked' : ''} onchange="standingRemind('${o.id}', this.checked)">
+        <input type="checkbox" ${o.remind ? 'checked' : ''} data-on-change="standingRemind('${o.id}', this.checked)">
         <span>${t('so.remind_label')}</span>
       </label>
       <div class="standing-actions">
-        <button type="button" class="mini-btn" onclick="standingFill('${o.id}')">${t('so.order_now')}</button>
+        <button type="button" class="mini-btn" data-on-click="standingFill('${o.id}')">${t('so.order_now')}</button>
         ${o.paused
-          ? `<button type="button" class="mini-btn" onclick="standingSet('${o.id}','resume',this)">${t('so.resume')}</button>`
-          : `<button type="button" class="mini-btn" onclick="standingSet('${o.id}','pause',this)">${t('so.pause')}</button>`}
+          ? `<button type="button" class="mini-btn" data-on-click="standingSet('${o.id}','resume',this)">${t('so.resume')}</button>`
+          : `<button type="button" class="mini-btn" data-on-click="standingSet('${o.id}','pause',this)">${t('so.pause')}</button>`}
         <button type="button" class="mini-btn" aria-expanded="${!!(soEdit && soEdit.id === o.id)}"
-                aria-controls="soEditBox-${o.id}" onclick="soEditAuf('${o.id}')">${t('so.change_slot')}</button>
-        <button type="button" class="mini-btn mini-btn-danger" onclick="standingSet('${o.id}','delete',this)">${t('a11y.delete')}</button>
+                aria-controls="soEditBox-${o.id}" data-on-click="soEditAuf('${o.id}')">${t('so.change_slot')}</button>
+        <button type="button" class="mini-btn mini-btn-danger" data-on-click="standingSet('${o.id}','delete',this)">${t('a11y.delete')}</button>
       </div>
       ${soEdit && soEdit.id === o.id ? `
       <div class="so-edit" id="soEditBox-${o.id}">
         ${soEdit.hinweis ? `<p class="so-note is-warn">${t(soEdit.hinweis)}</p>` : ''}
         <div id="soEditPicker" class="so-pick">${soPickerHtml('edit')}</div>
         <div class="standing-actions">
-          <button type="button" class="mini-btn" onclick="soEditSpeichern(this)">${t(soEdit.zweck === 'resume' ? 'so.resume' : 'so.save_slot')}</button>
-          <button type="button" class="mini-btn" onclick="soEditZu('${o.id}')">${t('so.cancel')}</button>
+          <button type="button" class="mini-btn" data-on-click="soEditSpeichern(this)">${t(soEdit.zweck === 'resume' ? 'so.resume' : 'so.save_slot')}</button>
+          <button type="button" class="mini-btn" data-on-click="soEditZu('${o.id}')">${t('so.cancel')}</button>
         </div>
       </div>` : ''}
     </div>`;
@@ -8132,7 +8143,7 @@ function renderStanding() {
       : (liste || `<p style="font-size:0.78rem;color:var(--color-text-muted);margin:0 0 0.5rem;">${t('so.empty')}</p>`)}
     ${STANDING.length < 3 ? `
       <button type="button" class="btn btn-secondary btn-block" id="soToggle" aria-controls="soForm"
-              aria-expanded="${soFormOffen}" style="margin-top:0.6rem;" onclick="toggleStandingForm()">${t(soFormOffen ? 'so.cancel' : 'so.add')}</button>
+              aria-expanded="${soFormOffen}" style="margin-top:0.6rem;" data-on-click="toggleStandingForm()">${t(soFormOffen ? 'so.cancel' : 'so.add')}</button>
       <div id="soForm" ${soFormOffen ? '' : 'hidden'} style="display:grid;gap:0.55rem;margin-top:0.7rem;">
         <input type="text" id="soName" class="form-input" maxlength="32" placeholder="${t('so.name_ph')}">
         <select id="soSource" class="form-input">${standingSourceOptions()}</select>
@@ -8142,7 +8153,7 @@ function renderStanding() {
           <input type="checkbox" id="soRemind">
           <span>${t('so.remind_optin')}</span>
         </label>
-        <button class="btn btn-primary" type="button" id="soSave" onclick="standingCreate(this)">${t('so.save')}</button>
+        <button class="btn btn-primary" type="button" id="soSave" data-on-click="standingCreate(this)">${t('so.save')}</button>
       </div>`
       : ''}`;
 
@@ -8210,7 +8221,7 @@ function soPickerHtml(ziel) {
   if (!c) return '';
   const mode = soModus(ziel);
   const tage = SO_TAGE.map(n => `<button type="button" class="so-chip" data-k="tag${n}"
-      aria-pressed="${c.tag === n}" onclick="soTag('${ziel}', ${n})">${standingDayLabel(n)}</button>`).join('');
+      aria-pressed="${c.tag === n}" data-on-click="soTag('${ziel}', ${n})">${standingDayLabel(n)}</button>`).join('');
   return `
     <div class="so-pick-label" id="soLblTag-${ziel}">${t('so.weekday')}</div>
     <div class="so-days" role="group" aria-labelledby="soLblTag-${ziel}">${tage}</div>
@@ -8227,7 +8238,7 @@ function soVollHtml(ziel, c) {
   return `<p class="so-note is-warn" id="soVoll-${ziel}">${escG(t('so.full_note').replace('{time}', c.voll))}</p>
     <div class="so-slots" role="group" aria-labelledby="soVoll-${ziel}">${frei.map(z =>
       `<button type="button" class="so-chip" data-k="frei${z}" aria-pressed="false"
-         onclick="soZeit('${ziel}','${z}')">${z}</button>`).join('')}</div>`;
+         data-on-click="soZeit('${ziel}','${z}')">${z}</button>`).join('')}</div>`;
 }
 
 function soSlotsHtml(ziel, c, mode) {
@@ -8239,7 +8250,7 @@ function soSlotsHtml(ziel, c, mode) {
   }
   if (d.status === 'fehler') {
     return `<p class="so-note is-warn">${t('so.slots_error')}</p>
-      <button type="button" class="mini-btn" onclick="soSlotsLaden(${c.tag}, '${mode}', true)">${t('so.retry')}</button>`;
+      <button type="button" class="mini-btn" data-on-click="soSlotsLaden(${c.tag}, '${mode}', true)">${t('so.retry')}</button>`;
   }
   if (!d.slots.length) return `<p class="so-note">${t('so.day_closed')}</p>`;
 
@@ -8258,10 +8269,10 @@ function soSlotsHtml(ziel, c, mode) {
       : (voll ? t('so.slot_full') : t('so.slot_free').replace('{n}', s.free));
     return `<button type="button" class="so-chip${!istEigen && !voll && s.free <= 2 ? ' is-few' : ''}"
         data-k="z${s.time}" aria-pressed="${c.zeit === s.time}"${voll ? ' disabled' : ''}
-        onclick="soZeit('${ziel}','${s.time}')">${s.time}<small>${unter}</small></button>`;
+        data-on-click="soZeit('${ziel}','${s.time}')">${s.time}<small>${unter}</small></button>`;
   }).join('');
   const umschalter = !immerAlle && frueh.length < d.slots.length
-    ? `<button type="button" class="mini-btn" aria-expanded="${!!c.alle}" onclick="soAlle('${ziel}')">${
+    ? `<button type="button" class="mini-btn" aria-expanded="${!!c.alle}" data-on-click="soAlle('${ziel}')">${
         t(c.alle ? 'so.less_times' : 'so.more_times')}</button>`
     : '';
   return `<div class="so-slots" role="group" aria-labelledby="soLblZeit-${ziel}">${chips}</div>${umschalter}`;
@@ -8527,7 +8538,7 @@ function labelKeyFor(text) {
 function addrTagRow(targetId) {
   return `<div class="adr-tag-row">
     <span class="tag-label">${t('acc.adr_suggest')}</span>
-    ${ADR_TAGS.map(x => `<button type="button" class="adr-tag" onclick="accPickLabel('${targetId}','${x.key}')">${t(x.i18n)}</button>`).join('')}
+    ${ADR_TAGS.map(x => `<button type="button" class="adr-tag" data-on-click="accPickLabel('${targetId}','${x.key}')">${t(x.i18n)}</button>`).join('')}
   </div>`;
 }
 function accPickLabel(targetId, key) {
@@ -8886,7 +8897,7 @@ function menuWartetHtml() {
   if (eingeloest > 0) zeile = t('loyalty.menu_applied').replace('{amount}', formatPrice(eingeloest));
   else if (!accountLoggedIn()) {
     zeile = t('loyalty.wait_login');
-    extra = `<button type="button" class="mini-btn" onclick="openAccountOverlay('kompakt')">${t('loyalty.menu_login_btn')}</button>`;
+    extra = `<button type="button" class="mini-btn" data-on-click="openAccountOverlay('kompakt')">${t('loyalty.menu_login_btn')}</button>`;
   } else if (!SK.gratisMenuWert(cart)) zeile = t('loyalty.wait_add');
   else zeile = t('loyalty.wait_next');
   return `<div class="menu-wartet">
@@ -8894,7 +8905,7 @@ function menuWartetHtml() {
       <div class="mw-text">
         <strong>${eingeloest > 0 ? t('loyalty.menu_line') : t('loyalty.wait_title')}</strong>
         <span>${zeile}</span>
-        <div class="mw-akt">${extra}<button type="button" class="mini-btn" onclick="menuWieOeffnen(this)">${t('loyalty.how')}</button></div>
+        <div class="mw-akt">${extra}<button type="button" class="mini-btn" data-on-click="menuWieOeffnen(this)">${t('loyalty.how')}</button></div>
       </div>
     </div>`;
 }
@@ -8955,7 +8966,7 @@ function menuWieZeichnen() {
   ];
   const n = mwSchritt + 1;
   ov.innerHTML = `<div class="mw-box">
-      <button type="button" class="mw-zu" aria-label="${t('a11y.close')}" onclick="menuWieZu()">\u00d7</button>
+      <button type="button" class="mw-zu" aria-label="${t('a11y.close')}" data-on-click="menuWieZu()">\u00d7</button>
       <div class="mw-schritt" aria-live="polite">${t('onb.step').replace('{n}', n).replace('{m}', 3)}</div>
       <h3 id="mwTitel">${t('loyalty.how_title')}</h3>
       <div class="mw-bild" aria-hidden="true">${bilder[mwSchritt]}</div>
@@ -8963,8 +8974,8 @@ function menuWieZeichnen() {
       <p>${t('loyalty.how_s' + n).replace('{double}', formatPrice(SK.DOUBLE_PATTY_PRICE)).replace('{suess}', formatPrice((SK.MENU_SIDE_OPTIONS.find(o => o.id === 'spommes') || { surcharge: 1 }).surcharge))}</p>
       <div class="mw-punkte" aria-hidden="true">${[0, 1, 2].map(i => `<span class="${i === mwSchritt ? 'an' : ''}"></span>`).join('')}</div>
       <div class="mw-fuss">
-        ${mwSchritt > 0 ? `<button type="button" class="btn btn-ghost" onclick="menuWieGehe(-1)">${t('loyalty.how_back')}</button>` : ''}
-        <button type="button" class="btn btn-primary mw-weiter" onclick="menuWieGehe(1)">${mwSchritt < 2 ? t('onb.next') : t('loyalty.how_done')}</button>
+        ${mwSchritt > 0 ? `<button type="button" class="btn btn-ghost" data-on-click="menuWieGehe(-1)">${t('loyalty.how_back')}</button>` : ''}
+        <button type="button" class="btn btn-primary mw-weiter" data-on-click="menuWieGehe(1)">${mwSchritt < 2 ? t('onb.next') : t('loyalty.how_done')}</button>
       </div>
     </div>`;
 }
@@ -8983,10 +8994,10 @@ function loyaltyCardHtml() {
   // Jede Prämie bekommt ihre eigene Gruppe, damit Knöpfe und Hinweise nicht aneinanderkleben
   const gruppe = (inhalt) => `<div class="loy-gruppe">${inhalt}</div>`;
   const menuInfo = `<div class="loy-info">${MW_SYMBOL.info}<span>${t('loyalty.menu_terms')}</span></div>`;
-  const wieKnopf = `<button type="button" class="mini-btn loy-wie" onclick="menuWieOeffnen(this)">${t('loyalty.how')}</button>`;
+  const wieKnopf = `<button type="button" class="mini-btn loy-wie" data-on-click="menuWieOeffnen(this)">${t('loyalty.how')}</button>`;
   if (loyaltyApplied && aktiv > 0) {
     const label = loyaltyKind === 'menu' ? t('loyalty.menu_applied') : t('loyalty.applied');
-    teile.push(gruppe(`<div class="loyalty-applied"><span>${label.replace('{amount}', formatPrice(aktiv).replace(/ /g, '\u00a0'))}</span><button type="button" onclick="removeLoyaltyReward()">${t('promo.remove')}</button></div>`
+    teile.push(gruppe(`<div class="loyalty-applied"><span>${label.replace('{amount}', formatPrice(aktiv).replace(/ /g, '\u00a0'))}</span><button type="button" data-on-click="removeLoyaltyReward()">${t('promo.remove')}</button></div>`
       + (loyaltyKind === 'menu' ? menuInfo : '')));
   } else {
     // Menü aufs Haus: nur mit Konto, nur wenn ein berechtigtes Menü im Warenkorb liegt
@@ -8994,11 +9005,11 @@ function loyaltyCardHtml() {
       const menuWert = SK.gratisMenuWert(cart);
       if (!accountLoggedIn()) {
         teile.push(gruppe(`<div class="loyalty-reward-hint">${t('loyalty.menu_login')}</div>
-          <button type="button" class="loyalty-redeem" onclick="openAccountOverlay('kompakt')">${t('loyalty.menu_login_btn')}</button>${wieKnopf}`));
+          <button type="button" class="loyalty-redeem" data-on-click="openAccountOverlay('kompakt')">${t('loyalty.menu_login_btn')}</button>${wieKnopf}`));
       } else if (!menuWert) {
         teile.push(gruppe(`<div class="loyalty-reward-hint">${t('loyalty.menu_need')}</div>${menuInfo}${wieKnopf}`));
       } else {
-        teile.push(gruppe(`<button type="button" class="loyalty-redeem" onclick="applyLoyaltyReward('menu')">${t('loyalty.menu_redeem').replace('{amount}', formatPrice(menuWert))}</button>
+        teile.push(gruppe(`<button type="button" class="loyalty-redeem" data-on-click="applyLoyaltyReward('menu')">${t('loyalty.menu_redeem').replace('{amount}', formatPrice(menuWert))}</button>
           ${menuInfo}${wieKnopf}`));
       }
     }
@@ -9007,7 +9018,7 @@ function loyaltyCardHtml() {
       if (sub < LOYALTY_MIN_ORDER) {
         teile.push(gruppe(`<div class="loyalty-reward-hint">${t('loyalty.reward_min').replace('{amount}', formatPrice(LOYALTY_REWARD)).replace('{min}', formatPrice(LOYALTY_MIN_ORDER))}</div>`));
       } else {
-        teile.push(gruppe(`<button type="button" class="loyalty-redeem" onclick="applyLoyaltyReward('bonus')">${t('loyalty.redeem').replace('{amount}', formatPrice(LOYALTY_REWARD))}</button>`));
+        teile.push(gruppe(`<button type="button" class="loyalty-redeem" data-on-click="applyLoyaltyReward('bonus')">${t('loyalty.redeem').replace('{amount}', formatPrice(LOYALTY_REWARD))}</button>`));
       }
     }
     if (!teile.length) teile.push(`<div class="loyalty-hint">${t('loyalty.hint').replace('{n}', formatPrice(remaining)).replace('{amount}', formatPrice(LOYALTY_REWARD))}</div>`);
@@ -9261,7 +9272,7 @@ function renderMenu(animate = false) {
     if (renderAsMenu) {
       const menuPrice = item.price + MENU_SURCHARGE;
       card.innerHTML = `
-        <div class="menu-card-img"${soldOut ? '' : ` onclick="openMenuConfig('${item.id}', false, false, null)"`}>
+        <div class="menu-card-img"${soldOut ? '' : ` data-on-click="openMenuConfig('${item.id}', false, false, null)"`}>
           <span class="menu-card-tag popular">${t('menu.tag_meal')}</span>
           ${soldOut ? `<span class="soldout-overlay">${t('shop.soldout')}</span>` : ''}
           ${cardVisual(item)}
@@ -9272,7 +9283,7 @@ function renderMenu(animate = false) {
           ${item.cat === 'burger' ? `<div class="menu-card-badges"><span class="info-badge info-badge-halal">☪ ${t('badge.halal')}</span></div>` : ''}
           <div class="menu-card-footer">
             <span class="menu-card-price">${formatPrice(menuPrice)}</span>
-            ${soldOut ? `<span class="soldout-pill">${t('shop.soldout')}</span>` : `<button class="add-btn" onclick="openMenuConfig('${item.id}', false, false, null)" aria-label="${productName(item)}">+</button>`}
+            ${soldOut ? `<span class="soldout-pill">${t('shop.soldout')}</span>` : `<button class="add-btn" data-on-click="openMenuConfig('${item.id}', false, false, null)" aria-label="${productName(item)}">+</button>`}
           </div>
         </div>
       `;
@@ -9296,7 +9307,7 @@ function renderMenu(animate = false) {
       const kurz = aCodes.length
         ? `${t('badge.allergens')}: ${aCodes.join(', ')}`
         : (zCodes.length ? t('badge.additives') : t('badge.traces_short'));
-      badges += `<button type="button" class="info-badge info-badge-allergens allergen-toggle" onclick="toggleAllergens(this)" aria-expanded="false">${kurz} <span class="allergen-i">ⓘ</span></button>`;
+      badges += `<button type="button" class="info-badge info-badge-allergens allergen-toggle" data-on-click="toggleAllergens(this)" aria-expanded="false">${kurz} <span class="allergen-i">ⓘ</span></button>`;
     }
     let allergenDetail = '';
     if (hatInfo) {
@@ -9331,12 +9342,12 @@ function renderMenu(animate = false) {
             </div>
             ${singleQty > 0 ? `
               <div class="qty-control qty-control-sm">
-                <button onclick="updateQty('${singleKey}', -1)" aria-label="${t('a11y.less')}">−</button>
+                <button data-on-click="updateQty('${singleKey}', -1)" aria-label="${t('a11y.less')}">−</button>
                 <span class="qty-val">${singleQty}</span>
-                <button onclick="updateQty('${singleKey}', 1)" aria-label="${t('a11y.more')}">+</button>
+                <button data-on-click="updateQty('${singleKey}', 1)" aria-label="${t('a11y.more')}">+</button>
               </div>
             ` : `
-              <button class="add-btn add-btn-sm" onclick="addToCart('${item.id}', false, event)" aria-label="${item.name} Single: ${t('sig.cta')}">+</button>
+              <button class="add-btn add-btn-sm" data-on-click="addToCart('${item.id}', false, event)" aria-label="${item.name} Single: ${t('sig.cta')}">+</button>
             `}
           </div>
           <div class="patty-row patty-row-double">
@@ -9346,12 +9357,12 @@ function renderMenu(animate = false) {
             </div>
             ${doubleQty > 0 ? `
               <div class="qty-control qty-control-sm">
-                <button onclick="updateQty('${doubleKey}', -1)" aria-label="${t('a11y.less')}">−</button>
+                <button data-on-click="updateQty('${doubleKey}', -1)" aria-label="${t('a11y.less')}">−</button>
                 <span class="qty-val">${doubleQty}</span>
-                <button onclick="updateQty('${doubleKey}', 1)" aria-label="${t('a11y.more')}">+</button>
+                <button data-on-click="updateQty('${doubleKey}', 1)" aria-label="${t('a11y.more')}">+</button>
               </div>
             ` : `
-              <button class="add-btn add-btn-sm" onclick="addToCart('${item.id}', true, event)" aria-label="${item.name} Double Patty: ${t('sig.cta')}">+</button>
+              <button class="add-btn add-btn-sm" data-on-click="addToCart('${item.id}', true, event)" aria-label="${item.name} Double Patty: ${t('sig.cta')}">+</button>
             `}
           </div>
         </div>
@@ -9364,12 +9375,12 @@ function renderMenu(animate = false) {
           <span class="menu-card-price">${formatPrice(item.price)}${grundpreis}</span>
           ${qty > 0 ? `
             <div class="qty-control">
-              <button onclick="updateQty('${singleKey}', -1)" aria-label="${t('a11y.less')}">−</button>
+              <button data-on-click="updateQty('${singleKey}', -1)" aria-label="${t('a11y.less')}">−</button>
               <span class="qty-val">${qty}</span>
-              <button onclick="updateQty('${singleKey}', 1)" aria-label="${t('a11y.more')}">+</button>
+              <button data-on-click="updateQty('${singleKey}', 1)" aria-label="${t('a11y.more')}">+</button>
             </div>
           ` : `
-            <button class="add-btn" onclick="addToCart('${item.id}', false, event)" aria-label="${item.name}: ${t('sig.cta')}">+</button>
+            <button class="add-btn" data-on-click="addToCart('${item.id}', false, event)" aria-label="${item.name}: ${t('sig.cta')}">+</button>
           `}
         </div>
       `;
@@ -9382,7 +9393,7 @@ function renderMenu(animate = false) {
         </div>`;
 
     card.innerHTML = `
-      <div class="menu-card-img"${soldOut ? '' : ` onclick="addToCart('${item.id}', false, event)"`}>
+      <div class="menu-card-img"${soldOut ? '' : ` data-on-click="addToCart('${item.id}', false, event)"`}>
         ${item.tag ? `<span class="menu-card-tag ${item.tag.class}">${item.tag.class === 'veggie' ? '🌱' : tagLabel(item.tag.label)}</span>` : ''}
         ${soldOut ? `<span class="soldout-overlay">${t('shop.soldout')}</span>` : ''}
         ${cardVisual(item)}
@@ -9700,21 +9711,21 @@ function renderConfigOptions() {
   if (sidesWrap) {
     sidesWrap.innerHTML = MENU_SIDE_OPTIONS.map(s => {
       const extra = s.surcharge > 0 ? ` <span style="opacity:0.8;font-size:0.82em;">+${formatPrice(s.surcharge)}</span>` : ` <span style="opacity:0.8;font-size:0.82em;">${t('config.incl')}</span>`;
-      return `<button type="button" class="config-chip ${configSide === s.id ? 'selected' : ''}" onclick="selectConfigSide('${s.id}')">${s.emoji} ${sideLabel(s.id)}${extra}</button>`;
+      return `<button type="button" class="config-chip ${configSide === s.id ? 'selected' : ''}" data-on-click="selectConfigSide('${s.id}')">${s.emoji} ${sideLabel(s.id)}${extra}</button>`;
     }).join('');
   }
   if (drinksWrap) {
     drinksWrap.innerHTML = MENU_DRINK_IDS.map(id => {
       const d = MENU.find(m => m.id === id);
       if (!d) return '';
-      return `<button type="button" class="config-chip ${configDrink === id ? 'selected' : ''}" onclick="selectConfigDrink('${id}')">${d.emoji} ${productName(d)}</button>`;
+      return `<button type="button" class="config-chip ${configDrink === id ? 'selected' : ''}" data-on-click="selectConfigDrink('${id}')">${d.emoji} ${productName(d)}</button>`;
     }).join('');
   }
   if (dipsWrap) {
     dipsWrap.innerHTML = MENU_DIP_IDS.map(id => {
       const d = MENU.find(m => m.id === id);
       if (!d) return '';
-      return `<button type="button" class="config-chip ${configDip === id ? 'selected' : ''}" onclick="selectConfigDip('${id}')">${d.emoji} ${dipShortName(id)}</button>`;
+      return `<button type="button" class="config-chip ${configDip === id ? 'selected' : ''}" data-on-click="selectConfigDip('${id}')">${d.emoji} ${dipShortName(id)}</button>`;
     }).join('');
   }
   // Confirm-Button mit aktuellem Preis aktualisieren
@@ -9831,7 +9842,7 @@ function renderDipPickerOptions() {
     wrap.innerHTML = MENU_DIP_IDS.map(id => {
       const d = MENU.find(m => m.id === id);
       if (!d) return '';
-      return `<button type="button" class="config-chip ${dipSelection === id ? 'selected' : ''}" onclick="selectDipPicker('${id}')">${d.emoji} ${dipShortName(id)}</button>`;
+      return `<button type="button" class="config-chip ${dipSelection === id ? 'selected' : ''}" data-on-click="selectDipPicker('${id}')">${d.emoji} ${dipShortName(id)}</button>`;
     }).join('');
   }
   const btn = document.getElementById('dipConfirm');
@@ -10787,6 +10798,11 @@ function openCart() {
     if (c) { try { c.focus({ preventScroll: true }); } catch (e) { c.focus(); } }
   }, 320);
 }
+function cartZurKarte() {
+  closeCart();
+  document.getElementById('menu').scrollIntoView({ behavior: 'smooth' });
+}
+
 function closeCart() {
   document.getElementById('cartOverlay').classList.remove('open');
   document.getElementById('cartDrawer').classList.remove('open');
@@ -11078,8 +11094,8 @@ function renderCart() {
         ${(!accountLoggedIn() && o.email) ? `
         <div style="background:var(--color-bg-elev);border:1px solid var(--color-orange);border-radius:14px;padding:0.95rem 1rem;margin:0.9rem 0;text-align:center;">
           <div style="font-weight:800;font-size:0.95rem;margin-bottom:0.55rem;">${t('acc.claim_title')}</div>
-          <button type="button" class="btn btn-primary btn-block" style="white-space:normal;word-break:break-all;line-height:1.35;" onclick="accClaimStamps('${escG(o.email)}')">${t('acc.claim_btn').replace('{email}', escG(o.email))}</button>
-          <button type="button" class="mini-btn" style="margin-top:0.55rem;" onclick="openAccountOverlay('kompakt')">${t('acc.claim_alt')}</button>
+          <button type="button" class="btn btn-primary btn-block" style="white-space:normal;word-break:break-all;line-height:1.35;" data-on-click="accClaimStamps('${escG(o.email)}')">${t('acc.claim_btn').replace('{email}', escG(o.email))}</button>
+          <button type="button" class="mini-btn" style="margin-top:0.55rem;" data-on-click="openAccountOverlay('kompakt')">${t('acc.claim_alt')}</button>
         </div>` : ''}
         ${addr}
         <p class="success-mail">${t('co.s_check_mail')}</p>
@@ -11091,8 +11107,8 @@ function renderCart() {
     `;
     footer.innerHTML = `
       <div class="success-actions">
-        <button class="btn btn-primary btn-block" onclick="successNewOrder()">${t('co.new_order')}</button>
-        <button class="btn btn-ghost btn-block" onclick="successGoHome()">${t('co.s_home')}</button>
+        <button class="btn btn-primary btn-block" data-on-click="successNewOrder()">${t('co.new_order')}</button>
+        <button class="btn btn-ghost btn-block" data-on-click="successGoHome()">${t('co.s_home')}</button>
       </div>
     `;
     return;
@@ -11110,8 +11126,8 @@ function renderCart() {
       </div>
     `;
     footer.innerHTML = `
-      ${getLastOrder() ? `<button class="btn btn-secondary btn-block" onclick="repeatLastOrder()" style="margin-bottom:0.6rem;">${t('cart.repeat_last')}</button>` : ''}
-      <button class="btn btn-primary btn-block" onclick="closeCart(); document.getElementById('menu').scrollIntoView({behavior:'smooth'});">
+      ${getLastOrder() ? `<button class="btn btn-secondary btn-block" data-on-click="repeatLastOrder()" style="margin-bottom:0.6rem;">${t('cart.repeat_last')}</button>` : ''}
+      <button class="btn btn-primary btn-block" data-on-click="cartZurKarte()">
         ${t('nav.menu')}
       </button>
     `;
@@ -11153,12 +11169,12 @@ function renderCart() {
             <div class="cart-item-price">${formatPrice(unitPrice * entry.qty)}${entry.qty > 1 ? `<span class="calc">${entry.qty} × ${formatPrice(unitPrice)}</span>` : ''}</div>
             <div class="cart-item-controls">
               <div class="cart-item-qty">
-                <button onclick="updateQty('${key}', -1)" aria-label="${t('a11y.less')}">−</button>
+                <button data-on-click="updateQty('${key}', -1)" aria-label="${t('a11y.less')}">−</button>
                 <span>${entry.qty}</span>
-                <button onclick="updateQty('${key}', 1)" aria-label="${t('a11y.more')}">+</button>
+                <button data-on-click="updateQty('${key}', 1)" aria-label="${t('a11y.more')}">+</button>
               </div>
-              ${(entry.isMenu || entry.dip) ? `<button class="cart-item-edit" onclick="editCartItem('${key}')">${t('cart.edit')}</button>` : ''}
-              <button class="cart-item-remove" onclick="removeFromCart('${key}')" aria-label="${t('cart.remove')}">${t('cart.remove')}</button>
+              ${(entry.isMenu || entry.dip) ? `<button class="cart-item-edit" data-on-click="editCartItem('${key}')">${t('cart.edit')}</button>` : ''}
+              <button class="cart-item-remove" data-on-click="removeFromCart('${key}')" aria-label="${t('cart.remove')}">${t('cart.remove')}</button>
             </div>
           </div>
         </div>
@@ -11192,7 +11208,7 @@ function renderCart() {
         <div class="cart-upsell-row">
           ${suggestions.map(id => {
             const it = MENU.find(m => m.id === id);
-            return `<button type="button" class="cart-upsell-card" onclick="addSuggestion('${id}')" aria-label="${productName(it)} ${t('cart.upsell_add')}">
+            return `<button type="button" class="cart-upsell-card" data-on-click="addSuggestion('${id}')" aria-label="${productName(it)} ${t('cart.upsell_add')}">
               <div class="cart-upsell-add">+</div>
               <div class="cart-upsell-img">${it.image ? `<img src="${it.image}" alt="" loading="lazy">` : `<span>${it.emoji}</span>`}</div>
               <div class="cart-upsell-name">${productName(it)}</div>
@@ -11207,7 +11223,7 @@ function renderCart() {
       promoHtml = `
         <div class="promo-applied" style="background: rgba(255,201,60,0.12); border-color: rgba(255,201,60,0.5);">
           <span>🔧 <strong>${t('cart.test_mode')}</strong> = ${formatPrice(TEST_TOTAL)}</span>
-          <button onclick="removePromo()">${t('promo.remove')}</button>
+          <button data-on-click="removePromo()">${t('promo.remove')}</button>
         </div>
       `;
     } else if (voucherApplied) {
@@ -11228,7 +11244,7 @@ function renderCart() {
       promoHtml = `
         <div class="promo-applied">
           <span>${vLine}</span>
-          <button onclick="removePromo()">${t('promo.remove')}</button>
+          <button data-on-click="removePromo()">${t('promo.remove')}</button>
         </div>
       `;
     } else if (promoApplied) {
@@ -11236,24 +11252,24 @@ function renderCart() {
       promoHtml = `
         <div class="promo-applied">
           <span>${eligible ? '\u2713 ' + t('promo.applied').replace('{code}', PROMO_CODE) : t('promo.until').replace('{code}', PROMO_CODE).replace('{rest}', formatPrice(PROMO_MIN_ORDER - sub))}</span>
-          <button onclick="removePromo()">Entfernen</button>
+          <button data-on-click="removePromo()">Entfernen</button>
         </div>
       `;
     } else {
       const manualField = `
         <div class="promo-input-wrap">
           <input type="text" id="promoInput" placeholder="${t('promo.placeholder')}" aria-label="${t('promo.placeholder_short')}" autocomplete="off" />
-          <button class="btn btn-secondary btn-sm" onclick="applyPromo(this)" style="min-height: auto; padding: 0.7rem 1rem;">${t('promo.redeem')}</button>
+          <button class="btn btn-secondary btn-sm" data-on-click="applyPromo(this)" style="min-height: auto; padding: 0.7rem 1rem;">${t('promo.redeem')}</button>
         </div>`;
       if (adCode()) {
         // Standard: aufgeräumt – nur Ein-Tipp-Chip + dezenter Link fürs Eingabefeld
         promoHtml = `
           <div class="promo-compact">
-            <button type="button" class="promo-apply" onclick="quickApplyPromo(this)">
+            <button type="button" class="promo-apply" data-on-click="quickApplyPromo(this)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4.8A2 2 0 0 1 4.8 2.8H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg>
               <span>${t('promo.quick_chip').replace('{code}', adCode())}</span>
             </button>
-            <button type="button" class="mini-btn" onclick="togglePromoField()">${t('promo.have_code')}</button>
+            <button type="button" class="mini-btn" data-on-click="togglePromoField()">${t('promo.have_code')}</button>
           </div>
           ${showPromoField ? manualField : ''}
         `;
@@ -11275,18 +11291,18 @@ function renderCart() {
           <div class="delivery-check-head">
             <span>${t('co.fee_check_title')}</span>
             <span class="info-tip">
-              <button type="button" class="info-tip-btn" aria-label="Lieferzonen-Info" data-i18n-aria="a11y.zones" aria-expanded="false" onclick="toggleZoneTip(event)">i</button>
+              <button type="button" class="info-tip-btn" aria-label="Lieferzonen-Info" data-i18n-aria="a11y.zones" aria-expanded="false" data-on-click="toggleZoneTip(event)">i</button>
               <span class="info-tip-bubble" role="tooltip">${t('co.zone_hint')}</span>
             </span>
           </div>
           ${('geolocation' in navigator) ? `
-          <button type="button" id="geoBtn" class="geo-btn" onclick="useMyLocation()">${t('geo.use')}</button>
+          <button type="button" id="geoBtn" class="geo-btn" data-on-click="useMyLocation()">${t('geo.use')}</button>
           <div id="geoStatus" class="geo-status" aria-live="polite"></div>
           ` : ''}
-          <input type="text" id="co-street" class="form-input" placeholder="${t('co.street_ph')}" autocomplete="street-address" oninput="onAddressChange(); saveCustomerData();" />
+          <input type="text" id="co-street" class="form-input" placeholder="${t('co.street_ph')}" autocomplete="street-address" data-on-input="onAddressChange(); saveCustomerData();" />
           <div class="delivery-check-row">
-            <input type="text" id="co-zip" class="form-input" pattern="[0-9]{5}" placeholder="33649" autocomplete="postal-code" inputmode="numeric" oninput="onAddressChange(); saveCustomerData();" />
-            <input type="text" id="co-city" class="form-input" placeholder="${t('co.city')}" autocomplete="address-level2" oninput="onAddressChange(); saveCustomerData();" />
+            <input type="text" id="co-zip" class="form-input" pattern="[0-9]{5}" placeholder="33649" autocomplete="postal-code" inputmode="numeric" data-on-input="onAddressChange(); saveCustomerData();" />
+            <input type="text" id="co-city" class="form-input" placeholder="${t('co.city')}" autocomplete="address-level2" data-on-input="onAddressChange(); saveCustomerData();" />
           </div>
           <div id="zoneInfo" aria-live="polite"></div>
           <p class="delivery-check-carry">${t('co.fee_check_carry')}</p>
@@ -11311,7 +11327,7 @@ function renderCart() {
       // Scrollen sichtbar. Im Inhalt bleibt nur die Artikelliste (+ Hinweise).
       body.innerHTML = itemsHtml + menuWartetHtml() + `${stepBanner}`;
       footer.innerHTML = groupJoin ? `
-        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitToGroup(this)" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
+        <button type="button" class="btn btn-primary btn-block btn-lg" data-on-click="submitToGroup(this)" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
         <p style="text-align:center;color:var(--color-cream-dim);font-size:0.78rem;margin:0.6rem 0 0;line-height:1.5;">${t('grp.entry_join').replace('{host}', escG(groupJoin.host || ''))}<br>${t('grp.join_s3')}</p>
       ` : `
         <div class="cart-foot-sum">
@@ -11320,8 +11336,8 @@ function renderCart() {
         </div>
         <div class="mode-q-inline">${t('cart.how')}</div>
         <div class="mode-fork">
-          <button type="button" class="mode-fork-btn${!os.pickup ? ' disabled' : ''}" onclick="chooseMode('pickup')"${!os.pickup ? ' disabled aria-disabled="true"' : ''}>${t('co.tab_pickup')}</button>
-          <button type="button" class="mode-fork-btn${!os.delivery ? ' disabled' : ''}" onclick="chooseMode('delivery')"${!os.delivery ? ' disabled aria-disabled="true"' : ''}>${t('co.tab_delivery')}</button>
+          <button type="button" class="mode-fork-btn${!os.pickup ? ' disabled' : ''}" data-on-click="chooseMode('pickup')"${!os.pickup ? ' disabled aria-disabled="true"' : ''}>${t('co.tab_pickup')}</button>
+          <button type="button" class="mode-fork-btn${!os.delivery ? ' disabled' : ''}" data-on-click="chooseMode('delivery')"${!os.delivery ? ' disabled aria-disabled="true"' : ''}>${t('co.tab_delivery')}</button>
         </div>
       `;
       return;
@@ -11330,8 +11346,8 @@ function renderCart() {
     // ---- Step 2: Details – Upsell, Adresse, Gutschein, Treue, Summe ----
     body.innerHTML = `
       <div class="checkout-tabs">
-        <button class="checkout-tab ${checkoutMode === 'pickup' ? 'active' : ''}${!os.pickup ? ' tab-disabled' : ''}" onclick="setMode('pickup')"${!os.pickup ? ' aria-disabled="true"' : ''}>${t('co.tab_pickup')}</button>
-        <button class="checkout-tab ${checkoutMode === 'delivery' ? 'active' : ''}${!os.delivery ? ' tab-disabled' : ''}" onclick="setMode('delivery')"${!os.delivery ? ' aria-disabled="true"' : ''}>${t('co.tab_delivery')}</button>
+        <button class="checkout-tab ${checkoutMode === 'pickup' ? 'active' : ''}${!os.pickup ? ' tab-disabled' : ''}" data-on-click="setMode('pickup')"${!os.pickup ? ' aria-disabled="true"' : ''}>${t('co.tab_pickup')}</button>
+        <button class="checkout-tab ${checkoutMode === 'delivery' ? 'active' : ''}${!os.delivery ? ' tab-disabled' : ''}" data-on-click="setMode('delivery')"${!os.delivery ? ' aria-disabled="true"' : ''}>${t('co.tab_delivery')}</button>
       </div>
       ${stepBanner}
 
@@ -11389,7 +11405,7 @@ function renderCart() {
 
     if (groupJoin) {
       footer.innerHTML = `
-        <button type="button" class="btn btn-primary btn-block btn-lg" onclick="submitToGroup(this)" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
+        <button type="button" class="btn btn-primary btn-block btn-lg" data-on-click="submitToGroup(this)" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
         <p style="text-align:center;color:var(--color-cream-dim);font-size:0.78rem;margin:0.6rem 0 0;line-height:1.5;">${t('grp.entry_join').replace('{host}', escG(groupJoin.host || ''))}<br>${t('grp.join_s3')}</p>
       `;
       return;
@@ -11398,7 +11414,7 @@ function renderCart() {
       <div class="cart-warn-banner" id="cartMinWarn" style="${belowMin ? '' : 'display:none;'}">${belowMin ? t('co.min_warn').replace('{min}', formatPrice(deliveryMin)).replace('{rest}', formatPrice(deliveryMin - sub)) : ''}</div>
 
       ${SHOP_STATUS.paused ? `<div class="cart-warn-banner" style="display:block;border-color:rgba(224,72,72,0.5);background:rgba(224,72,72,0.12);color:#E04848;">${t('shop.paused_cart')}</div>` : ''}
-      <button class="btn btn-primary btn-block btn-lg" id="cartCheckoutBtn" onclick="goToCheckout()" ${belowMin || SHOP_STATUS.paused ? 'disabled' : ''}>
+      <button class="btn btn-primary btn-block btn-lg" id="cartCheckoutBtn" data-on-click="goToCheckout()" ${belowMin || SHOP_STATUS.paused ? 'disabled' : ''}>
         ${t('cart.checkout')}
       </button>
     `;
@@ -11445,7 +11461,7 @@ function renderCart() {
     body.innerHTML = `
       ${usageNote}
       ${orderStatusNote}
-      <form id="checkoutForm" novalidate onsubmit="submitOrder(event)">
+      <form id="checkoutForm" novalidate data-on-submit="submitOrder(event)">
         <!-- Vor- und Nachname getrennt: mit einem Feld kamen oft nur Vornamen an.
              An Server, Mails und Kasse geht weiter ein Feld "Vorname Nachname". -->
         <div class="co-name-row">
@@ -11470,12 +11486,12 @@ function renderCart() {
           <input type="tel" id="co-phone" class="form-input" required placeholder="${t('co.phone_ph')}" autocomplete="tel" inputmode="tel" />
         </div>
 
-        <button type="button" id="coFirmaToggle" class="co-firma-toggle" onclick="toggleFirma()"${coFirmaOffen ? ' hidden' : ''}>+ ${t('co.company_toggle')}</button>
+        <button type="button" id="coFirmaToggle" class="co-firma-toggle" data-on-click="toggleFirma()"${coFirmaOffen ? ' hidden' : ''}>+ ${t('co.company_toggle')}</button>
         <div id="coFirmaWrap"${coFirmaOffen ? '' : ' hidden'}>
         <div class="form-group">
           <label for="co-company">${t('co.company')}</label>
           <input type="text" id="co-company" class="form-input" placeholder="${t('co.company_ph')}"
-                 autocomplete="organization" maxlength="80" oninput="onCompanyChange()" />
+                 autocomplete="organization" maxlength="80" data-on-input="onCompanyChange()" />
           <p class="field-note">${t('co.company_note')}</p>
         </div>
         <!-- Rechnungsadresse erscheint erst, wenn eine Firma eingetragen ist -->
@@ -11505,18 +11521,18 @@ function renderCart() {
             <label for="co-street">${t('co.street')}</label>
             ${accountLoggedIn() && (ACCOUNT.profile.addresses || []).length ? `
             <div style="display:flex;gap:0.45rem;flex-wrap:wrap;margin:0 0 0.6rem;">
-              ${(ACCOUNT.profile.addresses || []).map((a, i) => `<button type="button" class="mini-btn" onclick="accFillAddress(${i})">${escG(addressLabel(a))}</button>`).join('')}
+              ${(ACCOUNT.profile.addresses || []).map((a, i) => `<button type="button" class="mini-btn" data-on-click="accFillAddress(${i})">${escG(addressLabel(a))}</button>`).join('')}
             </div>` : ''}
-            <input type="text" id="co-street" class="form-input" required placeholder="${t('co.street_ph')}" autocomplete="street-address" oninput="onAddressChange()" />
+            <input type="text" id="co-street" class="form-input" required placeholder="${t('co.street_ph')}" autocomplete="street-address" data-on-input="onAddressChange()" />
           </div>
           <div class="form-row">
             <div class="form-group">
               <label for="co-zip">${t('co.zip')}</label>
-              <input type="text" id="co-zip" class="form-input" required pattern="[0-9]{5}" placeholder="33649" autocomplete="postal-code" inputmode="numeric" oninput="onAddressChange()" />
+              <input type="text" id="co-zip" class="form-input" required pattern="[0-9]{5}" placeholder="33649" autocomplete="postal-code" inputmode="numeric" data-on-input="onAddressChange()" />
             </div>
             <div class="form-group">
               <label for="co-city">${t('co.city')}</label>
-              <input type="text" id="co-city" class="form-input" required value="Bielefeld" autocomplete="address-level2" oninput="onAddressChange()" />
+              <input type="text" id="co-city" class="form-input" required value="Bielefeld" autocomplete="address-level2" data-on-input="onAddressChange()" />
             </div>
           </div>
           <div id="zoneInfo" aria-live="polite"></div>
@@ -11544,14 +11560,14 @@ function renderCart() {
           <label>${t('co.pay_title')}</label>
           <div class="payment-options payment-options-stack">
             <label class="payment-option payment-option-featured">
-              <input type="radio" name="pay" value="sumup" required checked onchange="onPayChange()" />
+              <input type="radio" name="pay" value="sumup" required checked data-on-change="onPayChange()" />
               <div class="payment-option-content">
                 <span class="payment-option-title">${t('co.pay_online_title')} <span class="badge-recommended">${t('co.recommended')}</span></span>
                 <span class="payment-option-sub">${t('co.pay_online_sub')}</span>
               </div>
             </label>
             <label class="payment-option">
-              <input type="radio" name="pay" value="cash" required onchange="onPayChange()" />
+              <input type="radio" name="pay" value="cash" required data-on-change="onPayChange()" />
               <div class="payment-option-content">
                 <span class="payment-option-title">${t('co.pay_cash_title')}</span>
                 <span class="payment-option-sub">${t('checkout.pay_cash')}</span>
@@ -11563,9 +11579,9 @@ function renderCart() {
         <div class="form-group" id="tipSection">
           <label>${t('co.tip_title')}</label>
           <div class="tip-options">
-            <button type="button" class="tip-btn ${tipPercent === 0 ? 'active' : ''}" data-pct="0" onclick="setTip(0)">${t('co.tip_none')}</button>
-            <button type="button" class="tip-btn ${tipPercent === 5 ? 'active' : ''}" data-pct="5" onclick="setTip(5)">5&nbsp;%</button>
-            <button type="button" class="tip-btn ${tipPercent === 10 ? 'active' : ''}" data-pct="10" onclick="setTip(10)">10&nbsp;%</button>
+            <button type="button" class="tip-btn ${tipPercent === 0 ? 'active' : ''}" data-pct="0" data-on-click="setTip(0)">${t('co.tip_none')}</button>
+            <button type="button" class="tip-btn ${tipPercent === 5 ? 'active' : ''}" data-pct="5" data-on-click="setTip(5)">5&nbsp;%</button>
+            <button type="button" class="tip-btn ${tipPercent === 10 ? 'active' : ''}" data-pct="10" data-on-click="setTip(10)">10&nbsp;%</button>
           </div>
           <p class="tip-hint">${t('co.tip_hint')}</p>
         </div>
@@ -11573,8 +11589,8 @@ function renderCart() {
         <div class="form-group" style="display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.82rem; color: var(--color-cream-dim);">
           <input type="checkbox" id="co-agb" required style="margin-top: 4px; accent-color: var(--color-orange); width: 20px; height: 20px;" />
           <label for="co-agb" style="margin: 0; font-weight: 400;">
-            ${t('co.agb_a')} <a href="#" onclick="openModal('agb'); return false;">${t('co.agb_terms')}</a> ${t('co.agb_and')}
-            <a href="#" onclick="openModal('datenschutz'); return false;">${t('co.agb_privacy')}</a>.
+            ${t('co.agb_a')} <a href="#" data-on-click="openModal('agb'); return false;">${t('co.agb_terms')}</a> ${t('co.agb_and')}
+            <a href="#" data-on-click="openModal('datenschutz'); return false;">${t('co.agb_privacy')}</a>.
           </label>
         </div>
 
@@ -11625,7 +11641,7 @@ function renderCart() {
         <span>${t('cart.total')}</span>
         <strong data-co-total>${formatPrice(cartGrandTotal())}</strong>
       </div>
-      <button type="button" id="coSubmit" class="btn btn-primary btn-block btn-lg" onclick="triggerCheckoutSubmit()">
+      <button type="button" id="coSubmit" class="btn btn-primary btn-block btn-lg" data-on-click="triggerCheckoutSubmit()">
         ${t('checkout.submit_cash')}
       </button>
       <p id="coWaitHint" class="co-wait-hint" aria-live="polite"></p>
@@ -12271,7 +12287,7 @@ async function submitOrder(e) {
         <strong style="color: var(--color-error); display: block; margin-bottom: 0.4rem;">Online-Zahlung aktuell nicht verfügbar</strong>
         <div style="color: var(--color-cream-dim); font-size: 0.85rem;">${err.message}</div>
         <div style="margin-top: 0.8rem; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="switchToCashPayment()">Stattdessen vor Ort bezahlen</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-on-click="switchToCashPayment()">Stattdessen vor Ort bezahlen</button>
           <span style="font-size: 0.82rem; color: var(--color-cream-dim);">oder ruf uns an: <a href="tel:+4915118540604" style="color: var(--color-orange-bright); font-weight: 600;">+49&nbsp;151&nbsp;18&nbsp;54&nbsp;06&nbsp;04</a></span>
         </div>
       `;
@@ -13211,7 +13227,7 @@ function renderGroupSent() {
       <div style="font-family:var(--font-display);font-size:1.35rem;color:var(--color-orange-bright);margin-bottom:0.5rem;">${t('grp.sent_title')}</div>
       <p style="color:var(--color-cream-dim);font-size:0.9rem;margin:0 0 0.6rem;">${t('grp.sent_text').replace('{host}', escG(groupJoin.host || ''))}</p>
       <p style="color:var(--color-text-muted);font-size:0.78rem;margin:0 0 1.2rem;">${t('grp.sent_again')}</p>
-      <button class="btn btn-primary btn-block" onclick="closeGroupOverlay()">${t('grp.sent_ok')}</button>
+      <button class="btn btn-primary btn-block" data-on-click="closeGroupOverlay()">${t('grp.sent_ok')}</button>
     </div>`;
 }
 /* Teilnehmer: zur Speisekarte. In der App (und in iMessage) ist sie ein eigener
@@ -13234,7 +13250,7 @@ function renderGroupStart() {
     <p style="color:var(--color-cream-dim);font-size:0.9rem;margin:0 0 1rem;">${t('grp.intro')}</p>
     <label for="grpHostName" style="display:block;font-weight:600;font-size:0.86rem;margin-bottom:0.4rem;">${t('grp.host_label')}</label>
     <input type="text" id="grpHostName" class="form-input" maxlength="40" placeholder="${t('grp.host_ph')}" style="margin-bottom:1rem;">
-    <button class="btn btn-primary btn-block" onclick="createGroup(this)">${t('grp.create')}</button>
+    <button class="btn btn-primary btn-block" data-on-click="createGroup(this)">${t('grp.create')}</button>
     <p id="grpErr" class="grp-err" role="alert" hidden></p>
   `;
 }
@@ -13270,7 +13286,7 @@ async function renderGroupHost(preloaded, refresh) {
       // Keine Verbindung: Gruppe behalten, nur Bescheid sagen
       if (refresh) { grpFehler(t('acc.err_network')); return; }
       if (body) body.innerHTML = '<p id="grpErr" class="grp-err" role="alert">' + escG(t('acc.err_network')) + '</p>'
-        + '<button type="button" class="btn btn-secondary btn-block" onclick="refreshGroupHost(this)">' + t('grp.refresh') + '</button>';
+        + '<button type="button" class="btn btn-secondary btn-block" data-on-click="refreshGroupHost(this)">' + t('grp.refresh') + '</button>';
       return;
     }
     if (!r.ok) {
@@ -13284,7 +13300,7 @@ async function renderGroupHost(preloaded, refresh) {
   grpShare = { url: link, host: g.host, text: t('grp.share_text').replace('{host}', g.host) };
   // Teilen-Knopf, wo es ein Teilen-Blatt gibt (App, iMessage, Handy-Browser); WhatsApp bleibt als Direktweg
   const canShare = GNC_IMESSAGE || gncHas('gncShare') || !!navigator.share;
-  const shareBtn = canShare ? `<button type="button" class="btn btn-primary btn-block grp-share-btn" style="margin-bottom:${GNC_IMESSAGE ? '1.2rem' : '0.6rem'};" onclick="shareGroupLink(this)">${t(GNC_IMESSAGE ? 'grp.send_chat' : 'grp.share')}</button>` : '';
+  const shareBtn = canShare ? `<button type="button" class="btn btn-primary btn-block grp-share-btn" style="margin-bottom:${GNC_IMESSAGE ? '1.2rem' : '0.6rem'};" data-on-click="shareGroupLink(this)">${t(GNC_IMESSAGE ? 'grp.send_chat' : 'grp.share')}</button>` : '';
   const total = (g.contributions || []).reduce((s2, c) => s2 + (c.total || 0), 0);
   const rows = (g.contributions || []).map(c =>
     `<div style="padding:0.55rem 0;border-bottom:1px solid var(--color-border);">
@@ -13295,22 +13311,22 @@ async function renderGroupHost(preloaded, refresh) {
     <p style="color:var(--color-cream-dim);font-size:0.88rem;margin:0 0 0.9rem;">${t('grp.host_intro').replace('{host}', escG(g.host))}</p>
     <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
       <input type="text" class="form-input" readonly value="${link}" id="grpLinkField" style="font-size:0.8rem;flex:1;">
-      <button class="btn btn-secondary" style="flex:none;padding:0.7rem 1rem;" onclick="copyGroupLink(this)">${t('grp.copy')}</button>
+      <button class="btn btn-secondary" style="flex:none;padding:0.7rem 1rem;" data-on-click="copyGroupLink(this)">${t('grp.copy')}</button>
     </div>
     ${shareBtn}
     ${GNC_IMESSAGE ? '' : `<a href="${wa}" target="_blank" rel="noopener" class="btn ${canShare ? 'btn-secondary' : 'btn-primary'} btn-block" style="text-align:center;text-decoration:none;margin-bottom:1.2rem;">${t('grp.whatsapp')}</a>`}
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.3rem;">
       <strong style="font-size:0.9rem;">${t('grp.list_title').replace('{n}', (g.contributions || []).length)}</strong>
-      <button onclick="refreshGroupHost(this)" style="background:none;border:none;color:var(--color-orange-bright);font-weight:700;font-size:0.8rem;cursor:pointer;">${t('grp.refresh')}</button>
+      <button data-on-click="refreshGroupHost(this)" style="background:none;border:none;color:var(--color-orange-bright);font-weight:700;font-size:0.8rem;cursor:pointer;">${t('grp.refresh')}</button>
     </div>
     <p class="grp-updated">${t('grp.updated').replace('{time}', grpZeit())}</p>
     <p id="grpErr" class="grp-err" role="alert" hidden></p>
     <div style="margin-bottom:1rem;">${rows || '<p style="color:var(--color-text-muted);font-size:0.84rem;padding:0.6rem 0;">' + t('grp.empty') + '</p>'}</div>
     ${(g.contributions || []).length ? `
       <div style="display:flex;justify-content:space-between;font-weight:800;margin-bottom:1rem;"><span>${t('grp.sum')}</span><span style="color:var(--color-orange-bright);">${formatPrice(total)}</span></div>
-      <button class="btn btn-primary btn-block" onclick="importGroup(this)">${t('grp.import')}</button>` : ''}
+      <button class="btn btn-primary btn-block" data-on-click="importGroup(this)">${t('grp.import')}</button>` : ''}
     <div class="grp-discard-center">
-      <button type="button" class="grp-discard-btn" onclick="discardGroup()">
+      <button type="button" class="grp-discard-btn" data-on-click="discardGroup()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/></svg>
         <span>${t('grp.discard')}</span>
       </button>
@@ -13480,7 +13496,7 @@ function renderGroupJoin() {
     <ol style="color:var(--color-text-muted);font-size:0.84rem;margin:0 0 1.2rem;padding-left:1.2rem;line-height:1.8;">
       <li>${t('grp.join_s1')}</li><li>${t('grp.join_s2')}</li><li>${t('grp.join_s3')}</li>
     </ol>
-    <button class="btn btn-primary btn-block" onclick="grpZurKarte()">${t('grp.join_go')}</button>
+    <button class="btn btn-primary btn-block" data-on-click="grpZurKarte()">${t('grp.join_go')}</button>
   `;
 }
 
@@ -15162,11 +15178,11 @@ function teamHtml() {
     inner = '<p class="team-ok">' + escG(t('team.coupled').replace('{name}', st.name || 'Team')) + '</p>' +
       '<p class="team-hint">' + escG(t('team.coupled_hint')) + '</p>' +
       '<div class="team-row"><a class="mini-btn" href="/cockpit.html">' + escG(t('team.cockpit')) + '</a>' +
-      '<button type="button" class="mini-btn" onclick="teamUncouple()">' + escG(t('team.uncouple')) + '</button></div>';
+      '<button type="button" class="mini-btn" data-on-click="teamUncouple()">' + escG(t('team.uncouple')) + '</button></div>';
   } else {
     inner = '<p class="team-hint" id="teamHint">' + escG(t('team.hint')) + '</p>' +
       '<div class="team-row"><input id="teamCode" class="form-input" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" aria-describedby="teamHint" aria-label="' + escG(t('team.code')) + '">' +
-      '<button type="button" class="mini-btn" onclick="teamCouple(this)">' + escG(t('team.couple')) + '</button></div>' +
+      '<button type="button" class="mini-btn" data-on-click="teamCouple(this)">' + escG(t('team.couple')) + '</button></div>' +
       '<p id="teamErr" class="team-err" role="alert" hidden></p>';
   }
   // Fuer Kubi und das Team; Gaeste sehen nur eine zugeklappte Zeile

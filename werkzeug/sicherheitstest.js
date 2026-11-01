@@ -10,7 +10,8 @@
  * Abgedeckt: Zwei-Faktor (lib/zweifaktor.js, team.js), Sitzungen
  * (lib/admin-sitzung.js), Bremse gegen Durchprobieren (lib/auth-guard.js,
  * 5 in 15 Minuten), Grundschutz je Endpunkt (lib/bremse.js), interne
- * Mail-Arten, Kundenkonto-Anmeldung, Bestellliste über den Schlüssel-Zeitstempel.
+ * Mail-Arten, Kundenkonto-Anmeldung, Bestellliste über den Schlüssel-Zeitstempel,
+ * Team-Passwörter mit scrypt (lib/team-passwort.js).
  * Echte Mails gehen keine raus: fetch ist abgefangen.
  * ----------------------------------------------------------------------------
  */
@@ -173,6 +174,24 @@ const guard = () => [...daten.keys()].filter((k) => k.startsWith('authguard|'));
   /* ---- Ladenstatus im CDN-Zwischenspeicher ----------------------------------- */
   const ls = await laden.handler({ httpMethod: 'GET', headers: { 'x-nf-client-connection-ip': '10.80.0.1' } });
   ok('Ladenstatus: CDN darf 10 s zwischenspeichern, Browser nicht', /s-maxage=10/.test(ls.headers['Netlify-CDN-Cache-Control'] || '') && /no-store/.test(ls.headers['Cache-Control'] || ''));
+
+  /* ---- Team-Passwörter (lib/team-passwort.js) ------------------------------- */
+  const tp = require(F + '/lib/team-passwort.js');
+  const h1 = await tp.hashen('mitarbeiter-passwort-1');
+  ok('scrypt-Hash mit Salz, zweimal verschieden', /^s1\$[A-Za-z0-9+/=]{24}\$[A-Za-z0-9+/=]{44}$/.test(h1) && h1 !== await tp.hashen('mitarbeiter-passwort-1'));
+  ok('scrypt-Hash: richtiges Passwort passt, falsches nicht', (await tp.stimmt('mitarbeiter-passwort-1', h1)) && !(await tp.stimmt('mitarbeiter-passwort-2', h1)));
+  // Eintrag wie vor November 2026: sha256 ohne Salz
+  daten.set('team|u:altfall', JSON.stringify({ name: 'Altfall', role: 'staff', pwHash: crypto.createHash('sha256').update('altes-passwort-123').digest('hex') }));
+  process.env.ZWEI_FAKTOR = 'aus';
+  r = await call(team, { action: 'whoami', password: 'altes-passwort-123' }, '10.90.0.1');
+  ok('Alter sha256-Eintrag meldet sich an und wird dabei auf scrypt umgestellt', r.s === 200 && r.d.name === 'Altfall' && /^s1\$/.test(JSON.parse(daten.get('team|u:altfall')).pwHash));
+  ok('Nach der Umstellung klappt die Anmeldung weiter', (await call(team, { action: 'whoami', password: 'altes-passwort-123' }, '10.90.0.1')).s === 200);
+  ok('Andere Function (Bestellliste) erkennt den scrypt-Zugang', (await orders.handler({ httpMethod: 'GET', headers: { 'x-nf-client-connection-ip': '10.90.0.2', 'x-gnc-sitzung': 'altes-passwort-123' }, queryStringParameters: {} })).statusCode === 200);
+  ok('Falsches Passwort bleibt draußen', (await call(team, { action: 'whoami', password: 'altes-passwort-124' }, '10.90.0.3')).s === 401);
+  delete process.env.ZWEI_FAKTOR;
+  ok('Passwort eines scrypt-Zugangs lässt sich nicht doppelt vergeben', (await call(team, { action: 'add', password: tokenKubi, name: 'Neu Test', staffPassword: 'altes-passwort-123' })).s === 409);
+  r = await call(team, { action: 'add', password: tokenKubi, name: 'Neu Test', staffPassword: 'ganz-neues-passwort-9' });
+  ok('Neuer Zugang wird mit scrypt gespeichert', r.s === 200 && /^s1\$/.test(JSON.parse(daten.get('team|u:' + zf.slug('Neu Test'))).pwHash));
 
   /* ---- Notschalter ---------------------------------------------------------- */
   process.env.ZWEI_FAKTOR = 'aus';

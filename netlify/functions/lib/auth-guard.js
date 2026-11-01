@@ -146,14 +146,7 @@ async function passwortStimmt(pw) {
     opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
     opts.token = process.env.NETLIFY_BLOBS_TOKEN;
   }
-  const t = getStore(opts);
-  const h = crypto.createHash('sha256').update(pw).digest('hex');
-  const { blobs } = await t.list({ prefix: 'u:' });
-  for (const b of blobs) {
-    const u = await t.get(b.key, { type: 'json' });
-    if (u && u.pwHash === h) return true;
-  }
-  return false;
+  return !!(await require('./team-passwort').mitglied(getStore(opts), pw));
 }
 async function keinRateversuch(event) {
   const n = nachweisAus(event);

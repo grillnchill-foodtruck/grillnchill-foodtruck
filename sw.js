@@ -12,7 +12,7 @@
    ==================================================================== */
 
 // Bei jedem Deploy mit Code-Änderung hochzählen!
-const CACHE_VERSION = 'gnc-v172';
+const CACHE_VERSION = 'gnc-v173';
 const CACHE_NAME = `grillnchill-${CACHE_VERSION}`;
 
 // Nur unkritische, statische Assets vorladen (KEIN HTML/JS – die kommen frisch)
