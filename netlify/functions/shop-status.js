@@ -39,6 +39,7 @@ const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
 const { mitglied } = require('./lib/team-passwort');
 const wartezeit = require('./lib/wartezeit');
+const zahlEinstellungen = require('./lib/zahl-einstellungen');
 
 const STORE_NAME = 'shop-status';
 const KEY = 'status';
@@ -205,6 +206,8 @@ exports.handler = async (event) => {
         console.error('shop-status wartezeit:', e && e.message);
       }
     }
+    // Bezahl-Schalter (Paket bezahlen): eigener Schlüssel, nicht tagesgebunden
+    status.zahlung = zahlEinstellungen.oeffentlich(await zahlEinstellungen.lesen());
     // Jeder Seitenaufruf fragt hier nach. Das Netlify-CDN hält die Antwort
     // 10 Sekunden: Eine Pause oder „Ausverkauft“ kommt also spätestens nach
     // 10 Sekunden bei allen an. Admin-Tool und Cockpit hängen ?frisch=<Zeit>
@@ -236,6 +239,28 @@ exports.handler = async (event) => {
     await meldeErgebnis(event, !!who);
     if (!who) {
       return json(401, { error: 'Falsches Passwort' });
+    }
+
+    // Bezahl-Einstellungen („Bezahlen ohne Umweg“, Burger-Pass). Eigener
+    // Bereich, damit das Speichern im Reiter „Heute“ sie nie überschreibt.
+    // Nur Admins: beides hat mit Geld und Steuer zu tun.
+    if (body.bereich === 'zahlung') {
+      if (who.role !== 'admin') return json(403, { error: 'forbidden', hint: 'Nur Admins dürfen das ändern.' });
+      if (body.lesen === true) return json(200, { ok: true, zahlung: await zahlEinstellungen.lesen() });
+      const vorher = await zahlEinstellungen.lesen();
+      let neu;
+      try {
+        neu = await zahlEinstellungen.schreiben(body.zahlung, who.name);
+      } catch (e) {
+        console.error('shop-status zahlung:', e && e.message);
+        return json(500, { error: 'Speichern fehlgeschlagen' });
+      }
+      const p = neu.pass;
+      await auditLog(who, 'Bezahlen',
+        'Ohne Umweg: ' + (vorher.direktZahlung ? 'an' : 'aus') + ' → ' + (neu.direktZahlung ? 'AN' : 'aus')
+        + ' · Burger-Pass: ' + (vorher.pass.aktiv ? 'an' : 'aus') + ' → ' + (p.aktiv ? 'AN' : 'aus')
+        + ' (' + p.name + ', ' + p.preis.toFixed(2) + ' €, ' + p.menus + ' Menüs, ' + p.tage + ' Tage)');
+      return json(200, { ok: true, zahlung: neu });
     }
 
     // Live-Vorschau für den Admin: offene Burger jetzt, auch bei AUS

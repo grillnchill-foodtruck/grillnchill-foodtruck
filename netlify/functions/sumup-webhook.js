@@ -101,6 +101,13 @@ exports.handler = async (event) => {
       }
       const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
 
+      // ---- Burger-Pass: Pass ausstellen, Menüs gutschreiben (genau einmal) ----
+      if (rec.kind === 'burgerpass' && rec.bp) {
+        const { kaufAbschliessen } = require('./lib/burger-pass');
+        const r = await kaufAbschliessen(s, key, rec);
+        return json(200, { ok: true, reference, action: r.neu ? 'pass_issued' : 'pass_exists' });
+      }
+
       // ---- Geschenkgutschein: Code erzeugen, Gutschein anlegen, Käufer mailen ----
       if (rec.kind === 'giftcard' && rec.gift) {
         const vs = (() => {

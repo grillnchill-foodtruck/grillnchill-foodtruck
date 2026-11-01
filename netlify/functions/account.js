@@ -126,11 +126,14 @@ function publicProfile(rec) {
     ...custLevel(rec),
     referrals: rec.referrals || 0,
     orders: (rec.orders || []).slice(0, 5),
+    // Burger-Pass: je Pass Menüs übrig, gesamt, gültig bis (nur gültige)
+    paesse: require('./lib/burger-pass').uebersicht(rec).liste,
     addresses: rec.addresses || [],
     loyalty: {
       spent: Math.round((rec.spent || 0) * 100) / 100,
       rewards: rec.rewards || 0,     // 5-€-Boni (Geburtstag, Empfehlung, alte Karten)
       menus: rec.menus || 0,         // Menüs aufs Haus (volle Stempelkarte)
+      passMenus: require('./lib/burger-pass').gueltigePassMenus(rec),   // Burger-Pass, eigener Zähler
       goal: LOYALTY_GOAL,
       reward: 5,
       stamps: 10,

@@ -6,6 +6,7 @@
  *   POST { password, action:'lookup', token }           → Karte anzeigen
  *   POST { password, action:'credit', token, amount }   → Vor-Ort-Umsatz gutschreiben
  *   POST { password, action:'redeem', token, kind }     → kind 'menu': 1 Menü aufs Haus,
+ *                                                         kind 'pass': 1 Burger-Pass-Menü,
  *                                                         sonst 1 Bonus (5 €) einlösen
  *
  * Punkte-Logik identisch zur Online-Stempelkarte (send-email-Accrual):
@@ -20,6 +21,7 @@ const { getStore } = require('@netlify/blobs');
 const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
 const { mitglied } = require('./lib/team-passwort');
+const burgerPass = require('./lib/burger-pass');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -86,6 +88,9 @@ function cardView(rec) {
     spent: Math.round((rec.spent || 0) * 100) / 100,
     rewards: rec.rewards || 0,
     menus: rec.menus || 0,
+    // Burger-Pass: eigene Menüs mit Ablaufdatum, getrennt von der Stempelkarte
+    passMenus: burgerPass.gueltigePassMenus(rec),
+    paesse: burgerPass.uebersicht(rec).liste,
     birthday: rec.birthday || '',   // damit das Team den aktuellen Tag sieht
     toNext: Math.max(0, Math.round((100 - (rec.spent || 0)) * 100) / 100),
     ...custLevel(rec),
@@ -223,6 +228,18 @@ exports.handler = async (event) => {
     await auditLog(who, 'Guthaben korrigiert für ' + (rec.email || '?') + ': ' + parts.join(', ')
       + (input.reason ? ' – Grund: ' + String(input.reason).slice(0, 80) : ''));
     return json(200, { ok: true, card: cardView(rec), changed: parts });
+  }
+
+  if (input.action === 'redeem' && input.kind === 'pass') {
+    // Burger-Pass-Menü am Truck: frühester Ablauf zuerst, nur gültige
+    const ab = burgerPass.menuAbziehen(rec, new Date(), true);
+    if (!ab.bezug) return json(409, { error: 'no_pass', hint: 'Kein gültiges Pass-Menü auf der Karte' });
+    rec.walletStand = Date.now();
+    await s.setJSON(idx.key, rec);
+    await burgerPass.einloesungVermerken(ab.bezug, { wo: 'truck', wer: (who && who.name) || '?' });
+    await auditLog(who, ab.bezug.name + '-Menü eingelöst für ' + (rec.email || '?')
+      + ' (Menü ' + ab.bezug.nr + ' von ' + ab.bezug.gesamt + ', Rest auf diesem Pass: ' + ab.bezug.uebrig + ')');
+    return json(200, { ok: true, card: cardView(rec), pass: burgerPass.bestellBezug(ab.bezug) });
   }
 
   if (input.action === 'redeem') {

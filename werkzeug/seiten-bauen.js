@@ -407,16 +407,31 @@ const firmenPfad = path.join(WURZEL, 'firmen.html');
 if (fs.existsSync(firmenPfad)) fs.writeFileSync(firmenPfad, faqDaten(fs.readFileSync(firmenPfad, 'utf8'), SEITE + '/firmen'));
 
 /* ---- Content-Security-Policy ---------------------------------------------- */
+/* SumUp-Widget in der Kasse („Bezahlen ohne Umweg“, Admin-Schalter, Paket
+   bezahlen). Laut SumUp-Doku und eigenem Blick ins SDK (gateway.sumup.com/
+   gateway/ecom/card/v2/sdk.js) braucht es:
+     script-src   gateway.sumup.com (SDK), ltxup.sumup.com (Betrugsprüfung von
+                  SumUp, lädt das SDK nach), pay.google.com (Google Pay)
+     connect-src  *.sumup.com (api, js, gateway), pay.google.com
+     img-src      static.sumup.com, api.sumup.com (Kartenlogos), ltxup.sumup.com,
+                  www.gstatic.com (Google-Pay-Knopf)
+     frame-src    https: weil die 3-D-Secure-Abfrage im Rahmen läuft: SumUps
+                  redirect.html schickt im selben Rahmen ein Formular an den
+                  Server der kartenausgebenden Bank, und deren Adresse ist
+                  jede beliebige. Mit einer festen Liste scheitert jede
+                  Kartenzahlung mit 3-D Secure.
+   style-src hat schon 'unsafe-inline' (das Widget setzt Inline-Stile). */
 const crypto = require('crypto');
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' %HASHES% https://challenges.cloudflare.com https://accounts.google.com https://appleid.cdn-apple.com",
+  "script-src 'self' %HASHES% https://challenges.cloudflare.com https://accounts.google.com https://appleid.cdn-apple.com https://gateway.sumup.com https://ltxup.sumup.com https://pay.google.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
-  // Kartenkacheln für die Live-Lieferung (status.html) und die Liefer-Heatmap (cockpit.html), karte.js
-  "img-src 'self' data: blob: https://tile.openstreetmap.org",
+  // Kartenkacheln für die Live-Lieferung (status.html) und die Liefer-Heatmap (cockpit.html), karte.js;
+  // SumUp-Widget: Kartenlogos, Betrugsprüfung, Google-Pay-Knopf
+  "img-src 'self' data: blob: https://tile.openstreetmap.org https://static.sumup.com https://api.sumup.com https://ltxup.sumup.com https://www.gstatic.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://nominatim.openstreetmap.org https://accounts.google.com https://appleid.apple.com",
-  "frame-src https://maps.google.com https://www.google.com https://challenges.cloudflare.com https://accounts.google.com",
+  "connect-src 'self' https://nominatim.openstreetmap.org https://accounts.google.com https://appleid.apple.com https://*.sumup.com https://pay.google.com",
+  "frame-src https://maps.google.com https://www.google.com https://challenges.cloudflare.com https://accounts.google.com https:",
   "worker-src 'self'",
   "manifest-src 'self'",
   "base-uri 'self'",

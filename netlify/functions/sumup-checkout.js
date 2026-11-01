@@ -196,6 +196,18 @@ exports.handler = async (event) => {
     .substring(0, 100);
   const customer = input.customer || {};
 
+  /* „Bezahlen ohne Umweg“: Der Browser möchte das SumUp-Widget direkt in der
+     Kasse zeigen. Ob das erlaubt ist, entscheidet der Admin-Schalter hier im
+     Server, nicht der Browser. Steht er aus (Werkszustand) oder ist er nicht
+     lesbar, bekommt der Browser wie bisher die gehostete SumUp-Seite. */
+  let zahlweg = 'weiterleitung';
+  if (input.zahlweg === 'widget') {
+    try {
+      const e = await require('./lib/zahl-einstellungen').lesen();
+      if (e.direktZahlung) zahlweg = 'widget';
+    } catch (e) { zahlweg = 'weiterleitung'; }
+  }
+
   const payload = {
     checkout_reference: reference,
     amount: Math.round(amount * 100) / 100,
@@ -209,6 +221,14 @@ exports.handler = async (event) => {
       + (input.appMode ? '&app=1' : ''),   // App-Ansicht nach der Rueckkehr behalten
     hosted_checkout: { enabled: true },
   };
+  if (zahlweg === 'widget') {
+    /* Widget: keine gehostete Seite. Ohne redirect_url zeigt das Widget eine
+       3-D-Secure-Abfrage der Bank im Rahmen auf unserer Seite, statt die ganze
+       Seite zur Bank zu schicken (SumUp-Doku: Checkouts erstellen). Der Abschluss
+       läuft wie bisher über return_url (Webhook) und sumup-status. */
+    delete payload.hosted_checkout;
+    delete payload.redirect_url;
+  }
 
   // SumUp's `customer_id` Feld erwartet eine vorher angelegte SumUp-Customer-ID,
   // nicht eine beliebige E-Mail. Daher senden wir es nicht mit.
@@ -267,6 +287,7 @@ exports.handler = async (event) => {
             status: 'pending',
             createdAt: new Date().toISOString(),
             checkoutId: (data && data.id) || null,
+            zahlweg,
             treueFreigabe,
             quelle: 'online',   // Abholnummer vergibt erst send-email nach der Zahlung
             order,
@@ -292,10 +313,15 @@ exports.handler = async (event) => {
       }
     } catch (e) { /* Aufräumen darf den Checkout nie blockieren */ }
 
+    // Google Pay im Widget: Händler-ID von Google (öffentlich, kein Geheimnis).
+    // Ohne sie nutzt das Widget die Voreinstellung von SumUp.
+    const gpId = String(process.env.GOOGLE_PAY_MERCHANT_ID || '').trim();
     return json(200, {
       id: data?.id || null,
       hosted_checkout_url: data?.hosted_checkout_url || null,
       reference,
+      zahlweg,
+      ...(zahlweg === 'widget' && gpId ? { googlePay: { merchantId: gpId, merchantName: "Grill'n Chill" } } : {}),
     });
   } catch (err) {
     { console.error('SumUp:', err.message); return json(502, { error: 'SumUp request failed' }); }

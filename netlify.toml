@@ -78,7 +78,9 @@
     # Hashes der Inline-Skripte (werkzeug/seiten-bauen.js, Abschnitt 4)
     X-Content-Type-Options = "nosniff"
     Referrer-Policy        = "strict-origin-when-cross-origin"
-    Permissions-Policy     = "geolocation=(self), microphone=(), camera=(self), payment=(), usb=()"
+    # payment=(self): Apple Pay und Google Pay im SumUp-Widget laufen auf
+    # unserer eigenen Seite (Paket bezahlen). Vorher payment=().
+    Permissions-Policy     = "geolocation=(self), microphone=(), camera=(self), payment=(self), usb=()"
 
 # Cache-Optimierung für statische Dateien
 [[headers]]
@@ -306,6 +308,27 @@
 # siehe netlify/functions/wochenbericht.js.
 [functions."wochenbericht"]
   schedule = "0 7 * * 1"
+
+# --- Paket bezahlen ---
+# Burger-Pass: Kauf im Kundenkonto, Prüfung nach der Rückkehr von SumUp,
+# Verkaufsliste im Admin-Tool
+[[redirects]]
+  from   = "/burger-pass"
+  to     = "/.netlify/functions/burger-pass"
+  status = 200
+
+# Burger-Pass: täglich Ablauf und Erinnerungsmails (08:30 UTC = 9:30/10:30 Uhr)
+[functions."burger-pass-erinnerung"]
+  schedule = "30 8 * * *"
+
+# Apple Pay im SumUp-Widget: Apple prüft die Domain über diese Datei. Sie
+# kommt aus dem SumUp-Dashboard (Einstellungen > Für Entwickler > Payment
+# wallets) und liegt dann unter .well-known/ ohne Dateiendung.
+[[headers]]
+  for = "/.well-known/apple-developer-merchantid-domain-association"
+  [headers.values]
+    Content-Type  = "text/plain; charset=utf-8"
+    Cache-Control = "public, max-age=3600"
 
 # Gebrandete 404-Seite. Muss der LETZTE Redirect bleiben: Regeln gelten in
 # Reihenfolge, neue Redirects also immer davor eintragen.
