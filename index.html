@@ -10972,11 +10972,23 @@ function applyPromo(btn) {
     promoInputError(input, t('promo.invalid'));
   }
 }
+/* Passt der Text als Platzhalter ganz ins Feld? Längere Hinweise (Kundenlimit,
+   Wegwerf-Adresse, nur in der App) wurden dort abgeschnitten. */
+function passtInsFeld(input, text) {
+  try {
+    const cs = getComputedStyle(input);
+    if (!passtInsFeld.c) passtInsFeld.c = document.createElement('canvas').getContext('2d');
+    passtInsFeld.c.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    const platz = input.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    return passtInsFeld.c.measureText(text).width <= platz;
+  } catch (e) { return String(text).length <= 24; }
+}
 function promoInputError(input, msg) {
   input.style.borderColor = 'var(--color-error)';
   input.setAttribute('aria-invalid', 'true');
   input.value = '';
-  input.placeholder = msg;
+  if (passtInsFeld(input, msg)) input.placeholder = msg;
+  else flashCartNotice(msg);   // ganzer Satz als Hinweis oben im Warenkorb, Feld nur rot
   setTimeout(() => {
     input.style.borderColor = '';
     input.removeAttribute('aria-invalid');
