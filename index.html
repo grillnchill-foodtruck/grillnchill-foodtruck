@@ -16706,6 +16706,8 @@ function applePayKnopf(sichtbar) {
   var sb = document.getElementById('coSubmit');
   var gewaehlt = (document.querySelector('input[name="pay"]:checked') || {}).value;
   if (sb && gewaehlt === 'sumup' && !checkoutBusy) sb.innerHTML = t(an ? 'ap.card' : 'checkout.submit_online');
+  var h = document.getElementById('coSubmitHint');
+  if (h && gewaehlt === 'sumup') h.textContent = t(an ? 'ap.card_hint' : (direktZahlungAktiv() ? 'pay.w_hint' : 'checkout.hint_online'));
 }
 function applePayKaufen() {
   if (AP_LAUF || checkoutBusy || !applePayBereit()) return;
