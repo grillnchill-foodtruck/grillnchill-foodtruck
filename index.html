@@ -16832,8 +16832,8 @@ function walletBereit() { return applePayBereit() || googlePayBereit(); }
      4. Token über den Server an SumUp, Abschluss wie beim Widget
    Erst das Fenster, dann die Kasse: Chrome öffnet Google Pay nur direkt nach
    dem Tipp. Ohne Freigabe bleibt das Token ungenutzt, es kostet nichts.
-   Nur Karten mit Geräte-Token (CRYPTOGRAM_3DS): Sie brauchen keine Bank-
-   Abfrage, die hier niemand zeigen könnte.
+   Live nur Karten mit Geräte-Token (CRYPTOGRAM_3DS): Sie brauchen keine
+   Bank-Abfrage, die hier niemand zeigen könnte. Im Testmodus alle Karten.
    Admin-Modus (shop-status zahlung.googlePay):
      aus  - nichts zu sehen
      test - nur Geräte mit ?gptest=1, Googles Testumgebung, es wird nie bezahlt
@@ -16865,7 +16865,10 @@ function googlePayBereit() {
   return !!g && GP.bereit && !!GP.client && GP.modus === g.modus;
 }
 function gpKarte() {
-  return { type: 'CARD', parameters: { allowedAuthMethods: ['CRYPTOGRAM_3DS'], allowedCardNetworks: ['MASTERCARD', 'VISA'] } };
+  // Im Testmodus alle Karten, damit das Google-Pay-Fenster auch ohne Android-Gerät
+  // aufgeht (Screenshots für Googles Freigabe). Bezahlt wird im Test nie.
+  var test = GP.modus === 'test';
+  return { type: 'CARD', parameters: { allowedAuthMethods: test ? ['PAN_ONLY', 'CRYPTOGRAM_3DS'] : ['CRYPTOGRAM_3DS'], allowedCardNetworks: ['MASTERCARD', 'VISA'] } };
 }
 // pay.js einmal laden, fragen, ob eine passende Karte da ist
 function googlePayLaden() {
