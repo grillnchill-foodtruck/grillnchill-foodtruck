@@ -1266,6 +1266,18 @@
           <label class="switch"><input type="checkbox" id="zApplePay" aria-label="Apple Pay in der App"><span class="slider"></span></label>
         </div>
       </div>
+      <div class="card" id="gpCard">
+        <h2 style="font-size:1rem;">Google Pay</h2>
+        <p class="hint">Google-Pay-Knopf in der Kasse, in der Android-App und in Chrome. Test: nur Geräte, die einmal grillnchill-foodtruck.de/?gptest=1 geöffnet haben, sehen den Knopf. Es läuft Googles Testumgebung, bezahlt wird nichts. Damit entstehen die Screenshots für Googles Freigabe. An: für alle, erst nach der Freigabe durch Google.</p>
+        <div class="field" style="margin-top:.7rem;">
+          <label for="zGooglePay">Modus</label>
+          <select id="zGooglePay">
+            <option value="aus">Aus</option>
+            <option value="test">Test (nur mit Test-Link, ohne Zahlung)</option>
+            <option value="an">An für alle</option>
+          </select>
+        </div>
+      </div>
       <div class="card" id="passCard">
         <div class="switch-row" style="margin-bottom:.9rem;">
           <div>
@@ -2213,6 +2225,7 @@ function zahlZeigen(z){
   zahlStand=z;
   $('zDirekt').checked=!!z.direktZahlung;
   $('zApplePay').checked=!!z.applePayApp;
+  $('zGooglePay').value=['aus','test','an'].includes(z.googlePay)?z.googlePay:'aus';
   $('pAktiv').checked=!!z.pass.aktiv;
   $('pName').value=z.pass.name||'';
   $('pPreis').value=z.pass.preis;
@@ -2220,6 +2233,7 @@ function zahlZeigen(z){
   $('pTage').value=z.pass.tage;
   $('zahlCard').classList.toggle('on',!!z.direktZahlung);
   $('apCard').classList.toggle('on',!!z.applePayApp);
+  $('gpCard').classList.toggle('on',z.googlePay==='an');
   $('zStand').textContent=z.updatedAt?('Zuletzt geändert am '+new Date(z.updatedAt).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+' von '+(z.updatedBy||'?')+'.'):'Werkseinstellung: alles aus.';
   zahlRechnung();
 }
@@ -2241,6 +2255,7 @@ async function zahlSpeichern(btn){
     const z={
       direktZahlung:$('zDirekt').checked,
       applePayApp:$('zApplePay').checked,
+      googlePay:$('zGooglePay').value,
       pass:{aktiv:$('pAktiv').checked,name:$('pName').value.trim()||'Burger-Pass',
         preis:parseFloat(String($('pPreis').value||'').replace(',','.')),menus:parseInt($('pMenus').value,10),tage:parseInt($('pTage').value,10)},
     };
@@ -2252,16 +2267,20 @@ async function zahlSpeichern(btn){
     const direktNeu=z.direktZahlung&&!zahlStand.direktZahlung, passNeu=z.pass.aktiv&&!zahlStand.pass.aktiv;
     if(direktNeu) an.push('Bezahlen ohne Umweg');
     if(z.applePayApp&&!zahlStand.applePayApp) an.push('Apple Pay in der App');
+    const gpNeu=z.googlePay==='an'&&zahlStand.googlePay!=='an';
+    if(gpNeu) an.push('Google Pay für alle');
     if(passNeu) an.push(z.pass.name+' verkaufen');
     if(an.length){
       const ok=await confirmBooking({
         title:'Einschalten?', customer:an.join(' und '),
-        amount:passNeu?(eur(z.pass.preis)+' für '+z.pass.menus+' Menüs\n'+z.pass.tage+' Tage gültig'):(direktNeu?'Widget in der Kasse':'Apple Pay in der iPhone-App'),
+        amount:passNeu?(eur(z.pass.preis)+' für '+z.pass.menus+' Menüs\n'+z.pass.tage+' Tage gültig'):(direktNeu?'Widget in der Kasse':(gpNeu?'Google Pay in der Kasse':'Apple Pay in der iPhone-App')),
         note:passNeu
           ?'Gilt sofort für alle Kunden. Steuerfrage vorher mit dem Steuerberater klären (vorausbezahlte Menüs = Gutschein).'
           :direktNeu
             ?'Gilt sofort für alle Kunden. Vorher im SumUp-Konto Apple Pay für grillnchill-foodtruck.de einrichten.'
-            :'Gilt sofort für die App ab Version 1.3. Vorher das Apple-Pay-Zertifikat im SumUp-Konto hochladen.',
+            :gpNeu
+              ?'Gilt sofort für alle Kunden mit Google Pay. Erst einschalten, wenn Google die Einbindung freigegeben hat.'
+              :'Gilt sofort für die App ab Version 1.3. Vorher das Apple-Pay-Zertifikat im SumUp-Konto hochladen.',
         okLabel:'Einschalten',
       });
       if(!ok){ zahlZeigen(zahlStand); return; }

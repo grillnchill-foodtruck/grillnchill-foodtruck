@@ -3607,6 +3607,8 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   -webkit-appearance: -apple-pay-button; -apple-pay-button-type: buy; -apple-pay-button-style: white; }
 .ap-knopf.ap-ersatz { -webkit-appearance: none; appearance: none; background: #fff; color: #000; font: 600 1.15rem/1 -apple-system, system-ui, sans-serif; }
 .ap-knopf:disabled { opacity: .45; cursor: default; }
+.co-ap.is-locked { opacity: .45; pointer-events: none; }
+.gp-slot { display: block; width: 100%; height: 52px; }
 .co-ap-oder { display: flex; align-items: center; gap: .6rem; font-size: .78rem; color: var(--color-text-muted); }
 .co-ap-oder::before, .co-ap-oder::after { content: ""; flex: 1; height: 1px; background: var(--color-border); }
 .kasse-widget { margin: 0 0 1rem; padding: 1rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
@@ -12130,6 +12132,10 @@ function renderCart() {
         <button type="button" id="coApBtn" class="ap-knopf" data-on-click="applePayKaufen()" aria-label="${t('ap.btn')}"></button>
         <span class="co-ap-oder">${t('ap.or')}</span>
       </div>
+      <div id="coGooglePay" class="co-ap" hidden>
+        <div id="coGpSlot" class="gp-slot"></div>
+        <span class="co-ap-oder">${t('ap.or')}</span>
+      </div>
       <button type="button" id="coSubmit" class="btn btn-primary btn-block btn-lg" data-on-click="triggerCheckoutSubmit()">
         ${t('checkout.submit_cash')}
       </button>
@@ -12218,7 +12224,7 @@ function renderCart() {
       if (!checked || !btn || !hint) return;
       if (checked.value === 'sumup') {
         btn.className = 'btn btn-primary btn-block btn-lg';
-        btn.innerHTML = t(applePayBereit() ? 'ap.card' : 'checkout.submit_online');
+        btn.innerHTML = t(walletBereit() ? 'ap.card' : 'checkout.submit_online');
         // Paket bezahlen: mit Widget bleibt der Kunde auf der Seite; SDK schon vorladen
         hint.textContent = t(direktZahlungAktiv() ? 'pay.w_hint' : 'checkout.hint_online');
         if (direktZahlungAktiv()) kasseSdkLaden();
@@ -12388,6 +12394,8 @@ function lockCheckoutForm(on) {
   if (on) f.setAttribute('aria-busy', 'true'); else f.removeAttribute('aria-busy');
   var ap = document.getElementById('coApBtn');
   if (ap) ap.disabled = !!on;
+  var gp = document.getElementById('coGooglePay');
+  if (gp) gp.classList.toggle('is-locked', !!on);
 }
 function setCheckoutHint(txt) {
   var el = document.getElementById('coWaitHint');
@@ -12415,7 +12423,7 @@ function resetCheckoutSubmitLabel() {
   // Der Ring bleibt bis zum Ende seiner Mindestanzeige (gncBusy raeumt ihn danach ab)
   const ring = btn.querySelector(':scope > .busy-spin');
   btn.innerHTML = t(checked && checked.value === 'sumup'
-    ? (applePayBereit() ? 'ap.card' : 'checkout.submit_online')
+    ? (walletBereit() ? 'ap.card' : 'checkout.submit_online')
     : (checked && checked.value === 'firma' ? 'co.firma_submit' : 'checkout.submit_cash'));
   if (ring) btn.appendChild(ring);
   /* Der Knopf ist auch dann gesperrt, wenn bei Lieferung die Adresse fehlt
@@ -12476,6 +12484,10 @@ async function submitOrder(e) {
   // Apple Pay in der App: nur dieser eine Tipp auf den Apple-Pay-Knopf zählt
   const apWunsch = APPLEPAY_WUNSCH;
   APPLEPAY_WUNSCH = false;
+  // Google Pay: Zahlungsdaten liegen schon vor (googlePayKaufen), dieser Lauf legt die Kasse an
+  const gpWunsch = GOOGLEPAY_WUNSCH;
+  GOOGLEPAY_WUNSCH = false;
+  if (!gpWunsch) GP.token = null;
   if (!validateCheckoutForm()) return;
   // Sperre VOR dem ersten await: ein zweiter Tipp startet keine zweite Bestellung
   if (checkoutBusy) return;
@@ -12716,9 +12728,10 @@ async function submitOrder(e) {
 
     try {
       // Paket bezahlen: Widget nur, wenn der Schalter an ist und das SDK lädt
-      const mitApplePay = apWunsch && applePayBereit()
+      const mitGooglePay = gpWunsch && !!GP.token && googlePayBereit() && pay === 'sumup';
+      const mitApplePay = !mitGooglePay && apWunsch && applePayBereit()
         && ((document.querySelector('input[name="pay"]:checked') || {}).value === 'sumup');
-      const mitWidget = !mitApplePay && direktZahlungAktiv() && await kasseSdkLaden();
+      const mitWidget = !mitApplePay && !mitGooglePay && direktZahlungAktiv() && await kasseSdkLaden();
       // Bis zu 2 Versuche: der allererste Aufruf nach dem Laden bzw. aus dem
       // Function-Kaltstart schlägt gelegentlich fehl (bisher half ein manuelles
       // Neuladen). Ein automatischer zweiter Versuch erspart das dem Kunden.
@@ -12731,7 +12744,7 @@ async function submitOrder(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(kasseAnfrage = {
               // Paket bezahlen: Wunsch nach dem Widget; ob es gilt, entscheidet der Server
-              zahlweg: mitApplePay ? 'applepay' : (mitWidget ? 'widget' : 'weiterleitung'),
+              zahlweg: mitApplePay ? 'applepay' : (mitGooglePay ? 'googlepay' : (mitWidget ? 'widget' : 'weiterleitung')),
               amount: amountToCharge,
               description: buildOrderDescription(orderData),
               // In der App: Rueckkehr-URL soll den App-Modus behalten (app=1),
@@ -12778,6 +12791,19 @@ async function submitOrder(e) {
         } catch (e) {}
         clearTimeout(checkoutHintT);
         applePayZahlen(data, Number(data.betrag) > 0 ? Number(data.betrag) : amountToCharge);
+        return;
+      }
+
+      // Google Pay: Zahlungsdaten von Google an SumUp, statt Weiterleitung
+      if (data && data.zahlweg === 'googlepay' && data.id && mitGooglePay) {
+        try {
+          localStorage.setItem(PENDING_STORE_KEY, JSON.stringify({
+            reference: data.reference, checkoutId: data.id, order: dataWithRef,
+            cartSnapshot: { ...cart }, zahlweg: 'googlepay',
+          }));
+        } catch (e) {}
+        clearTimeout(checkoutHintT);
+        googlePayZahlen(data, Number(data.betrag) > 0 ? Number(data.betrag) : amountToCharge);
         return;
       }
 
@@ -13299,6 +13325,16 @@ const LEGAL = {
         Server, der es unverändert an SumUp weiterleitet. Entschlüsseln kann es nur SumUp; wir
         sehen keine Kartendaten und speichern das Token nicht. Apple verarbeitet dabei die für
         Apple&nbsp;Pay nötigen Angaben nach den eigenen Datenschutzbestimmungen von Apple.
+        Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.
+      </p>
+      <p>
+        In unserer Android-App und in Chrome kannst du ebenso mit Google&nbsp;Pay direkt im
+        Bestellvorgang bezahlen. Dafür lädt die Seite ein Skript von Google (pay.google.com).
+        Google Ireland Limited (Gordon House, Barrow Street, Dublin 4, Irland) zeigt das
+        Bezahlfenster und übergibt der Seite ein verschlüsseltes Zahlungstoken, das unser Server
+        unverändert an SumUp weiterleitet. Auch dieses Token kann nur SumUp entschlüsseln; wir
+        sehen keine Kartendaten und speichern das Token nicht. Google verarbeitet dabei die für
+        Google&nbsp;Pay nötigen Angaben nach den eigenen Datenschutzbestimmungen von Google.
         Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.
       </p>
 
@@ -16703,11 +16739,13 @@ function applePayKnopf(sichtbar) {
     b.classList.toggle('ap-ersatz', !echt);
     if (!echt && !b.textContent) b.textContent = '\uF8FF Pay';
   }
+  var gpAn = googlePayKnopf(sichtbar);
+  var wallet = an || gpAn;
   var sb = document.getElementById('coSubmit');
   var gewaehlt = (document.querySelector('input[name="pay"]:checked') || {}).value;
-  if (sb && gewaehlt === 'sumup' && !checkoutBusy) sb.innerHTML = t(an ? 'ap.card' : 'checkout.submit_online');
+  if (sb && gewaehlt === 'sumup' && !checkoutBusy) sb.innerHTML = t(wallet ? 'ap.card' : 'checkout.submit_online');
   var h = document.getElementById('coSubmitHint');
-  if (h && gewaehlt === 'sumup') h.textContent = t(an ? 'ap.card_hint' : (direktZahlungAktiv() ? 'pay.w_hint' : 'checkout.hint_online'));
+  if (h && gewaehlt === 'sumup') h.textContent = t(wallet ? 'ap.card_hint' : (direktZahlungAktiv() ? 'pay.w_hint' : 'checkout.hint_online'));
 }
 function applePayKaufen() {
   if (AP_LAUF || checkoutBusy || !applePayBereit()) return;
@@ -16721,20 +16759,19 @@ function applePayZahlen(data, betrag) {
     applePayEnde({ bezahlt: false, freigegeben: false, grund: 'bruecke' });
   }
 }
-// Freigabe im Blatt: Token zum Server, Ergebnis zurück ans Blatt (Haken oder Fehler)
-async function applePayToken(token) {
-  var w = AP_LAUF;
-  if (!w) { applePayNachricht({ aktion: 'ergebnis', ok: false }); return; }
+/* Apple Pay und Google Pay: Token zum Server (sumup-checkout, aktion 'applepay' oder
+   'googlepay'), danach den Status klären. Unklar (Netz, SumUp noch PENDING): kurz bei
+   SumUp nachfragen, wie beim Widget. Liefert PAID, FAILED, EXPIRED, PENDING oder UNKNOWN. */
+async function walletVerarbeiten(aktion, w, token) {
   var st = 'UNKNOWN';
   try {
     var r = await fetch(SUMUP_ENDPOINT, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ aktion: 'applepay', reference: w.ref, checkoutId: w.checkoutId, token: token }),
+      body: JSON.stringify({ aktion: aktion, reference: w.ref, checkoutId: w.checkoutId, token: token }),
     });
     var d = await r.json().catch(function () { return null; });
     if (d && d.status) st = String(d.status).toUpperCase();
   } catch (e) {}
-  // Unklar (Netz, SumUp noch PENDING): kurz bei SumUp nachfragen, wie beim Widget
   for (var i = 0; i < 3 && st !== 'PAID' && st !== 'FAILED' && st !== 'EXPIRED'; i++) {
     await new Promise(function (res) { setTimeout(res, 800); });
     try {
@@ -16743,6 +16780,19 @@ async function applePayToken(token) {
       if (r2.ok && d2 && d2.status) st = String(d2.status).toUpperCase();
     } catch (e) {}
   }
+  return st;
+}
+// Abgebrochen oder abgelehnt: Vorgang stornieren, Zwischenspeicher leeren, Kasse wieder frei
+function walletVorgangVerwerfen(w) {
+  kasseVorgangStornieren(w);
+  try { var p = JSON.parse(localStorage.getItem(PENDING_STORE_KEY) || 'null'); if (p && p.reference === w.ref) localStorage.removeItem(PENDING_STORE_KEY); } catch (e) {}
+  releaseCheckout();
+}
+// Freigabe im Blatt: Token zum Server, Ergebnis zurück ans Blatt (Haken oder Fehler)
+async function applePayToken(token) {
+  var w = AP_LAUF;
+  if (!w) { applePayNachricht({ aktion: 'ergebnis', ok: false }); return; }
+  var st = await walletVerarbeiten('applepay', w, token);
   w.status = st;
   w.bezahlt = st === 'PAID';
   applePayNachricht({ aktion: 'ergebnis', ok: w.bezahlt });
@@ -16759,10 +16809,7 @@ function applePayEnde(d) {
     handlePaymentReturn();
     return;
   }
-  // Abgebrochen oder abgelehnt: Vorgang stornieren, Kasse wieder frei
-  kasseVorgangStornieren(w);
-  try { var p = JSON.parse(localStorage.getItem(PENDING_STORE_KEY) || 'null'); if (p && p.reference === w.ref) localStorage.removeItem(PENDING_STORE_KEY); } catch (e) {}
-  releaseCheckout();
+  walletVorgangVerwerfen(w);
   if (d && d.freigegeben) flashCartNotice(t('ap.failed'));
 }
 window.addEventListener('gnc-applepay', function (ev) {
@@ -16773,6 +16820,149 @@ window.addEventListener('gnc-applepay', function (ev) {
 });
 // Beim Laden fragen, ob Apple Pay geht (Karte in Wallet)
 if (apBruecke()) applePayNachricht({ aktion: 'pruefen' });
+function walletBereit() { return applePayBereit() || googlePayBereit(); }
+
+/* ====================================================================
+   GOOGLE PAY (Android-App aus dem Play Store und Chrome)
+   Googles eigener Knopf (pay.js) über „Mit Karte bezahlen“. Ablauf:
+     1. Tipp: Formular prüfen, Google-Pay-Fenster mit dem angezeigten Betrag
+     2. Zahlungsdaten da: die Kasse wird angelegt wie immer (submitOrder,
+        zahlweg 'googlepay', Betrag im Server nachgerechnet)
+     3. Weicht der nachgerechnete Betrag ab, wird nichts belastet
+     4. Token über den Server an SumUp, Abschluss wie beim Widget
+   Erst das Fenster, dann die Kasse: Chrome öffnet Google Pay nur direkt nach
+   dem Tipp. Ohne Freigabe bleibt das Token ungenutzt, es kostet nichts.
+   Nur Karten mit Geräte-Token (CRYPTOGRAM_3DS): Sie brauchen keine Bank-
+   Abfrage, die hier niemand zeigen könnte.
+   Admin-Modus (shop-status zahlung.googlePay):
+     aus  - nichts zu sehen
+     test - nur Geräte mit ?gptest=1, Googles Testumgebung, es wird nie bezahlt
+     an   - für alle mit Google Pay
+   Nicht in der iOS-App, dort gibt es Apple Pay.
+   ==================================================================== */
+const GP_SKRIPT = 'https://pay.google.com/gp/p/js/pay.js';
+var GP = { client: null, modus: '', bereit: false, laed: null, laeuft: false, token: null, betrag: 0 };
+var GOOGLEPAY_WUNSCH = false;
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get('gptest');
+    if (q === '1') localStorage.setItem('gnc_gp_test', '1');
+    if (q === '0') localStorage.removeItem('gnc_gp_test');
+  } catch (e) {}
+})();
+function gpKonfig() {
+  var g = SHOP_STATUS && SHOP_STATUS.zahlung && SHOP_STATUS.zahlung.googlePay;
+  if (!g || !g.merchantId || !g.gatewayMerchantId || istIOSApp() || TEST_MODE_NO_BACKEND) return null;
+  if (g.modus === 'test') {
+    var test = false;
+    try { test = localStorage.getItem('gnc_gp_test') === '1'; } catch (e) {}
+    if (!test) return null;
+  } else if (g.modus !== 'an') return null;
+  return g;
+}
+function googlePayBereit() {
+  var g = gpKonfig();
+  return !!g && GP.bereit && !!GP.client && GP.modus === g.modus;
+}
+function gpKarte() {
+  return { type: 'CARD', parameters: { allowedAuthMethods: ['CRYPTOGRAM_3DS'], allowedCardNetworks: ['MASTERCARD', 'VISA'] } };
+}
+// pay.js einmal laden, fragen, ob eine passende Karte da ist
+function googlePayLaden() {
+  var g = gpKonfig();
+  if (!g) return Promise.resolve(false);
+  if (GP.laed && GP.modus === g.modus) return GP.laed;
+  GP.modus = g.modus; GP.bereit = false; GP.client = null;
+  GP.laed = new Promise(function (fertig) {
+    function los() {
+      try {
+        GP.client = new google.payments.api.PaymentsClient({ environment: g.modus === 'an' ? 'PRODUCTION' : 'TEST' });
+        GP.client.isReadyToPay({ apiVersion: 2, apiVersionMinor: 0, allowedPaymentMethods: [gpKarte()], existingPaymentMethodRequired: true })
+          .then(function (r) {
+            // Im Test meldet Google immer „ja“; live nur mit hinterlegter Karte
+            GP.bereit = !!(r && r.result) && (g.modus !== 'an' || r.paymentMethodPresent !== false);
+            fertig(GP.bereit); applePayKnopf();
+          })
+          .catch(function () { fertig(false); });
+      } catch (e) { fertig(false); }
+    }
+    if (window.google && google.payments && google.payments.api) { los(); return; }
+    var s = document.createElement('script');
+    s.src = GP_SKRIPT; s.async = true;
+    s.onload = los;
+    s.onerror = function () { GP.laed = null; fertig(false); };
+    document.head.appendChild(s);
+  });
+  return GP.laed;
+}
+// Knopf zeigen oder verstecken; true, wenn er zu sehen ist
+function googlePayKnopf(sichtbar) {
+  var box = document.getElementById('coGooglePay');
+  if (!box) return false;
+  if (sichtbar === undefined) sichtbar = ((document.querySelector('input[name="pay"]:checked') || {}).value === 'sumup');
+  if (sichtbar && gpKonfig() && !GP.bereit) googlePayLaden();
+  var an = !!sichtbar && googlePayBereit() && !applePayBereit();
+  box.hidden = !an;
+  var slot = document.getElementById('coGpSlot');
+  if (an && slot && !slot.firstChild) {
+    try {
+      slot.appendChild(GP.client.createButton({
+        onClick: googlePayKaufen, buttonColor: 'white', buttonType: 'buy', buttonSizeMode: 'fill',
+        buttonRadius: 14, buttonLocale: (typeof currentLang !== 'undefined' && currentLang) || 'de',
+      }));
+    } catch (e) { box.hidden = true; return false; }
+  }
+  return an;
+}
+function googlePayKaufen() {
+  var g = gpKonfig();
+  if (!g || !googlePayBereit() || GP.laeuft || checkoutBusy) return;
+  if (!validateCheckoutForm()) return;
+  var betrag = Math.round(cartGrandTotal() * 100) / 100;
+  if (!(betrag >= 1)) { flashCartNotice(t('co.min_online')); return; }
+  GP.laeuft = true;
+  var karte = gpKarte();
+  karte.tokenizationSpecification = { type: 'PAYMENT_GATEWAY', parameters: { gateway: 'sumup', gatewayMerchantId: g.gatewayMerchantId } };
+  GP.client.loadPaymentData({
+    apiVersion: 2, apiVersionMinor: 0, allowedPaymentMethods: [karte],
+    merchantInfo: { merchantId: g.merchantId, merchantName: "Grill'n Chill" },
+    transactionInfo: { totalPriceStatus: 'FINAL', totalPrice: betrag.toFixed(2), currencyCode: 'EUR', countryCode: 'DE' },
+  }).then(function (daten) {
+    GP.laeuft = false;
+    // Testmodus: Googles Testumgebung liefert Probe-Daten, die SumUp nie belasten kann
+    if (g.modus !== 'an') { flashCartNotice(t('gp.test_ok')); return; }
+    GP.token = daten; GP.betrag = betrag;
+    GOOGLEPAY_WUNSCH = true;
+    triggerCheckoutSubmit();
+  }).catch(function (err) {
+    GP.laeuft = false;
+    if (err && err.statusCode === 'CANCELED') return;   // Fenster geschlossen
+    console.error('Google Pay:', err && (err.statusCode || err.statusMessage));
+    flashCartNotice(t('gp.failed'));
+  });
+}
+async function googlePayZahlen(data, betrag) {
+  var token = GP.token, gezeigt = GP.betrag;
+  GP.token = null;
+  var w = { ref: data.reference, checkoutId: data.id };
+  // Nachgerechnet anders als im Google-Pay-Fenster: nichts belasten, neu bestätigen lassen
+  if (!token || Math.abs(Number(betrag) - gezeigt) > 0.005) {
+    walletVorgangVerwerfen(w);
+    flashCartNotice(t(token ? 'gp.changed' : 'gp.failed'));
+    return;
+  }
+  setCheckoutHint('');
+  gncWaitOverlay(t('wait.paying'), t('wait.paying_sub'));
+  var st = await walletVerarbeiten('googlepay', w, token);
+  gncWaitHide();
+  if (st === 'FAILED' || st === 'EXPIRED') {
+    walletVorgangVerwerfen(w);
+    flashCartNotice(t('gp.failed'));
+    return;
+  }
+  // Bezahlt oder noch unklar: Abschluss wie nach der Rückkehr von SumUp (prüft selbst bei SumUp)
+  handlePaymentReturn();
+}
 const KW_SCHLOSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg>';
 
 function direktZahlungAktiv() {

@@ -1,13 +1,16 @@
 /**
  * lib/zahl-einstellungen.js
  * ----------------------------------------------------------------------------
- * Drei Admin-Schalter rund ums Bezahlen, alle ab Werk AUS:
+ * Vier Admin-Schalter rund ums Bezahlen, alle ab Werk AUS:
  *
  *   direktZahlung   „Bezahlen ohne Umweg“: Die Kasse zeigt das SumUp-Widget
  *                   direkt in Schritt 3, statt zur SumUp-Seite zu wechseln.
  *   applePayApp     Apple Pay in der iOS-App (ab Build 8): eigenes Apple-Pay-
  *                   Blatt, Token geht über den Server an SumUp. Ältere Builds
  *                   und das Web sehen davon nichts.
+ *   googlePay       Google Pay in der Kasse (Android-App und Chrome): 'aus',
+ *                   'test' (Knopf nur auf Geräten mit ?gptest=1, Google-Test-
+ *                   umgebung, es wird nie bezahlt) oder 'an' (für alle).
  *   pass            Burger-Pass (Menü-Paket ohne automatische Verlängerung):
  *                   aktiv, Name, Preis, Anzahl Menüs, Gültigkeit in Tagen.
  *
@@ -28,6 +31,7 @@ const SCHLUESSEL = 'zahlung';
 const WERKSWERTE = Object.freeze({
   direktZahlung: false,
   applePayApp: false,
+  googlePay: 'aus',
   pass: Object.freeze({ aktiv: false, name: 'Burger-Pass', preis: 39, menus: 4, tage: 60 }),
 });
 
@@ -60,6 +64,7 @@ function bereinigen(roh) {
   return {
     direktZahlung: r.direktZahlung === true,
     applePayApp: r.applePayApp === true,
+    googlePay: ['aus', 'test', 'an'].includes(r.googlePay) ? r.googlePay : 'aus',
     pass: {
       aktiv: p.aktiv === true,
       name,
@@ -93,10 +98,20 @@ function oeffentlich(e) {
   return {
     direkt: !!x.direktZahlung,
     applePay: !!x.applePayApp,
+    // Google Pay braucht im Browser die Google-Händler-ID und den SumUp-Händlercode
+    // (gatewayMerchantId). Beides ist kein Geheimnis, steht aber nur da, wenn Google Pay nicht aus ist.
+    googlePay: googlePayOeffentlich(x.googlePay),
     pass: x.pass && x.pass.aktiv
       ? { name: x.pass.name, preis: x.pass.preis, menus: x.pass.menus, tage: x.pass.tage }
       : null,
   };
+}
+
+function googlePayOeffentlich(modus) {
+  const merchantId = String(process.env.GOOGLE_PAY_MERCHANT_ID || '').trim();
+  const gatewayMerchantId = String(process.env.SUMUP_MERCHANT_CODE || '').trim();
+  if ((modus !== 'test' && modus !== 'an') || !merchantId || !gatewayMerchantId) return null;
+  return { modus, merchantId, gatewayMerchantId };
 }
 
 module.exports = { lesen, schreiben, bereinigen, oeffentlich, WERKSWERTE, GRENZEN, SCHLUESSEL };

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
- * werkzeug/applepay-test.js
+ * werkzeug/wallet-test.js
  * ----------------------------------------------------------------------------
- * Apple Pay in der iOS-App (ab Build 8): sumup-checkout legt die Kasse mit
- * zahlweg 'applepay' an und verarbeitet danach das Token (aktion 'applepay').
+ * Apple Pay in der iOS-App (ab Build 8) und Google Pay: sumup-checkout legt die
+ * Kasse mit zahlweg 'applepay' bzw. 'googlepay' an und verarbeitet danach das
+ * Token (aktion 'applepay' bzw. 'googlepay').
  *
- *   node werkzeug/applepay-test.js
+ *   node werkzeug/wallet-test.js
  *
  * Fährt den ECHTEN Handler gegen einen Blob-Speicher im Arbeitsspeicher.
  * SumUp ist nachgebaut, nichts verlässt den Rechner.
@@ -83,9 +84,9 @@ async function rufe(body) {
   let d = null; try { d = JSON.parse(r.body); } catch (e) {}
   return { code: r.statusCode, d };
 }
-const schalter = (an) => schreib('shop-status', 'zahlung', { direktZahlung: false, applePayApp: an, pass: { aktiv: false } });
-const bestellung = (nr) => ({
-  zahlweg: 'applepay', amount: 9.5, reference: 'GNC-17000000000' + nr,
+const schalter = (an, gp) => schreib('shop-status', 'zahlung', { direktZahlung: false, applePayApp: an, googlePay: gp || 'aus', pass: { aktiv: false } });
+const bestellung = (nr, zw) => ({
+  zahlweg: zw || 'applepay', amount: 9.5, reference: 'GNC-17000000000' + nr,
   customer: { name: 'Test', email: 'ap' + nr + '@example.org', phone: '+4915100000' + nr },
   order: { total: 9.5, name: 'Test', email: 'ap' + nr + '@example.org', phone: '+4915100000' + nr, mode: 'pickup', payment: 'sumup', cartSnapshot: { a: { menuId: 'classic', qty: 1 } } },
 });
@@ -160,6 +161,36 @@ const token = () => ({
   const vorher = PUTS.length;
   r = await rufe({ aktion: 'applepay', reference: k5.reference, checkoutId: k5.id, token: token() });
   ok('Stornierter Vorgang: nicht mehr belastbar', r.code === 409 && PUTS.length === vorher, r);
+
+  /* 7. Google Pay */
+  leiseLog('\nGoogle Pay\n');
+  process.env.GOOGLE_PAY_MERCHANT_ID = 'BCR2DN4TEST';
+  const gpToken = () => ({ apiVersion: 2, apiVersionMinor: 0, paymentMethodData: { type: 'CARD', description: 'Visa •••• 1234', info: { cardNetwork: 'VISA', cardDetails: '1234' }, tokenizationData: { type: 'PAYMENT_GATEWAY', token: '{"signature":"' + 'B'.repeat(5000) + '","protocolVersion":"ECv2"}' } } });
+  const shop = require(F + '/shop-status.js');
+  const lade = async () => JSON.parse((await shop.handler({ httpMethod: 'GET', headers: { 'x-nf-client-connection-ip': '10.3.0.1' }, queryStringParameters: {} })).body);
+  schalter(true, 'aus');
+  let st = await lade();
+  ok('Google Pay aus: shop-status nennt keine Google-Pay-Daten', st.zahlung && st.zahlung.googlePay === null, st.zahlung);
+  schalter(true, 'test');
+  st = await lade();
+  ok('Testmodus: shop-status nennt Modus, Google-Händler-ID und SumUp-Code', st.zahlung.googlePay && st.zahlung.googlePay.modus === 'test' && st.zahlung.googlePay.merchantId === 'BCR2DN4TEST' && st.zahlung.googlePay.gatewayMerchantId === 'MTEST', st.zahlung);
+  r = await rufe(bestellung(6, 'googlepay'));
+  ok('Testmodus: Kasse bleibt Weiterleitung, im Test wird nie bezahlt', r.d.zahlweg === 'weiterleitung', r.d);
+  const vorGp = PUTS.length;
+  r = await rufe({ aktion: 'googlepay', reference: r.d.reference, checkoutId: r.d.id, token: gpToken() });
+  ok('Testmodus: Token wird nicht verarbeitet', r.code === 403 && PUTS.length === vorGp, r);
+  schalter(true, 'an');
+  r = await rufe(bestellung(7, 'googlepay'));
+  const g = r.d;
+  ok('An: zahlweg googlepay, Kasse ohne gehostete Seite', g.zahlweg === 'googlepay' && SUMUP[g.id] && !SUMUP[g.id].payload.hosted_checkout, g);
+  r = await rufe({ aktion: 'applepay', reference: g.reference, checkoutId: g.id, token: token() });
+  ok('Apple-Pay-Token auf einer Google-Pay-Kasse: abgewiesen', r.code === 404 && PUTS.length === vorGp, r);
+  r = await rufe({ aktion: 'googlepay', reference: g.reference, checkoutId: g.id, token: { apiVersion: 2, paymentMethodData: {} } });
+  ok('Google-Token ohne tokenizationData: abgewiesen', r.code === 400 && PUTS.length === vorGp, r);
+  r = await rufe({ aktion: 'googlepay', reference: g.reference, checkoutId: g.id, token: gpToken() });
+  const gput = PUTS[PUTS.length - 1] || {};
+  ok('Bezahlt: Antwort PAID', r.d.status === 'PAID', r);
+  ok('An SumUp: payment_type google_pay, PaymentData unverändert im Feld google_pay', gput.payment_type === 'google_pay' && JSON.stringify(gput.google_pay) === JSON.stringify(gpToken()) && !gput.apple_pay, gput.payment_type);
 
   leiseLog('\n' + (n - fehler) + ' von ' + n + (fehler ? ' – ' + fehler + ' FEHLER' : ' grün'));
   process.exit(fehler ? 1 : 0);
