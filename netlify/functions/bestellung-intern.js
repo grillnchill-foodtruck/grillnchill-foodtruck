@@ -324,6 +324,8 @@ async function anlegen(who, b) {
     return json(500, { error: 'speichern_fehlgeschlagen', hint: 'Bestellung wurde nicht gespeichert' });
   }
   await addRevenue(tag, umsatzPatch(order, quelle, 1));
+  // Bestand: Buns und Patties abziehen (lib/bestand.js)
+  try { await require('./lib/bestand').abziehen(reference, korb, tag); } catch (e) { console.error('Bestand:', e && e.message); }
 
   // Bestätigung nur mit Mailadresse
   let mailed = false;
@@ -387,6 +389,8 @@ async function stornieren(who, input) {
   rec.status = 'cancelled';
   rec.cancelledAt = new Date().toISOString();
   rec.cancelledBy = who.name;
+  // Eingabefehler: Buns und Patties zurückgeben
+  try { await require('./lib/bestand').zurueckbuchen(ref, rec.order && rec.order.cartSnapshot, rec.abholTag); } catch (e) { console.error('Bestand zurück:', e && e.message); }
   rec.cancelReason = 'eingabe';
   await s.setJSON('o:' + ref, rec);
   const tag = rec.abholTag || berlinTag(new Date(rec.createdAt || Date.now()).getTime());

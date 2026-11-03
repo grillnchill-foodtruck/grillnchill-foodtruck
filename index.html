@@ -9586,7 +9586,8 @@ async function loadShopStatus() {
       deliveryOff: !!s.deliveryOff,
       pickupOff: !!s.pickupOff,
       pauseMessage: s.pauseMessage || '',
-      soldOut: Array.isArray(s.soldOut) ? s.soldOut : [],
+      // Hand-Einträge plus „Bestand zählt mit“ (Buns oder Patties alle)
+      soldOut: (Array.isArray(s.soldOut) ? s.soldOut : []).concat(Array.isArray(s.soldOutAuto) ? s.soldOutAuto : []),
       waitTime: Math.max(0, parseInt(s.waitTime, 10) || 0),
       special: (s.special && s.special.id) ? s.special : null,
       zahlung: (s.zahlung && typeof s.zahlung === 'object') ? s.zahlung : null,   // Paket bezahlen

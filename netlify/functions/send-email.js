@@ -1528,6 +1528,13 @@ exports.handler = async (event) => {
       }
       order.quelle = 'online';
 
+      // Bestand: Buns und Patties abziehen, einmal je Bestellung (lib/bestand.js).
+      // Klemmt der Speicher, geht die Bestellung trotzdem durch.
+      if (order.reference && order.cartSnapshot && !order.isTest) {
+        try { await require('./lib/bestand').abziehen(order.reference, order.cartSnapshot, order.abholTag); }
+        catch (e) { console.error('Bestand:', e && e.message); }
+      }
+
       // Firmenkunden bekommen eine Rechnung. Die Nummer wird hier vergeben –
       // nach der Doppelt-Prüfung oben, also genau einmal je Bestellung.
       if (order.company) {

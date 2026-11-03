@@ -208,6 +208,9 @@ exports.handler = async (event) => {
     }
     // Bezahl-Schalter (Paket bezahlen): eigener Schlüssel, nicht tagesgebunden
     status.zahlung = zahlEinstellungen.oeffentlich(await zahlEinstellungen.lesen());
+    // Bestand zählt mit: Burger, für die heute Buns oder Patties alle sind (lib/bestand.js).
+    // Getrennt von soldOut, damit das Speichern im Admin sie nicht als Hand-Eintrag übernimmt.
+    try { status.soldOutAuto = (await require('./lib/bestand').stand()).ausverkauft; } catch (e) { status.soldOutAuto = []; }
     // Jeder Seitenaufruf fragt hier nach. Das Netlify-CDN hält die Antwort
     // 10 Sekunden: Eine Pause oder „Ausverkauft“ kommt also spätestens nach
     // 10 Sekunden bei allen an. Admin-Tool und Cockpit hängen ?frisch=<Zeit>
@@ -239,6 +242,22 @@ exports.handler = async (event) => {
     await meldeErgebnis(event, !!who);
     if (!who) {
       return json(401, { error: 'Falsches Passwort' });
+    }
+
+    // Bestand (Buns, Patties): lesen und setzen. Auch Mitarbeiter, denn
+    // das zählt am Truck, wer gerade da ist.
+    if (body.bereich === 'bestand') {
+      const bestand = require('./lib/bestand');
+      try {
+        if (body.lesen === true) return json(200, { ok: true, bestand: await bestand.stand() });
+        const neu = await bestand.setzen(body.bestand || {});
+        await auditLog(who, 'Bestand', 'Rest: ' + bestand.ARTEN.map((a) => bestand.NAMEN[a] + ' ' + (neu.rest[a] === null ? 'nicht gezählt' : neu.rest[a])).join(', ')
+          + (body.bestand && body.bestand.standard ? ' · Standard: ' + (body.bestand.standard.buns || 0) + ' Buns, ' + (body.bestand.standard.patties || 0) + ' Patties' : ''));
+        return json(200, { ok: true, bestand: neu });
+      } catch (e) {
+        console.error('shop-status bestand:', e && e.message);
+        return json(500, { error: 'Speichern fehlgeschlagen' });
+      }
     }
 
     // Bezahl-Einstellungen („Bezahlen ohne Umweg“, Burger-Pass). Eigener

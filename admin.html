@@ -58,6 +58,27 @@
   .menu-btn{width:auto;display:inline-flex;align-items:center;gap:.45rem;padding:0 .85rem;color:var(--cream);font:inherit;font-weight:700;font-size:.85rem}
   @media (max-width:339px){ .menu-btn span{display:none} .menu-btn{width:44px;padding:0;justify-content:center} }
 
+  /* ============ BESTAND HEUTE ============ */
+  .bst-reihe{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.4rem .8rem;padding:.7rem 0;border-top:1px solid var(--border)}
+  .bst-reihe:first-child{border-top:0;padding-top:0}
+  .bst-name{font-weight:700;font-size:.95rem}
+  .bst-zahl{font-family:var(--display-font,inherit);font-size:1.7rem;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;text-align:right}
+  .bst-zahl small{font-size:.75rem;font-weight:600;color:var(--faint);margin-left:.25rem}
+  .bst-balken{grid-column:1/-1;height:6px;border-radius:99px;background:var(--card2);overflow:hidden}
+  .bst-balken i{display:block;height:100%;border-radius:99px;background:var(--live);transition:width .3s ease}
+  .bst-reihe.knapp .bst-balken i{background:var(--amber)} .bst-reihe.knapp .bst-zahl{color:var(--amber)}
+  .bst-reihe.leer .bst-balken i{background:var(--red)} .bst-reihe.leer .bst-zahl{color:var(--red)}
+  .bst-aktionen{grid-column:1/-1;display:flex;gap:.45rem;flex-wrap:wrap}
+  .bst-aktionen .btn-ghost{flex:1 1 auto}
+  .bst-edit{grid-column:1/-1;display:flex;gap:.45rem;align-items:center}
+  .bst-edit input{flex:1;min-width:0;font-size:1.2rem;text-align:center;font-variant-numeric:tabular-nums}
+  .bst-edit .btn-ghost{min-width:48px}
+  .bst-start{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;margin:.2rem 0 .8rem}
+  .bst-start label{display:flex;flex-direction:column;gap:.3rem;font-weight:700;font-size:.85rem}
+  .bst-start input{font-size:1.2rem;text-align:center}
+  .bst-fuss{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:.8rem;padding-top:.7rem;border-top:1px solid var(--border);font-size:.8rem;color:var(--dim)}
+  .bst-weg{margin:.6rem 0 0;font-size:.8rem;color:var(--amber);font-weight:600}
+
   /* ============ MENÜ (von rechts, wie ein Blatt) ============ */
   .amenu-bg{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.55);opacity:0;visibility:hidden;
     transition:opacity .25s ease,visibility 0s .25s}
@@ -929,6 +950,12 @@
         <p class="hint" style="margin:.9rem 0 0;color:var(--faint);font-size:.75rem;">Gilt bis Mitternacht – auch für Vorbestellungen. Danach automatisch wieder beides an.</p>
       </div>
 
+      <div class="sec"><h3>Bestand heute</h3></div>
+      <div class="card bestand-card" id="bestandCard">
+        <p class="hint" style="margin:0 0 .8rem;">Jede Bestellung zieht ab. Bei null gehen die Burger online von selbst auf ausverkauft.</p>
+        <div id="bestandInhalt"><p class="hint">Bestand wird geladen …</p></div>
+      </div>
+
       <div class="sec"><h3>Live-Wartezeit</h3></div>
       <div class="card" id="waitCard">
         <div class="switch-row">
@@ -1664,6 +1691,7 @@ async function loadStatusRun(){
     paintTicket(s.paused, s.updatedAt, wt);
     setDirty(false);
     statusLoaded=true;
+    bestandLaden();
     return true;
   }catch(e){
     toast('Status konnte nicht geladen werden','err');
@@ -4681,6 +4709,94 @@ document.addEventListener('keydown',e=>{
   if(e.shiftKey&&document.activeElement===erst){ e.preventDefault(); letzt.focus(); }
   else if(!e.shiftKey&&document.activeElement===letzt){ e.preventDefault(); erst.focus(); }
 });
+
+/* ---------------- Bestand heute (lib/bestand.js über shop-status) ----------------
+   Für faule Tage gebaut: einmal „jeden Morgen 80 Buns, 80 Patties“ einstellen,
+   dann zählt jeder Tag von selbst. Korrigiert wird mit „Rest ändern“. */
+const BST_ARTEN=[['buns','Buns'],['patties','Patties']];
+let BST=null, bstOffen=null, bstEinrichten=false;
+async function bestandApi(body){
+  const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:currentPw,bereich:'bestand',...body})});
+  return {ok:res.ok,status:res.status,d:await res.json().catch(()=>({}))};
+}
+async function bestandLaden(){
+  try{ const r=await bestandApi({lesen:true}); if(r.ok){ BST=r.d.bestand; bestandZeigen(); } }catch(e){}
+}
+function bstNamen(ids){
+  const karte=(window.SPEISEKARTE&&window.SPEISEKARTE.MENU)||[];
+  return ids.map(id=>{ const m=karte.find(x=>x.id===id); return m?m.name:id; }).join(', ');
+}
+function bestandZeigen(){
+  const box=$('bestandInhalt'); if(!box||!BST) return;
+  const st=BST.standard;
+  // Noch nie eingerichtet (oder Kubi will die Standardwerte ändern): zwei Zahlen, ein Knopf
+  if(bstEinrichten||(!st&&!BST.gezaehlt)){
+    const v=(a)=>st&&st[a]!=null?st[a]:(BST.start&&BST.start[a]!=null?BST.start[a]:'');
+    box.innerHTML='<p style="margin:0 0 .6rem;font-weight:700;">Wie viele hast du jeden Morgen?</p>'
+      +'<div class="bst-start">'
+      +BST_ARTEN.map(([a,n])=>'<label>'+n+'<input type="number" inputmode="numeric" min="0" max="5000" id="bstStd_'+a+'" value="'+esc2(String(v(a)))+'" placeholder="z. B. 80"></label>').join('')
+      +'</div>'
+      +'<button class="btn" type="button" id="bstStdSpeichern">So jeden Tag zählen</button>'
+      +'<p class="hint" style="margin:.6rem 0 0;">Ab dann startet jeder Morgen von selbst mit diesen Zahlen. Leer lassen heißt: nicht zählen.</p>'
+      +(st?'<button class="btn-ghost" type="button" id="bstAbbrechen" style="margin-top:.6rem;">Abbrechen</button>':'');
+    $('bstStdSpeichern').addEventListener('click',e=>bestandStandardSpeichern(e.currentTarget));
+    if($('bstAbbrechen')) $('bstAbbrechen').addEventListener('click',()=>{ bstEinrichten=false; bestandZeigen(); });
+    return;
+  }
+  let html='';
+  BST_ARTEN.forEach(([a,n])=>{
+    const rest=BST.rest[a], start=BST.start[a];
+    if(rest===null){
+      html+='<div class="bst-reihe"><div class="bst-name">'+n+'</div><div class="bst-zahl" style="color:var(--faint)">–<small>nicht gezählt</small></div>'
+        +'<div class="bst-aktionen"><button class="btn-ghost" type="button" data-bst-rest="'+a+'">Heute zählen</button></div></div>';
+      return;
+    }
+    const anteil=start>0?Math.max(0,Math.min(100,Math.round(rest/start*100))):0;
+    const zustand=rest<=0?'leer':(rest<=10?'knapp':'');
+    html+='<div class="bst-reihe '+zustand+'"><div class="bst-name">'+n+'</div>'
+      +'<div class="bst-zahl">'+rest+'<small>von '+start+'</small></div>'
+      +'<div class="bst-balken" aria-hidden="true"><i style="width:'+anteil+'%"></i></div>';
+    if(bstOffen===a){
+      html+='<div class="bst-edit"><button class="btn-ghost" type="button" data-bst-schritt="-1" aria-label="Eins weniger">−</button>'
+        +'<input type="number" inputmode="numeric" min="0" max="5000" id="bstRestEingabe" value="'+rest+'" aria-label="'+n+' noch da">'
+        +'<button class="btn-ghost" type="button" data-bst-schritt="1" aria-label="Eins mehr">+</button>'
+        +'<button class="btn" type="button" id="bstRestSpeichern" style="width:auto;flex:none;padding:0 1rem;">Speichern</button></div>';
+    }else{
+      html+='<div class="bst-aktionen"><button class="btn-ghost" type="button" data-bst-rest="'+a+'">Rest ändern</button>'
+        +'<button class="btn-ghost" type="button" data-bst-plus="'+a+'">+10 Nachschub</button></div>';
+    }
+    html+='</div>';
+  });
+  if(BST.ausverkauft&&BST.ausverkauft.length) html+='<p class="bst-weg">Online ausverkauft: '+esc2(bstNamen(BST.ausverkauft))+'</p>';
+  html+='<div class="bst-fuss"><span>'+(st&&st.auto!==false?('Jeden Morgen: '+(st.buns??'–')+' Buns, '+(st.patties??'–')+' Patties'):'Kein Standard, nur heute gezählt')+'</span>'
+    +'<button class="btn-ghost" type="button" id="bstStdAendern">Ändern</button></div>';
+  box.innerHTML=html;
+  box.querySelectorAll('[data-bst-rest]').forEach(b=>b.addEventListener('click',()=>{ bstOffen=b.dataset.bstRest; bestandZeigen(); const i=$('bstRestEingabe'); if(i){ i.focus(); i.select(); } }));
+  box.querySelectorAll('[data-bst-plus]').forEach(b=>b.addEventListener('click',()=>{ const a=b.dataset.bstPlus; bestandSetzen(b,{rest:{[a]:(BST.rest[a]||0)+10}}); }));
+  box.querySelectorAll('[data-bst-schritt]').forEach(b=>b.addEventListener('click',()=>{ const i=$('bstRestEingabe'); i.value=Math.max(0,(parseInt(i.value,10)||0)+Number(b.dataset.bstSchritt)); }));
+  if($('bstRestSpeichern')) $('bstRestSpeichern').addEventListener('click',e=>{ const n=parseInt($('bstRestEingabe').value,10); if(!(n>=0)){ toast('Bitte eine Zahl eintragen','err'); return; } bestandSetzen(e.currentTarget,{rest:{[bstOffen]:n}}); });
+  if($('bstRestEingabe')) $('bstRestEingabe').addEventListener('keydown',e=>{ if(e.key==='Enter') $('bstRestSpeichern').click(); if(e.key==='Escape'){ bstOffen=null; bestandZeigen(); } });
+  $('bstStdAendern').addEventListener('click',()=>{ bstEinrichten=true; bestandZeigen(); });
+}
+async function bestandSetzen(btn,eingabe){
+  gncBusy(btn,true);
+  try{
+    const r=await bestandApi({bestand:eingabe});
+    if(!r.ok){ toast('Bestand nicht gespeichert','err'); return; }
+    BST=r.d.bestand; bstOffen=null; bestandZeigen(); toast('Bestand gespeichert','ok');
+  }catch(e){ toast('Netzwerkfehler','err'); }
+  finally{ gncBusy(btn,false); }
+}
+async function bestandStandardSpeichern(btn){
+  const werte={}; let eins=false;
+  BST_ARTEN.forEach(([a])=>{ const v=String($('bstStd_'+a).value||'').trim(); const n=parseInt(v,10); werte[a]=v===''?null:(n>=0?n:null); if(werte[a]!==null) eins=true; });
+  if(!eins){ toast('Mindestens eine Zahl eintragen','err'); return; }
+  // Standard speichern und heute gleich damit starten, wenn heute noch nichts gezählt ist
+  const eingabe={standard:{...werte,auto:true}};
+  if(!BST||!BST.gezaehlt) eingabe.start=werte;
+  bstEinrichten=false;
+  await bestandSetzen(btn,eingabe);
+}
 
 /* Menü wegwischen: folgt dem Finger 1:1 (erst nach 10 px und nur waagerecht,
    senkrecht scrollt die Liste weiter), nach links mit Widerstand. Beim Loslassen
