@@ -11574,7 +11574,7 @@ function renderCart() {
         ${(!accountLoggedIn() && o.email) ? `
         <div style="background:var(--color-bg-elev);border:1px solid var(--color-orange);border-radius:14px;padding:0.95rem 1rem;margin:0.9rem 0;text-align:center;">
           <div style="font-weight:800;font-size:0.95rem;margin-bottom:0.55rem;">${t('acc.claim_title')}</div>
-          <button type="button" class="btn btn-primary btn-block" style="white-space:normal;word-break:break-all;line-height:1.35;" data-on-click="accClaimStamps('${escG(o.email)}')">${t('acc.claim_btn').replace('{email}', escG(o.email))}</button>
+          <button type="button" class="btn btn-primary btn-block" style="white-space:normal;overflow-wrap:anywhere;line-height:1.35;" data-on-click="accClaimStamps('${escG(o.email)}')">${t('acc.claim_btn').replace('{email}', escG(o.email))}</button>
           <button type="button" class="mini-btn" style="margin-top:0.55rem;" data-on-click="openAccountOverlay('kompakt')">${t('acc.claim_alt')}</button>
         </div>` : ''}
         ${addr}
