@@ -330,6 +330,15 @@
     Content-Type  = "text/plain; charset=utf-8"
     Cache-Control = "public, max-age=3600"
 
+# Eigene Merchant ID merchant.de.grillnchillfoodtruck.app (Apple Developer >
+# Merchant IDs > Merchant Domains): Apple sucht diese Datei MIT .txt. Sie ist
+# eine andere als die SumUp-Datei oben, beide bleiben liegen.
+[[headers]]
+  for = "/.well-known/apple-developer-merchantid-domain-association.txt"
+  [headers.values]
+    Content-Type  = "text/plain; charset=utf-8"
+    Cache-Control = "public, max-age=3600"
+
 # --- Paket schutz ---
 # Einmalige Korrektur der Gutschein-Kundenzähler nach dem Zählfehler vom
 # 29.10.2026 (zaehler-korrektur.js). Der erste Lauf nach dem Deploy korrigiert
