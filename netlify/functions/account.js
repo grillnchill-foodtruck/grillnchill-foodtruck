@@ -126,6 +126,8 @@ function publicProfile(rec) {
     ...custLevel(rec),
     referrals: rec.referrals || 0,
     orders: (rec.orders || []).slice(0, 5),
+    // Erinnerung zum Lieblingstag: an/aus, erkannter Wochentag und Uhrzeit (lib/lieblingstag.js)
+    lieblingstag: require('./lib/lieblingstag').fuerKonto(rec),
     // Burger-Pass: je Pass Menüs übrig, gesamt, gültig bis (nur gültige)
     paesse: require('./lib/burger-pass').uebersicht(rec).liste,
     addresses: rec.addresses || [],
@@ -379,6 +381,12 @@ exports.handler = async (event) => {
       try { if (rec.refCode) await s.delete('ref:' + rec.refCode); } catch (e) {}
       try { if (rec.qrToken) await s.delete('qr:' + rec.qrToken); } catch (e) {}
       try { if (rec.refCode) await vouchersStore().delete('c:' + rec.refCode); } catch (e) {}
+      // Verzeichnis der Lieblingstag-Erinnerung (der Datensatz selbst geht unten mit)
+      try {
+        const lo = { name: 'lieblingstag', consistency: 'strong' };
+        if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) { lo.siteID = process.env.NETLIFY_BLOBS_SITE_ID; lo.token = process.env.NETLIFY_BLOBS_TOKEN; }
+        await getStore(lo).delete(key);
+      } catch (e) {}
       await s.delete(key);
       return json(200, { ok: true, deleted: true });
     }

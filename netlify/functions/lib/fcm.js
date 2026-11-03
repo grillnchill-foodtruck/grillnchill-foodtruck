@@ -85,6 +85,15 @@ async function zugangsToken(sa, holen) {
  *          den Web-Push-Versand nicht mitreißen.
  */
 async function sendeAnIOS(titel, text, url, holen) {
+  return sendeAnThema('alle', titel, text, url, holen);
+}
+
+/**
+ * Nachricht an ein FCM-Thema, z. B. das persönliche Thema der
+ * Lieblingstag-Erinnerung (lib/lieblingstag.js). Wirft nie.
+ */
+async function sendeAnThema(thema, titel, text, url, holen) {
+  if (!/^[A-Za-z0-9_.~%-]{1,200}$/.test(String(thema || ''))) return { ok: false, grund: 'thema ungültig' };
   const { sa, befund } = await dienstkontoMitDiagnose();
   if (!sa) return { ok: false, grund: 'nicht eingerichtet – ' + befund };
   try {
@@ -95,7 +104,7 @@ async function sendeAnIOS(titel, text, url, holen) {
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: {
-            topic: 'alle',
+            topic: thema,
             notification: { title: titel, body: text },
             data: { url: url || '/' },
             apns: { payload: { aps: { sound: 'default' } } },
@@ -113,4 +122,4 @@ async function sendeAnIOS(titel, text, url, holen) {
   }
 }
 
-module.exports = { sendeAnIOS, dienstkonto, dienstkontoMitDiagnose };
+module.exports = { sendeAnIOS, sendeAnThema, dienstkonto, dienstkontoMitDiagnose };

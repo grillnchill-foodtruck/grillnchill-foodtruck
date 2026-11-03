@@ -52,6 +52,7 @@ const SPEICHER = [
   { name: 'feedback',  zweck: 'Bewertungen nach der Bestellung' },
   { name: 'kosten',    zweck: 'Wareneinsatz je Artikel (Eingaben des Inhabers)' },
   { name: 'geo',       zweck: 'Koordinaten zu Lieferadressen (Cache der Geokodierung)' },
+  { name: 'lieblingstag', zweck: 'Verzeichnis der Konten mit Erinnerung zum Burger-Tag' },
 ];
 
 function store(name) {

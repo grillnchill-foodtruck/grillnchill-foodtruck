@@ -2542,6 +2542,9 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   font-size: 0.78rem; color: var(--color-cream-dim); cursor: pointer;
 }
 .standing-remind input { accent-color: var(--color-orange); width: 17px; height: 17px; flex: none; }
+/* Erinnerung zum Lieblingstag im Konto: ganze Zeile tippbar, Hinweis darunter */
+.lt-schalter { margin: 0 0 .35rem; min-height: 44px; font-size: .85rem; color: var(--color-cream); }
+.lt-info { margin: 0 0 .9rem; font-size: .78rem; line-height: 1.5; color: var(--color-cream-dim); }
 .standing-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
 .standing-actions .mini-btn { font-size: 0.74rem; padding: 0.4rem 0.7rem; min-height: 34px; }
 /* Zeitfenster der Dauerbestellung: Wochentage und 15-Minuten-Fenster als
@@ -7727,6 +7730,82 @@ function accLangToggle(btn) {
   list.hidden = !open;
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
+/* ===== Erinnerung zum Lieblingstag ==========================================
+   Server: lieblingstag.js (an/aus), lieblingstag-erinnerung.js (Versand),
+   Regeln in netlify/functions/lib/lieblingstag.js. Nur mit Konto und Push.
+   Im Browser hängt das Web-Push-Abo dieses Geräts am Konto, in der iOS-App
+   abonniert die App ein persönliches FCM-Thema, das der Server vergibt. */
+function ltWochentag(wd) {
+  try {
+    const loc = (typeof LANG_LOCALES !== 'undefined' && LANG_LOCALES[currentLang]) || 'de-DE';
+    return new Intl.DateTimeFormat(loc, { weekday: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 10, 1 + wd, 12)));
+  } catch (e) { return ''; }
+}
+function ltHtml() {
+  if (!accountLoggedIn()) return '';
+  const push = typeof gncPushState === 'function' ? gncPushState() : 'unsupported';
+  if (push === 'unsupported') return '';
+  const lt = (ACCOUNT.profile && ACCOUNT.profile.lieblingstag) || { an: false, wd: null };
+  const erkannt = (lt.wd === 0 || lt.wd > 0)
+    ? t('lt.erkannt').replace('{tag}', escG(ltWochentag(lt.wd))).replace('{uhr}', escG(lt.uhr || '')).replace('{zeit}', escG(lt.erinnerung || ''))
+    : t('lt.noch_nicht');
+  return `
+    <p style="margin:0 0 .35rem;font-size:.76rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">${t('lt.titel')}</p>
+    <label class="standing-remind lt-schalter">
+      <input type="checkbox" id="accLtOn" ${lt.an ? 'checked' : ''} ${push === 'blocked' ? 'disabled' : ''} data-on-change="accLtToggle(this)">
+      <span>${t('lt.optin')}</span>
+    </label>
+    <p class="lt-info">${push === 'blocked' ? t('lt.blockiert') : erkannt}</p>`;
+}
+async function ltApi(action, extra) {
+  try {
+    const res = await fetch('/.netlify/functions/lieblingstag', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign({ action, email: ACCOUNT && ACCOUNT.email, token: ACCOUNT && ACCOUNT.token }, extra || {})),
+    });
+    return { ok: res.ok, status: res.status, d: await res.json().catch(() => ({})) };
+  } catch (e) { return { ok: false, status: 0, d: {} }; }
+}
+async function accLtToggle(cb) {
+  const an = cb.checked;
+  const ios = typeof gncIstIOSPushApp === 'function' && gncIstIOSPushApp();
+  cb.disabled = true;
+  try {
+    if (an) {
+      if (typeof gncPushState === 'function' && gncPushState() !== 'on') {
+        const ok = typeof gncEnablePush === 'function' && await gncEnablePush();
+        if (!ok) { cb.checked = false; return; }
+      }
+      let subscription = null;
+      if (!ios) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const sub = await reg.pushManager.getSubscription();
+          subscription = sub ? sub.toJSON() : null;
+        } catch (e) {}
+        if (!subscription) { cb.checked = false; showToast(t('push.error')); return; }
+      }
+      const r = await ltApi('an', { subscription, ios, lang: currentLang });
+      if (!r.ok) { cb.checked = false; flashAccMsg(accErrText(r)); return; }
+      if (ios && r.d.thema) {
+        try { window.webkit.messageHandlers['push-subscribe'].postMessage(JSON.stringify({ topic: r.d.thema })); } catch (e) {}
+      }
+      if (ACCOUNT.profile && r.d.lieblingstag) { ACCOUNT.profile.lieblingstag = r.d.lieblingstag; saveAccount(); }
+      showToast(t('lt.an_toast'));
+    } else {
+      const r = await ltApi('aus');
+      if (!r.ok) { cb.checked = true; flashAccMsg(accErrText(r)); return; }
+      if (ios && r.d.thema) {
+        try { window.webkit.messageHandlers['push-subscribe'].postMessage(JSON.stringify({ topic: r.d.thema, unsubscribe: true })); } catch (e) {}
+      }
+      if (ACCOUNT.profile && r.d.lieblingstag) { ACCOUNT.profile.lieblingstag = r.d.lieblingstag; saveAccount(); }
+      showToast(t('lt.aus_toast'));
+    }
+    renderAccount();
+  } finally {
+    cb.disabled = false;
+  }
+}
 function accSettingsHtml() {
   const cur = (typeof LANGS !== 'undefined' && LANGS.find(l => l.code === currentLang)) || { code: currentLang, label: currentLang.toUpperCase() };
   const flag = c => (typeof LANG_FLAGS !== 'undefined' && LANG_FLAGS[c]) || '';
@@ -7754,6 +7833,7 @@ function accSettingsHtml() {
     ${langBtns}
     <p style="margin:0 0 .35rem;font-size:.76rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">${t('acc.set_push')}</p>
     ${pushHtml}
+    ${ltHtml()}
     <p style="margin:0 0 .35rem;font-size:.76rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:.05em;">${t('acc.set_pay')}</p>
     <p style="margin:0;font-size:.82rem;color:var(--color-cream-dim);line-height:1.55;">${t('acc.set_pay_info')}</p>
     ${typeof teamHtml === 'function' ? teamHtml() : ''}
@@ -13386,6 +13466,18 @@ const LEGAL = {
         (Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;a DSGVO); zur Übermittlung in die USA siehe
         die Hinweise zum Data Privacy Framework in Abschnitt 3.
       </p>
+      <p>
+        <strong>Erinnerung zum Burger-Tag (optional):</strong> Schaltest du sie in deinem
+        Kundenkonto ein, verknüpfen wir das Push-Abo dieses Geräts mit deinem Konto. Im Browser
+        speichern wir dazu das Push-Abo im Konto, in der iPhone-App abonniert die App ein
+        persönliches, zufällig benanntes Thema bei Firebase Cloud Messaging. Aus den letzten fünf
+        Bestellungen deines Kontos ermitteln wir, an welchem Wochentag und zu welcher Uhrzeit du
+        meistens bestellst, und erinnern dich an diesem Tag kurz vorher, höchstens einmal pro
+        Woche. Ein eigenes Nutzungsprofil legen wir dafür nicht an. Rechtsgrundlage ist deine
+        Einwilligung (Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;a DSGVO). Du kannst die Erinnerung
+        jederzeit im Konto ausschalten; dann löschen wir die Verknüpfung sofort, ebenso beim
+        Löschen des Kontos.
+      </p>
       <h4>14. Bestandskundenwerbung (E-Mail)</h4>
       <p>
         Wenn du bei uns bestellt hast, informieren wir dich gelegentlich per E-Mail über eigene,
@@ -18273,6 +18365,7 @@ window.addEventListener('load', function () {
         && window.webkit.messageHandlers['push-subscribe']);
     } catch (e) { return false; }
   }
+  window.gncIstIOSPushApp = istIOSPushApp;   // auch für die Lieblingstag-Erinnerung
   window.gncPushState = function () {
     if (istIOSPushApp()) {
       try {

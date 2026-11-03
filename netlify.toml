@@ -367,6 +367,12 @@
 [functions."aufraeumen"]
   schedule = "40 2 * * *"
 
+# Erinnerung zum Lieblingstag (lieblingstag-erinnerung.js): alle 15 Minuten
+# von 06:00 bis 19:45 UTC, montags bis samstags. Die Regeln (Uhrzeit, einmal
+# pro Woche, Feiertage, Pause) stehen in lib/lieblingstag.js.
+[functions."lieblingstag-erinnerung"]
+  schedule = "*/15 6-19 * * 1-6"
+
 # Gebrandete 404-Seite. Muss der LETZTE Redirect bleiben: Regeln gelten in
 # Reihenfolge, neue Redirects also immer davor eintragen.
 [[redirects]]
