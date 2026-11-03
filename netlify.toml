@@ -331,8 +331,10 @@
     Cache-Control = "public, max-age=3600"
 
 # Eigene Merchant ID merchant.de.grillnchillfoodtruck.app (Apple Developer >
-# Merchant IDs > Merchant Domains): Apple sucht diese Datei MIT .txt. Sie ist
-# eine andere als die SumUp-Datei oben, beide bleiben liegen.
+# Merchant IDs > Merchant Domains). Apple nennt den Pfad MIT .txt, die Prüfung
+# scheiterte am 03.11.2026 trotzdem: vermutlich liest Apple den Pfad ohne
+# Endung, und dort liegt die SumUp-Datei fürs Widget. Für Apple Pay in der App
+# ist die Domain-Prüfung nicht nötig, darum bleibt die SumUp-Datei, wo sie ist.
 [[headers]]
   for = "/.well-known/apple-developer-merchantid-domain-association.txt"
   [headers.values]
