@@ -152,6 +152,9 @@ exports.handler = async (event) => {
     return json(400, { error: 'Invalid JSON body' });
   }
 
+  // Apple Pay in der iOS-App (ab Build 8): Token aus dem Apple-Pay-Blatt verarbeiten
+  if (input.aktion === 'applepay') return applePayVerarbeiten(event, input, apiKey);
+
   // Je E-Mail, je Telefon und Notbremse über alle Absender (lib/bremse.js,
   // GRENZEN.kasse). Erst hier, damit der Rückzieher (cancelOnly) nicht zählt.
   {
@@ -210,10 +213,12 @@ exports.handler = async (event) => {
      Server, nicht der Browser. Steht er aus (Werkszustand) oder ist er nicht
      lesbar, bekommt der Browser wie bisher die gehostete SumUp-Seite. */
   let zahlweg = 'weiterleitung';
-  if (input.zahlweg === 'widget') {
+  if (input.zahlweg === 'widget' || input.zahlweg === 'applepay') {
     try {
       const e = await require('./lib/zahl-einstellungen').lesen();
-      if (e.direktZahlung) zahlweg = 'widget';
+      if (input.zahlweg === 'widget' && e.direktZahlung) zahlweg = 'widget';
+      // Apple Pay in der App: eigener Schalter, sieht nur die App ab Build 8
+      if (input.zahlweg === 'applepay' && e.applePayApp) zahlweg = 'applepay';
     } catch (e) { zahlweg = 'weiterleitung'; }
   }
 
@@ -230,8 +235,8 @@ exports.handler = async (event) => {
       + (input.appMode ? '&app=1' : ''),   // App-Ansicht nach der Rueckkehr behalten
     hosted_checkout: { enabled: true },
   };
-  if (zahlweg === 'widget') {
-    /* Widget: keine gehostete Seite. Ohne redirect_url zeigt das Widget eine
+  if (zahlweg === 'widget' || zahlweg === 'applepay') {
+    /* Widget und Apple Pay in der App: keine gehostete Seite. Ohne redirect_url zeigt das Widget eine
        3-D-Secure-Abfrage der Bank im Rahmen auf unserer Seite, statt die ganze
        Seite zur Bank zu schicken (SumUp-Doku: Checkouts erstellen). Der Abschluss
        läuft wie bisher über return_url (Webhook) und sumup-status. */
@@ -330,12 +335,82 @@ exports.handler = async (event) => {
       hosted_checkout_url: data?.hosted_checkout_url || null,
       reference,
       zahlweg,
+      betrag: payload.amount,   // nachgerechnet; das Apple-Pay-Blatt zeigt genau diesen Betrag
       ...(zahlweg === 'widget' && gpId ? { googlePay: { merchantId: gpId, merchantName: "Grill'n Chill" } } : {}),
     });
   } catch (err) {
     { console.error('SumUp:', err.message); return json(502, { error: 'SumUp request failed' }); }
   }
 };
+
+/* Apple Pay in der iOS-App (ab Build 8)
+   Die App zeigt das Apple-Pay-Blatt mit der Merchant ID merchant.de.grillnchillfoodtruck.app
+   und reicht das verschlüsselte Token an die Seite, die es hierher schickt. Wir geben es
+   unverändert an SumUp weiter (Checkout verarbeiten, payment_type apple_pay). Entschlüsseln
+   kann nur SumUp: Das Zahlungszertifikat der Merchant ID entstand aus SumUps CSR.
+   Nur für einen offenen Vorgang aus dieser Kasse: Referenz und geheime Checkout-ID passen,
+   Zahlweg applepay, Schalter an. Betrag und Währung kommen von SumUp, nicht aus dem Browser.
+   Das Token wird nie protokolliert. Den Abschluss (Archiv, Mail) machen wie bei Widget und
+   Weiterleitung der Webhook und die Rückkehr-Prüfung der Seite. */
+async function applePayVerarbeiten(event, input, apiKey) {
+  const ref = typeof input.reference === 'string' ? input.reference.replace(/[^A-Za-z0-9-]/g, '').slice(0, 40) : '';
+  const checkoutId = typeof input.checkoutId === 'string' ? input.checkoutId : '';
+  if (!/^GNC-/.test(ref) || !/^[A-Za-z0-9-]{8,80}$/.test(checkoutId)) return json(400, { error: 'bad_request', status: 'FAILED' });
+
+  // Token roh aus dem Body: saeubern() kürzt lange Texte, das zerstört die Signatur
+  let token = null;
+  try { token = (JSON.parse(event.body || '{}') || {}).token; } catch (e) {}
+  const pd = token && typeof token === 'object' ? token.paymentData : null;
+  if (!pd || typeof pd !== 'object' || typeof pd.data !== 'string' || typeof pd.signature !== 'string'
+      || !pd.header || typeof pd.header !== 'object' || typeof pd.version !== 'string'
+      || JSON.stringify(token).length > 20000) {
+    return json(400, { error: 'bad_token', status: 'FAILED' });
+  }
+
+  let e = {};
+  try { e = await require('./lib/zahl-einstellungen').lesen(); } catch (x) {}
+  if (!e.applePayApp) return json(403, { error: 'applepay_off', status: 'FAILED' });
+
+  const rec = await ordersStore().get('o:' + ref, { type: 'json' }).catch(() => null);
+  if (!rec || rec.checkoutId !== checkoutId || rec.zahlweg !== 'applepay') return json(404, { error: 'not_found', status: 'FAILED' });
+  if (rec.status === 'completed') return json(200, { ok: true, status: 'PAID' });
+  if (rec.status !== 'pending') return json(409, { error: 'not_pending', status: 'FAILED' });
+
+  const kopf = { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' };
+  const url = `${SUMUP_API_BASE}/checkouts/${encodeURIComponent(checkoutId)}`;
+  let co = null;
+  try {
+    const r = await fetch(url, { headers: kopf });
+    co = await r.json().catch(() => null);
+    if (!r.ok || !co || !(Number(co.amount) > 0)) return json(502, { error: 'sumup_get', status: 'FAILED' });
+  } catch (x) {
+    return json(502, { error: 'sumup_get', status: 'FAILED' });
+  }
+  if (String(co.status).toUpperCase() === 'PAID') return json(200, { ok: true, status: 'PAID' });
+
+  try {
+    const r = await fetch(url, {
+      method: 'PUT', headers: kopf,
+      body: JSON.stringify({ payment_type: 'apple_pay', id: checkoutId, amount: co.amount, currency: co.currency || 'EUR', apple_pay: { token } }),
+    });
+    const d = await r.json().catch(() => null);
+    if (!r.ok) {
+      // Nur Status, Feld und Fehlercode protokollieren, nie das Token
+      const info = Array.isArray(d)
+        ? d.map((x) => [x && x.param, x && (x.error_code || x.message)].filter(Boolean).join(': ')).join(' · ')
+        : (d && (d.error_code || d.message || d.error_message)) || '';
+      console.error('Apple Pay bei SumUp:', r.status, String(info).slice(0, 200));
+      return json(200, { ok: false, status: 'FAILED', code: r.status });
+    }
+    // Eine Bank-Abfrage (next_step) kann das Apple-Pay-Blatt nicht zeigen
+    if (d && d.next_step) return json(200, { ok: false, status: 'FAILED', grund: 'next_step' });
+    const st = String((d && d.status) || 'PENDING').toUpperCase();
+    return json(200, { ok: st === 'PAID', status: st });
+  } catch (x) {
+    console.error('Apple Pay bei SumUp:', x.message);
+    return json(502, { error: 'sumup_put', status: 'UNKNOWN' });
+  }
+}
 
 // HTML-escape helper für die Status-Seite
 function escapeHtml(str) {

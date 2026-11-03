@@ -1,10 +1,13 @@
 /**
  * lib/zahl-einstellungen.js
  * ----------------------------------------------------------------------------
- * Zwei Admin-Schalter rund ums Bezahlen, beide ab Werk AUS:
+ * Drei Admin-Schalter rund ums Bezahlen, alle ab Werk AUS:
  *
  *   direktZahlung   „Bezahlen ohne Umweg“: Die Kasse zeigt das SumUp-Widget
  *                   direkt in Schritt 3, statt zur SumUp-Seite zu wechseln.
+ *   applePayApp     Apple Pay in der iOS-App (ab Build 8): eigenes Apple-Pay-
+ *                   Blatt, Token geht über den Server an SumUp. Ältere Builds
+ *                   und das Web sehen davon nichts.
  *   pass            Burger-Pass (Menü-Paket ohne automatische Verlängerung):
  *                   aktiv, Name, Preis, Anzahl Menüs, Gültigkeit in Tagen.
  *
@@ -24,6 +27,7 @@ const SCHLUESSEL = 'zahlung';
 
 const WERKSWERTE = Object.freeze({
   direktZahlung: false,
+  applePayApp: false,
   pass: Object.freeze({ aktiv: false, name: 'Burger-Pass', preis: 39, menus: 4, tage: 60 }),
 });
 
@@ -55,6 +59,7 @@ function bereinigen(roh) {
     .replace(/[\u0000-\u001F\u007F<>]/g, '').trim().slice(0, 40) || WERKSWERTE.pass.name;
   return {
     direktZahlung: r.direktZahlung === true,
+    applePayApp: r.applePayApp === true,
     pass: {
       aktiv: p.aktiv === true,
       name,
@@ -87,6 +92,7 @@ function oeffentlich(e) {
   const x = e || bereinigen(null);
   return {
     direkt: !!x.direktZahlung,
+    applePay: !!x.applePayApp,
     pass: x.pass && x.pass.aktiv
       ? { name: x.pass.name, preis: x.pass.preis, menus: x.pass.menus, tage: x.pass.tage }
       : null,

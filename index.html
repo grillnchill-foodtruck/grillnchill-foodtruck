@@ -3600,6 +3600,15 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   border-radius: var(--radius-full);
 }
 /* ---- Paket bezahlen: SumUp-Widget in Schritt 3 und Burger-Pass im Konto ---- */
+/* Apple Pay in der iOS-App (ab Build 8): Apples eigener Knopf, weiss auf dunklem Grund */
+.co-ap { display: grid; gap: .55rem; margin: 0 0 .55rem; }
+.co-ap[hidden] { display: none; }
+.ap-knopf { display: block; width: 100%; height: 52px; margin: 0; padding: 0; border: 0; border-radius: 14px; cursor: pointer;
+  -webkit-appearance: -apple-pay-button; -apple-pay-button-type: buy; -apple-pay-button-style: white; }
+.ap-knopf.ap-ersatz { -webkit-appearance: none; appearance: none; background: #fff; color: #000; font: 600 1.15rem/1 -apple-system, system-ui, sans-serif; }
+.ap-knopf:disabled { opacity: .45; cursor: default; }
+.co-ap-oder { display: flex; align-items: center; gap: .6rem; font-size: .78rem; color: var(--color-text-muted); }
+.co-ap-oder::before, .co-ap-oder::after { content: ""; flex: 1; height: 1px; background: var(--color-border); }
 .kasse-widget { margin: 0 0 1rem; padding: 1rem; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
 .kw-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.3rem; }
 .kw-kopf h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; line-height: 1.3; margin: 0; color: var(--color-cream); }
@@ -12117,6 +12126,10 @@ function renderCart() {
         <span>${t('cart.total')}</span>
         <strong data-co-total>${formatPrice(cartGrandTotal())}</strong>
       </div>
+      <div id="coApplePay" class="co-ap" hidden>
+        <button type="button" id="coApBtn" class="ap-knopf" data-on-click="applePayKaufen()" aria-label="${t('ap.btn')}"></button>
+        <span class="co-ap-oder">${t('ap.or')}</span>
+      </div>
       <button type="button" id="coSubmit" class="btn btn-primary btn-block btn-lg" data-on-click="triggerCheckoutSubmit()">
         ${t('checkout.submit_cash')}
       </button>
@@ -12205,7 +12218,7 @@ function renderCart() {
       if (!checked || !btn || !hint) return;
       if (checked.value === 'sumup') {
         btn.className = 'btn btn-primary btn-block btn-lg';
-        btn.innerHTML = t('checkout.submit_online');
+        btn.innerHTML = t(applePayBereit() ? 'ap.card' : 'checkout.submit_online');
         // Paket bezahlen: mit Widget bleibt der Kunde auf der Seite; SDK schon vorladen
         hint.textContent = t(direktZahlungAktiv() ? 'pay.w_hint' : 'checkout.hint_online');
         if (direktZahlungAktiv()) kasseSdkLaden();
@@ -12218,6 +12231,7 @@ function renderCart() {
         btn.innerHTML = t('checkout.submit_cash');
         hint.textContent = t('checkout.hint_cash');
       }
+      applePayKnopf(checked.value === 'sumup');
     };
     document.querySelectorAll('input[name="pay"]').forEach(el => {
       el.addEventListener('change', updateSubmitButton);
@@ -12372,6 +12386,8 @@ function lockCheckoutForm(on) {
   if (!f) return;
   f.classList.toggle('is-locked', on);
   if (on) f.setAttribute('aria-busy', 'true'); else f.removeAttribute('aria-busy');
+  var ap = document.getElementById('coApBtn');
+  if (ap) ap.disabled = !!on;
 }
 function setCheckoutHint(txt) {
   var el = document.getElementById('coWaitHint');
@@ -12399,7 +12415,8 @@ function resetCheckoutSubmitLabel() {
   // Der Ring bleibt bis zum Ende seiner Mindestanzeige (gncBusy raeumt ihn danach ab)
   const ring = btn.querySelector(':scope > .busy-spin');
   btn.innerHTML = t(checked && checked.value === 'sumup'
-    ? 'checkout.submit_online' : (checked && checked.value === 'firma' ? 'co.firma_submit' : 'checkout.submit_cash'));
+    ? (applePayBereit() ? 'ap.card' : 'checkout.submit_online')
+    : (checked && checked.value === 'firma' ? 'co.firma_submit' : 'checkout.submit_cash'));
   if (ring) btn.appendChild(ring);
   /* Der Knopf ist auch dann gesperrt, wenn bei Lieferung die Adresse fehlt
      oder der Mindestbestellwert nicht erreicht ist. Diese Sperre gehoert
@@ -12456,6 +12473,9 @@ function triggerCheckoutSubmit() {
 
 async function submitOrder(e) {
   e.preventDefault();
+  // Apple Pay in der App: nur dieser eine Tipp auf den Apple-Pay-Knopf zählt
+  const apWunsch = APPLEPAY_WUNSCH;
+  APPLEPAY_WUNSCH = false;
   if (!validateCheckoutForm()) return;
   // Sperre VOR dem ersten await: ein zweiter Tipp startet keine zweite Bestellung
   if (checkoutBusy) return;
@@ -12696,7 +12716,9 @@ async function submitOrder(e) {
 
     try {
       // Paket bezahlen: Widget nur, wenn der Schalter an ist und das SDK lädt
-      const mitWidget = direktZahlungAktiv() && await kasseSdkLaden();
+      const mitApplePay = apWunsch && applePayBereit()
+        && ((document.querySelector('input[name="pay"]:checked') || {}).value === 'sumup');
+      const mitWidget = !mitApplePay && direktZahlungAktiv() && await kasseSdkLaden();
       // Bis zu 2 Versuche: der allererste Aufruf nach dem Laden bzw. aus dem
       // Function-Kaltstart schlägt gelegentlich fehl (bisher half ein manuelles
       // Neuladen). Ein automatischer zweiter Versuch erspart das dem Kunden.
@@ -12709,7 +12731,7 @@ async function submitOrder(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(kasseAnfrage = {
               // Paket bezahlen: Wunsch nach dem Widget; ob es gilt, entscheidet der Server
-              zahlweg: mitWidget ? 'widget' : 'weiterleitung',
+              zahlweg: mitApplePay ? 'applepay' : (mitWidget ? 'widget' : 'weiterleitung'),
               amount: amountToCharge,
               description: buildOrderDescription(orderData),
               // In der App: Rueckkehr-URL soll den App-Modus behalten (app=1),
@@ -12745,6 +12767,19 @@ async function submitOrder(e) {
       }
 
       const dataWithRef = { ...orderData, reference: data.reference };
+
+      // Apple Pay in der App: Apple-Pay-Blatt statt Weiterleitung
+      if (data && data.zahlweg === 'applepay' && data.id && mitApplePay) {
+        try {
+          localStorage.setItem(PENDING_STORE_KEY, JSON.stringify({
+            reference: data.reference, checkoutId: data.id, order: dataWithRef,
+            cartSnapshot: { ...cart }, zahlweg: 'applepay',
+          }));
+        } catch (e) {}
+        clearTimeout(checkoutHintT);
+        applePayZahlen(data, Number(data.betrag) > 0 ? Number(data.betrag) : amountToCharge);
+        return;
+      }
 
       // Paket bezahlen: Widget direkt in Schritt 3 statt Weiterleitung
       if (data && data.zahlweg === 'widget' && data.id && mitWidget) {
@@ -13256,6 +13291,15 @@ const LEGAL = {
         (berechtigtes Interesse an sicheren Zahlungen); das Speichern und Auslesen technisch
         nötiger Angaben auf deinem Gerät erfolgt nach § 25 Abs. 2 Nr. 2 TDDDG. Über SumUp laufen
         auch Anzahlungen auf Catering-Angebote, sofern wir sie online anbieten.
+      </p>
+      <p>
+        In unserer iPhone-App kannst du außerdem mit Apple&nbsp;Pay direkt im Bestellvorgang
+        bezahlen. Du gibst die Zahlung auf deinem Gerät frei, zum Beispiel mit Face&nbsp;ID, und
+        Apple erzeugt daraus ein verschlüsseltes Zahlungstoken. Die App reicht es an unseren
+        Server, der es unverändert an SumUp weiterleitet. Entschlüsseln kann es nur SumUp; wir
+        sehen keine Kartendaten und speichern das Token nicht. Apple verarbeitet dabei die für
+        Apple&nbsp;Pay nötigen Angaben nach den eigenen Datenschutzbestimmungen von Apple.
+        Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.
       </p>
 
       <h4>7. E-Mail-Versand über Brevo (EU)</h4>
@@ -16617,6 +16661,116 @@ if (cfDate) {
 const SUMUP_SDK_URL = 'https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js';
 var kasseSdkLauf = null;
 var KASSE_W = null;   // laufendes Widget
+
+/* ====================================================================
+   APPLE PAY IN DER iOS-APP (ab Build 8)
+   Die App zeigt Apples eigenes Bezahlblatt (Nachricht gncApplePay). Die
+   Seite legt die Kasse an wie immer (sumup-checkout, zahlweg 'applepay',
+   Betrag nachgerechnet), die App holt die Freigabe per Face ID und gibt das
+   verschlüsselte Token zurück. Der Server reicht es an SumUp weiter. Danach
+   derselbe Abschluss wie beim Widget (handlePaymentReturn), der Webhook
+   unabhängig davon. Sichtbar nur, wenn
+     - die App die Brücke hat (Build 8) und eine Karte in Wallet liegt,
+     - der Admin-Schalter „Apple Pay in der App“ an ist (zahlung.applePay).
+   Der Bestellknopf darunter führt wie bisher zur SumUp-Seite.
+   ==================================================================== */
+var AP_BEREIT = false;      // meldet die App (Karte in Wallet)
+var AP_LAUF = null;         // laufende Zahlung
+var APPLEPAY_WUNSCH = false;
+function apBruecke() {
+  try { return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gncApplePay); }
+  catch (e) { return false; }
+}
+function applePayNachricht(m) {
+  try { window.webkit.messageHandlers.gncApplePay.postMessage(m); return true; } catch (e) { return false; }
+}
+function applePayBereit() {
+  return AP_BEREIT && apBruecke() && !TEST_MODE_NO_BACKEND
+    && !!(SHOP_STATUS && SHOP_STATUS.zahlung && SHOP_STATUS.zahlung.applePay);
+}
+// Knopf zeigen oder verstecken. Ohne Angabe: nach der gewählten Zahlart.
+function applePayKnopf(sichtbar) {
+  var box = document.getElementById('coApplePay');
+  if (!box) return;
+  if (sichtbar === undefined) sichtbar = ((document.querySelector('input[name="pay"]:checked') || {}).value === 'sumup');
+  var an = !!sichtbar && applePayBereit();
+  box.hidden = !an;
+  var b = document.getElementById('coApBtn');
+  if (b) {
+    b.setAttribute('lang', (typeof currentLang !== 'undefined' && currentLang) || 'de');   // Apple beschriftet den Knopf in dieser Sprache
+    var echt = false;
+    try { echt = CSS.supports('-webkit-appearance', '-apple-pay-button'); } catch (e) {}
+    b.classList.toggle('ap-ersatz', !echt);
+    if (!echt && !b.textContent) b.textContent = '\uF8FF Pay';
+  }
+  var sb = document.getElementById('coSubmit');
+  var gewaehlt = (document.querySelector('input[name="pay"]:checked') || {}).value;
+  if (sb && gewaehlt === 'sumup' && !checkoutBusy) sb.innerHTML = t(an ? 'ap.card' : 'checkout.submit_online');
+}
+function applePayKaufen() {
+  if (AP_LAUF || checkoutBusy || !applePayBereit()) return;
+  APPLEPAY_WUNSCH = true;
+  triggerCheckoutSubmit();
+}
+function applePayZahlen(data, betrag) {
+  AP_LAUF = { ref: data.reference, checkoutId: data.id, bezahlt: false, status: '' };
+  setCheckoutHint(t('ap.sheet'));
+  if (!applePayNachricht({ aktion: 'zahlen', betrag: Number(betrag).toFixed(2) })) {
+    applePayEnde({ bezahlt: false, freigegeben: false, grund: 'bruecke' });
+  }
+}
+// Freigabe im Blatt: Token zum Server, Ergebnis zurück ans Blatt (Haken oder Fehler)
+async function applePayToken(token) {
+  var w = AP_LAUF;
+  if (!w) { applePayNachricht({ aktion: 'ergebnis', ok: false }); return; }
+  var st = 'UNKNOWN';
+  try {
+    var r = await fetch(SUMUP_ENDPOINT, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aktion: 'applepay', reference: w.ref, checkoutId: w.checkoutId, token: token }),
+    });
+    var d = await r.json().catch(function () { return null; });
+    if (d && d.status) st = String(d.status).toUpperCase();
+  } catch (e) {}
+  // Unklar (Netz, SumUp noch PENDING): kurz bei SumUp nachfragen, wie beim Widget
+  for (var i = 0; i < 3 && st !== 'PAID' && st !== 'FAILED' && st !== 'EXPIRED'; i++) {
+    await new Promise(function (res) { setTimeout(res, 800); });
+    try {
+      var r2 = await fetch('/.netlify/functions/sumup-status?id=' + encodeURIComponent(w.checkoutId));
+      var d2 = await r2.json().catch(function () { return null; });
+      if (r2.ok && d2 && d2.status) st = String(d2.status).toUpperCase();
+    } catch (e) {}
+  }
+  w.status = st;
+  w.bezahlt = st === 'PAID';
+  applePayNachricht({ aktion: 'ergebnis', ok: w.bezahlt });
+}
+// Blatt geschlossen
+function applePayEnde(d) {
+  var w = AP_LAUF;
+  AP_LAUF = null;
+  if (!w) return;
+  var offen = !!(d && d.freigegeben) && w.status !== 'FAILED' && w.status !== 'EXPIRED';
+  if (w.bezahlt || (d && d.bezahlt) || offen) {
+    // Bezahlt oder noch unklar: Abschluss wie nach der Rückkehr von SumUp (prüft selbst bei SumUp)
+    setCheckoutHint('');
+    handlePaymentReturn();
+    return;
+  }
+  // Abgebrochen oder abgelehnt: Vorgang stornieren, Kasse wieder frei
+  kasseVorgangStornieren(w);
+  try { var p = JSON.parse(localStorage.getItem(PENDING_STORE_KEY) || 'null'); if (p && p.reference === w.ref) localStorage.removeItem(PENDING_STORE_KEY); } catch (e) {}
+  releaseCheckout();
+  if (d && d.freigegeben) flashCartNotice(t('ap.failed'));
+}
+window.addEventListener('gnc-applepay', function (ev) {
+  var d = (ev && ev.detail) || {};
+  if (d.typ === 'status') { AP_BEREIT = d.bereit === true; applePayKnopf(); return; }
+  if (d.typ === 'token') { applePayToken(d.token); return; }
+  if (d.typ === 'ende') applePayEnde(d);
+});
+// Beim Laden fragen, ob Apple Pay geht (Karte in Wallet)
+if (apBruecke()) applePayNachricht({ aktion: 'pruefen' });
 const KW_SCHLOSS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg>';
 
 function direktZahlungAktiv() {
