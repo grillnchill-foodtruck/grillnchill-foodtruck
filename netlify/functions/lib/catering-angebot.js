@@ -843,6 +843,7 @@ function bedingungen(a, e) {
   l.push(a.anzahlung > 0
     ? 'Nach der Annahme ist eine Anzahlung von ' + a.anzahlungProzent + ' % (' + eur(a.anzahlung) + ') fällig. Den Rest zahlst du nach dem Event.'
     : 'Den Gesamtbetrag zahlst du nach dem Event.');
+  l.push('Absagen ist bis 60 Tage vor dem Event kostenfrei. Danach berechnen wir vom Gesamtpreis: 59 bis 14 Tage vorher 50 %, 13 bis 3 Tage 75 %, 2 bis 1 Tag 90 %, am Eventtag 100 %.');
   l.push('Getränke stellst du als Gastgeber. Wir brauchen einen Stellplatz und eine Steckdose.');
   l.push('Bis zu ' + dez(e.inklStunden) + ' Stunden Ausgabe sind enthalten. Jede weitere Stunde kostet ' + eur(e.stundenPreis) + '.');
   l.push('Es gelten unsere AGB: grillnchill-foodtruck.de/#agb');

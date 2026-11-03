@@ -361,6 +361,7 @@ function zeichnen() {
   var bed = [];
   if (a.gueltigBis) bed.push(f('ang.term_valid', { date: datum(a.gueltigBis) }));
   bed.push(a.anzahlung > 0 ? f('ang.term_deposit', { p: zahl(a.anzahlungProzent), amount: geld(a.anzahlung) }) : t('ang.term_nodeposit'));
+  bed.push(t('ang.term_cancel'));
   bed.push(t('ang.term_drinks'));
   bed.push(f('ang.term_hours', { h: zahl(w.inklStunden), price: geld(w.stundenPreis) }));
   html += '<section class="karte" aria-labelledby="hBed"><h2 id="hBed">' + h(t('ang.terms')) + '</h2><ul class="liste">'
