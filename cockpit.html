@@ -854,8 +854,8 @@
 (function () {
   'use strict';
 
-  // In der App (Cockpit-Widget): Zurück-Knopf und Glas-Leiste, siehe app-leiste.js
-  if (window.GNCAppLeiste) GNCAppLeiste.start({ zurueck: ['appZurueck', 'appZurueckLogin'] });
+  // In der App (Cockpit-Widget): Zurück zur Kunden-App und Team-Leiste, siehe app-leiste.js
+  if (window.GNCAppLeiste) GNCAppLeiste.start({ modus: 'team', selected: 'cockpit', zurueck: ['appZurueck', 'appZurueckLogin'] });
 
   /* Gleicher Speicher wie admin.html, damit eine Anmeldung fuer beide gilt:
      sessionStorage[PW_KEY]        Passwort fuer diesen Tab (wie im Admin-Tool)

@@ -860,6 +860,10 @@
       <div class="amenu-bereiche" id="adminMenuBereiche"></div>
       <p class="amenu-label">Werkzeuge</p>
       <nav class="amenu-liste" aria-label="Werkzeuge">
+        <a class="amenu-zeile" id="menuKundenApp" href="/?app=1" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>
+          <span><b>Zur Kunden-App</b><small>Speisekarte und Bestellen wie ein Gast</small></span><svg class="amenu-pfeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
         <a class="amenu-zeile" href="/cockpit.html">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14l4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
           <span><b>Cockpit</b><small>Umsatz, Wartezeit, Auswertung</small></span><svg class="amenu-pfeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
@@ -1483,11 +1487,24 @@
 const API = '/shop-status';
 const PW_KEY = 'gnc_admin_pw';
 
-// In der App: Pfeil zurück, Glas-Leiste; sie weicht Menü, Dialogen und der Speichern-Leiste (app-leiste.js)
-if (window.GNCAppLeiste) GNCAppLeiste.start({
-  zurueck: ['appZurueck', 'appZurueckLogin'],
+// In der App: Team-Leiste (Heute, Bestellungen, Cockpit, Fahrer, Mehr), Pfeil zurück zur
+// Kunden-App; die Leiste weicht Menü, Dialogen und der Speichern-Leiste (app-leiste.js)
+const ADMIN_TAB_LEISTE = { today: 'heute', orders: 'orders' };
+const appLeiste = window.GNCAppLeiste ? GNCAppLeiste.start({
+  modus: 'team',
+  selected: ADMIN_TAB_LEISTE[new URLSearchParams(location.search).get('tab') || 'today'] || '',
+  zurueck: ['appZurueck', 'appZurueckLogin', 'menuKundenApp'],
   verdeckt: '.savebar.show, #adminMenu.offen, .confirm-ov, .ang-ov, .bf-ov:not([hidden])',
-});
+  // Heute, Bestellungen und Mehr bleiben auf dieser Seite; vor der Anmeldung passiert nichts
+  lokal: function (id) {
+    if (id !== 'heute' && id !== 'orders' && id !== 'mehr') return false;
+    if (document.getElementById('panelView').classList.contains('hidden')) return true;
+    if (id === 'mehr') { menuAuf(); return true; }
+    const tab = document.querySelector('.tab[data-tab="' + (id === 'heute' ? 'today' : 'orders') + '"]');
+    if (tab) tab.click();
+    return true;
+  },
+}) : null;
 
 // Artikel (Quelle: MENU in index.html – bei Menü-Änderungen hier mitpflegen)
 const ITEMS = [
@@ -1977,6 +1994,7 @@ document.addEventListener('touchend',e=>{
 document.querySelectorAll('.tab').forEach(tab=>{
   tab.addEventListener('click',()=>{
     document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t===tab ? 'true':'false'));
+    if(appLeiste) appLeiste.waehle(ADMIN_TAB_LEISTE[tab.dataset.tab]||'');   // Team-Leiste markiert mit
     // Aus dem Markup ableiten statt fest aufzuzaehlen: eine harte Liste
     // muss bei jedem neuen Reiter nachgepflegt werden – genau daran ist der
     // Rechnungen-Reiter zuerst haengengeblieben (Daten geladen, Bereich
@@ -4978,6 +4996,16 @@ if(saved){
     toast('Bitte neu anmelden. Ab jetzt mit Code aus der Authenticator-App.');
   });
 }
+// „Mehr“ der Team-Leiste von Cockpit, Fahrer & Co.: /admin.html?menu=1 öffnet das Menü nach der Anmeldung
+(function(){
+  if(!/[?&]menu=1/.test(location.search)) return;
+  let n=0;
+  const t=setInterval(()=>{
+    n++;
+    if(!$('panelView').classList.contains('hidden')){ clearInterval(t); menuAuf(); }
+    else if(n>240) clearInterval(t);   // höchstens eine Minute auf die Anmeldung warten
+  },250);
+})();
 // Direktsprung aus der Bestell-Alarm-Push: /admin.html?tab=orders
 (function(){
   const tp=new URLSearchParams(location.search).get('tab');

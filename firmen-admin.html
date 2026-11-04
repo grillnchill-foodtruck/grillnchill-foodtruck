@@ -95,6 +95,8 @@
   .login button{width:100%;background:var(--ember);border:none;color:var(--dunkel);font-weight:800;border-radius:999px;padding:.85rem;font-size:1rem;min-height:48px}
   .login .fehler{color:var(--red);font-size:.82rem;min-height:1.2em;margin:.4rem 0 0}
 
+  html.native-tabbar body{padding-bottom:calc(env(safe-area-inset-bottom) + 110px)}
+  html.native-tabbar .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
   .toast{position:fixed;left:50%;bottom:calc(1.4rem + env(safe-area-inset-bottom));transform:translateX(-50%);
     background:#1E2A1A;border:1px solid var(--live);color:#9FE07A;border-radius:999px;max-width:calc(100% - 2rem);
     padding:.55rem 1.1rem;font-size:.85rem;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none;text-align:center}
@@ -158,7 +160,10 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/admin-anmeldung.js"></script>
+<script src="/app-leiste.js"></script>
 <script>
+// In der App: Team-Leiste (app-leiste.js)
+if (window.GNCAppLeiste) GNCAppLeiste.start({ modus: 'team' });
 /* ============================================================
    Firmen-Mittag verwalten: Anträge annehmen, Firmen pflegen,
    Bestellungen ansehen, Sammelrechnung erstellen und versenden.

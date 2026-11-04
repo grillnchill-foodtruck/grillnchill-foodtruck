@@ -176,6 +176,8 @@
   @keyframes shake{20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 
   /* ================= Toast ================= */
+  html.native-tabbar body{padding-bottom:calc(env(safe-area-inset-bottom) + 110px)}
+  html.native-tabbar .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
   .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));z-index:80;transform:translate(-50%,16px);opacity:0;pointer-events:none;width:max-content;max-width:min(calc(100vw - 32px),480px);background:#1C1C1C;color:var(--cream);border:1px solid var(--border);border-left:4px solid var(--faint);border-radius:12px;padding:12px 16px;font-size:.95rem;font-weight:600;line-height:1.4;box-shadow:0 12px 32px rgba(0,0,0,.55);transition:opacity .2s,transform .2s}
   .toast.show{opacity:1;transform:translate(-50%,0)}
   .toast.ok{border-left-color:var(--live)}
@@ -275,6 +277,7 @@
 </div>
 
 <script src="/admin-anmeldung.js"></script>
+<script src="/app-leiste.js"></script>
 <script>
 (function () {
   'use strict';
@@ -311,6 +314,15 @@
   var listeTimer = null;
   var losRef = null, losMin = 15;
   var teilen = { an: false, watch: null, takt: null, letzte: null, gesendet: 0, sendet: false, grund: '', wake: null };
+
+  // In der App: Team-Leiste (app-leiste.js). Während einer Fahrt erst nachfragen, denn
+  // außerhalb dieser Seite pausiert das Teilen des Live-Standorts.
+  if (window.GNCAppLeiste) GNCAppLeiste.start({
+    modus: 'team', selected: 'fahrer', verdeckt: '#losSheet:not([hidden])',
+    vorWechsel: function () {
+      return !teilen.an || window.confirm('Du teilst gerade deinen Live-Standort. Außerhalb der Fahrer-Ansicht pausiert das Teilen, bis du zurückkommst. Trotzdem wechseln?');
+    },
+  });
 
   /* ---------------- Kleinkram ---------------- */
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
