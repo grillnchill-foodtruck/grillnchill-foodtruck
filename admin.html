@@ -44,6 +44,15 @@
   }
   .hdr-inner{max-width:560px;margin:0 auto;padding:.7rem 1.1rem;display:flex;align-items:center;gap:.7rem}
   .hdr img{width:34px;height:34px;border-radius:9px;flex:none}
+  /* In der App (app-leiste.js): Pfeil zurück statt Logo, auf der Anmeldung oben links */
+  .hdr-inner:has(> .zurueck:not([hidden])) > img{display:none}
+  .icon-btn.zurueck{color:var(--cream);text-decoration:none}
+  .icon-btn.zurueck svg{width:20px;height:20px}
+  .login-zurueck{position:fixed;top:calc(env(safe-area-inset-top) + 12px);left:max(16px,env(safe-area-inset-left));z-index:5;
+    display:inline-flex;align-items:center;gap:2px;min-height:44px;padding:0 14px 0 10px;border-radius:999px;
+    border:1px solid var(--border);background:var(--card);color:var(--cream);text-decoration:none;font-size:.85rem;font-weight:700}
+  .login-zurueck[hidden]{display:none}
+  .login-zurueck svg{width:18px;height:18px}
   .hdr .brand{flex:1;min-width:0}
   .hdr .brand .display{font-size:.95rem;line-height:1.1}
   .hdr .brand small{display:block;color:var(--faint);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
@@ -796,6 +805,7 @@
 
 <!-- ================= LOGIN ================= -->
 <div id="loginView" class="login">
+  <a class="login-zurueck" id="appZurueckLogin" href="/" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span data-text>Zurück</span></a>
   <div class="login-card" id="loginCard">
     <img src="logo.png" alt="">
     <div class="display">GRILL'N CHILL</div>
@@ -820,6 +830,7 @@
 <div id="panelView" class="hidden">
   <header class="hdr">
     <div class="hdr-inner">
+      <a class="icon-btn zurueck" id="appZurueck" href="/" hidden aria-label="Zurück zur App" title="Zurück zur App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></a>
       <img src="logo.png" alt="">
       <div class="brand">
         <div class="display">ADMIN</div>
@@ -1466,9 +1477,16 @@
 </div>
 
 <script src="/admin-anmeldung.js"></script>
+<script src="/app-leiste.js"></script>
 <script>
 const API = '/shop-status';
 const PW_KEY = 'gnc_admin_pw';
+
+// In der App: Pfeil zurück, Glas-Leiste; sie weicht Menü, Dialogen und der Speichern-Leiste (app-leiste.js)
+if (window.GNCAppLeiste) GNCAppLeiste.start({
+  zurueck: ['appZurueck', 'appZurueckLogin'],
+  verdeckt: '.savebar.show, #adminMenu.offen, .confirm-ov, .ang-ov, .bf-ov:not([hidden])',
+});
 
 // Artikel (Quelle: MENU in index.html – bei Menü-Änderungen hier mitpflegen)
 const ITEMS = [

@@ -15,6 +15,8 @@
  *     marke:   ['id', …],   Logo-Links: in der App nach /?app=1 statt /
  *     text:    'Zurück',    Beschriftung für [data-text] im Zurück-Link
  *     tabs:    [ … ],       Ersatz, falls die Startseite noch keine Tabs gemerkt hat
+ *     verdeckt: '.a, .b',   solange so ein Element da ist, weicht die Leiste
+ *                           (Menü, Dialoge, Speichern-Leiste am unteren Rand)
  *   })
  *
  * Erkennt die App an ?app=1, an der iOS-Brücke oder am Vollbild der Android-App.
@@ -61,11 +63,27 @@
     var tabs = null;
     try { tabs = JSON.parse(localStorage.getItem('gnc_ntb_tabs') || 'null'); } catch (e) {}
     if (!Array.isArray(tabs) || !tabs.length) tabs = o.tabs || ERSATZ;
+    var aktiv = false, zuletzt = null, raf = 0;
+    function sync() {
+      if (!aktiv) return;
+      var weg = !!(o.verdeckt && document.querySelector(o.verdeckt));
+      if (weg === zuletzt) return;
+      zuletzt = weg;
+      post({ type: 'hidden', hidden: weg });
+    }
     // Antwort der App: true ab iOS 26, dann Leiste zeigen und unten Platz lassen
     window.gncNativeTabsActive = function (on) {
-      document.documentElement.classList.toggle('native-tabbar', !!on);
-      if (on) post({ type: 'hidden', hidden: false });
+      aktiv = !!on;
+      document.documentElement.classList.toggle('native-tabbar', aktiv);
+      zuletzt = null;
+      sync();
     };
+    if (o.verdeckt) {
+      new MutationObserver(function () {
+        if (raf) return;
+        raf = requestAnimationFrame(function () { raf = 0; sync(); });
+      }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'hidden', 'aria-hidden'] });
+    }
     window.gncNativeTabSelect = function (id) {
       location.href = '/?app=1' + (ZIEL[String(id)] || '');
     };
