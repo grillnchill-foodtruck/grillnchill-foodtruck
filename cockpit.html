@@ -98,6 +98,14 @@
     .status-row{order:3;flex-basis:100%}
     .brand h1{font-size:1.25rem}
   }
+  @media (max-width:699px){
+    /* In der App mit Zurück-Knopf: oben Zurück und Live-Status, darunter Titel und Knöpfe.
+       In eine Zeile passen Zurück, Titel und drei Knöpfe auf dem Handy nicht. */
+    .topbar-inner:has(> .zurueck:not([hidden])) .status-row{order:1;flex:1 1 0;justify-content:flex-end}
+    .topbar-inner:has(> .zurueck:not([hidden]))::after{content:"";order:2;flex-basis:100%;height:0}
+    .topbar-inner:has(> .zurueck:not([hidden])) .brand{order:3}
+    .topbar-inner:has(> .zurueck:not([hidden])) .actions{order:4}
+  }
 
   /* ================= Knoepfe und Links ================= */
   .icon-btn{
@@ -116,6 +124,11 @@
   .pill-link:hover{border-color:var(--primary-bright);color:var(--primary-bright)}
   .pill-link svg{width:14px;height:14px}
   .pill-link.pill-sm{align-self:flex-start}
+  /* In der App: Rückweg in die App-Ansicht (app-leiste.js) und Platz für die Glas-Leiste */
+  .pill-link.zurueck{padding:0 14px 0 10px;gap:2px}
+  .pill-link.zurueck svg{width:18px;height:18px}
+  .login-zurueck{position:fixed;top:calc(env(safe-area-inset-top) + 12px);left:max(16px,env(safe-area-inset-left));z-index:5}
+  .native-tabbar .page,.native-tabbar .login{padding-bottom:110px}
   /* Paket bestellfluss: offene Abholnummern und Wartezeit-Automatik */
   .nr-liste{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px}
   .nr-liste li{display:inline-flex;align-items:baseline;gap:5px;padding:4px 10px;border:1px solid var(--border);border-radius:999px;font-size:.8125rem;font-weight:600;color:var(--foreground);background:var(--muted)}
@@ -501,6 +514,7 @@
 
 <!-- ================= Anmeldung ================= -->
 <main id="loginView" class="login" hidden>
+  <a class="pill-link zurueck login-zurueck" id="appZurueckLogin" href="/" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span data-text>Zurück</span></a>
   <section class="card login-card" id="loginCard" aria-labelledby="loginTitle">
     <div class="login-head">
       <img src="logo.png" alt="" width="56" height="56">
@@ -534,6 +548,7 @@
 <div id="app" hidden>
   <header class="topbar">
     <div class="topbar-inner">
+      <a class="pill-link zurueck" id="appZurueck" href="/" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span data-text>Zurück</span></a>
       <div class="brand">
         <img src="logo.png" alt="" width="40" height="40">
         <div class="brand-text">
@@ -833,9 +848,13 @@
 </div>
 
 <script src="/admin-anmeldung.js"></script>
+<script src="/app-leiste.js"></script>
 <script>
 (function () {
   'use strict';
+
+  // In der App (Cockpit-Widget): Zurück-Knopf und Glas-Leiste, siehe app-leiste.js
+  if (window.GNCAppLeiste) GNCAppLeiste.start({ zurueck: ['appZurueck', 'appZurueckLogin'] });
 
   /* Gleicher Speicher wie admin.html, damit eine Anmeldung fuer beide gilt:
      sessionStorage[PW_KEY]        Passwort fuer diesen Tab (wie im Admin-Tool)

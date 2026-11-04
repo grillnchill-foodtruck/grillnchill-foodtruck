@@ -142,7 +142,7 @@
 <div class="wrap">
   <header>
     <div class="kopf-links">
-      <a class="zurueck" id="zurueck" href="/" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span id="zurueckTxt">Zurück</span></a>
+      <a class="zurueck" id="zurueck" href="/" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span data-text>Zurück</span></a>
       <a class="brand" id="brand" href="/">GRILL'N CHILL</a>
     </div>
     <span class="refpill" id="refPill">…</span>
@@ -164,6 +164,7 @@
 </div>
 <script src="/karte.js"></script>
 <script src="/status-live.js"></script>
+<script src="/app-leiste.js"></script>
 <script>
 var LANG = (function () {
   try { var sv = localStorage.getItem('gnc_lang'); if (sv === 'en' || sv === 'tr') return sv; if (sv === 'de') return 'de'; } catch (e) {}
@@ -259,36 +260,8 @@ var STR = {
 };
 var T = STR[LANG];
 
-/* In der App (iOS-Hülle, Android-App, ?app=1): zurück in die App-Ansicht statt
-   auf die Website. Die iOS-App blendet ihre Glas-Leiste bei jedem Seitenwechsel
-   aus; diese Seite meldet sie mit denselben Tabs wieder an wie die Startseite. */
-var GNC_IOS = !!(window.webkit && window.webkit.messageHandlers && (window.webkit.messageHandlers.gncTabs || window.webkit.messageHandlers['apple-login']));
-var IN_APP = /[?&]app=1/.test(location.search) || GNC_IOS
-  || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-var START = IN_APP ? '/?app=1' : '/';
-(function () {
-  var b = document.getElementById('brand'); if (b) b.href = START;
-  var z = document.getElementById('zurueck');
-  if (z && IN_APP) {
-    z.href = START; z.hidden = false;
-    var zt = document.getElementById('zurueckTxt'); if (zt) zt.textContent = T.back;
-  }
-  var h = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gncTabs;
-  if (!h) return;
-  function post(m) { try { h.postMessage(m); } catch (e) {} }
-  var tabs = null;
-  try { tabs = JSON.parse(localStorage.getItem('gnc_ntb_tabs') || 'null'); } catch (e) {}
-  if (!Array.isArray(tabs) || !tabs.length) tabs = T.tabs;
-  window.gncNativeTabsActive = function (on) {
-    document.documentElement.classList.toggle('native-tabbar', !!on);
-    if (on) post({ type: 'hidden', hidden: false });
-  };
-  window.gncNativeTabSelect = function (id) {
-    var ziel = { menu: '#menu', catering: '#catering', location: '#location', account: '#konto' }[String(id)] || '';
-    location.href = '/?app=1' + ziel;
-  };
-  post({ type: 'configure', tabs: tabs, selected: '' });
-})();
+// In der App: Zurück-Knopf, Logo nach /?app=1 und die Glas-Leiste (app-leiste.js)
+GNCAppLeiste.start({ zurueck: 'zurueck', marke: 'brand', text: T.back, tabs: T.tabs });
 var REF = (location.pathname.split('/s/')[1] || '').split('/')[0].replace(/[^A-Za-z0-9-]/g, '');
 var KEY = new URLSearchParams(location.search).get('k') || '';
 var DATA = null, PUSH_STATE = 'idle';
