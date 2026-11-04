@@ -23,7 +23,9 @@
  *    relativ nachlädt (Produktbilder, Sprachpakete), leitet netlify.toml mit
  *    /tr/* -> /:splat aufs Hauptverzeichnis um.
  *
- * 3. LIEFERGEBIET UND HALAL
+ * 3. LIEFERGEBIET, HALAL UND AGB
+ *    agb.html: Text aus LEGAL.agb in index.html (Nutzungsbedingungen-URL
+ *    für Google Play), siehe agbBauen().
  *    liefergebiet.html: Zonen, Preise, Karte und Radius kommen aus
  *    speisekarte.js (DELIVERY_ZONES, MAX_DELIVERY_KM). Ändert sich dort etwas,
  *    stimmt die Seite nach dem nächsten Deploy. Beide Seiten bekommen ihre
@@ -389,6 +391,30 @@ function liefergebietBauen(html) {
   return faqDaten(html, SEITE + '/liefergebiet');
 }
 
+/* ---- 3b. AGB als eigene Seite /agb ---------------------------------------- */
+// Google Play verlangt für die Nutzungsbedingungen eine normale Webseite. Die
+// AGB stehen als LEGAL.agb in index.html (Fenster „AGB“). agb.html übernimmt
+// genau diesen Text, damit Fenster und Seite nie auseinanderlaufen.
+function agbBauen(html, indexHtml) {
+  const m = /\n  agb: \{\n    title: '[^']*',\n    body: `([\s\S]*?)`,\n  \},/.exec(indexHtml);
+  if (!m) throw new Error('LEGAL.agb fehlt in index.html');
+  let text = m[1];
+  if (/\$\{|\\/.test(text)) throw new Error('LEGAL.agb enthält ${…} oder \\, agb.html kann den Text so nicht übernehmen');
+  const marken = [];
+  text = text.replace(/<h4>([\s\S]*?)<\/h4>/g, (_, titel) => {
+    const nr = (/§\s*(\d+)/.exec(titel) || [])[1];
+    const id = nr ? 'p' + nr : 'abschnitt-' + (marken.length + 1);
+    marken.push({ id, titel });
+    return '<h2 id="' + id + '">' + titel + '</h2>';
+  });
+  if (marken.length < 10) throw new Error('LEGAL.agb hat nur ' + marken.length + ' Abschnitte');
+  const verzeichnis = '    <nav aria-label="Inhalt"><ul class="pillen">\n'
+    + marken.map((x) => '      <li><a class="pille" href="#' + x.id + '">' + x.titel + '</a></li>').join('\n')
+    + '\n    </ul></nav>';
+  html = bereich(html, 'AGB-VERZEICHNIS', verzeichnis, 'agb.html');
+  return bereich(html, 'AGB', text.replace(/^\n+|\s+$/g, ''), 'agb.html');
+}
+
 /* ---- Ablauf ---------------------------------------------------------------- */
 const indexPfad = path.join(WURZEL, 'index.html');
 const deHtml = karteEinsetzen(fs.readFileSync(indexPfad, 'utf8'), 'de');
@@ -405,6 +431,8 @@ fs.writeFileSync(halalPfad, faqDaten(fs.readFileSync(halalPfad, 'utf8'), SEITE +
 // Paket firmen: FAQ-Daten der Seite /firmen aus ihren <details>
 const firmenPfad = path.join(WURZEL, 'firmen.html');
 if (fs.existsSync(firmenPfad)) fs.writeFileSync(firmenPfad, faqDaten(fs.readFileSync(firmenPfad, 'utf8'), SEITE + '/firmen'));
+const agbPfad = path.join(WURZEL, 'agb.html');
+fs.writeFileSync(agbPfad, agbBauen(fs.readFileSync(agbPfad, 'utf8'), deHtml));
 
 /* ---- Content-Security-Policy ---------------------------------------------- */
 /* SumUp-Widget in der Kasse („Bezahlen ohne Umweg“, Admin-Schalter, Paket
@@ -469,5 +497,5 @@ fs.writeFileSync(path.join(WURZEL, '_headers'),
 
 const reste = (trHtml.match(/data-i18n="[^"]+"/g) || []).length;
 console.log('seiten-bauen: Speisekarte mit ' + SK.MENU.length + ' Artikeln in index.html, tr/index.html geschrieben ('
-  + Math.round(trHtml.length / 1024) + ' KB, ' + reste + ' data-i18n-Stellen), liefergebiet.html und halal.html aktualisiert, '
+  + Math.round(trHtml.length / 1024) + ' KB, ' + reste + ' data-i18n-Stellen), liefergebiet.html, halal.html und agb.html aktualisiert, '
   + '_headers mit ' + hashes.size + ' Skript-Hashes aus ' + seiten.length + ' Seiten.');

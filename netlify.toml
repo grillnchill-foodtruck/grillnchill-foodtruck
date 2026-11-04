@@ -384,6 +384,18 @@
 [functions."lieblingstag-erinnerung"]
   schedule = "*/15 6-19 * * 1-6"
 
+# AGB als eigene Seite (Nutzungsbedingungen-URL für Google Play), Text aus
+# LEGAL.agb in index.html (werkzeug/seiten-bauen.js)
+[[redirects]]
+  from   = "/agb"
+  to     = "/agb.html"
+  status = 200
+
+[[redirects]]
+  from   = "/nutzungsbedingungen"
+  to     = "/agb"
+  status = 301
+
 # Gebrandete 404-Seite. Muss der LETZTE Redirect bleiben: Regeln gelten in
 # Reihenfolge, neue Redirects also immer davor eintragen.
 [[redirects]]
