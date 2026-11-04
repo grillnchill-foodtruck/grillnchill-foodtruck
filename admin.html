@@ -1490,16 +1490,18 @@ const PW_KEY = 'gnc_admin_pw';
 // In der App: Team-Leiste (Heute, Bestellungen, Cockpit, Fahrer, Mehr), Pfeil zurück zur
 // Kunden-App; die Leiste weicht Menü, Dialogen und der Speichern-Leiste (app-leiste.js)
 const ADMIN_TAB_LEISTE = { today: 'heute', orders: 'orders' };
+let leisteWunsch = '';   // vor der Anmeldung angetippter Tab der Team-Leiste
 const appLeiste = window.GNCAppLeiste ? GNCAppLeiste.start({
   modus: 'team',
   selected: ADMIN_TAB_LEISTE[new URLSearchParams(location.search).get('tab') || 'today'] || '',
   zurueck: ['appZurueck', 'appZurueckLogin', 'menuKundenApp'],
   verdeckt: '.savebar.show, #adminMenu.offen, .confirm-ov, .ang-ov, .bf-ov:not([hidden])',
-  // Heute, Bestellungen und Mehr bleiben auf dieser Seite; vor der Anmeldung passiert nichts
+  // Heute, Bestellungen und Mehr bleiben auf dieser Seite. Vor der Anmeldung merkt sich
+  // der Admin den Tab und springt nach dem Login dorthin (showPanel).
   lokal: function (id) {
     if (id !== 'heute' && id !== 'orders' && id !== 'mehr') return false;
-    if (document.getElementById('panelView').classList.contains('hidden')) return true;
-    if (id === 'mehr') { menuAuf(); return true; }
+    if (document.getElementById('panelView').classList.contains('hidden')) { leisteWunsch = id; return true; }
+    if (id === 'mehr') { if (!document.getElementById('adminMenu').classList.contains('offen')) menuAuf(); return true; }
     const tab = document.querySelector('.tab[data-tab="' + (id === 'heute' ? 'today' : 'orders') + '"]');
     if (tab) tab.click();
     return true;
@@ -1815,6 +1817,10 @@ async function save(){
 function showPanel(){
   $('loginView').classList.add('hidden');
   $('panelView').classList.remove('hidden');
+  if (leisteWunsch && window.gncNativeTabSelect) {
+    const w = leisteWunsch; leisteWunsch = '';
+    setTimeout(() => window.gncNativeTabSelect(w), 120);
+  }
 }
 /* Beim Abmelden ALLES zuruecksetzen, nicht nur den Bildschirm umschalten.
    Das Tablet am Truck teilen sich mehrere Leute. Blieb der Zustand stehen,
