@@ -11565,7 +11565,7 @@ function renderCart() {
           <span class="success-nr-wert">${escHtml(t('co.pickup_nr').replace('{n}', o.abholnr))}</span>
           ${isDelivery ? '' : `<span class="success-nr-hint">${t('co.pickup_no_hint')}</span>`}
         </div>` : ''}
-        ${o.statusUrl ? `<p class="success-status"><a class="status-btn" href="${o.statusUrl}" target="_blank" rel="noopener">
+        ${o.statusUrl ? `<p class="success-status"><a class="status-btn" href="${o.statusUrl}${APP_FORCED ? '&app=1' : ''}"${APP_FORCED ? '' : ' target="_blank" rel="noopener"'}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.2v5l3.2 1.9"/></svg>
           <span>${t('co.status_link')}</span>
           <svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M19 14.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4.5"/></svg>
@@ -14438,12 +14438,22 @@ async function importGroup(btn) {
   });
 }
 
+/* Adresse aufräumen, aber den App-Modus behalten. Ohne ?app=1 hält sich die
+   Seite beim nächsten Neuladen (Ziehen zum Aktualisieren, Zurück von der
+   Statusseite) für die Website: App-Ansicht und Glas-Leiste der iOS-App
+   fehlen dann, bis die App neu startet. */
+function gncAppSuche() {
+  var app = /[?&](app=1|source=pwa)/.test(location.search)
+    || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+  return app ? '?app=1' : '';
+}
+
 /* ---- B2B-Starter-Link (?team) – öffnet direkt "Gruppenlink erstellen" ---- */
 (function initGroupStarter() {
   try {
     const p = new URLSearchParams(location.search);
     if (p.has('team') && !p.get('g')) {
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({}, '', window.location.pathname + gncAppSuche());
       setTimeout(() => { try { openGroupOverlay(); } catch(e) {} }, 700);
     }
   } catch(e) {}
@@ -15604,6 +15614,11 @@ document.addEventListener('click', (e) => {
 window.addEventListener('resize', () => { setAppView(currentAppView, { noHistory: true, keepScroll: true }); });
 // Start-View aus dem Hash (z. B. /?app=1#menu)
 setAppView(HASH_TO_VIEW[location.hash] || 'home', { noHistory: true, keepScroll: true });
+// Konto-Tab der Glas-Leiste auf der Statusseite (status.html) springt hierher
+if (location.hash === '#konto') {
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  setTimeout(function () { try { openAccountOverlay(); } catch (e) {} }, 500);
+}
 
 /* ====================================================================
    APP-GESTEN, NATIVE GLAS-LEISTE, APPLE-WATCH-STAND, EINFUEHRUNG
@@ -15890,6 +15905,7 @@ function ntbSync() {
   var sig = JSON.stringify([tabs, currentAppView]);
   if (sig === ntbSig) return;
   ntbSig = sig;
+  try { localStorage.setItem('gnc_ntb_tabs', JSON.stringify(tabs)); } catch (e) {}   // die Statusseite zeigt dieselbe Leiste
   ntbPost({ type: 'configure', tabs: tabs, selected: currentAppView });
 }
 function ntbHiddenSync() {
@@ -17348,7 +17364,7 @@ async function passRueckkehr() {
   var q = new URLSearchParams(location.search);
   var modus = q.get('pass');
   if (!modus) return;
-  try { window.history.replaceState({}, '', window.location.pathname); } catch (e) {}
+  try { window.history.replaceState({}, '', window.location.pathname + gncAppSuche()); } catch (e) {}
   if (modus !== 'return') { setTimeout(function () { passKontoOeffnen(); }, 400); return; }
   var p = null;
   try { p = JSON.parse(localStorage.getItem(PASS_PENDING_KEY) || 'null'); } catch (e) {}
@@ -17545,7 +17561,7 @@ async function handlePaymentReturn() {
     }
   }
 
-  const cleanUrl = () => window.history.replaceState({}, '', window.location.pathname);
+  const cleanUrl = () => window.history.replaceState({}, '', window.location.pathname + gncAppSuche());
 
   if (status === 'return' || status === 'success') {
     // Wer gerade bezahlt hat, sieht sofort, dass geprueft wird. Sicherheitsnetz:
@@ -17847,6 +17863,10 @@ passRueckkehr();   // Paket bezahlen: Burger-Pass-Kauf, Links aus den Erinnerung
 window.addEventListener('pageshow', (e) => {
   try { resetCheckoutSubmitLabel(); } catch (err) {}
   if (e.persisted) { try { handlePaymentReturn(); } catch (err) {} }
+  // Zurück von der Statusseite: Die App blendet ihre Glas-Leiste bei jedem
+  // Seitenwechsel aus. Kommt die Seite aus dem Zwischenspeicher, läuft kein
+  // Skript neu, also hier die Leiste wieder anmelden.
+  if (e.persisted && typeof window.gncNativeResync === 'function') { try { window.gncNativeResync(); } catch (err) {} }
 });
 
 /* ====================================================================

@@ -17,6 +17,12 @@
   .wrap{max-width:440px;margin:0 auto;padding:0 1.1rem 3rem;}
   header{padding:1.2rem 0 1rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;}
   .brand{font-family:'Bowlby One',cursive;font-size:1.05rem;letter-spacing:.08em;color:#F5E9D0;text-decoration:none;}
+  .kopf-links{display:flex;align-items:center;gap:.55rem;min-width:0;}
+  .zurueck{display:inline-flex;align-items:center;gap:.15rem;min-height:44px;padding:0 .7rem 0 .45rem;border-radius:999px;border:1px solid #2E2820;background:#17140F;color:#F5E9D0;text-decoration:none;font-size:.85rem;font-weight:700;white-space:nowrap;}
+  .zurueck[hidden]{display:none;}
+  .zurueck svg{width:18px;height:18px;}
+  .zurueck:active{transform:scale(.97);}
+  .native-tabbar .wrap{padding-bottom:110px;}
   .refpill{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:#C9BCA4;background:#17140F;border:1px solid #2E2820;border-radius:999px;padding:.35rem .7rem;white-space:nowrap;}
   .card{background:#14110D;border:1px solid #2E2820;border-radius:16px;padding:1.1rem 1.15rem;margin-bottom:.9rem;}
   .eta{display:flex;align-items:center;gap:.8rem;}
@@ -135,7 +141,10 @@
 <body>
 <div class="wrap">
   <header>
-    <a class="brand" href="/">GRILL'N CHILL</a>
+    <div class="kopf-links">
+      <a class="zurueck" id="zurueck" href="/" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span id="zurueckTxt">Zurück</span></a>
+      <a class="brand" id="brand" href="/">GRILL'N CHILL</a>
+    </div>
     <span class="refpill" id="refPill">…</span>
   </header>
   <p class="conn" id="connMsg" aria-live="polite"></p>
@@ -164,6 +173,7 @@ var LANG = (function () {
 document.documentElement.lang = LANG;
 var STR = {
   de: {
+    back: 'Zurück', tabs: [{ id: 'home', label: 'Start', symbol: 'house' }, { id: 'menu', label: 'Menü', symbol: 'fork.knife' }, { id: 'catering', label: 'Catering', symbol: 'box.truck' }, { id: 'location', label: 'Standort', symbol: 'mappin.and.ellipse' }, { id: 'account', label: 'Konto', symbol: 'person.crop.circle' }],
     order: 'Bestellung', loading: 'Status wird geladen …',
     notfound: 'Bestellung nicht gefunden oder Link ungültig.<br>Den korrekten Link findest du in deiner Bestätigungs-Mail.',
     planPickup: 'Geplante Abholung', planDelivery: 'Geplante Lieferung',
@@ -191,6 +201,7 @@ var STR = {
     },
   },
   en: {
+    back: 'Back', tabs: [{ id: 'home', label: 'Home', symbol: 'house' }, { id: 'menu', label: 'Menu', symbol: 'fork.knife' }, { id: 'catering', label: 'Catering', symbol: 'box.truck' }, { id: 'location', label: 'Location', symbol: 'mappin.and.ellipse' }, { id: 'account', label: 'Account', symbol: 'person.crop.circle' }],
     order: 'Order', loading: 'Loading status …',
     notfound: 'Order not found or invalid link.<br>You can find the correct link in your confirmation email.',
     planPickup: 'Scheduled pickup', planDelivery: 'Scheduled delivery',
@@ -218,6 +229,7 @@ var STR = {
     },
   },
   tr: {
+    back: 'Geri', tabs: [{ id: 'home', label: 'Anasayfa', symbol: 'house' }, { id: 'menu', label: 'Menü', symbol: 'fork.knife' }, { id: 'catering', label: 'Catering', symbol: 'box.truck' }, { id: 'location', label: 'Konum', symbol: 'mappin.and.ellipse' }, { id: 'account', label: 'Hesap', symbol: 'person.crop.circle' }],
     order: 'Sipariş', loading: 'Durum yükleniyor …',
     notfound: 'Sipariş bulunamadı veya bağlantı geçersiz.<br>Doğru bağlantıyı onay e-postanda bulabilirsin.',
     planPickup: 'Planlanan teslim alma', planDelivery: 'Planlanan teslimat',
@@ -246,6 +258,37 @@ var STR = {
   },
 };
 var T = STR[LANG];
+
+/* In der App (iOS-Hülle, Android-App, ?app=1): zurück in die App-Ansicht statt
+   auf die Website. Die iOS-App blendet ihre Glas-Leiste bei jedem Seitenwechsel
+   aus; diese Seite meldet sie mit denselben Tabs wieder an wie die Startseite. */
+var GNC_IOS = !!(window.webkit && window.webkit.messageHandlers && (window.webkit.messageHandlers.gncTabs || window.webkit.messageHandlers['apple-login']));
+var IN_APP = /[?&]app=1/.test(location.search) || GNC_IOS
+  || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+var START = IN_APP ? '/?app=1' : '/';
+(function () {
+  var b = document.getElementById('brand'); if (b) b.href = START;
+  var z = document.getElementById('zurueck');
+  if (z && IN_APP) {
+    z.href = START; z.hidden = false;
+    var zt = document.getElementById('zurueckTxt'); if (zt) zt.textContent = T.back;
+  }
+  var h = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.gncTabs;
+  if (!h) return;
+  function post(m) { try { h.postMessage(m); } catch (e) {} }
+  var tabs = null;
+  try { tabs = JSON.parse(localStorage.getItem('gnc_ntb_tabs') || 'null'); } catch (e) {}
+  if (!Array.isArray(tabs) || !tabs.length) tabs = T.tabs;
+  window.gncNativeTabsActive = function (on) {
+    document.documentElement.classList.toggle('native-tabbar', !!on);
+    if (on) post({ type: 'hidden', hidden: false });
+  };
+  window.gncNativeTabSelect = function (id) {
+    var ziel = { menu: '#menu', catering: '#catering', location: '#location', account: '#konto' }[String(id)] || '';
+    location.href = '/?app=1' + ziel;
+  };
+  post({ type: 'configure', tabs: tabs, selected: '' });
+})();
 var REF = (location.pathname.split('/s/')[1] || '').split('/')[0].replace(/[^A-Za-z0-9-]/g, '');
 var KEY = new URLSearchParams(location.search).get('k') || '';
 var DATA = null, PUSH_STATE = 'idle';
