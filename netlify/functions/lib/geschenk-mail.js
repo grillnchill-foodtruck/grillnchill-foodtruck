@@ -50,14 +50,20 @@ async function senden(an, betreff, html, anhaenge) {
   return r.ok;
 }
 
-async function pdfAnhang(d) {
+async function pdfAnhang(d, mitBeleg) {
+  const anhaenge = [];
   try {
     const pdf = await require('./geschenk-pdf').gutscheinPdf(d);
-    return [{ name: 'Gutschein-' + d.code + '.pdf', content: pdf.toString('base64') }];
-  } catch (e) {
-    console.error('Gutschein-PDF:', e.message);
-    return [];
+    anhaenge.push({ name: 'Gutschein-' + d.code + '.pdf', content: pdf.toString('base64') });
+  } catch (e) { console.error('Gutschein-PDF:', e.message); }
+  if (mitBeleg) {
+    try {
+      const b = require('./geschenk-beleg');
+      const pdf = await b.belegPdf(b.belegDaten(d));
+      anhaenge.push({ name: 'Kaufbeleg-' + d.reference + '.pdf', content: pdf.toString('base64') });
+    } catch (e) { console.error('Gutschein-Beleg:', e.message); }
   }
+  return anhaenge;
 }
 
 /* ---- Bausteine ------------------------------------------------------------ */
@@ -137,9 +143,9 @@ ${codeKasten(d)}
 ${pdfKnopf(d)}
 ${einloesen(d)}
 ${kleingedruckt(d)}
-<p style="margin:10px 0 0;color:#aaa;font-size:11px;">Kauf-Referenz: ${esc(d.reference)}</p>`;
+<p style="margin:10px 0 0;color:#aaa;font-size:11px;">Dein Kaufbeleg ${esc(d.reference)} hängt als PDF an. <a href="${require('./geschenk').pdfLink(d, true, 'beleg')}" style="color:#aaa;">Kaufbeleg herunterladen</a></p>`;
   return senden({ email: d.buyerEmail, name: d.buyerName }, `Dein Grill'n Chill Gutschein über ${euro(d.amount)}`,
-    rahmen('DEIN GESCHENKGUTSCHEIN', inhalt), await pdfAnhang(d));
+    rahmen('DEIN GESCHENKGUTSCHEIN', inhalt), await pdfAnhang(d, true));
 }
 
 async function empfaengerMail(d) {

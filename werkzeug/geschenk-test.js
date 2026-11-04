@@ -152,6 +152,10 @@ const basis = (extra) => ({
   ok('Mail an Käufer mit Code und PDF im Anhang', !!anKaeufer && anKaeufer.htmlContent.includes(code1) && anKaeufer.attachment && anKaeufer.attachment[0].content.length > 1000, anKaeufer && anKaeufer.subject);
   ok('Mail an Ayşe sofort, mit Nachricht und Code', !!anEmpf && anEmpf.htmlContent.includes('Lass es dir schmecken') && anEmpf.htmlContent.includes(code1) && /Kubi schenkt dir 30,00/.test(anEmpf.subject), anEmpf && anEmpf.subject);
   ok('Nachricht wird in der Mail maskiert', !anEmpf.htmlContent.includes('<script'));
+  ok('Käufer-Mail: Kaufbeleg als zweites PDF im Anhang', anKaeufer.attachment.length === 2 && /^Kaufbeleg-GNC-GC-/.test(anKaeufer.attachment[1].name) && Buffer.from(anKaeufer.attachment[1].content, 'base64').slice(0, 4).toString() === '%PDF', anKaeufer.attachment.map((x) => x.name));
+  ok('Mail an Ayşe: nur der Gutschein, kein Kaufbeleg', anEmpf.attachment.length === 1 && !anEmpf.htmlContent.includes('art=beleg'), anEmpf.attachment.map((x) => x.name));
+  const archiv = lies('invoices', 'gs:' + k1.reference);
+  ok('Kaufbeleg archiviert (Store invoices, gs:<Referenz>)', archiv && archiv.betrag === 30 && archiv.kaeufer.email === 'kaeufer@example.org' && archiv.code === code1 && archiv.art === 'Mehrzweck-Gutschein', archiv);
   ok('Zustellung vermerkt, kein offener Auftrag', !!lies('vouchers', 'gd:' + code1).recipientMailedAt && schluessel('vouchers', 'gz:').length === 0, schluessel('vouchers', 'gz:'));
 
   /* 3. Doppelte Signale erzeugen keinen zweiten Code */
@@ -159,7 +163,7 @@ const basis = (extra) => ({
   const w1b = await zahle(k1.id);
   ok('Webhook ein zweites Mal: kein neuer Code, keine Mail', w1b.ignored === 'already_completed' && MAILS.length === 0 && schluessel('vouchers', 'c:').length === 1, w1b);
   s = await status(k1.reference, k1.id);
-  ok('Danke-Ansicht nach der Zahlung: Code, Zustellung, PDF-Links', s.d.state === 'paid' && s.d.code === code1 && s.d.recipientMailed === true && /giftcard-pdf\?c=/.test(s.d.pdf) && /dl=1$/.test(s.d.pdfDownload), s.d);
+  ok('Danke-Ansicht nach der Zahlung: Code, Zustellung, PDF-Links, Kaufbeleg', s.d.state === 'paid' && s.d.code === code1 && s.d.recipientMailed === true && /giftcard-pdf\?c=/.test(s.d.pdf) && /dl=1$/.test(s.d.pdfDownload) && /art=beleg/.test(s.d.beleg) && s.d.beleg.includes(lies('vouchers', 'gd:' + code1).belegToken), s.d);
 
   r = await kaufe(basis({ email: 'parallel@example.org' }));
   SUMUP[r.d.id].status = 'PAID';
@@ -222,6 +226,10 @@ const basis = (extra) => ({
   ok('PDF mit falschem Schlüssel: 404', p.statusCode === 404);
   p = await handler('giftcard-pdf')({ httpMethod: 'GET', headers: ip(), queryStringParameters: { c: code1, t: d6.pdfToken, dl: '1' } });
   ok('PDF mit Schlüssel: echtes PDF zum Herunterladen', p.statusCode === 200 && Buffer.from(p.body, 'base64').slice(0, 4).toString() === '%PDF' && /attachment/.test(p.headers['Content-Disposition']), p.statusCode);
+  p = await handler('giftcard-pdf')({ httpMethod: 'GET', headers: ip(), queryStringParameters: { c: code1, t: d6.pdfToken, art: 'beleg' } });
+  ok('Kaufbeleg mit dem Gutschein-Schlüssel der Beschenkten: 404', p.statusCode === 404);
+  p = await handler('giftcard-pdf')({ httpMethod: 'GET', headers: ip(), queryStringParameters: { c: code1, t: d6.belegToken, art: 'beleg', dl: '1' } });
+  ok('Kaufbeleg mit eigenem Schlüssel: PDF', p.statusCode === 200 && Buffer.from(p.body, 'base64').slice(0, 4).toString() === '%PDF' && /Kaufbeleg-GNC-GC-/.test(p.headers['Content-Disposition']), p.statusCode);
 
   /* 9. Prüfen */
   let c = await pruefe(code1.toLowerCase().replace(/^gnc/, 'gnc-'));

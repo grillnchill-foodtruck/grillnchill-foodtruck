@@ -185,9 +185,15 @@ async function ausstellen(rec, o) {
     recipientName: g.recipientName || '', recipientEmail: g.recipientEmail || '',
     message: g.message || '', delivery: g.delivery || 'self', sendOn: g.sendOn || '',
     pdfToken: crypto.randomBytes(18).toString('hex'),
+    belegToken: crypto.randomBytes(18).toString('hex'),   // nur für die Käuferin
     recipientMailedAt: null, tries: 0,
   };
   await vs.setJSON('gd:' + code, details);
+  // Kaufbeleg archivieren (aufbewahrungspflichtig, wie die Rechnungen inv:…)
+  try {
+    const { belegDaten } = require('./geschenk-beleg');
+    await store('invoices').setJSON('gs:' + reference, belegDaten(details));
+  } catch (e) { console.error('Gutschein-Beleg ablegen:', e.message); }
 
   frisch.status = 'completed';
   frisch.completedAt = jetzt;
@@ -260,8 +266,10 @@ async function faelligeZustellen(jetzt) {
 }
 
 /* ---- Lesen für Danke-Ansicht, Prüfen und PDF ----------------------------- */
-function pdfLink(d, download) {
-  return seite() + '/.netlify/functions/giftcard-pdf?c=' + encodeURIComponent(d.code) + '&t=' + d.pdfToken + (download ? '&dl=1' : '');
+function pdfLink(d, download, art) {
+  const beleg = art === 'beleg';
+  return seite() + '/.netlify/functions/giftcard-pdf?c=' + encodeURIComponent(d.code) + '&t=' + (beleg ? d.belegToken : d.pdfToken)
+    + (beleg ? '&art=beleg' : '') + (download ? '&dl=1' : '');
 }
 
 /** Was die Käuferin nach der Zahlung sieht (giftcard-status.js). */
@@ -271,11 +279,12 @@ function kaeuferSicht(d) {
     recipientName: d.recipientName, delivery: d.delivery, sendOn: d.sendOn,
     recipientMailed: !!d.recipientMailedAt,
     pdf: pdfLink(d, false), pdfDownload: pdfLink(d, true),
+    beleg: d.belegToken ? pdfLink(d, true, 'beleg') : null,
   };
 }
 
-function tokenStimmt(d, t) {
-  const a = Buffer.from(String(d && d.pdfToken || ''));
+function tokenStimmt(d, t, art) {
+  const a = Buffer.from(String(d && (art === 'beleg' ? d.belegToken : d.pdfToken) || ''));
   const b = Buffer.from(String(t || ''));
   return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
 }

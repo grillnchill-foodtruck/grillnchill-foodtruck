@@ -3,10 +3,13 @@
  * ----------------------------------------------------------------------------
  * Gutschein als PDF (lib/geschenk-pdf.js).
  *
- *   GET ?c=<CODE>&t=<PDF-Schlüssel>[&dl=1]  → application/pdf
+ *   GET ?c=<CODE>&t=<PDF-Schlüssel>[&dl=1]            → Gutschein (PDF)
+ *   GET ?c=<CODE>&t=<PDF-Schlüssel>&art=beleg[&dl=1]  → Kaufbeleg (PDF)
  *
  * Der Schlüssel steht nur in den Gutschein-Mails und in der Danke-Ansicht.
- * Ohne passenden Schlüssel gibt es 404, auch für echte Codes.
+ * Der Beleg hat einen eigenen Schlüssel (nur Käufer-Mail und Danke-Ansicht),
+ * weil das Gutschein-PDF auch an die beschenkte Person geht. Ohne passenden
+ * Schlüssel gibt es 404, auch für echte Codes.
  * ----------------------------------------------------------------------------
  */
 
@@ -22,15 +25,26 @@ exports.handler = async (event) => {
   const nichts = { statusCode: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8' }, body: 'Gutschein nicht gefunden.' };
   if (!code || !q.t) return nichts;
   const d = await geschenk.store('vouchers').get('gd:' + code, { type: 'json' });
-  if (!d || !geschenk.tokenStimmt(d, q.t)) return nichts;
+  const beleg = q.art === 'beleg';
+  // Eigener Schlüssel für den Beleg: das Gutschein-PDF bekommt auch die beschenkte Person
+  if (!d || !geschenk.tokenStimmt(d, q.t, beleg ? 'beleg' : '')) return nichts;
   const v = await geschenk.store('vouchers').get('c:' + code, { type: 'json' });
-  if (!v || v.active === false) return nichts;
-  const pdf = await require('./lib/geschenk-pdf').gutscheinPdf(d);
+  if (!v || (v.active === false && !beleg)) return nichts;
+  let pdf, name;
+  if (beleg) {
+    const b = require('./lib/geschenk-beleg');
+    const archiv = await geschenk.store('invoices').get('gs:' + d.reference, { type: 'json' }).catch(() => null);
+    pdf = await b.belegPdf(archiv || b.belegDaten(d));
+    name = 'Kaufbeleg-' + d.reference;
+  } else {
+    pdf = await require('./lib/geschenk-pdf').gutscheinPdf(d);
+    name = 'Gutschein-' + code;
+  }
   return {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': (q.dl ? 'attachment' : 'inline') + '; filename="Gutschein-' + code + '.pdf"',
+      'Content-Disposition': (q.dl ? 'attachment' : 'inline') + '; filename="' + name + '.pdf"',
       'Cache-Control': 'private, no-store',
       'X-Robots-Tag': 'noindex',
     },

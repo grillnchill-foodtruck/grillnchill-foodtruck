@@ -477,6 +477,7 @@
       else t = 'Gib den Code weiter oder bestell selbst damit.';
       $('dk-weg').textContent = t;
       $('dk-mail').textContent = offen.email || 'deine Adresse';
+      if (d.beleg) { $('dk-beleg').href = d.beleg; $('dk-beleg').hidden = false; }
       if (d.pdf) {
         $('dk-pdf').href = d.pdfDownload; $('dk-pdf2').href = d.pdf;
       } else {
