@@ -129,6 +129,7 @@
   .pill-link.zurueck svg{width:18px;height:18px}
   .login-zurueck{position:fixed;top:calc(env(safe-area-inset-top) + 12px);left:max(16px,env(safe-area-inset-left));z-index:5}
   .native-tabbar .page,.native-tabbar .login{padding-bottom:110px}
+  .login:has(> .login-zurueck:not([hidden])){padding-top:calc(env(safe-area-inset-top) + 76px)}
   /* Paket bestellfluss: offene Abholnummern und Wartezeit-Automatik */
   .nr-liste{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 4px}
   .nr-liste li{display:inline-flex;align-items:baseline;gap:5px;padding:4px 10px;border:1px solid var(--border);border-radius:999px;font-size:.8125rem;font-weight:600;color:var(--foreground);background:var(--muted)}
