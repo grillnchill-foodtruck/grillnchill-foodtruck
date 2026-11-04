@@ -10,6 +10,8 @@
  *   fahrt      Live-Position des Fahrers              6 Stunden
  *   bremse     Zähler gegen Missbrauch (je Tag)       ab 3 Tagen alt
  *   firmen     abgelehnte Firmenanträge               180 Tage nach Entscheidung
+ *   geschenk   Namen, Adressen, Nachricht eines Geschenkgutscheins
+ *              (vouchers gd:)                         90 Tage nach Ablauf
  *
  * Nur was eindeutig abgelaufen ist, wird gelöscht. Einträge ohne lesbares
  * Datum bleiben liegen. Je Lauf gibt es ein Zeitbudget, der Rest kommt in
@@ -26,6 +28,7 @@ const FRISTEN = {
   bremseTage: 3,
   bremseBisTage: 45,
   firmenAbgelehnt: 180 * TAG,
+  geschenkNachAblauf: 90 * TAG,
 };
 
 const alt = (wann, frist, jetzt) => {
@@ -43,7 +46,7 @@ async function aufraeumen(holeStore, opts = {}) {
   const jetzt = opts.jetzt || Date.now();
   const ende = Date.now() + (opts.budgetMs || 20000);
   const zeit = () => Date.now() < ende;
-  const ergebnis = { geo: 0, feedback: 0, abholnr: 0, fahrt: 0, bremse: 0, firmen: 0, abgebrochen: false };
+  const ergebnis = { geo: 0, feedback: 0, abholnr: 0, fahrt: 0, bremse: 0, firmen: 0, geschenk: 0, abgebrochen: false };
 
   async function jeEintrag(name, prefix, pruefe) {
     const s = holeStore(name);
@@ -62,6 +65,28 @@ async function aufraeumen(holeStore, opts = {}) {
   await jeEintrag('geo', '', (v, k) => k !== '_takt' && alt(v.at, FRISTEN.geo, jetzt));
   await jeEintrag('feedback', 'f:', (v) => alt(v.at, FRISTEN.feedback, jetzt));
   await jeEintrag('firmen', 'antrag:', (v) => v.status === 'abgelehnt' && alt(v.entschiedenAt, FRISTEN.firmenAbgelehnt, jetzt));
+
+  // Geschenk-Daten (lib/geschenk.js): 90 Tage nach Ablauf des Gutscheins weg.
+  // Der einlösbare Gutschein c:<CODE> selbst bleibt (Buchhaltung, Admin).
+  if (zeit()) {
+    const s = holeStore('vouchers');
+    try {
+      for (const b of (await s.list({ prefix: 'gd:' })).blobs || []) {
+        if (!zeit()) { ergebnis.abgebrochen = true; break; }
+        const v = await s.get(b.key, { type: 'json' }).catch(() => null);
+        if (v && /^\d{4}-\d{2}-\d{2}$/.test(v.validUntil || '') && alt(v.validUntil + 'T23:59:59Z', FRISTEN.geschenkNachAblauf, jetzt)) {
+          await s.delete(b.key);
+          // Namen stehen auch in der Notiz des Gutscheins: dort ebenfalls entfernen
+          const c = await s.get('c:' + b.key.slice(3), { type: 'json' }).catch(() => null);
+          if (c && c.giftcard && /Käufer|Für:/.test(c.note || '')) {
+            c.note = 'Geschenkgutschein (Namen nach Ablauf gelöscht)';
+            await s.setJSON('c:' + b.key.slice(3), c);
+          }
+          ergebnis.geschenk++;
+        }
+      }
+    } catch (e) { /* nächste Nacht */ }
+  }
 
   // Abholnummern: Schlüssel t:<YYYY-MM-DD>, das Datum steckt im Schlüssel
   if (zeit()) {

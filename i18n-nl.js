@@ -349,7 +349,7 @@ I18N.nl = {
     "pass.buy": "Kopen voor {price}", "pass.terms": "Gratis is het basismenu, net als het menu van het huis: burger met één burger, friet, drankje en dip, zonder Kubis Special. Meerprijzen betaal je apart. Geen automatische verlenging, geen uitbetaling in contanten. Niet ingewisselde menu’s vervallen aan het eind.", "pass.status": "Nog {left} van {total} menu’s, geldig tot {date}", "pass.again": "Nieuwe pass kopen",
     "pass.active": "Je {name} is actief: {menus} menu’s, geldig tot {date}.", "pass.pending": "We controleren de betaling nog. Je pass verschijnt zo in je account.", "pass.failed": "De aankoop is niet afgerond. Je kunt het opnieuw proberen.", "pass.off": "De Burger-Pass is nu niet verkrijgbaar.",
     "pass.redeem": "Pass-menu inwisselen (−{amount})", "pass.applied": "Pass-menu ingewisseld (−{amount})", "pass.line": "{name}-menu", "pass.ready": "{n}× pass-menu beschikbaar. In te wisselen in de winkelmand of bij de truck.",
-    "promo.quick_chip": "{code} toepassen", "promo.have_code": "Andere code invullen",
+    "promo.quick_chip": "{code} toepassen", "promo.have_code": "Andere code invullen", "promo.gift_ready": "Je cadeaucode staat klaar in je winkelwagen",
     "promo.applied": "Code {code} toegepast", "promo.until": "Code {code}: nog {rest} tot de korting", "promo.savings": "💸 Je bespaart {amount} met code {code}",
     "delivery.info_main": "🛵 De bezorgkosten zie je in de volgende stap, zodra je je adres invult",
     "delivery.info_short": "De bezorgkosten zie je na het invullen van je adres",

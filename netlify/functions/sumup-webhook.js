@@ -111,58 +111,12 @@ exports.handler = async (event) => {
         return json(200, { ok: true, reference, action: r.neu ? 'pass_issued' : 'pass_exists' });
       }
 
-      // ---- Geschenkgutschein: Code erzeugen, Gutschein anlegen, Käufer mailen ----
+      // ---- Geschenkgutschein: genau einen Code ausstellen, Mails, Zustellung (lib/geschenk.js) ----
       if (rec.kind === 'giftcard' && rec.gift) {
-        const vs = (() => {
-          const opts = { name: 'vouchers', consistency: 'strong' };
-          if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
-            opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
-            opts.token = process.env.NETLIFY_BLOBS_TOKEN;
-          }
-          return getStore(opts);
-        })();
-        // Eindeutigen, gut lesbaren Code erzeugen (GNC- + 6 Zeichen)
-        const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        let code = '';
-        for (let attempt = 0; attempt < 6; attempt++) {
-          code = 'GNC';
-          const buf = crypto.randomBytes(6);
-          for (let i = 0; i < 6; i++) code += ALPHA[buf[i] % ALPHA.length];
-          if (!(await vs.get('c:' + code, { type: 'json' }))) break;
-        }
-        const amount = rec.gift.amount;
-        const validUntil = new Date(Date.now() + 3 * 365 * 86400000).toISOString().slice(0, 10);
-        await vs.setJSON('c:' + code, {
-          code,
-          type: 'fixed',
-          value: amount,
-          maxDiscount: 0,
-          minOrder: amount,           // einlösbar ab Bestellwert in Gutscheinhöhe
-          validFrom: null,
-          validUntil,                 // 3 Jahre (gesetzliche Regelverjährung)
-          maxUses: 1,
-          oncePerCustomer: false,
-          combinable: false,
-          mode: 'any',
-          active: true,
-          giftcard: true,
-          note: 'Geschenkgutschein · Käufer: ' + (rec.gift.buyerName || rec.gift.email) + (rec.gift.recipientName ? ' · Für: ' + rec.gift.recipientName : ''),
-          createdAt: new Date().toISOString(),
-          createdBy: 'Shop (Online-Kauf)',
-          uses: 0,
-          usedBy: {},
-        });
-        const notify = await fetch(siteUrl + '/.netlify/functions/send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...internHeader() },
-          body: JSON.stringify({ type: 'giftcard', gift: { ...rec.gift, code, validUntil, reference } }),
-        });
-        rec.status = 'completed';
-        rec.completedAt = new Date().toISOString();
-        rec.code = code;
-        try { await s.setJSON(key, rec); } catch (e) {}
-        await addRevenue(s, { gcCount: 1, gcTotal: (rec.gift && rec.gift.amount) || rec.total || 0 });
-        return json(200, { ok: true, reference, action: notify.ok ? 'giftcard_issued' : 'giftcard_mail_failed', code });
+        const { ausstellen } = require('./lib/geschenk');
+        const r = await ausstellen(rec, { os: s, key, quelle: 'Shop (Online-Kauf)', umsatz: addRevenue });
+        if (r.doppelt) return json(200, { ok: true, reference, action: 'giftcard_exists', code: r.code });
+        return json(200, { ok: true, reference, action: r.mailOk ? 'giftcard_issued' : 'giftcard_mail_failed', code: r.code });
       }
 
       // ---- Normale Bestellung: Benachrichtigungen auslösen (send-email hebt auf "completed") ----

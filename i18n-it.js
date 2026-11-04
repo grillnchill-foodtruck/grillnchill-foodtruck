@@ -349,7 +349,7 @@ I18N.it = {
     "pass.buy": "Acquista a {price}", "pass.terms": "Gratis è il menù base, come il menù offerto: burger con un solo patty, patatine, bibita e salsa, escluso il Kubis Special. I supplementi si pagano a parte. Nessun rinnovo automatico, nessun rimborso in contanti. I menù non usati scadono alla fine.", "pass.status": "{left} di {total} menù rimasti, valido fino al {date}", "pass.again": "Acquista un nuovo pass",
     "pass.active": "Il tuo {name} è attivo: {menus} menù, valido fino al {date}.", "pass.pending": "Stiamo ancora verificando il pagamento. Il pass compare a breve nel tuo account.", "pass.failed": "L’acquisto non è stato completato. Puoi riprovare.", "pass.off": "Il Burger Pass al momento non è disponibile.",
     "pass.redeem": "Usa menù del pass (−{amount})", "pass.applied": "Menù del pass usato (−{amount})", "pass.line": "Menù {name}", "pass.ready": "{n}× menù del pass disponibile. Usalo nel carrello o al truck.",
-    "promo.quick_chip": "Applica {code}", "promo.have_code": "Inserisci un altro codice",
+    "promo.quick_chip": "Applica {code}", "promo.have_code": "Inserisci un altro codice", "promo.gift_ready": "Il tuo codice regalo ti aspetta nel carrello",
     "promo.applied": "Codice {code} applicato", "promo.until": "Codice {code}: ancora {rest} allo sconto", "promo.savings": "💸 Risparmi {amount} con il codice {code}",
     "delivery.info_main": "🛵 Vedi il costo di consegna al passo successivo, appena inserisci il tuo indirizzo",
     "delivery.info_short": "Vedi il costo di consegna dopo aver inserito l'indirizzo",

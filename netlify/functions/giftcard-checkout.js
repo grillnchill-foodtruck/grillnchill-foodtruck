@@ -3,8 +3,11 @@
  * ----------------------------------------------------------------------------
  * Verkauf von Geschenkgutscheinen (Seite /gutscheine).
  *
- *   POST { amount, email, buyerName?, recipientName? }
+ *   POST { v: 2, amount, preset?, email, buyerName, recipientName?, message?,
+ *          delivery: 'mail'|'print', recipientEmail?, sendOn?, terms: true }
  *   → { id, hosted_checkout_url, reference }
+ *   Prüfregeln: lib/geschenk.js (eingabePruefen). Ältere Seitenstände ohne
+ *   v: 2 schicken nur Betrag, E-Mail und Namen: Code geht dann nur an sie.
  *
  * Ablauf: SumUp-Checkout anlegen → Vorgang als "pending" (kind: giftcard) im
  * Bestell-Store sichern → Kunde zahlt bei SumUp → sumup-webhook (Realtime)
@@ -17,9 +20,9 @@
 const { getStore } = require('@netlify/blobs');
 const { schutz, saeubern } = require('./lib/bremse');
 
+const { eingabePruefen, MIN_BETRAG, MAX_BETRAG } = require('./lib/geschenk');
+
 const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
-const MIN_AMOUNT = 10;
-const MAX_AMOUNT = 200;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -79,14 +82,12 @@ exports.handler = async (event) => {
     }
   }
 
-  const amount = Math.round(parseFloat(input.amount) || 0);
-  if (amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
-    return json(400, { error: 'bad_amount', hint: `Betrag: ${MIN_AMOUNT}–${MAX_AMOUNT} € in ganzen Euro` });
+  const pruefung = eingabePruefen(input);
+  if (!pruefung.ok) {
+    return json(400, { error: pruefung.error, hint: pruefung.error === 'bad_amount' ? `Betrag: ${MIN_BETRAG}–${MAX_BETRAG} € in ganzen Euro` : undefined });
   }
-  const email = String(input.email || '').trim().toLowerCase().slice(0, 120);
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json(400, { error: 'bad_email' });
-  const buyerName = String(input.buyerName || '').replace(/[<>]/g, '').trim().slice(0, 40);
-  const recipientName = String(input.recipientName || '').replace(/[<>]/g, '').trim().slice(0, 40);
+  const gift = pruefung.gift;
+  const { amount, buyerName } = gift;
 
   const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
   const reference = 'GNC-GC-' + Date.now();
@@ -98,7 +99,7 @@ exports.handler = async (event) => {
     merchant_code: merchantCode,
     description: `Grilln Chill Geschenkgutschein ${amount} EUR` + (buyerName ? ` - ${buyerName}` : ''),
     return_url: `${siteUrl}/.netlify/functions/sumup-webhook`,
-    redirect_url: `${siteUrl}/gutscheine.html?payment=return`,
+    redirect_url: `${siteUrl}/gutscheine?payment=return`,
     hosted_checkout: { enabled: true },
   };
 
@@ -119,7 +120,7 @@ exports.handler = async (event) => {
       kind: 'giftcard',
       createdAt: new Date().toISOString(),
       checkoutId: data.id,
-      gift: { amount, email, buyerName, recipientName },
+      gift,
     });
 
     // Vorherigen, nicht bezahlten Gutschein-Versuch stornieren (Referenz + geheime ID müssen passen)

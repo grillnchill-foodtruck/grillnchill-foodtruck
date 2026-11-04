@@ -349,7 +349,7 @@ I18N.tr = {
     "pass.buy": "{price} öde ve al", "pass.terms": "Ücretsiz olan, bizden menüdeki gibi temel menüdür: tek köfteli burger, patates kızartması, içecek ve sos, Kubis Special hariç. Ek ücretleri ayrıca ödersin. Otomatik uzama yok, nakit iade yok. Kullanılmayan menüler süre bitince geçersiz olur.", "pass.status": "{total} menüden {left} tane kaldı, {date} tarihine kadar geçerli", "pass.again": "Yeni pass al",
     "pass.active": "{name} aktif: {menus} menü, {date} tarihine kadar geçerli.", "pass.pending": "Ödemeyi hâlâ kontrol ediyoruz. Pass birazdan hesabında görünür.", "pass.failed": "Satın alma tamamlanmadı. Tekrar deneyebilirsin.", "pass.off": "Burger Pass şu anda satışta değil.",
     "pass.redeem": "Pass menüsünü kullan (−{amount})", "pass.applied": "Pass menüsü kullanıldı (−{amount})", "pass.line": "{name} menüsü", "pass.ready": "{n}× pass menüsü hazır. Sepette veya truck’ta kullanabilirsin.",
-    "promo.quick_chip": "{code} uygula", "promo.have_code": "Başka kod gir",
+    "promo.quick_chip": "{code} uygula", "promo.have_code": "Başka kod gir", "promo.gift_ready": "Hediye kartı kodun sepette hazır",
     "promo.applied": "{code} kodu uygulandı", "promo.until": "{code} kodu: indirime {rest} kaldı", "promo.savings": "💸 {code} koduyla {amount} tasarruf ediyorsun",
     "delivery.info_main": "🛵 Teslimat ücretini bir sonraki adımda, adresini girdiğinde görürsün",
     "delivery.info_short": "Teslimat ücretini adresi girdikten sonra görürsün",

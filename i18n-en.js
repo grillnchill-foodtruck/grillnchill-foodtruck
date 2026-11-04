@@ -349,7 +349,7 @@ I18N.en = {
     "pass.buy": "Buy for {price}", "pass.terms": "The free meal is the basic meal, like the meal on the house: burger with a single patty, fries, drink and dip, Kubis Special excluded. Extras cost the usual surcharge. No automatic renewal, no cash payout. Meals not redeemed expire at the end.", "pass.status": "{left} of {total} meals left, valid until {date}", "pass.again": "Buy a new pass",
     "pass.active": "Your {name} is active: {menus} meals, valid until {date}.", "pass.pending": "We are still checking the payment. Your pass will show up in your account shortly.", "pass.failed": "The purchase was not completed. You can try again.", "pass.off": "The Burger Pass is not available right now.",
     "pass.redeem": "Redeem pass meal (−{amount})", "pass.applied": "Pass meal redeemed (−{amount})", "pass.line": "{name} meal", "pass.ready": "{n}× pass meal available. Redeem it in the cart or at the truck.",
-    "promo.quick_chip": "Apply {code}", "promo.have_code": "Enter another code",
+    "promo.quick_chip": "Apply {code}", "promo.have_code": "Enter another code", "promo.gift_ready": "Your gift card code is waiting in the cart",
     "promo.applied": "Code {code} applied", "promo.until": "Code {code}: {rest} more until the discount", "promo.savings": "💸 You save {amount} with code {code}",
     "delivery.info_main": "🛵 You'll see the delivery fee in the next step, once you enter your address",
     "delivery.info_short": "You'll see the delivery fee after entering your address",

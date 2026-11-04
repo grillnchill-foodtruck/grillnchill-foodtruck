@@ -48,46 +48,12 @@ function store() {
   return getStore(opts);
 }
 
-// Geschenkgutschein ausstellen: Code erzeugen, Voucher anlegen, Käufer-Mail auslösen.
-// Wird beim manuellen "Ausstellen" genutzt; der reguläre Weg läuft über den SumUp-Webhook.
+// Geschenkgutschein ausstellen (manuell im Admin): gleicher Weg wie nach der
+// Zahlung im SumUp-Webhook, siehe lib/geschenk.js.
 async function fulfillGiftcard(rec, s, key) {
-  const crypto = require('crypto');
-  const vopts = { name: 'vouchers', consistency: 'strong' };
-  if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
-    vopts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
-    vopts.token = process.env.NETLIFY_BLOBS_TOKEN;
-  }
-  const vs = getStore(vopts);
-  const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let attempt = 0; attempt < 6; attempt++) {
-    code = 'GNC';
-    const buf = crypto.randomBytes(6);
-    for (let i = 0; i < 6; i++) code += ALPHA[buf[i] % ALPHA.length];
-    if (!(await vs.get('c:' + code, { type: 'json' }))) break;
-  }
-  const amount = rec.gift.amount;
-  const validUntil = new Date(Date.now() + 3 * 365 * 86400000).toISOString().slice(0, 10);
-  await vs.setJSON('c:' + code, {
-    code, type: 'fixed', value: amount, maxDiscount: 0, minOrder: amount,
-    validFrom: null, validUntil, maxUses: 1, oncePerCustomer: false,
-    combinable: false, mode: 'any', active: true, giftcard: true,
-    note: 'Geschenkgutschein · Käufer: ' + (rec.gift.buyerName || rec.gift.email) + (rec.gift.recipientName ? ' · Für: ' + rec.gift.recipientName : ''),
-    createdAt: new Date().toISOString(), createdBy: 'Admin (manuell ausgestellt)',
-    uses: 0, usedBy: {},
-  });
-  const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
-  const res = await fetch(siteUrl + '/.netlify/functions/send-email', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...internHeader() },
-    body: JSON.stringify({ type: 'giftcard', gift: { ...rec.gift, code, validUntil, reference: key.slice(2) } }),
-  });
-  rec.status = 'completed';
-  rec.completedAt = new Date().toISOString();
-  rec.code = code;
-  await s.setJSON(key, rec);
-  await addRevenue(s, { gcCount: 1, gcTotal: (rec.gift && rec.gift.amount) || rec.total || 0 });
-  return { mailOk: res.ok, code };
+  const { ausstellen } = require('./lib/geschenk');
+  const r = await ausstellen(rec, { os: s, key, quelle: 'Admin (manuell ausgestellt)', umsatz: addRevenue });
+  return { mailOk: r.mailOk || !!r.doppelt, code: r.code };
 }
 
 async function notify(order) {

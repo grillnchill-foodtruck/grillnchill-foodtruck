@@ -349,7 +349,7 @@ I18N.pt = {
     "pass.buy": "Comprar por {price}", "pass.terms": "Grátis é o menu base, como o menu grátis: hambúrguer com um só hambúrguer de carne, batatas, bebida e molho, sem o Kubis Special. Os suplementos pagam-se à parte. Sem renovação automática, sem reembolso em dinheiro. Menus não usados expiram no fim.", "pass.status": "Restam {left} de {total} menus, válido até {date}", "pass.again": "Comprar passe novo",
     "pass.active": "O teu {name} está ativo: {menus} menus, válido até {date}.", "pass.pending": "Ainda estamos a verificar o pagamento. O teu passe aparece já na tua conta.", "pass.failed": "A compra não ficou concluída. Podes tentar outra vez.", "pass.off": "O Burger Pass não está disponível de momento.",
     "pass.redeem": "Usar menu do passe (−{amount})", "pass.applied": "Menu do passe usado (−{amount})", "pass.line": "Menu {name}", "pass.ready": "{n}× menu do passe disponível. Usa-o no carrinho ou no food truck.",
-    "promo.quick_chip": "Aplicar {code}", "promo.have_code": "Inserir outro código",
+    "promo.quick_chip": "Aplicar {code}", "promo.have_code": "Inserir outro código", "promo.gift_ready": "O teu código de oferta está à tua espera no carrinho",
     "promo.applied": "Código {code} aplicado", "promo.until": "Código {code}: faltam {rest} para o desconto", "promo.savings": "💸 Poupas {amount} com o código {code}",
     "delivery.info_main": "🛵 Vês a taxa de entrega no passo seguinte, assim que inserires a tua morada",
     "delivery.info_short": "Vês a taxa de entrega depois de inserires a morada",

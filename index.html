@@ -9484,6 +9484,24 @@ let checkoutMode = 'pickup';
 let tipPercent = 0; // Trinkgeld in % (nur bei Online-Zahlung), 0/5/10
 let checkoutStep = 'cart';
 let showPromoField = false; // Gutschein-Eingabefeld im Warenkorb (Standard: eingeklappt)
+// Geschenkgutschein aus Mail, PDF oder /gutscheine („Jetzt einlösen“): ?gutschein=CODE
+// legt den Code ins Gutschein-Feld. Einlösen tippt die Kundin selbst, wenn der
+// Warenkorb den Mindestbestellwert erreicht.
+let geschenkCode = '';
+(function geschenkAusAdresse() {
+  try {
+    const u = new URL(location.href);
+    const roh = u.searchParams.get('gutschein');
+    if (roh === null) return;
+    const c = String(roh).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+    u.searchParams.delete('gutschein');
+    history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+    if (!c) return;
+    geschenkCode = c;
+    showPromoField = true;
+    toastNachAufbau('promo.gift_ready');
+  } catch (e) {}
+})();
 let lastCompletedOrder = null; // Daten der zuletzt erfolgreich abgeschlossenen Bestellung (für Bestätigungsseite)
 let promoApplied = false;
 let loyaltyApplied = false;     // Treue auf diese Bestellung angewendet
@@ -11738,7 +11756,7 @@ function renderCart() {
     } else {
       const manualField = `
         <div class="promo-input-wrap">
-          <input type="text" id="promoInput" placeholder="${t('promo.placeholder')}" aria-label="${t('promo.placeholder_short')}" autocomplete="off" />
+          <input type="text" id="promoInput" placeholder="${t('promo.placeholder')}" aria-label="${t('promo.placeholder_short')}" autocomplete="off" value="${geschenkCode}" />
           <button class="btn btn-secondary btn-sm" data-on-click="applyPromo(this)" style="min-height: auto; padding: 0.7rem 1rem;">${t('promo.redeem')}</button>
         </div>`;
       if (adCode()) {
@@ -13279,10 +13297,7 @@ const LEGAL = {
         Die Bestellbestätigung sowie Status-Updates senden wir dir per E-Mail (siehe Abschnitt 7).
         Bestelldaten speichern wir zur Abwicklung, für Rückfragen und Reklamationen für
         90 Tage in unserem Bestellsystem; danach werden sie automatisch gelöscht
-        (Art. 6 Abs. 1 lit. b DSGVO). Beim Kauf eines Wertgutscheins verarbeiten wir
-        die angegebene E-Mail-Adresse sowie optionale Namensangaben zur Zustellung des
-        Gutschein-Codes und zur Verwaltung der Einlösung; diese Daten speichern wir für die
-        Dauer der Gutschein-Gültigkeit von 3 Jahren (Art. 6 Abs. 1 lit. b DSGVO).
+        (Art. 6 Abs. 1 lit. b DSGVO). Zum Kauf von Geschenkgutscheinen siehe Abschnitt 5a.
         Jede Bestellung erhält eine kurze Abholnummer für den Tag, damit wir dich am Truck
         nicht mit Namen aufrufen müssen. Bestellungen, die du telefonisch oder direkt am Truck
         aufgibst, erfasst unser Team im selben System (Name, Telefon und bei Lieferung die
@@ -13291,6 +13306,24 @@ const LEGAL = {
         über den Messenger-Dienst Telegram (Telegram Messenger Inc.); dabei kann eine Verarbeitung
         außerhalb der EU stattfinden. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO
         (Vertragserfüllung – schnelle Bearbeitung deiner Bestellung).
+      </p>
+
+      <h4>5a. Geschenkgutscheine</h4>
+      <p>
+        Beim Kauf eines Gutscheins verarbeiten wir deinen Namen und deine E-Mail-Adresse, um dir
+        den Code und das PDF zu schicken und die Einlösung zu verwalten (Art. 6 Abs. 1 lit. b DSGVO).
+        Wählst du den Versand per Mail, verarbeiten wir zusätzlich Name und E-Mail-Adresse der
+        beschenkten Person und deine Nachricht und schicken ihr den Gutschein sofort oder am
+        gewählten Tag. Rechtsgrundlage dafür ist dein Auftrag (Art. 6 Abs. 1 lit. b DSGVO) und
+        unser berechtigtes Interesse, das gekaufte Geschenk zuzustellen (Art. 6 Abs. 1 lit. f DSGVO).
+        Gib die Adresse einer anderen Person nur an, wenn sie mit der Zusendung einverstanden sein
+        dürfte. Namen und Nachricht stehen auf dem Gutschein und im PDF; das PDF ist nur über den
+        Link in den Gutschein-Mails und nach der Zahlung auf der Gutscheinseite abrufbar. Den
+        Versand übernimmt Brevo (Abschnitt 7), die Zahlung SumUp (Abschnitt 6).
+        Namen, E-Mail-Adressen und Nachricht löschen wir 90 Tage nach Ablauf des Gutscheins
+        automatisch. Den Code mit Wert und Einlösestatus bewahren wir für unsere Buchhaltung auf
+        (Art. 6 Abs. 1 lit. c DSGVO). Die Funktion „Gutschein prüfen“ zeigt nur Wert, Gültigkeit und
+        Einlösestatus, keine Namen oder Adressen.
       </p>
 
       <h4>6. Online-Zahlung über SumUp</h4>
@@ -13655,11 +13688,21 @@ const LEGAL = {
       online einlösbar, einmalig gültig, nicht übertragbar und vom Weiterverkauf ausgeschlossen.
       Eine Barauszahlung oder die Auszahlung eines Restguthabens ist nicht möglich. Pro Bestellung
       kann nur ein Rabatt (Aktionscode, Gutschein oder Treueprämie) eingelöst werden.</p>
-      <p>Über unsere Website gekaufte <strong>Wertgutscheine</strong> gelten ab dem Kaufdatum
-      3&nbsp;Jahre und sind online ab einem Bestellwert in Höhe des Gutscheinwerts einlösbar.
-      Der Gutschein-Code wird nach Zahlungseingang automatisch per E-Mail an die beim Kauf
-      angegebene Adresse versendet. Eine Barauszahlung ist ausgeschlossen; das gesetzliche
-      Widerrufsrecht für Verbraucher bleibt unberührt und erlischt mit vollständiger Einlösung.</p>
+      <p>Über unsere Website gekaufte <strong>Wertgutscheine</strong> (10 bis 200&nbsp;€) gelten ab dem
+      Kaufdatum 3&nbsp;Jahre. Sie sind online auf der Website und in der App einmalig einlösbar, für
+      eine Bestellung ab einem Bestellwert in Höhe des Gutscheinwerts; liegt die Bestellung darüber,
+      zahlst du die Differenz. Ein Restguthaben entsteht nicht, eine Barauszahlung ist
+      ausgeschlossen.</p>
+      <p>Nach Zahlungseingang schicken wir den Gutschein-Code mit dem Gutschein als PDF an die beim
+      Kauf angegebene E-Mail-Adresse. Wählst du den Versand per Mail, schicken wir den Gutschein
+      zusätzlich an die von dir genannte beschenkte Person, sofort oder an deinem Wunschtag um
+      8&nbsp;Uhr (frühestens am Folgetag, höchstens ein Jahr im Voraus). Für die richtige Adresse
+      bist du verantwortlich. Name, Nachricht und dein Name als Absender stehen auf dem Gutschein;
+      verletzende oder rechtswidrige Inhalte sind nicht erlaubt. Erstatten wir den Gutschein vor
+      dem Wunschtag, entfällt der Versand.</p>
+      <p>Das gesetzliche Widerrufsrecht für Verbraucher bleibt unberührt (siehe
+      Widerrufsbelehrung) und erlischt mit der Einlösung des Gutscheins. Nach einem Widerruf
+      sperren wir den Code.</p>
       <h4>§ 9 Treueprogramm (Stempelkarte)</h4>
       <p>Mit jeder Bestellung über diese Website oder unsere App sammelst du Umsatz auf deiner
       Stempelkarte; maßgeblich ist der Warenwert vor Rabatten, Liefergebühr und Trinkgeld.
@@ -13762,7 +13805,7 @@ const LEGAL = {
       nicht freitags, sonntags und an Feiertagen. Beide Seiten können das Firmenkonto jederzeit in
       Textform kündigen; bis dahin aufgegebene Bestellungen werden noch abgerechnet. Firmenkunden
       handeln als Unternehmer, ein Widerrufsrecht für Verbraucher besteht nicht.</p>
-      <p style="color: var(--color-text-muted); font-size: 0.8rem;">Stand: 4. November 2026</p>
+      <p style="color: var(--color-text-muted); font-size: 0.8rem;">Stand: 5. November 2026</p>
     `,
   },
   widerruf: {
@@ -13777,6 +13820,20 @@ const LEGAL = {
       <p>
         Bei Catering-Leistungen zu einem bestimmten Termin kann das Widerrufsrecht zudem nach
         § 312g Abs. 2 Nr. 9 BGB ausgeschlossen sein; Einzelheiten regelt das individuelle Angebot.
+      </p>
+      <h4>Widerrufsrecht für Geschenkgutscheine</h4>
+      <p>
+        Den Kauf eines Geschenkgutscheins kannst du binnen 14 Tagen ohne Angabe von Gründen
+        widerrufen. Die Frist beginnt am Tag des Kaufs. Um dein Widerrufsrecht auszuüben, schick
+        uns (Grill'n Chill Yildiz und Öztas GbR, Im Teich 9, 49152 Bad Essen,
+        info@grillnchill-foodtruck.de, +49 151 18 54 06 04) eine eindeutige Erklärung, zum Beispiel
+        per E-Mail. Zur Wahrung der Frist reicht es, die Erklärung vor Ablauf der Frist abzuschicken.
+      </p>
+      <p>
+        Folgen des Widerrufs: Wir zahlen dir den Betrag spätestens binnen 14 Tagen ab Eingang
+        deines Widerrufs zurück, über dasselbe Zahlungsmittel, mit dem du bezahlt hast, und sperren
+        den Code. Für die Rückzahlung berechnen wir keine Entgelte. Das Widerrufsrecht erlischt,
+        sobald der Gutschein eingelöst ist.
       </p>
       <h4>Probleme mit der Bestellung?</h4>
       <p>

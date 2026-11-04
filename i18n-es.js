@@ -349,7 +349,7 @@ I18N.es = {
     "pass.buy": "Comprar por {price}", "pass.terms": "Gratis es el menú básico, como el menú gratis: hamburguesa con una sola carne, patatas, bebida y salsa, sin Kubis Special. Los suplementos se pagan aparte. Sin renovación automática, sin reembolso en efectivo. Los menús no canjeados caducan al final.", "pass.status": "Quedan {left} de {total} menús, válido hasta el {date}", "pass.again": "Comprar un pase nuevo",
     "pass.active": "Tu {name} está activo: {menus} menús, válido hasta el {date}.", "pass.pending": "Aún estamos comprobando el pago. Tu pase aparecerá enseguida en tu cuenta.", "pass.failed": "La compra no se ha completado. Puedes intentarlo de nuevo.", "pass.off": "El Burger Pass no está disponible ahora mismo.",
     "pass.redeem": "Canjear menú del pase (−{amount})", "pass.applied": "Menú del pase canjeado (−{amount})", "pass.line": "Menú {name}", "pass.ready": "{n}× menú del pase disponible. Canjéalo en el carrito o en el food truck.",
-    "promo.quick_chip": "Aplicar {code}", "promo.have_code": "Introducir otro código",
+    "promo.quick_chip": "Aplicar {code}", "promo.have_code": "Introducir otro código", "promo.gift_ready": "Tu código de regalo te espera en el carrito",
     "promo.applied": "Código {code} aplicado", "promo.until": "Código {code}: faltan {rest} para el descuento", "promo.savings": "💸 Ahorras {amount} con el código {code}",
     "delivery.info_main": "🛵 Verás los gastos de envío en el siguiente paso, en cuanto introduzcas tu dirección",
     "delivery.info_short": "Verás los gastos de envío tras introducir la dirección",

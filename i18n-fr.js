@@ -349,7 +349,7 @@ I18N.fr = {
     "pass.buy": "Acheter pour {price}", "pass.terms": "Le menu offert est le menu de base, comme le menu offert de la carte de fidélité : burger avec un seul steak, frites, boisson et sauce, sans le Kubis Special. Les suppléments se paient en plus. Pas de renouvellement automatique, pas de remboursement en espèces. Les menus non utilisés expirent à la fin.", "pass.status": "Il reste {left} menus sur {total}, valable jusqu’au {date}", "pass.again": "Acheter un nouveau pass",
     "pass.active": "Ton {name} est actif : {menus} menus, valable jusqu’au {date}.", "pass.pending": "Nous vérifions encore le paiement. Ton pass apparaît bientôt dans ton compte.", "pass.failed": "L’achat n’a pas abouti. Tu peux réessayer.", "pass.off": "Le Burger Pass n’est pas disponible pour le moment.",
     "pass.redeem": "Utiliser un menu du pass (−{amount})", "pass.applied": "Menu du pass utilisé (−{amount})", "pass.line": "Menu {name}", "pass.ready": "{n}× menu du pass disponible. À utiliser dans le panier ou au food truck.",
-    "promo.quick_chip": "Appliquer {code}", "promo.have_code": "Saisir un autre code",
+    "promo.quick_chip": "Appliquer {code}", "promo.have_code": "Saisir un autre code", "promo.gift_ready": "Ton code cadeau t’attend dans le panier",
     "promo.applied": "Code {code} appliqué", "promo.until": "Code {code} : encore {rest} avant la réduction", "promo.savings": "💸 Tu économises {amount} avec le code {code}",
     "delivery.info_main": "🛵 Tu vois les frais de livraison à l'étape suivante, dès que tu saisis ton adresse",
     "delivery.info_short": "Frais de livraison affichés après saisie de l'adresse",

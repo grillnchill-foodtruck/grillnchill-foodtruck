@@ -356,7 +356,7 @@ const I18N = {
     "pass.buy": "Für {price} kaufen", "pass.terms": "Gratis ist das Grundmenü wie beim Menü aufs Haus: Burger mit einfachem Patty, Pommes, Getränk und Dip, ohne Kubis Special. Aufpreise zahlst du extra. Keine automatische Verlängerung, keine Barauszahlung. Nicht eingelöste Menüs verfallen nach Ablauf.", "pass.status": "{left} von {total} Menüs übrig, gültig bis {date}", "pass.again": "Neuen Pass kaufen",
     "pass.active": "Dein {name} ist aktiv: {menus} Menüs, gültig bis {date}.", "pass.pending": "Wir prüfen die Zahlung noch. Dein Pass erscheint gleich im Konto.", "pass.failed": "Der Kauf ist nicht abgeschlossen. Du kannst es noch einmal versuchen.", "pass.off": "Der Burger-Pass ist gerade nicht erhältlich.",
     "pass.redeem": "Pass-Menü einlösen (−{amount})", "pass.applied": "Pass-Menü eingelöst (−{amount})", "pass.line": "{name}-Menü", "pass.ready": "{n}× Pass-Menü verfügbar. Einlösen im Warenkorb oder am Truck.",
-    "promo.quick_chip": "{code} anwenden", "promo.have_code": "Anderen Code eingeben",
+    "promo.quick_chip": "{code} anwenden", "promo.have_code": "Anderen Code eingeben", "promo.gift_ready": "Dein Gutschein-Code liegt im Warenkorb bereit",
     "promo.applied": "Code {code} angewendet", "promo.until": "Code {code}: noch {rest} bis zum Rabatt", "promo.savings": "💸 Du sparst {amount} mit Code {code}",
     "delivery.info_main": "🛵 Die Liefergebühr siehst du im nächsten Schritt, sobald du deine Adresse eingibst",
     "delivery.info_short": "Die Liefergebühr siehst du nach Eingabe der Adresse",

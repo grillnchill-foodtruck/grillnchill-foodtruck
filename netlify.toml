@@ -384,6 +384,16 @@
 [functions."lieblingstag-erinnerung"]
   schedule = "*/15 6-19 * * 1-6"
 
+# Geschenkgutscheine (lib/geschenk.js): Kurzlink aus PDF und Mail auf
+# „Gutschein prüfen“, stündlich die Mails zum Wunschdatum (ab 8 Uhr Berlin)
+[[redirects]]
+  from   = "/g/:code"
+  to     = "/gutscheine?code=:code"
+  status = 302
+
+[functions."giftcard-zustellung"]
+  schedule = "2 * * * *"
+
 # AGB als eigene Seite (Nutzungsbedingungen-URL für Google Play), Text aus
 # LEGAL.agb in index.html (werkzeug/seiten-bauen.js)
 [[redirects]]
