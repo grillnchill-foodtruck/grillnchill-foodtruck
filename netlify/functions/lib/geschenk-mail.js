@@ -108,12 +108,16 @@ function einloesen(d) {
   <li>Im Warenkorb den Code <strong>${esc(d.code)}</strong> eintippen</li>
   <li>Abholen am Truck oder liefern lassen</li>
 </ol>
-<p style="margin:0 0 18px;"><a href="${link}" style="display:inline-block;background:#CC4715;color:#fff;text-decoration:none;font-weight:800;padding:13px 22px;border-radius:10px;">Jetzt Burger bestellen</a></p>`;
+<p style="margin:0 0 18px;"><a href="${link}" style="display:inline-block;background:#CC4715;color:#fff;text-decoration:none;font-weight:800;padding:13px 22px;border-radius:10px;">Jetzt Burger bestellen</a></p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 18px;border:1px solid #eee;border-radius:12px;"><tr>
+  <td style="padding:12px;"><img src="${seite()}/.netlify/functions/giftcard-qr?c=${encodeURIComponent(d.code)}" width="120" height="120" alt="QR-Code des Gutscheins" style="display:block;"></td>
+  <td style="padding:12px 16px 12px 4px;color:#555;font-size:14px;line-height:1.55;"><strong style="color:#333;">Direkt am Truck</strong><br>Zeig diesen QR-Code oder den Code an der Kasse. Wir lösen den Gutschein dort ein.</td>
+</tr></table>`;
 }
 
 function kleingedruckt(d) {
   return `<p style="margin:0;color:#888;font-size:12px;line-height:1.6;">
-  Einlösbar online ab einem Bestellwert von ${euro(d.amount)} · einmalig gültig · keine Barauszahlung · gültig bis ${deDatum(d.validUntil)}
+  Einlösbar online, in der App und am Truck ab einem Bestellwert von ${euro(d.amount)} · einmalig gültig · keine Barauszahlung · gültig bis ${deDatum(d.validUntil)}
   · <a href="${seite()}/gutscheine?code=${encodeURIComponent(d.code)}#pruefen" style="color:#888;">Gutschein prüfen</a>
 </p>`;
 }

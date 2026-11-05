@@ -53,6 +53,41 @@
     try { history.replaceState(null, '', '/gutscheine' + (inApp ? '?app=1' : '') + location.hash); } catch (e) {}
   }
 
+  /* ---- QR-Code des Gutscheins (vendor/qrcode.js): …/g/<CODE> --------------
+     Die Handykamera öffnet damit „Gutschein prüfen“, der Scanner im
+     Admin-Tool löst den Gutschein am Truck ein. */
+  function qrSvg(code) {
+    if (!window.qrcode) return null;
+    try {
+      var qr = window.qrcode(0, 'M');
+      qr.addData(location.origin + '/g/' + code);
+      qr.make();
+      var n = qr.getModuleCount(), pfad = '';
+      for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (qr.isDark(y, x)) pfad += 'M' + x + ' ' + y + 'h1v1h-1z';
+      var ns = 'http://www.w3.org/2000/svg';
+      var svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('viewBox', '0 0 ' + n + ' ' + n);
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', 'QR-Code des Gutscheins ' + code);
+      svg.setAttribute('shape-rendering', 'crispEdges');
+      var p = document.createElementNS(ns, 'path');
+      p.setAttribute('d', pfad); p.setAttribute('fill', '#0C0B09');
+      svg.appendChild(p);
+      return svg;
+    } catch (e) { return null; }
+  }
+  function qrBox(code) {
+    var svg = qrSvg(code);
+    if (!svg) return null;
+    var box = document.createElement('div'); box.className = 'qr-box';
+    var bild = document.createElement('div'); bild.className = 'qr'; bild.appendChild(svg);
+    var p = document.createElement('p');
+    var st = document.createElement('strong'); st.textContent = 'Am Truck einlösen';
+    p.appendChild(st); p.appendChild(document.createTextNode('QR-Code oder Code an der Kasse zeigen.'));
+    box.appendChild(bild); box.appendChild(p);
+    return box;
+  }
+
   /* ---- Feder: Dämpfung und Antwortzeit wie bei Apple -------------------- */
   function Feder(wert, antwort, daempfung) {
     var k = Math.pow(2 * Math.PI / (antwort || 0.4), 2);
@@ -478,6 +513,8 @@
       $('dk-weg').textContent = t;
       $('dk-mail').textContent = offen.email || 'deine Adresse';
       if (d.beleg) { $('dk-beleg').href = d.beleg; $('dk-beleg').hidden = false; }
+      var svg = qrSvg(d.code);
+      if (svg) { $('dk-qr-bild').textContent = ''; $('dk-qr-bild').appendChild(svg); $('dk-qr').hidden = false; }
       if (d.pdf) {
         $('dk-pdf').href = d.pdfDownload; $('dk-pdf2').href = d.pdf;
       } else {
@@ -538,7 +575,10 @@
       var los = document.createElement('a'); los.className = 'btn';
       los.href = (inApp ? '/?app=1&gutschein=' : '/?gutschein=') + encodeURIComponent(r.code) + '#menu';
       los.textContent = 'Jetzt Burger aussuchen';
-      [kopf, betrag, meta, los].forEach(function (x) { box.appendChild(x); });
+      [kopf, betrag, meta].forEach(function (x) { box.appendChild(x); });
+      var q = qrBox(r.code);
+      if (q) box.appendChild(q);
+      box.appendChild(los);
     }
     function abschicken() {
       var c = eingabe.value.trim();

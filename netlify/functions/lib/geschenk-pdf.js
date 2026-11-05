@@ -103,6 +103,23 @@ function gutscheinPdf(d) {
       doc.font('Helvetica-Bold').fontSize(10).fillColor(FARBE.creme).text("GRILL'N CHILL", KX + P + 38, KY + P + 2, { lineBreak: false, characterSpacing: 0.6 });
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor(FARBE.orangeHell).text('GUTSCHEIN', KX + P + 38, KY + P + 15, { lineBreak: false, characterSpacing: 1.6 });
 
+      // QR-Code oben rechts: Handykamera öffnet „Gutschein prüfen“, der Scanner im
+      // Admin-Tool löst ihn am Truck ein (lib/qr.js)
+      try {
+        const qr = require('./qr');
+        const m = qr.matrix(qr.gutscheinLink(d.code));
+        const Q = 78, pad = 6, zx = KX + KW - P - Q, zy = KY + P - 6;
+        const zelle = (Q - 2 * pad) / m.n;
+        doc.save().roundedRect(zx, zy, Q, Q, 8).fill('#FFFFFF');
+        doc.fillColor('#0C0B09');
+        for (let y = 0; y < m.n; y++) {
+          for (let x = 0; x < m.n; x++) {
+            if (m.dunkel(x, y)) doc.rect(zx + pad + x * zelle, zy + pad + y * zelle, zelle + 0.05, zelle + 0.05).fill();
+          }
+        }
+        doc.restore();
+      } catch (e) { /* ohne QR bleibt der Code zum Eintippen */ }
+
       doc.font('Helvetica-Bold').fontSize(46).fillColor(FARBE.creme).text(euro(d.amount), KX + P, KY + 66, { lineBreak: false });
       let iy = KY + 120;
       const vor = d.preset && VORSCHLAEGE[d.preset];
@@ -142,16 +159,19 @@ function gutscheinPdf(d) {
         'Im Warenkorb den Code ' + d.code + ' eintippen.',
         'Am Truck abholen (Gütersloher Straße 122, Bielefeld) oder liefern lassen.',
       ];
+      const amTruck = 'Direkt am Truck: Gutschein oder QR-Code zeigen, wir lösen ihn an der Kasse ein.';
       schritte.forEach((s, i) => {
         doc.circle(L + 8, y + 7, 8).fill(FARBE.orange);
         doc.font('Helvetica-Bold').fontSize(9).fillColor('#FFFFFF').text(String(i + 1), L, y + 3, { width: 16, align: 'center' });
         doc.font('Helvetica').fontSize(11).fillColor(FARBE.text).text(latin1(s), L + 26, y + 1, { width: R - L - 26 });
         y = doc.y + 8;
       });
+      doc.font('Helvetica-Bold').fontSize(10.5).fillColor(FARBE.text).text(latin1(amTruck), L, y + 2, { width: R - L });
+      y = doc.y + 6;
 
       y += 10;
       doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.grau).text(latin1(
-        'Einlösbar online ab einem Bestellwert von ' + euro(d.amount) + ', einmalig, bis zum ' + deDatum(d.validUntil)
+        'Einlösbar online, in der App und am Truck ab einem Bestellwert von ' + euro(d.amount) + ', einmalig, bis zum ' + deDatum(d.validUntil)
         + '. Keine Barauszahlung. Ob der Gutschein noch gilt, siehst du unter grillnchill-foodtruck.de/gutscheine.'
         + ' Es gelten unsere AGB (§ 8) unter grillnchill-foodtruck.de/agb.'), L, y, { width: R - L, lineGap: 1.5 });
 

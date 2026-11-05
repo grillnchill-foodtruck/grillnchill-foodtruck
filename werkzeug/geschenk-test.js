@@ -259,6 +259,58 @@ const basis = (extra) => ({
   ok('Aufräumen: Geschenk-Daten 90 Tage nach Ablauf gelöscht, Gutschein bleibt', auf.geschenk === 1 && !lies('vouchers', 'gd:' + code5) && !!lies('vouchers', 'c:' + code5), auf);
   ok('Aufräumen: Namen auch aus der Gutschein-Notiz entfernt', !/Ayşe|Kubi/.test(lies('vouchers', 'c:' + code5).note), lies('vouchers', 'c:' + code5).note);
 
+  /* 12. Am Truck einlösen (Scanner im Admin-Tool, auch Minijobber) */
+  process.env.ZWEI_FAKTOR = 'aus';
+  process.env.ADMIN_PASSWORD = 'admin-test';
+  const { hashen } = require(F + '/lib/team-passwort.js');
+  schreib('team', 'u:lena', { name: 'Lena', role: 'staff', pwHash: await hashen('lena-test') });
+  schreib('team', 'u:tom', { name: 'Tom', role: 'staff', pwHash: await hashen('tom-test') });
+  const truck = async (pw, body) => {
+    const r = await handler('giftcard-einloesen')({ httpMethod: 'POST', headers: ip(), body: JSON.stringify({ password: pw, ...body }), queryStringParameters: {} });
+    return { code: r.statusCode, d: JSON.parse(r.body) };
+  };
+  r = await kaufe(basis({ email: 'truck@example.org', recipientEmail: 'truck-empf@example.org' }));
+  await zahle(r.d.id);
+  const codeT = lies('orders', 'o:' + r.d.reference).code;
+  let t = await truck('falsch', { action: 'pruefen', code: codeT });
+  ok('Truck: ohne Team-Passwort kein Zugriff', t.code === 401, t);
+  t = await truck('lena-test', { action: 'pruefen', code: 'gnc-' + codeT.slice(3).toLowerCase() });
+  ok('Truck: Minijobberin sieht Wert, Mindestbestellwert, Status offen', t.code === 200 && t.d.gift.value === 30 && t.d.gift.minOrder === 30 && t.d.gift.status === 'offen' && t.d.gift.recipientName === 'Ayşe', t.d);
+  t = await truck('lena-test', { action: 'pruefen', code: 'GNCAKTION' });
+  ok('Truck: Aktionscodes erscheinen nicht als Geschenkgutschein', t.code === 404, t);
+  t = await truck('lena-test', { action: 'einloesen', code: codeT, bestellwert: '24,50' });
+  ok('Truck: Bestellwert unter dem Gutscheinwert wird abgewiesen', t.code === 400 && t.d.error === 'too_low' && /5,50/.test(t.d.hint), t.d);
+  const [t1, t2] = await Promise.all([
+    truck('lena-test', { action: 'einloesen', code: codeT, bestellwert: '34,50' }),
+    truck('tom-test', { action: 'einloesen', code: codeT, bestellwert: '34,50' }),
+  ]);
+  const gut = [t1, t2].filter((x) => x.code === 200);
+  ok('Truck: zwei Handys gleichzeitig, nur eines löst ein', gut.length === 1 && [t1, t2].some((x) => x.code === 409), [t1.code, t2.code]);
+  ok('Truck: Rest für SumUp stimmt (34,50 − 30 = 4,50)', gut[0] && gut[0].d.rest === 4.5 && gut[0].d.gift.status === 'eingeloest' && gut[0].d.gift.redeemedVia === 'truck', gut[0] && gut[0].d);
+  const vT = lies('vouchers', 'c:' + codeT);
+  ok('Truck: Gutschein verbraucht, online nicht mehr einlösbar', vT.uses === vT.maxUses && (await pruefe(codeT)).reason === 'used', vT);
+  const wer = gut[0] === t1 ? ['lena-test', 'tom-test'] : ['tom-test', 'lena-test'];
+  t = await truck(wer[1], { action: 'zuruecknehmen', code: codeT });
+  ok('Truck: andere Person darf nicht zurücknehmen', t.code === 403, t);
+  t = await truck(wer[0], { action: 'zuruecknehmen', code: codeT });
+  ok('Truck: wer eingelöst hat, nimmt in 15 Minuten zurück', t.code === 200 && t.d.gift.status === 'offen' && (await pruefe(codeT)).valid === true, t.d);
+  t = await truck('tom-test', { action: 'einloesen', code: codeT, bestellwert: 30 });
+  ok('Truck: danach wieder einlösbar (genau Gutscheinwert, Rest 0)', t.code === 200 && t.d.rest === 0, t.d);
+  const vT2 = lies('vouchers', 'c:' + codeT); vT2.manualRedeemedAt = new Date(Date.now() - 20 * 60000).toISOString(); schreib('vouchers', 'c:' + codeT, vT2);
+  t = await truck('tom-test', { action: 'zuruecknehmen', code: codeT });
+  ok('Truck: nach 15 Minuten nur noch der Admin', t.code === 403, t);
+  t = await truck('admin-test', { action: 'zuruecknehmen', code: codeT });
+  ok('Truck: Admin nimmt jederzeit zurück', t.code === 200 && t.d.gift.status === 'offen', t.d);
+  t = await truck('lena-test', { action: 'einloesen', code: code10, bestellwert: 50 });
+  ok('Truck: erstatteter (gesperrter) Gutschein lässt sich nicht einlösen', t.code === 409 && t.d.error === 'inactive', t.d);
+  const audit = schluessel('audit', 'a:').map((k) => lies('audit', k)).filter((x) => x.action === 'Gutschein');
+  ok('Truck: jede Einlösung namentlich im Protokoll', audit.some((x) => /am Truck eingelöst/.test(x.detail) && /in SumUp 4,50/.test(x.detail)) && audit.some((x) => x.name === 'Kubi' && /zurückgenommen/.test(x.detail)), audit.map((x) => x.name + ': ' + x.detail));
+
+  /* 13. QR-Code */
+  const qrAntwort = await handler('giftcard-qr')({ httpMethod: 'GET', headers: ip(), queryStringParameters: { c: codeT } });
+  ok('QR für die Mail: GIF', qrAntwort.statusCode === 200 && Buffer.from(qrAntwort.body, 'base64').slice(0, 3).toString() === 'GIF', qrAntwort.statusCode);
+  ok('QR in der Mail an die Beschenkte', MAILS.some((m) => m.to[0].email === 'truck-empf@example.org' && m.htmlContent.includes('giftcard-qr?c=' + codeT)));
+
   const lecks = PROTOKOLL.filter((l) => /ayse@example|Lass es dir/.test(l));
   ok('Protokoll ohne Adressen und Nachrichten', lecks.length === 0, lecks);
 

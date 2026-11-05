@@ -265,6 +265,13 @@
   .danke-knoepfe{display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;margin-top:1.3rem}
   .mini{display:inline-flex;align-items:center;gap:0.4rem;border:1px solid var(--border2);border-radius:999px;padding:0.45rem 0.95rem;font-size:0.84rem;font-weight:700;color:var(--cream);background:transparent;text-decoration:none;cursor:pointer;min-height:40px}
   .mini:hover{border-color:var(--orange)}
+  .qr-box{display:flex;gap:1rem;align-items:center;justify-content:center;margin:1.2rem auto 0;max-width:460px;text-align:left}
+  .qr-box[hidden]{display:none}
+  .qr-box .qr{flex-shrink:0;width:112px;height:112px;background:#fff;border-radius:12px;padding:7px}
+  .qr-box .qr svg{display:block;width:100%;height:100%}
+  .qr-box p{font-size:.88rem;color:var(--dim);margin:0}
+  .qr-box strong{display:block;color:var(--cream);margin-bottom:.15rem}
+  .pr-ergebnis .qr-box{justify-content:flex-start;margin:0 0 1rem}
 
   /* ---------- Ablauf, Prüfen, FAQ ---------- */
   section.band{padding:3rem 0;border-top:1px solid var(--border)}
@@ -489,6 +496,7 @@
           <div class="b" id="dk-betrag"></div>
           <div class="m" id="dk-meta"></div>
         </div>
+        <div class="qr-box" id="dk-qr" hidden><div class="qr" id="dk-qr-bild"></div><p><strong>Am Truck einlösen</strong>QR-Code oder Code an der Kasse zeigen.</p></div>
         <div class="danke-knoepfe">
           <a class="btn" id="dk-pdf" href="#">PDF herunterladen</a>
           <a class="mini" id="dk-pdf2" href="#" target="_blank" rel="noopener">PDF ansehen</a>
@@ -547,7 +555,7 @@
     <div class="wrap">
       <h2 class="kopf">Häufige Fragen</h2>
       <div class="faq">
-        <details><summary>Wo kann man den Gutschein einlösen?</summary><p>Bei jeder Bestellung auf grillnchill-foodtruck.de und in der App „Grill'n Chill“, zum Abholen am Truck oder zum Liefern. Im Warenkorb tippst du den Code ins Gutschein-Feld.</p></details>
+        <details><summary>Wo kann man den Gutschein einlösen?</summary><p>Online auf grillnchill-foodtruck.de und in der App „Grill'n Chill“, zum Abholen oder Liefern: Im Warenkorb tippst du den Code ins Gutschein-Feld. Oder direkt am Truck: Zeig den QR-Code vom Gutschein oder aus der Mail an der Kasse, wir lösen ihn dort ein.</p></details>
         <details><summary>Wie lange ist der Gutschein gültig?</summary><p>Drei Jahre ab dem Kauf. Das Datum steht auf dem Gutschein, in der Mail und unter „Gutschein prüfen“.</p></details>
         <details><summary>Muss der ganze Betrag auf einmal eingelöst werden?</summary><p>Ja. Der Gutschein gilt für eine Bestellung, deren Wert mindestens so hoch ist wie der Gutschein. Liegt deine Bestellung darüber, zahlst du nur die Differenz. Ein Restguthaben oder eine Barauszahlung gibt es nicht.</p></details>
         <details><summary>Wann kommt die Mail zum Wunschdatum an?</summary><p>Am gewählten Tag um 8 Uhr. Du selbst bekommst den Code gleich nach der Zahlung und kannst ihn auch vorher weitergeben.</p></details>
@@ -566,6 +574,7 @@
 </footer>
 
 <script src="/app-leiste.js"></script>
+<script src="/vendor/qrcode.js"></script>
 <script src="/gutschein-shop.js"></script>
 </body>
 </html>

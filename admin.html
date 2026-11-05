@@ -1406,8 +1406,8 @@
     <!-- ============ TAB: ZAHLEN ============ -->
     <section class="tabpane hidden" id="pane-scan" role="tabpanel">
       <div class="card">
-        <h2>Kundenkarte scannen</h2>
-        <p class="hint" style="margin-bottom:.7rem;">Kunde zeigt den QR-Code aus seinem Konto. Kamera erlauben, Code ins Bild halten.</p>
+        <h2>Scannen: Kundenkarte oder Gutschein</h2>
+        <p class="hint" style="margin-bottom:.7rem;">Gast zeigt den QR-Code aus seinem Konto oder vom Gutschein. Kamera erlauben, Code ins Bild halten. Das Tool erkennt selbst, was es ist.</p>
         <div id="scanStage" style="position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:1/1;max-width:340px;margin:0 auto .8rem;">
           <video id="scanVideo" playsinline muted style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
           <div style="position:absolute;inset:12%;border:2px solid rgba(255,122,61,.85);border-radius:14px;pointer-events:none;"></div>
@@ -1417,7 +1417,7 @@
           <button type="button" class="abtn" id="scanStop" style="display:none;">Stopp</button>
         </div>
         <div style="display:flex;gap:.5rem;max-width:340px;margin:0 auto;">
-          <input type="text" id="scanManual" placeholder="Oder Code manuell: GNCQR:…" style="flex:1;">
+          <input type="text" id="scanManual" placeholder="Oder Code eintippen: GNC… oder GNCQR:…" autocapitalize="characters" autocomplete="off" spellcheck="false" style="flex:1;">
           <button type="button" class="abtn" id="scanManualGo">Öffnen</button>
         </div>
         <div id="scanResult" style="max-width:340px;margin:1rem auto 0;"></div>
@@ -2558,7 +2558,114 @@ async function scanAdjustRun(btn){
   }catch(e){ toast('Netzwerkfehler','err'); }
   finally{ gncBusy(btn,false); }
 }
+/* Geschenkgutschein: QR mit …/g/GNCXXXXXX oder der Code selbst (giftcard-einloesen.js) */
+function gutscheinAus(text){
+  const t=String(text||'').trim();
+  const m=t.match(/\/g\/(GNC[A-Z0-9]{6})(?![A-Z0-9])/i) || t.toUpperCase().replace(/[\s-]/g,'').match(/^(GNC[A-Z0-9]{6})$/);
+  return m?m[1].toUpperCase():'';
+}
+let scanGift=null, scanGiftRest=null;
+async function gutscheinApi(body){
+  const res=await fetch('/.netlify/functions/giftcard-einloesen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({password:currentPw},body))});
+  const d=await res.json().catch(()=>({}));
+  return {ok:res.ok,status:res.status,d};
+}
+async function scanGutschein(code){
+  scanBusy=true; stopScan();
+  try{
+    const r=await gutscheinApi({action:'pruefen',code});
+    if(!r.ok){ toast(r.d.hint||'Gutschein unbekannt','err'); scanBusy=false; return; }
+    scanCard=null; scanToken=null; scanGift=r.d.gift; scanGiftRest=null; renderScanGift();
+    if(navigator.vibrate) navigator.vibrate(60);
+  }catch(e){ toast('Netzwerkfehler','err'); }
+  scanBusy=false;
+}
+function renderScanGift(){
+  const g=scanGift; if(!g){ scanSetResult(''); return; }
+  const STATUS={offen:['Offen','var(--live,#6DBE45)'],eingeloest:['Eingelöst','var(--faint)'],abgelaufen:['Abgelaufen','#E0A040'],gesperrt:['Gesperrt','#E04848']};
+  const st=STATUS[g.status]||STATUS.offen;
+  const bis=g.validUntil?g.validUntil.split('-').reverse().join('.'):'';
+  let h='<div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:.9rem 1rem;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:.6rem;">'
+    +'<div style="font-weight:700;">Geschenkgutschein</div>'
+    +'<span style="font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:'+st[1]+';border:1px solid currentColor;border-radius:999px;padding:.15rem .55rem;">'+st[0]+'</span></div>'
+    +'<div style="font-size:2rem;font-weight:800;color:var(--ember-hi);margin:.3rem 0 .1rem;font-variant-numeric:tabular-nums;">'+eur(g.value)+'</div>'
+    +'<div class="hint">'+esc2(g.code)+(g.recipientName?' · für '+esc2(g.recipientName):'')+(bis?' · gültig bis '+bis:'')+'</div>';
+  if(g.status==='offen'){
+    h+='<p class="hint" style="margin:.7rem 0 .45rem;">Einlösbar ab '+eur(g.minOrder)+' Bestellwert. Kein Restguthaben.</p>'
+      +'<label class="hint" for="scanGiftTotal" style="display:block;margin-bottom:.25rem;">Bestellwert am Truck</label>'
+      +'<div style="display:flex;gap:.5rem;align-items:stretch;margin-bottom:.5rem;">'
+      +'<input type="text" inputmode="decimal" id="scanGiftTotal" placeholder="z. B. 34,50" style="flex:1;">'
+      +'<button type="button" class="abtn" id="scanGiftRedeem" disabled>Einlösen</button></div>'
+      +'<div id="scanGiftHint" class="hint" aria-live="polite" style="min-height:1.3em;"></div>';
+  } else if(g.status==='eingeloest'){
+    const wann=g.redeemedAt?new Date(g.redeemedAt).toLocaleString('de-DE',{timeZone:'Europe/Berlin',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    h+='<p style="margin:.7rem 0 .3rem;font-weight:700;">'+(g.redeemedVia==='truck'?'Am Truck eingelöst':'Schon eingelöst')+(wann?' am '+wann:'')+(g.redeemedBy?' von '+esc2(g.redeemedBy):'')+'</p>';
+    if(scanGiftRest!==null) h+='<div style="margin:.5rem 0;padding:.7rem .8rem;border-radius:10px;background:rgba(109,190,69,.12);border:1px solid rgba(109,190,69,.45);"><div class="hint">In SumUp kassieren</div><div style="font-size:1.5rem;font-weight:800;">'+eur(scanGiftRest)+'</div></div>';
+    if(g.redeemedVia==='truck') h+='<button type="button" class="abtn" id="scanGiftUndo" style="margin-top:.3rem;">Einlösung rückgängig</button>';
+  } else {
+    h+='<p style="margin:.7rem 0 .3rem;font-weight:700;">'+(g.status==='abgelaufen'?'Abgelaufen am '+bis+'. Nicht mehr einlösbar.':'Gesperrt, zum Beispiel nach einer Erstattung. Nicht einlösen.')+'</p>';
+  }
+  h+='<div style="margin-top:.6rem;"><button type="button" class="abtn" id="scanGiftAgain">Neu scannen</button></div></div>';
+  scanSetResult(h);
+  const tot=$('scanGiftTotal'), btn=$('scanGiftRedeem'), hint=$('scanGiftHint');
+  if(tot){
+    const pruef=()=>{
+      const v=parseFloat((tot.value||'').replace(',','.'));
+      if(!isFinite(v)||v<=0){ btn.disabled=true; btn.textContent='Einlösen'; hint.textContent=''; return; }
+      if(v<g.minOrder){ btn.disabled=true; btn.textContent='Einlösen'; hint.textContent='Es fehlen noch '+eur(g.minOrder-v)+' bis zum Gutscheinwert.'; hint.style.color='#E0A040'; return; }
+      btn.disabled=false; btn.textContent=eur(g.value)+' einlösen'; hint.style.color=''; hint.textContent='Danach in SumUp kassieren: '+eur(Math.round((v-g.value)*100)/100);
+    };
+    tot.addEventListener('input',pruef);
+    btn.addEventListener('click',()=>scanGiftRedeemRun(btn,parseFloat((tot.value||'').replace(',','.'))));
+    setTimeout(()=>tot.focus(),50);
+  }
+  if($('scanGiftUndo')) $('scanGiftUndo').addEventListener('click',e=>scanGiftUndoRun(e.currentTarget));
+  $('scanGiftAgain').addEventListener('click',()=>{ scanGift=null; scanGiftRest=null; scanSetResult(''); startScan(); });
+}
+async function scanGiftRedeemRun(btn,bestellwert){
+  if(scanActing) return;
+  scanActing=true;
+  try{
+    const g=scanGift;
+    const rest=Math.round((bestellwert-g.value)*100)/100;
+    const ok=await confirmBooking({
+      title:'Gutschein einlösen?', customer:g.recipientName||g.code, amount:'− '+eur(g.value), negative:true,
+      note:'Bestellwert '+eur(bestellwert)+'. In SumUp kassierst du danach '+eur(rest)+'. Der Gutschein ist dann verbraucht, ein Restguthaben gibt es nicht.',
+      okLabel:'Einlösen',
+    });
+    if(!ok) return;
+    gncBusy(btn,true);
+    try{
+      const r=await gutscheinApi({action:'einloesen',code:g.code,bestellwert});
+      if(!r.ok){ toast(r.d.hint||'Fehler','err'); if(r.d.gift){ scanGift=r.d.gift; renderScanGift(); } return; }
+      scanGift=r.d.gift; scanGiftRest=r.d.rest; renderScanGift();
+      toast('Gutschein eingelöst · in SumUp '+eur(r.d.rest));
+      if(navigator.vibrate) navigator.vibrate(18);
+    }catch(e){ toast('Netzwerkfehler','err'); }
+    finally{ gncBusy(btn,false); }
+  } finally{ scanActing=false; }
+}
+async function scanGiftUndoRun(btn){
+  if(scanActing) return;
+  scanActing=true;
+  try{
+    const g=scanGift;
+    const ok=await confirmBooking({ title:'Einlösung rückgängig?', customer:g.recipientName||g.code, amount:eur(g.value)+' wieder offen', note:'Nur für Vertipper. Wurde schon in SumUp kassiert, dort ebenfalls korrigieren.', okLabel:'Rückgängig' });
+    if(!ok) return;
+    gncBusy(btn,true);
+    try{
+      const r=await gutscheinApi({action:'zuruecknehmen',code:g.code});
+      if(!r.ok){ toast(r.d.hint||'Fehler','err'); return; }
+      scanGift=r.d.gift; scanGiftRest=null; renderScanGift();
+      toast('Einlösung zurückgenommen');
+    }catch(e){ toast('Netzwerkfehler','err'); }
+    finally{ gncBusy(btn,false); }
+  } finally{ scanActing=false; }
+}
 async function scanFound(text){
+  const gs=gutscheinAus(text);
+  if(gs){ if(!scanBusy) await scanGutschein(gs); return; }
   const m=String(text||'').match(/GNCQR:([a-f0-9]{12,40})/);
   if(!m||scanBusy) return;
   scanBusy=true; stopScan();
@@ -2618,7 +2725,10 @@ function stopScan(){
 }
 $('scanStart').addEventListener('click',startScan);
 $('scanStop').addEventListener('click',stopScan);
-$('scanManualGo').addEventListener('click',()=>withBusy($('scanManualGo'),()=>scanFound($('scanManual').value.indexOf('GNCQR:')===0?$('scanManual').value:'GNCQR:'+$('scanManual').value.trim())));
+$('scanManualGo').addEventListener('click',()=>withBusy($('scanManualGo'),()=>{
+  const roh=$('scanManual').value.trim();
+  return scanFound((gutscheinAus(roh) || roh.indexOf('GNCQR:')===0) ? roh : 'GNCQR:'+roh);
+}));
 async function loadStats(){
   const btn=$('statsBtn');
   if(btn.classList.contains('is-busy')) return;
@@ -3859,7 +3969,7 @@ function renderPurchases(P){
     const dOnly=x=>x?x.split('T')[0].split('-').reverse().join('.'):null;
     const redeemBadge = r.status!=='completed' ? ''
       : r.redeemed
-        ? '<span class="bdg refund">Eingelöst'+(r.redeemedVia==='manual'?' (manuell)':r.redeemedVia==='checkout'?' im Checkout':'')+(r.redeemedAt?(' am '+dOnly(r.redeemedAt)):'')+'</span>'
+        ? '<span class="bdg refund">Eingelöst'+(r.redeemedVia==='manual'?' (manuell)':r.redeemedVia==='truck'?' am Truck':r.redeemedVia==='checkout'?' im Checkout':'')+(r.redeemedAt?(' am '+dOnly(r.redeemedAt)):'')+'</span>'
         : '<span class="bdg pre">Noch nicht eingelöst</span>';
     const actions=[];
     if(r.status==='pending'||r.status==='abandoned'){
