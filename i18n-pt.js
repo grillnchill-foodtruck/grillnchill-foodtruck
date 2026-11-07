@@ -85,7 +85,7 @@ I18N.pt = {
     "franchise.lead": "Estamos a crescer passo a passo e procuramos parceiros da região: para eventos, novas localizações ou colaboração com empresas e clubes. Conta-nos o que tens em mente.",
     "franchise.p1_t": "Modelo de negócio comprovado", "franchise.p1_d": "Custos de mercadoria calculáveis, margens atrativas por hambúrguer e um caminho claro para a rentabilidade, sem comissões de plataformas de entrega.",
     "franchise.p2_t": "Conceito chave na mão", "franchise.p2_d": "Do design do foodtruck ao menu e fornecedores, marketing e esta plataforma de encomendas: arrancas com um sistema completo.",
-    "franchise.p3_t": "Marca forte com certificação halal", "franchise.p3_d": "5.0★ em 255 avaliações, posicionamento claro e uma base crescente de clientes habituais: assumes uma marca com substância.",
+    "franchise.p3_t": "Marca forte com certificação halal", "franchise.p3_d": "4.9★ em 273 avaliações, posicionamento claro e uma base crescente de clientes habituais: assumes uma marca com substância.",
     "franchise.p4_t": "Acompanhamento pessoal", "franchise.p4_d": "Partilhamos o nosso know-how de conceito e execução e apoiamos-te na construção da tua própria localização.",
     "ang.doc_title": "A tua proposta de catering",
     "ang.loading": "A carregar a proposta …",

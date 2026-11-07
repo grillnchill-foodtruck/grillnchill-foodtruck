@@ -124,8 +124,8 @@
   "menu": "https://grillnchill-foodtruck.de/#menu",
   "aggregateRating": {
     "@type": "AggregateRating",
-    "ratingValue": "5.0",
-    "reviewCount": "255",
+    "ratingValue": "4.9",
+    "reviewCount": "273",
     "bestRating": "5"
   },
   "openingHoursSpecification": [
@@ -6243,7 +6243,7 @@ body.onb-lock { overflow: hidden; }
       <div class="hero-content">
         <div class="hero-rating">
           <span class="stars" id="heroStars">★★★★★</span>
-          <span><strong id="heroRatingValue" style="color: var(--color-cream);">5.0</strong> · <span id="heroReviewsText" data-i18n="hero.reviews">255 Bewertungen auf Google</span></span>
+          <span><strong id="heroRatingValue" style="color: var(--color-cream);">4,9</strong> · <span id="heroReviewsText" data-i18n="hero.reviews">273 Bewertungen auf Google</span></span>
         </div>
         <h1>
           <span data-i18n="hero.h1a">Halal Burger in Bielefeld</span><br />
@@ -6674,8 +6674,8 @@ body.onb-lock { overflow: hidden; }
             <div class="story-stat-label" data-i18n="story.stat2">Foodtruck-Erfahrung</div>
           </div>
           <div class="story-stat">
-            <div class="story-stat-num" id="storyRatingNum">5,0★</div>
-            <div class="story-stat-label" id="storyRatingLabel" data-i18n="story.stat3">Bei 255 Bewertungen</div>
+            <div class="story-stat-num" id="storyRatingNum">4,9★</div>
+            <div class="story-stat-label" id="storyRatingLabel" data-i18n="story.stat3">Bei 273 Bewertungen</div>
           </div>
           <div class="story-stat">
             <div class="story-stat-num">100%</div>
@@ -6701,7 +6701,7 @@ body.onb-lock { overflow: hidden; }
   <div class="container">
     <div class="section-header reveal">
       <h2 class="section-title" data-i18n="reviews.title">Was unsere Kunden sagen</h2>
-      <p class="section-subtitle"><span style="color: var(--color-yellow); letter-spacing: 2px;" id="reviewsStars">★★★★★</span> <span data-i18n="reviews.subtitle" id="reviewsSubtitle">5,0 bei 255 Bewertungen auf Google</span></p>
+      <p class="section-subtitle"><span style="color: var(--color-yellow); letter-spacing: 2px;" id="reviewsStars">★★★★★</span> <span data-i18n="reviews.subtitle" id="reviewsSubtitle">4,9 bei 273 Bewertungen auf Google</span></p>
     </div>
     <div class="reviews-carousel reveal">
       <button class="reviews-nav prev" data-on-click="moveReview(-1)" aria-label="Vorherige Bewertung" data-i18n-aria="a11y.prev_review">‹</button>
@@ -9562,8 +9562,8 @@ function cardVisual(item) {
 // Fallback = aktuelle Werte; werden beim Laden ggf. durch Live-Daten ersetzt.
 // REVIEWS_MIN_TOTAL = manuell gepflegter Mindestwert: Die Places-API hinkt der
 // öffentlichen Maps-Zahl oft einige Tage hinterher – angezeigt wird nie weniger.
-const REVIEWS_MIN_TOTAL = 255;
-let GOOGLE_REVIEWS = { rating: 5.0, total: REVIEWS_MIN_TOTAL };
+const REVIEWS_MIN_TOTAL = 273;
+let GOOGLE_REVIEWS = { rating: 4.9, total: REVIEWS_MIN_TOTAL };
 function updateHeroReviews() {
   const r = GOOGLE_REVIEWS || {};
   const sep = (typeof currentLang !== 'undefined' && currentLang === 'en') ? '.' : ',';
@@ -9611,7 +9611,7 @@ function updateHeroReviews() {
 async function loadGoogleReviews(lang) {
   lang = lang || (typeof currentLang !== 'undefined' ? currentLang : 'de');
   try {
-    const res = await fetch('/google-reviews?lang=' + encodeURIComponent(lang));   // Browser darf 6 h zwischenspeichern
+    const res = await fetch('/google-reviews?lang=' + encodeURIComponent(lang));   // Browser darf 30 min zwischenspeichern
     if (!res.ok) { LIVE_REVIEWS[lang] = LIVE_REVIEWS[lang] || []; return; }
     const d = await res.json();
     if (d && d.rating != null && d.total != null) {
@@ -14905,6 +14905,116 @@ initTurnstile();
 // Kuratierte Google-Zitate (Sicherheitsnetz, falls der Live-Abruf nichts liefert).
 // date = Veroeffentlichung laut Google (naeherungsweise), steuert „Neu"-Marke + Monatsangabe.
 const REVIEWS = [
+  {
+    name: 'Christina M.', stars: 5, date: '2026-11-06',
+    de: "Mega leckere Burger und nette Mitarbeiter. Toller Vibe ✨",
+    en: "Super tasty burgers and friendly staff. Great vibe ✨",
+    tr: "Çok lezzetli burgerler ve güler yüzlü çalışanlar. Harika bir hava ✨",
+    it: "Burger buonissimi e personale gentile. Atmosfera fantastica ✨",
+    es: "Hamburguesas buenísimas y personal amable. Muy buen ambiente ✨",
+    pt: "Hambúrgueres super saborosos e funcionários simpáticos. Ótima vibe ✨",
+    fr: "Burgers super bons et personnel sympa. Super ambiance ✨",
+    nl: "Superlekkere burgers en aardige medewerkers. Toffe vibe ✨"
+  },
+  {
+    name: 'Sarg K.', stars: 5, date: '2026-11-06',
+    de: "Ich habe abends zwei Cheeseburger zum Mitnehmen bestellt; der junge freundliche Mann am Grill hatte sehr gut zu tun, sodass man noch eine Runde in den Supermarkt konnte. Auf der Fahrt duftete das ganze Auto schon sehr gut, der Burger war dann auch richtig lecker, ein echter Sattmacher. Gerne wieder!",
+    en: "I ordered two cheeseburgers to go in the evening; the friendly young guy at the grill was really busy, so there was time for a quick round through the supermarket. The whole car smelled great on the drive home, and the burger was really tasty, it properly fills you up. Happy to come back!",
+    tr: "Akşam paket servis olarak iki cheeseburger sipariş ettim; ızgaradaki genç ve güler yüzlü adamın epey işi vardı, bu yüzden markette bir tur atmaya vakit oldu. Yolda bütün araba mis gibi kokuyordu, burger da gerçekten çok lezzetliydi, tam doyurucu. Yine gelirim!",
+    it: "La sera ho ordinato due cheeseburger da asporto; il ragazzo gentile alla griglia aveva parecchio da fare, così c'era tempo per un giro al supermercato. Durante il viaggio tutta la macchina profumava, e il burger era davvero buonissimo, uno che sazia sul serio. Ci torno volentieri!",
+    es: "Por la noche pedí dos cheeseburgers para llevar; el chico joven y amable de la plancha tenía mucho trabajo, así que me dio tiempo a dar una vuelta por el supermercado. En el coche ya olía de maravilla, y la hamburguesa estaba buenísima, de las que llenan de verdad. ¡Volveré con gusto!",
+    pt: "À noite pedi dois cheeseburgers para levar; o rapaz simpático na grelha tinha muito trabalho, por isso ainda deu para dar uma volta no supermercado. No caminho o carro inteiro já cheirava muito bem, e o hambúrguer estava mesmo delicioso, daqueles que enchem a barriga. Volto com gosto!",
+    fr: "Le soir, j'ai commandé deux cheeseburgers à emporter ; le jeune homme sympa au grill avait beaucoup de travail, j'ai donc eu le temps de faire un tour au supermarché. Pendant le trajet, toute la voiture sentait déjà bon, et le burger était vraiment délicieux, il cale bien. Avec plaisir la prochaine fois !",
+    nl: "Ik heb 's avonds twee cheeseburgers om mee te nemen besteld; de jonge, vriendelijke man aan de grill had het flink druk, dus je kon nog even een rondje door de supermarkt. Onderweg rook de hele auto al heerlijk, en de burger was echt lekker, hij vult goed. Graag weer!"
+  },
+  {
+    name: 'Pusat A.', stars: 5, date: '2026-11-03',
+    de: "Wir haben bis jetzt zweimal dort Essen geholt, beide Male sehr lecker. Beim ersten Mal hatte ich den Chili-Cheese-Burger und meine Freundin den Classic Burger, diesmal hatten wir beide den Classic Burger und es war wieder sehr lecker. Der Umgang des Herren (wie ich erfahren habe, der Inhaber) war außerdem sehr herzlich und angenehm. Von mir und meiner Freundin 5 Sterne und wir kommen gerne wieder. Macht immer so weiter.",
+    en: "We've picked up food there twice so far, and it was really tasty both times. The first time I had the Chili Cheese Burger and my girlfriend the Classic Burger; this time we both had the Classic Burger and it was delicious again. The gentleman (the owner, as I found out) was also really warm and pleasant. 5 stars from me and my girlfriend, and we'll gladly come back. Keep it up.",
+    tr: "Şimdiye kadar oradan iki kez yemek aldık, ikisinde de çok lezzetliydi. İlk seferinde ben Chili Cheese Burger, kız arkadaşım Classic Burger almıştı; bu sefer ikimiz de Classic Burger aldık ve yine çok lezzetliydi. Beyefendinin (öğrendiğime göre işletme sahibi) tavrı da çok samimi ve hoştu. Benden ve kız arkadaşımdan 5 yıldız, seve seve yine geleceğiz. Böyle devam edin.",
+    it: "Finora abbiamo preso da mangiare lì due volte, ed era buonissimo entrambe le volte. La prima volta io ho preso il Chili Cheese Burger e la mia ragazza il Classic Burger, questa volta entrambi il Classic Burger ed era di nuovo buonissimo. Anche il signore (il titolare, come ho scoperto) è stato molto cordiale e piacevole. Da me e dalla mia ragazza 5 stelle, torneremo volentieri. Continuate così.",
+    es: "Hasta ahora hemos pedido comida allí dos veces y las dos estuvo muy rica. La primera vez yo tomé la Chili Cheese Burger y mi novia la Classic Burger; esta vez los dos tomamos la Classic Burger y volvió a estar muy rica. El señor (el dueño, según supe) fue además muy cordial y agradable. De mi parte y de mi novia, 5 estrellas, y volveremos con gusto. Seguid así.",
+    pt: "Até agora fomos buscar comida lá duas vezes e estava muito bom em ambas. Da primeira vez comi o Chili Cheese Burger e a minha namorada o Classic Burger; desta vez comemos os dois o Classic Burger e estava outra vez muito bom. O senhor (o dono, como fiquei a saber) foi também muito caloroso e simpático. Da minha parte e da minha namorada, 5 estrelas, e voltamos com gosto. Continuem assim.",
+    fr: "Nous y avons pris à manger deux fois jusqu'ici, et c'était très bon les deux fois. La première fois, j'ai pris le Chili Cheese Burger et ma copine le Classic Burger ; cette fois, nous avons pris tous les deux le Classic Burger et c'était encore très bon. Le monsieur (le patron, comme je l'ai appris) a aussi été très chaleureux et agréable. 5 étoiles de ma part et de celle de ma copine, et nous reviendrons avec plaisir. Continuez comme ça.",
+    nl: "We hebben er tot nu toe twee keer eten gehaald en het was beide keren erg lekker. De eerste keer nam ik de Chili Cheese Burger en mijn vriendin de Classic Burger, deze keer namen we allebei de Classic Burger en het was weer erg lekker. De meneer (de eigenaar, zoals ik hoorde) was bovendien heel hartelijk en prettig. Van mij en mijn vriendin 5 sterren, en we komen graag terug. Ga zo door."
+  },
+  {
+    name: 'Naomi B.', stars: 5, date: '2026-11-03',
+    de: "War dort schon mehrere Male und es hat jedes Mal sehr lecker geschmeckt. Die Bedienung läuft schnell und problemlos, komme gerne nochmal 🥰",
+    en: "I've been there several times and it tasted great every time. Service is quick and hassle-free, happy to come again 🥰",
+    tr: "Oraya birçok kez gittim ve her seferinde çok lezzetliydi. Servis hızlı ve sorunsuz, seve seve yine gelirim 🥰",
+    it: "Ho già mangiato lì diverse volte ed era buonissimo ogni volta. Il servizio è veloce e senza intoppi, ci torno volentieri 🥰",
+    es: "He comido allí varias veces y cada vez estaba muy rico. El servicio es rápido y sin complicaciones, volveré con gusto 🥰",
+    pt: "Já comi lá várias vezes e de todas as vezes estava muito bom. O atendimento é rápido e sem complicações, volto com gosto 🥰",
+    fr: "J'y ai déjà mangé plusieurs fois et c'était très bon à chaque fois. Le service est rapide et sans souci, je reviendrai avec plaisir 🥰",
+    nl: "Ik ben er al meerdere keren geweest en het was elke keer erg lekker. De bediening gaat snel en zonder gedoe, ik kom graag nog eens 🥰"
+  },
+  {
+    name: 'Nicky M.', stars: 5, date: '2026-10-31',
+    de: "Super lecker und mega freundlich!",
+    en: "Super tasty and really friendly!",
+    tr: "Çok lezzetli ve çok güler yüzlü!",
+    it: "Buonissimo e gentilissimi!",
+    es: "¡Buenísimo y superamables!",
+    pt: "Super saboroso e muito simpáticos!",
+    fr: "Super bon et super sympa !",
+    nl: "Superlekker en heel vriendelijk!"
+  },
+  {
+    name: 'Mori', stars: 5, date: '2026-10-28',
+    de: "Kleines rustikales Burgermobil mit einem freundlichen Inhaber. Chili Cheese und Sucuk Burger waren sehr saftig und lecker, das Brot fluffig und das Fleisch top.",
+    en: "Small, rustic burger truck with a friendly owner. The Chili Cheese and Sucuk burgers were really juicy and tasty, the bun fluffy and the meat top-notch.",
+    tr: "Güler yüzlü sahibiyle küçük, rustik bir burger aracı. Chili Cheese ve Sucuk Burger çok sulu ve lezzetliydi, ekmek yumuşacık, et ise harikaydı.",
+    it: "Piccolo burger truck rustico con un titolare gentile. Il Chili Cheese e il Sucuk Burger erano succosi e buonissimi, il pane soffice e la carne top.",
+    es: "Pequeño food truck de hamburguesas, rústico y con un dueño amable. La Chili Cheese y la Sucuk Burger estaban muy jugosas y ricas, el pan esponjoso y la carne de diez.",
+    pt: "Pequena carrinha de hambúrgueres, rústica e com um dono simpático. O Chili Cheese e o Sucuk Burger estavam muito suculentos e saborosos, o pão fofo e a carne top.",
+    fr: "Petit camion à burgers rustique avec un patron sympa. Le Chili Cheese et le Sucuk Burger étaient très juteux et savoureux, le pain moelleux et la viande au top.",
+    nl: "Kleine, rustieke burgerwagen met een vriendelijke eigenaar. De Chili Cheese en de Sucuk Burger waren heel sappig en lekker, het broodje luchtig en het vlees top."
+  },
+  {
+    name: 'Ha C.', stars: 5, date: '2026-10-24',
+    de: "Ein richtig toller Foodtruck mit einer leckeren Auswahl an verschiedenen Burgern! 🍔 Die Qualität stimmt, der Service ist top und die Freundlichkeit gegenüber den Kunden wird hier großgeschrieben. Besonders positiv finde ich, dass man sich auf das verlassen kann, was versprochen wird. Auch der Lieferservice ist super und macht das Ganze noch bequemer. Hier wird Kundenzufriedenheit wirklich gelebt! Absolut empfehlenswert – macht weiter so! 😊🍔👍",
+    en: "A really great food truck with a tasty selection of different burgers! 🍔 The quality is right, the service is top and friendliness towards customers is a priority here. What I like most is that you can rely on what's promised. The delivery service is great too and makes it even more convenient. Customer satisfaction is truly lived here! Highly recommended – keep it up! 😊🍔👍",
+    tr: "Farklı burgerlerden oluşan lezzetli bir seçkiye sahip gerçekten harika bir food truck! 🍔 Kalite yerinde, servis harika ve müşterilere güler yüz burada çok önemseniyor. En çok hoşuma giden, verilen sözlere güvenilebilmesi. Teslimat servisi de süper ve her şeyi daha da rahat hale getiriyor. Burada müşteri memnuniyeti gerçekten yaşatılıyor! Kesinlikle tavsiye ederim – böyle devam edin! 😊🍔👍",
+    it: "Un food truck davvero fantastico con una gustosa scelta di burger diversi! 🍔 La qualità c'è, il servizio è top e la cortesia verso i clienti qui è una priorità. Trovo particolarmente positivo che ci si possa fidare di ciò che viene promesso. Anche il servizio di consegna è ottimo e rende tutto ancora più comodo. Qui la soddisfazione del cliente si vive davvero! Assolutamente consigliato – continuate così! 😊🍔👍",
+    es: "¡Un food truck realmente genial con una sabrosa selección de hamburguesas! 🍔 La calidad está a la altura, el servicio es de diez y la amabilidad con los clientes es prioridad. Lo que más valoro es que puedes fiarte de lo que te prometen. El servicio a domicilio también es estupendo y lo hace todo aún más cómodo. ¡Aquí la satisfacción del cliente se vive de verdad! Totalmente recomendable – ¡seguid así! 😊🍔👍",
+    pt: "Uma carrinha de comida mesmo fantástica, com uma saborosa seleção de hambúrgueres! 🍔 A qualidade está lá, o serviço é top e a simpatia com os clientes é levada a sério. O que acho especialmente positivo é poder confiar no que é prometido. O serviço de entrega também é ótimo e torna tudo ainda mais cómodo. Aqui a satisfação do cliente é mesmo vivida! Recomendo vivamente – continuem assim! 😊🍔👍",
+    fr: "Un food truck vraiment génial avec un bon choix de burgers variés ! 🍔 La qualité est au rendez-vous, le service est au top et l'amabilité envers les clients est une priorité. Ce que j'apprécie particulièrement, c'est qu'on peut compter sur ce qui est promis. La livraison est aussi super et rend le tout encore plus pratique. Ici, la satisfaction client est vraiment vécue ! Vivement recommandé – continuez comme ça ! 😊🍔👍",
+    nl: "Een echt toffe foodtruck met een lekkere keuze aan verschillende burgers! 🍔 De kwaliteit klopt, de service is top en vriendelijkheid naar klanten staat hier voorop. Vooral fijn vind ik dat je kunt vertrouwen op wat er beloofd wordt. Ook de bezorgservice is super en maakt het nog makkelijker. Hier wordt klanttevredenheid echt geleefd! Absoluut een aanrader – ga zo door! 😊🍔👍"
+  },
+  {
+    name: 'Christian W.', stars: 5, date: '2026-10-23',
+    de: "Top Burger! Liebe die Saucen-Salat-Fleisch-Ratio und auch der Service war super nett. Alles lokal, alles frisch und lecker. Komme definitiv wieder für mehr!",
+    en: "Top burger! Love the sauce, salad and meat ratio, and the service was super nice too. Everything local, everything fresh and tasty. Definitely coming back for more!",
+    tr: "Harika burger! Sos, salata ve et oranına bayıldım, servis de çok nazikti. Her şey yerel, her şey taze ve lezzetli. Daha fazlası için kesinlikle tekrar geleceğim!",
+    it: "Burger top! Adoro il rapporto tra salse, insalata e carne, e anche il servizio è stato gentilissimo. Tutto locale, tutto fresco e buonissimo. Tornerò sicuramente per altro!",
+    es: "¡Hamburguesa de diez! Me encanta la proporción de salsas, ensalada y carne, y el servicio fue superamable. Todo local, todo fresco y rico. ¡Volveré seguro a por más!",
+    pt: "Hambúrguer top! Adoro a proporção entre molhos, salada e carne, e o serviço também foi super simpático. Tudo local, tudo fresco e saboroso. Volto de certeza para mais!",
+    fr: "Burger au top ! J'adore l'équilibre sauces, salade et viande, et le service était super sympa. Tout est local, tout est frais et bon. Je reviendrai sans faute pour en reprendre !",
+    nl: "Topburger! Ik hou van de verhouding tussen saus, sla en vlees, en de service was ook supervriendelijk. Alles lokaal, alles vers en lekker. Ik kom zeker terug voor meer!"
+  },
+  {
+    name: 'Merve G.', stars: 5, date: '2026-10-21',
+    de: "Exzellenter Burger! Sehr saftig, und die Süßkartoffel ist auch sehr empfehlenswert.",
+    en: "Excellent burger! Really juicy, and the sweet potato fries are highly recommended too.",
+    tr: "Mükemmel burger! Çok sulu, tatlı patates de kesinlikle tavsiye edilir.",
+    it: "Burger eccellente! Succosissimo, e anche le patate dolci sono consigliatissime.",
+    es: "¡Hamburguesa excelente! Muy jugosa, y las patatas de boniato también son muy recomendables.",
+    pt: "Hambúrguer excelente! Muito suculento, e a batata-doce também é muito recomendável.",
+    fr: "Excellent burger ! Très juteux, et les frites de patate douce sont aussi vivement recommandées.",
+    nl: "Uitstekende burger! Heel sappig, en de zoete-aardappelfriet is ook een aanrader."
+  },
+  {
+    name: 'Master C.', stars: 5, date: '2026-10-18',
+    de: "Bester Burger in Bielefeld! Der Foodtruck befindet sich auf dem Kauflandparkplatz mit ein paar Sitzgelegenheiten. Zwischen unfähigen Autofahrern und durchmischtem Publikum werden hier viele Highlights geboten, um die Wartezeit zu überbrücken. Besitzer super freundlich und zuvorkommend.",
+    en: "Best burger in Bielefeld! The food truck is in the Kaufland car park with a few places to sit. Between hopeless drivers and a mixed crowd, there are plenty of highlights to pass the waiting time. The owner is super friendly and accommodating.",
+    tr: "Bielefeld'in en iyi burgeri! Food truck, birkaç oturma yeri olan Kaufland otoparkında. Beceriksiz sürücüler ve karışık kalabalık arasında bekleme süresini geçirmek için pek çok renkli an var. Sahibi çok güler yüzlü ve ilgili.",
+    it: "Il miglior burger di Bielefeld! Il food truck si trova nel parcheggio del Kaufland, con qualche posto a sedere. Tra automobilisti maldestri e un pubblico variegato, ci sono tanti momenti clou per ingannare l'attesa. Il titolare è gentilissimo e premuroso.",
+    es: "¡La mejor hamburguesa de Bielefeld! El food truck está en el aparcamiento del Kaufland, con algunos sitios para sentarse. Entre conductores torpes y un público variopinto, hay espectáculo de sobra para amenizar la espera. El dueño es superamable y atento.",
+    pt: "O melhor hambúrguer de Bielefeld! A carrinha está no parque de estacionamento do Kaufland, com alguns lugares para sentar. Entre condutores desastrados e um público variado, há muitos momentos altos para passar o tempo de espera. O dono é super simpático e atencioso.",
+    fr: "Le meilleur burger de Bielefeld ! Le food truck se trouve sur le parking du Kaufland, avec quelques places assises. Entre conducteurs maladroits et public bigarré, il y a de quoi faire passer l'attente. Le patron est super sympa et serviable.",
+    nl: "Beste burger van Bielefeld! De foodtruck staat op de parkeerplaats van de Kaufland, met een paar zitplekken. Tussen onhandige automobilisten en een gemengd publiek is er genoeg te zien om de wachttijd te overbruggen. Eigenaar superaardig en behulpzaam."
+  },
   {
     name: 'I like Tea', stars: 5, date: '2026-10-08',
     de: "Netter Besitzer, guter Service! Der Chili-Cheeseburger war richtig lecker und schön scharf und saftig! Gerne wieder!",

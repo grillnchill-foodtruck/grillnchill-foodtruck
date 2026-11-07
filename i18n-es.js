@@ -85,7 +85,7 @@ I18N.es = {
     "franchise.lead": "Crecemos paso a paso y buscamos socios de la región: para eventos, nuevas ubicaciones o colaboraciones con empresas y clubes. Cuéntanos qué tienes pensado.",
     "franchise.p1_t": "Modelo de negocio probado", "franchise.p1_d": "Costes de producto calculables, márgenes atractivos por burger y un camino claro a la rentabilidad, sin comisiones de plataformas de reparto.",
     "franchise.p2_t": "Concepto llave en mano", "franchise.p2_d": "Del diseño del truck a la carta y los proveedores, el marketing y esta plataforma de pedidos: empiezas con un sistema completo.",
-    "franchise.p3_t": "Marca fuerte con certificado halal", "franchise.p3_d": "5,0★ con 255 reseñas, un posicionamiento claro y una base creciente de clientes habituales: asumes una marca con sustancia.",
+    "franchise.p3_t": "Marca fuerte con certificado halal", "franchise.p3_d": "4,9★ con 273 reseñas, un posicionamiento claro y una base creciente de clientes habituales: asumes una marca con sustancia.",
     "franchise.p4_t": "Acompañamiento personal", "franchise.p4_d": "Compartimos nuestro know-how de concepto y puesta en marcha y te apoyamos al montar tu propia ubicación.",
     "ang.doc_title": "Tu oferta de catering",
     "ang.loading": "Cargando la oferta …",

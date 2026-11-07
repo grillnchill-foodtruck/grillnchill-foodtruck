@@ -66,12 +66,13 @@ exports.handler = async (event) => {
   const q = event.queryStringParameters || {};
   const lang = g.LANGS.indexOf(q.lang) !== -1 ? q.lang : 'de';
 
-  // Browser/CDN darf das Ergebnis ein paar Stunden cachen (entlastet die Function).
-  // Browser 6 Stunden. Das Netlify-CDN hält die Antwort 30 Minuten je Sprache,
+  // Browser und Netlify-CDN halten die Antwort je 30 Minuten. Vorher durfte der
+  // Browser 6 Stunden zwischenspeichern, dann sah man neue Zahlen erst Stunden
+  // nach dem Morgenabruf. Das Netlify-CDN hält die Antwort 30 Minuten je Sprache,
   // damit nicht jeder Seitenaufruf diese Function auslöst (Zahlen ändern sich
   // ohnehin nur einmal am Tag, google-reviews-daily.js).
   const clientCache = {
-    'Cache-Control': 'public, max-age=21600',
+    'Cache-Control': 'public, max-age=1800',
     'Netlify-CDN-Cache-Control': 'public, durable, s-maxage=1800, stale-while-revalidate=86400',
   };
 

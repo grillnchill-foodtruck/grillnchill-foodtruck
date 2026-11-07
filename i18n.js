@@ -92,7 +92,7 @@ const I18N = {
     "franchise.lead": "Wir wachsen Schritt für Schritt und suchen Partner aus der Region: für Events, neue Standorte oder die Zusammenarbeit mit Firmen und Vereinen. Erzähl uns, was du vorhast.",
     "franchise.p1_t": "Bewährtes Ertragsmodell", "franchise.p1_d": "Du kennst den Wareneinsatz pro Burger vorher und zahlst keine Provision an Lieferdienste.",
     "franchise.p2_t": "Schlüsselfertiges Konzept", "franchise.p2_d": "Du bekommst Truck-Konzept, Speisekarte, Lieferanten, Marketing und diese Bestellplattform aus einer Hand.",
-    "franchise.p3_t": "Starke, halal-zertifizierte Marke", "franchise.p3_d": "5,0★ bei 255 Google-Bewertungen, eine klare Halal-Positionierung und eine wachsende Stammkundschaft.",
+    "franchise.p3_t": "Starke, halal-zertifizierte Marke", "franchise.p3_d": "4,9★ bei 273 Google-Bewertungen, eine klare Halal-Positionierung und eine wachsende Stammkundschaft.",
     "franchise.p4_t": "Persönliche Begleitung", "franchise.p4_d": "Wir zeigen dir, wie wir Grilln Chill aufgebaut haben, und begleiten dich beim Start deines eigenen Standorts.",
     "ang.doc_title": "Dein Catering-Angebot",
     "ang.loading": "Angebot wird geladen …",
