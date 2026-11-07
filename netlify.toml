@@ -50,6 +50,13 @@
   to     = "/.netlify/functions/google-reviews"
   status = 200
 
+# Rücksprung von Google nach „Mit Google verbinden“ (Admin-Tool → Feedback).
+# Diese Adresse steht so als autorisierte Weiterleitungs-URI im OAuth-Client.
+[[redirects]]
+  from   = "/google-profil/rueckruf"
+  to     = "/.netlify/functions/google-profil"
+  status = 200
+
 # Admin-Panel unter sauberer URL /admin erreichbar:
 [[redirects]]
   from   = "/admin"

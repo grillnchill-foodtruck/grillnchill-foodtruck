@@ -398,6 +398,16 @@
   .abtn.primary{background:var(--ember-solid);border-color:var(--ember-solid);color:#fff}
   .abtn.danger{color:#8FB7E8;border-color:rgba(143,183,232,.45)}
   .bdg.online{color:var(--live);border-color:rgba(109,190,69,.4)}
+  .gp-kopf{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin-bottom:.35rem}
+  .gp-kopf h2{margin:0}
+  .gp-stand{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;margin-bottom:.6rem}
+  .gp-stand .bdg{font-size:.66rem}
+  .bdg.gp-ok{color:var(--live);border-color:rgba(109,190,69,.45)}
+  .bdg.gp-warten{color:var(--amber);border-color:rgba(255,176,32,.45)}
+  .bdg.gp-fehler{color:var(--red);border-color:rgba(224,72,72,.5)}
+  .gp-text{font-size:.86rem;line-height:1.5;margin:0 0 .5rem;max-width:70ch}
+  .gp-text code{font-family:var(--mono);font-size:.78rem;background:var(--card2);padding:.05rem .3rem;border-radius:5px;word-break:break-all}
+  .gp-aktionen{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.8rem}
   .bdg.firma{color:var(--amber,#FFB020);border-color:rgba(255,176,32,.45)}
   .ord-body{display:none;border-top:1px dashed var(--border);padding:.75rem .85rem;font-size:.83rem}
   .ord.open .ord-body{display:block}
@@ -1402,6 +1412,16 @@
         <div id="fbOut"><p class="empty">Feedback wird geladen …</p></div>
         <p class="hint" style="margin-top:.7rem;">Gäste bewerten auf der Statusseite, sobald ihre Bestellung abgeholt oder geliefert ist. Unter 4 Sternen kommt sofort eine Telegram-Nachricht. Gespeichert ohne Name, Mail und Telefon.</p>
       </div>
+      <div class="card" id="gpCard">
+        <div class="gp-kopf">
+          <h2>Google-Rezensionen automatisch</h2>
+          <button class="icon-btn" id="gpReload" aria-label="Stand neu laden" title="Neu laden">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          </button>
+        </div>
+        <p class="hint">Mit dem Google-Unternehmensprofil verbunden, holt die Website jeden Morgen die neuesten Rezensionen selbst, übersetzt sie und zeigt sie im Karussell. Ohne Verbindung liefert Google nur 5 Rezensionen, die es selbst auswählt.</p>
+        <div id="gpOut" aria-live="polite" style="margin-top:.9rem;"><p class="empty">Wird geladen …</p></div>
+      </div>
     </section>
     <!-- ============ TAB: ZAHLEN ============ -->
     <section class="tabpane hidden" id="pane-scan" role="tabpanel">
@@ -1817,6 +1837,7 @@ async function save(){
 function showPanel(){
   $('loginView').classList.add('hidden');
   $('panelView').classList.remove('hidden');
+  if (typeof gpRuecksprungZeigen === 'function') gpRuecksprungZeigen();
   if (leisteWunsch && window.gncNativeTabSelect) {
     const w = leisteWunsch; leisteWunsch = '';
     setTimeout(() => window.gncNativeTabSelect(w), 120);
@@ -5676,6 +5697,144 @@ document.addEventListener('click', (e) => {
   fbMalen();
 });
 
+/* =====================================================================
+   5. GOOGLE-UNTERNEHMENSPROFIL (google-profil.js, lib/google-profil.js)
+   ===================================================================== */
+let GP = null, gpSeq = 0, gpBusy = false;
+// Rücksprung von Google (/admin?google=…): merken, Adresse aufräumen, nach dem Login zeigen
+(function () {
+  try {
+    const q = new URLSearchParams(location.search);
+    const erg = q.get('google');
+    if (erg) {
+      sessionStorage.setItem('gnc_google_erg', erg);
+      q.delete('google');
+      history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+    }
+  } catch (e) {}
+})();
+const GP_RUECK = {
+  verbunden: ['Google-Profil verbunden', 'ok'],
+  abgebrochen: ['Verbindung abgebrochen, nichts geändert', ''],
+  abgelaufen: ['Link abgelaufen, bitte noch einmal verbinden', 'err'],
+  fehler: ['Verbinden hat nicht geklappt, bitte noch einmal', 'err'],
+};
+function gpRuecksprungZeigen() {
+  let erg = null;
+  try { erg = sessionStorage.getItem('gnc_google_erg'); sessionStorage.removeItem('gnc_google_erg'); } catch (e) {}
+  if (!erg || currentRole === 'staff') return;
+  setTimeout(() => {
+    $('tabFeedback').click();
+    const m = GP_RUECK[erg] || GP_RUECK.fehler;
+    toast(m[0], m[1]);
+    gpLaden();
+  }, 300);
+}
+async function gpApi(action) {
+  const res = await fetch('/.netlify/functions/google-profil', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, password: currentPw }),
+  });
+  const d = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, d, res };
+}
+async function gpLaden() {
+  const seq = ++gpSeq;
+  const rb = $('gpReload'); rb.classList.add('spin');
+  if (!GP) $('gpOut').innerHTML = '<p class="empty">Wird geladen …</p>';
+  try {
+    const r = await gpApi('status');
+    if (seq !== gpSeq) return;
+    if (sperreGemeldet(r.res, 'gpOut')) return;
+    if (r.status === 401) { $('gpOut').innerHTML = '<p class="empty">Anmeldung abgelaufen. Bitte neu anmelden.</p>'; return; }
+    if (r.status === 403) { $('gpOut').innerHTML = '<p class="empty">Das verwalten Admins und der Inhaber.</p>'; return; }
+    if (!r.ok) throw new Error('status');
+    GP = r.d.profil; gpMalen();
+  } catch (e) {
+    if (seq === gpSeq) $('gpOut').innerHTML = '<p class="empty" style="color:var(--red);">Stand konnte nicht geladen werden. Oben rechts neu laden.</p>';
+  } finally {
+    if (seq === gpSeq) rb.classList.remove('spin');
+  }
+}
+const gpDatum = (ms) => ms ? new Date(ms).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+const gpTag = (iso) => iso ? new Date(iso).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+function gpMalen() {
+  const p = GP || {};
+  const konto = p.konto ? esc2(p.konto) : 'deinem Google-Konto';
+  const knopf = (act, text, primaer) => '<button type="button" class="' + (primaer ? 'btn' : 'btn-ghost') + '" data-gp="' + act + '"' + (gpBusy ? ' disabled' : '') + '>' + text + '</button>';
+  let pill = '', text = '', knoepfe = '';
+  switch (p.freigabe) {
+    case 'nicht_eingerichtet':
+      pill = '<span class="bdg gp-warten">Noch nicht eingerichtet</span>';
+      text = '<p class="gp-text">In Netlify fehlen <code>GOOGLE_PROFIL_CLIENT_ID</code> und <code>GOOGLE_PROFIL_CLIENT_SECRET</code>. Die Schritte stehen in <code>docs/GOOGLE-PROFIL.md</code>.</p>'
+        + '<p class="gp-text">Weiterleitungs-URI für den OAuth-Client: <code>' + esc2(p.rueckrufUrl || '') + '</code></p>';
+      break;
+    case 'nicht_verbunden':
+      pill = '<span class="bdg">Nicht verbunden</span>';
+      text = '<p class="gp-text">Melde dich mit dem Google-Konto an, das Inhaber oder Manager des Unternehmensprofils ist. Öffne das Admin-Tool dafür im Browser, in der App lässt Google die Anmeldung nicht zu.</p>';
+      knoepfe = knopf('start', 'Mit Google verbinden', true);
+      break;
+    case 'ok':
+      pill = '<span class="bdg gp-ok">Läuft</span>' + (p.standort ? '<span class="bdg">' + esc2(p.standort) + '</span>' : '');
+      text = '<p class="gp-text">Verbunden mit ' + konto + '. Letzter Abruf ' + esc2(gpDatum(p.letzterErfolg)) + ': '
+        + (p.anzahl != null ? p.anzahl + ' Bewertungen' : 'Bewertungen geholt')
+        + (p.rating != null ? ', ' + String(p.rating).replace('.', ',') + ' Sterne' : '')
+        + (p.neuesteVom ? ', neueste vom ' + esc2(gpTag(p.neuesteVom)) : '') + '.</p>'
+        + (p.uebersetzung === 'fehler' ? '<p class="gp-text" style="color:var(--amber);">Übersetzen klappt noch nicht. Bis die Cloud Translation API aktiv ist, zeigen alle Sprachen den Originaltext.</p>' : '');
+      knoepfe = knopf('testen', 'Jetzt abrufen') + knopf('trennen', 'Trennen');
+      break;
+    case 'wartet_auf_freigabe':
+      pill = '<span class="bdg gp-warten">Wartet auf Google</span>';
+      text = '<p class="gp-text">Verbunden mit ' + konto + '. Google hat das Cloud-Projekt noch nicht für die Business-Schnittstelle freigegeben (Kontingent 0). Sobald die Freigabe da ist, läuft alles von selbst, Telegram meldet sich.</p>';
+      knoepfe = knopf('testen', 'Jetzt prüfen') + knopf('trennen', 'Trennen');
+      break;
+    case 'api_nicht_aktiviert':
+      pill = '<span class="bdg gp-fehler">API fehlt</span>';
+      text = '<p class="gp-text">Im Cloud-Projekt ist eine Schnittstelle nicht aktiviert' + (p.dienst ? ': <code>' + esc2(p.dienst) + '</code>' : '') + '. In der Google Cloud Console unter „APIs und Dienste“ aktivieren, dann hier prüfen.</p>';
+      knoepfe = knopf('testen', 'Jetzt prüfen') + knopf('trennen', 'Trennen');
+      break;
+    case 'kein_standort':
+      pill = '<span class="bdg gp-fehler">Falsches Konto</span>';
+      text = '<p class="gp-text">' + konto + ' verwaltet das Profil von Grill\'n Chill nicht. Trenne die Verbindung und melde dich mit dem Inhaber- oder Manager-Konto an.</p>';
+      knoepfe = knopf('trennen', 'Trennen');
+      break;
+    case 'neu_verbinden':
+      pill = '<span class="bdg gp-fehler">Neu verbinden</span>';
+      text = '<p class="gp-text">Google hat die Verbindung beendet, etwa nach einer Passwortänderung oder weil die App im Testmodus steht. Bitte neu verbinden.</p>';
+      knoepfe = knopf('start', 'Neu verbinden', true) + knopf('trennen', 'Trennen');
+      break;
+    default:
+      pill = '<span class="bdg' + (p.freigabe && p.freigabe !== 'unbekannt' ? ' gp-fehler' : '') + '">' + (p.freigabe && p.freigabe !== 'unbekannt' ? 'Fehler' : 'Verbunden') + '</span>';
+      text = '<p class="gp-text">Verbunden mit ' + konto + '.' + (p.letzterFehler ? ' Letzte Meldung von Google: ' + esc2(p.letzterFehler) : ' Der erste Abruf steht noch aus.') + '</p>';
+      knoepfe = knopf('testen', 'Jetzt prüfen') + knopf('trennen', 'Trennen');
+  }
+  $('gpOut').innerHTML = '<div class="gp-stand">' + pill + '</div>' + text + (knoepfe ? '<div class="gp-aktionen">' + knoepfe + '</div>' : '');
+}
+async function gpAktion(act) {
+  if (gpBusy) return;
+  if (act === 'trennen' && !confirm('Verbindung zum Google-Profil trennen? Neue Rezensionen kommen dann wieder nur über die 5, die Google auswählt.')) return;
+  gpBusy = true; gpMalen();
+  try {
+    const r = await gpApi(act);
+    if (sperreGemeldet(r.res, 'gpOut')) return;
+    if (!r.ok) { toast(r.d.hint || 'Hat nicht geklappt', 'err'); return; }
+    if (act === 'start' && r.d.url) { location.href = r.d.url; return; }
+    if (r.d.profil) GP = r.d.profil;
+    if (act === 'testen') toast(r.d.ok ? 'Abruf geklappt: ' + r.d.ergebnis.anzahl + ' Rezensionen geholt' : 'Noch nicht bereit', r.d.ok ? 'ok' : '');
+    if (act === 'trennen') toast('Verbindung getrennt', 'ok');
+  } catch (e) {
+    toast('Netzwerkfehler', 'err');
+  } finally {
+    gpBusy = false; gpMalen();
+  }
+}
+$('tabFeedback').addEventListener('click', () => { if (!GP) gpLaden(); });
+$('gpReload').addEventListener('click', () => gpLaden());
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-gp]');
+  if (b && !b.disabled) gpAktion(b.dataset.gp);
+});
+
 /* Beim Abmelden alles vergessen (resetPanelState im Hauptskript ruft das) */
 function bfZuruecksetzen() {
   if (BF.offen) { BF.offen = false; $('bfOv').hidden = true; document.body.style.overflow = ''; }
@@ -5683,6 +5842,7 @@ function bfZuruecksetzen() {
   FB_DATEN = null; fbSeq++; fbFilter = 'alle';
   $('fbOut').innerHTML = ''; $('fbFilter').innerHTML = ''; $('fbSchnitt').textContent = '–'; $('fbSchnittSterne').innerHTML = ''; $('fbAnzahl').textContent = '';
   waBurger = null; waFehler = false; waSeq++;
+  GP = null; gpSeq++; gpBusy = false; $('gpOut').innerHTML = '';
 }
 </script>
 </body>

@@ -10,7 +10,11 @@
  *   2. Place Details (Legacy) mit reviews_sort=newest: die 5 neuesten. Klappt
  *      nur, wenn im Google-Cloud-Projekt die alte „Places API“ aktiv ist. Fehlt
  *      sie, läuft alles über Weg 1 weiter.
- *   3. Archiv je Sprache (Blob archiv:<lang>): jede Rezension, die einmal
+ *   3. Google-Unternehmensprofil (lib/google-profil.js): alle Rezensionen,
+ *      neueste zuerst, sobald das Profil im Admin-Tool verbunden und das
+ *      Cloud-Projekt von Google freigegeben ist. Der Morgenlauf holt sie und
+ *      legt sie übersetzt in profil:neueste ab; hier werden sie eingemischt.
+ *   4. Archiv je Sprache (Blob archiv:<lang>): jede Rezension, die einmal
  *      geliefert wurde, bleibt hier liegen. So wächst die Liste mit jeder neuen
  *      Rezension, auch wenn Google selbst nur 5 auf einmal herausgibt.
  *
@@ -23,6 +27,7 @@
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
+const profil = require('./google-profil');
 
 const STORE_NAME = 'google-reviews';
 const KEY_PREFIX = 'data:';
@@ -255,8 +260,12 @@ async function aktualisiere(lang) {
   ]);
   const n = neu.status === 'fulfilled' ? neu.value : null;
   const l = legacy.status === 'fulfilled' ? legacy.value : null;
-  const rating = n && n.rating != null ? n.rating : (l && l.rating);
-  const total = Math.max((n && n.total) || 0, (l && l.total) || 0) || null;
+  // Unternehmensprofil: höchstens 3 Tage alt, sonst zählt es nicht mehr
+  const pRoh = await profil.leseNeueste().catch(() => null);
+  const p = pRoh && Date.now() - pRoh.at < 3 * CACHE_TTL_MS ? pRoh : null;
+  const pReviews = p ? p.reviews.map(r => baueEintrag(r.name, r.stars, r.texte && (r.texte[lang] || r.texte.de), r.date, lang)).filter(Boolean) : [];
+  const rating = p && p.rating != null ? p.rating : (n && n.rating != null ? n.rating : (l && l.rating));
+  const total = Math.max((n && n.total) || 0, (l && l.total) || 0, (p && p.total) || 0) || null;
   if (rating == null || total == null) {
     const e = new Error(neu.status === 'rejected' ? neu.reason.message : 'Antwort ohne rating/userRatingCount');
     e.diag = {
@@ -266,7 +275,7 @@ async function aktualisiere(lang) {
     throw e;
   }
   const archivAlt = await leseJson(ARCHIV_PREFIX + lang);
-  const reviews = mischeArchiv(archivAlt && archivAlt.reviews, [...(l ? l.reviews : []), ...(n ? n.reviews : [])]);
+  const reviews = mischeArchiv(archivAlt && archivAlt.reviews, [...(l ? l.reviews : []), ...(n ? n.reviews : []), ...pReviews]);
   const jetzt = Date.now();
   // Nur Kategorien und Zahlen: welcher Weg geklappt hat und wie viele Rezensionen
   // Google roh geliefert hat. Hilft, wenn die Zahl stimmt, die Liste aber leer bleibt.
@@ -278,9 +287,10 @@ async function aktualisiere(lang) {
     neuOhneRezensionen: n && n.rezensionenFehler ? n.rezensionenFehler : undefined,
     neueste: l ? 'ok' : (legacy.reason && legacy.reason.diag && legacy.reason.diag.status) || 'fehler',
     neuesteRoh: l ? l.roh : null,
+    profil: p ? { stand: new Date(p.at).toISOString(), roh: p.reviews.length, total: p.total } : (pRoh ? 'veraltet' : 'aus'),
   };
   await schreibeJson(ARCHIV_PREFIX + lang, { reviews, aktualisiert: jetzt });
-  const daten = { rating, total, reviews, fetchedAt: jetzt, ueber: n ? n.ueber : 'legacy', quellen };
+  const daten = { rating, total, reviews, fetchedAt: jetzt, ueber: n ? n.ueber : (l ? 'legacy' : 'profil'), quellen };
   await schreibeJson(KEY_PREFIX + lang, daten);
   return daten;
 }
