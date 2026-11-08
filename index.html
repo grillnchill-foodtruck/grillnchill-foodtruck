@@ -678,7 +678,8 @@
   --color-border: #2A2520;
   --color-border-bright: #3A332C;
   --color-success: #6DBE45;
-  --color-error: #E04848;
+  --color-error: #E04848;     /* nur Fehler und Löschen (UX-Regel 13) */
+  --color-warn: #F2A93B;      /* Hinweise: Pause, Mindestbestellwert */
   --color-yellow: #FFC93C;
 
   --font-display: 'Bowlby One', 'GNC Display Ext', 'Anton', Impact, sans-serif;
@@ -1917,14 +1918,15 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 .soldout-overlay {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%) rotate(-6deg);
-  background: rgba(224,72,72,0.95); color: #fff;
+  background: rgba(23,20,15,0.92); color: var(--color-cream);
+  border: 1px solid var(--color-border-bright);
   font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
   padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.95rem;
   z-index: 3; box-shadow: 0 4px 16px rgba(0,0,0,0.4); white-space: nowrap;
 }
 .soldout-pill {
-  background: rgba(224,72,72,0.15); color: #E04848;
-  border: 1px solid rgba(224,72,72,0.5); font-weight: 700;
+  background: rgba(245,233,208,0.06); color: var(--color-cream-dim);
+  border: 1px solid var(--color-border-bright); font-weight: 700;
   font-size: 0.8rem; padding: 0.45rem 0.7rem; border-radius: 999px; white-space: nowrap;
 }
 .add-btn {
@@ -2435,14 +2437,16 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   margin: 0 0 0.75rem;
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(224, 72, 72, 0.45);
-  border-left: 3px solid var(--color-error);
-  background: rgba(224, 72, 72, 0.1);
+  border: 1px solid rgba(242, 169, 59, 0.45);
+  border-left: 3px solid var(--color-warn);
+  background: rgba(242, 169, 59, 0.1);
   color: var(--color-cream);
   font-size: 0.84rem;
   font-weight: 600;
   line-height: 1.45;
 }
+/* Echte Fehler (Pflichtfeld fehlt, Bestellung gescheitert) bleiben rot */
+.cart-warn-banner.ist-fehler { border-color: rgba(224, 72, 72, 0.45); border-left-color: var(--color-error); background: rgba(224, 72, 72, 0.1); }
 .cart-foot-sum {
   display: flex; align-items: baseline; justify-content: space-between;
   gap: 1rem;
@@ -6076,6 +6080,64 @@ body.onb-lock { overflow: hidden; }
   #savedToast { transform: translateX(-50%) !important; }
   .nav-cart-badge.bump { transform: none; }
 }
+
+/* ====================================================================
+   TIPPFLÄCHEN MINDESTENS 44 × 44 PT (UX-Regel 9)
+   Wo Platz ist, wächst der Knopf selbst. Wo es eng ist, bleibt die Optik
+   und nur die unsichtbare Trefferzone wächst.
+   ==================================================================== */
+.mini-btn, .grp-discard-btn, .lang-dd-btn { min-height: 44px; }
+.social-links a { width: 44px; height: 44px; }
+.footer-bottom-links a, .contact-line, .map-ext-link { display: inline-flex; align-items: center; min-height: 44px; }
+.config-chip { min-height: 44px; }
+/* X oben rechts in Konto und Gruppenbestellung */
+.sheet-close {
+  position: absolute; top: 0.35rem; right: 0.4rem; width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 50%; cursor: pointer;
+  color: var(--color-text-muted, #8F8471); font-size: 1.5rem; line-height: 1;
+}
+.sheet-close:active { transform: scale(0.92); background: rgba(245, 233, 208, 0.06); }
+.qty-stepper button { width: 44px; height: 44px; }
+.upsell-close {
+  width: 44px; height: 44px; top: 0.3rem; right: 0.35rem;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+}
+.promo-bar { min-height: calc(44px + var(--safe-top)); }
+/* „Best of“-Punkte: 44 pt von Mitte zu Mitte, Trefferzone 44 pt hoch */
+.sig-dots { gap: 14px; }
+.sig-dot { position: relative; }
+.sig-dot::before { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: 44px; transform: translate(-50%, -50%); }
+/* Bewertungs-Punkte: zu viele für je 44 pt. Die ganze Leiste ist 44 pt hoch
+   und arbeitet wie die Seitenanzeige von iOS: Tipp links vom aktiven Punkt
+   blättert zurück, rechts davon weiter. */
+.reviews-dots { min-height: 44px; align-items: center; cursor: pointer; touch-action: manipulation; }
+@media (max-width: 640px) { .reviews-dot { pointer-events: none; } }
+
+/* „Rückgängig“ nach dem Löschen (UX-Regel 13), unten in Daumennähe */
+.undo-toast {
+  position: fixed; left: 50%; bottom: calc(1.2rem + var(--safe-bottom)); z-index: 10002;
+  transform: translate(-50%, 12px); opacity: 0;
+  display: flex; align-items: center; gap: 0.75rem;
+  max-width: calc(100vw - 32px);
+  padding: 0.3rem 0.3rem 0.3rem 1.1rem;
+  background: rgba(23, 20, 15, 0.96); color: var(--color-cream);
+  border: 1px solid var(--color-border-bright); border-radius: 999px;
+  font-size: 0.86rem; font-weight: 600; white-space: nowrap;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transition: opacity .2s ease-out, transform .25s cubic-bezier(.2, .8, .2, 1);
+}
+.undo-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.undo-toast span { overflow: hidden; text-overflow: ellipsis; }
+.undo-toast button {
+  min-height: 44px; padding: 0 1.1rem; border: none; border-radius: 999px;
+  background: var(--color-orange); color: #fff; font: inherit; font-weight: 800; cursor: pointer;
+}
+.undo-toast button:active { transform: scale(0.96); }
+body.app-forced .undo-toast { bottom: calc(5.6rem + var(--safe-bottom)); }   /* über der Tab-Leiste */
+body:has(.sticky-cart.show) .undo-toast { bottom: calc(5.2rem + var(--safe-bottom)); }   /* über der Warenkorb-Pille */
+body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(--safe-bottom)); }
+@media (prefers-reduced-motion: reduce) { .undo-toast { transform: translate(-50%, 0); transition: opacity .2s; } }
 </style>
 <script src="/ereignisse.js"></script>
 </head>
@@ -6778,7 +6840,7 @@ body.onb-lock { overflow: hidden; }
           <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange-bright)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
           <p style="margin:0;font-size:0.85rem;color:var(--color-cream-dim);max-width:34ch;line-height:1.5;" data-i18n="map.consent_text">Gütersloher Str. 122, 33649 Bielefeld. Mit dem Laden der Karte werden Daten an Google übertragen.</p>
           <button type="button" class="btn btn-primary" data-on-click="loadMap()" data-i18n="map.load_btn">Karte laden</button>
-          <a href="https://maps.google.com/maps?cid=2860232172322750720" target="_blank" rel="noopener" style="font-size:0.75rem;color:var(--color-text-muted);" data-i18n="map.open_ext">In Google Maps öffnen</a>
+          <a href="https://maps.google.com/maps?cid=2860232172322750720" target="_blank" rel="noopener" class="map-ext-link" style="font-size:0.75rem;color:var(--color-text-muted);" data-i18n="map.open_ext">In Google Maps öffnen</a>
         </div>
       </div>
     </div>
@@ -7390,7 +7452,7 @@ if (typeof window.t !== 'function') {
 <!-- Kundenkonto: Overlay (Login-/Profil-Ansicht wird per JS in #accountBody gerendert) -->
 <div id="accountOverlay" role="dialog" aria-modal="true" aria-labelledby="accountTitle" data-on-click="if(event.target===this)closeAccountOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
   <div style="background:var(--color-bg-card,#17140F);border:1px solid var(--color-border,#2E2820);border-radius:16px;max-width:460px;width:100%;max-height:88vh;overflow:auto;position:relative;padding:1.5rem 1.4rem;">
-    <button type="button" data-on-click="closeAccountOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" style="position:absolute;top:0.7rem;right:0.8rem;background:none;border:none;color:var(--color-text-muted,#8F8471);font-size:1.5rem;line-height:1;cursor:pointer;padding:0.3rem;">×</button>
+    <button type="button" data-on-click="closeAccountOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" class="sheet-close">×</button>
     <h3 id="accountTitle" style="font-family:var(--font-display);font-weight:400;font-size:1.15rem;margin:0 0 1rem;padding-right:2rem;" data-i18n="acc.title">Mein Konto</h3>
     <div id="accountBody"></div>
   </div>
@@ -7399,7 +7461,7 @@ if (typeof window.t !== 'function') {
 <!-- Gruppenbestellung: Overlay (Host-/Teilnehmer-Ansicht wird per JS in #groupBody gerendert) -->
 <div id="groupOverlay" role="dialog" aria-modal="true" aria-labelledby="groupTitle" data-on-click="if(event.target===this)closeGroupOverlay()" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(6,5,4,0.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:1rem;">
   <div style="background:var(--color-bg-card,#17140F);border:1px solid var(--color-border,#2E2820);border-radius:16px;max-width:460px;width:100%;max-height:86vh;overflow:auto;position:relative;padding:1.5rem 1.4rem;">
-    <button type="button" data-on-click="closeGroupOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" style="position:absolute;top:0.7rem;right:0.8rem;background:none;border:none;color:var(--color-text-muted,#8F8471);font-size:1.5rem;line-height:1;cursor:pointer;padding:0.3rem;">×</button>
+    <button type="button" data-on-click="closeGroupOverlay()" aria-label="Schließen" data-i18n-aria="a11y.close" class="sheet-close">×</button>
     <h3 id="groupTitle" style="font-family:var(--font-display,'Bowlby One');font-weight:400;font-size:1.15rem;margin:0 0 1rem;padding-right:2rem;" data-i18n="grp.title">Gruppenbestellung</h3>
     <div id="groupBody"></div>
   </div>
@@ -8427,6 +8489,42 @@ function showSavedToast(msg) {
     setTimeout(() => n.remove(), 300);
   }, 1700);
 }
+/* Nach dem Löschen: Leiste mit „Rückgängig“ (UX-Regel 13), 6 Sekunden lang.
+   rueckgaengig() holt das Gelöschte zurück. opts.danach() läuft, wenn niemand
+   zurückgenommen hat (verzögertes Löschen auf dem Server). Kommt eine neue
+   Leiste, gilt die alte als bestätigt. */
+let rgAktiv = null;
+function zeigeRueckgaengig(text, rueckgaengig, opts) {
+  opts = opts || {};
+  if (rgAktiv) rgAktiv.bestaetigen();
+  const n = document.createElement('div');
+  n.className = 'undo-toast';
+  n.setAttribute('role', 'status');
+  n.innerHTML = '<span></span><button type="button"></button>';
+  n.querySelector('span').textContent = text;
+  const knopf = n.querySelector('button');
+  knopf.textContent = t('cart.undo');
+  document.body.appendChild(n);
+  setTimeout(() => n.classList.add('show'), 20);
+  let fertig = false;
+  const weg = () => { n.classList.remove('show'); setTimeout(() => n.remove(), 250); };
+  const eintrag = {
+    bestaetigen() {
+      if (fertig) return; fertig = true; clearTimeout(timer); weg();
+      if (rgAktiv === eintrag) rgAktiv = null;
+      if (opts.danach) opts.danach();
+    },
+  };
+  knopf.addEventListener('click', () => {
+    if (fertig) return; fertig = true; clearTimeout(timer); weg();
+    if (rgAktiv === eintrag) rgAktiv = null;
+    if (typeof hapticTick === 'function') hapticTick();
+    rueckgaengig();
+  });
+  const timer = setTimeout(() => eintrag.bestaetigen(), opts.dauer || 6000);
+  rgAktiv = eintrag;
+  return eintrag;
+}
 /* Speichern geklappt: kurz "✓ Gespeichert" im Knopf, danach wieder der
    Ursprungstext. label = Beschriftung von VOR dem Warten (ohne Ring). */
 function accSavedTick(btn, label) {
@@ -8924,8 +9022,38 @@ async function standingCreate(btn) {
   });
 }
 
+/* Dauerbestellung löschen: sofort ausblenden, „Rückgängig“ anbieten und erst
+   danach beim Server löschen (UX-Regel 13). Geht die App vorher in den
+   Hintergrund, wird sofort gelöscht. Klappt das Löschen nicht, kommt der
+   Eintrag mit Fehlermeldung zurück. */
+let soLoeschAuftrag = null;
+function standingLoeschenMitUndo(id) {
+  if (soLoeschAuftrag) soLoeschAuftrag();
+  const idx = STANDING.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  const eintrag = STANDING[idx];
+  STANDING.splice(idx, 1);
+  if (soEdit && soEdit.id === id) soEdit = null;
+  renderAccount();
+  let erledigt = false;
+  const zurueck = () => { STANDING.splice(Math.min(idx, STANDING.length), 0, eintrag); renderAccount(); };
+  const ende = () => { erledigt = true; soLoeschAuftrag = null; document.removeEventListener('visibilitychange', beiVerstecken); };
+  const ausfuehren = async () => {
+    if (erledigt) return;
+    ende();
+    let r = null;
+    try { r = await standingApi('delete', { id }); } catch (e) {}
+    if (r && r.ok) { soSlotsVergessen(); loadStanding(); return; }
+    zurueck();
+    flashAccMsg(r ? accErrText(r) : t('acc.err_network'), document.getElementById('accountBody'));
+  };
+  const beiVerstecken = () => { if (document.hidden) ausfuehren(); };
+  document.addEventListener('visibilitychange', beiVerstecken);
+  soLoeschAuftrag = ausfuehren;
+  zeigeRueckgaengig(t('so.deleted'), () => { if (erledigt) return; ende(); zurueck(); }, { danach: ausfuehren });
+}
 async function standingSet(id, action, btn) {
-  if (action === 'delete' && !confirm(t('so.delete_confirm'))) return;
+  if (action === 'delete') { standingLoeschenMitUndo(id); return; }
   let r;
   try { r = await standingApi(action, { id }); }
   catch (e) { flashAccMsg(t('acc.err_network'), btn); return; }
@@ -9049,7 +9177,8 @@ async function accAddAddress(btn) {
 async function accDeleteAddress(i, btn) {
   const row = btn && btn.closest('.acc-adr');
   if (row && row.classList.contains('is-leaving')) return;
-  const list = [...(ACCOUNT.profile.addresses || [])];
+  const vorher = [...(ACCOUNT.profile.addresses || [])];
+  const list = [...vorher];
   list.splice(i, 1);
   accEditingAdr = null;   // sonst zeigt der Index auf die falsche Adresse
   // Zeile sofort ausblenden; die anderen Adress-Knoepfe sperren, solange
@@ -9059,7 +9188,15 @@ async function accDeleteAddress(i, btn) {
   knoepfe.forEach(b => { b.disabled = true; });
   if (row) row.classList.add('is-leaving');
   const r = await accountApi('save', { addresses: list });
-  if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
+  if (r.ok) {
+    ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount();
+    // „Rückgängig“ speichert die alte Liste wieder (UX-Regel 13)
+    zeigeRueckgaengig(t('acc.adr_deleted'), async function () {
+      const r2 = await accountApi('save', { addresses: vorher });
+      if (r2.ok) { ACCOUNT.profile = r2.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
+      else flashAccMsg(accErrText(r2), document.getElementById('accountBody'));
+    });
+  }
   else {
     // Fehler: Zeile und Knoepfe wiederherstellen
     if (row) row.classList.remove('is-leaving');
@@ -9685,11 +9822,11 @@ function modeOffText() {
 function pausedBannerEl() {
   const div = document.createElement('div');
   div.id = 'menuPausedBanner';
-  div.style.cssText = 'grid-column: 1 / -1; background: rgba(224,72,72,0.12); border: 1px solid rgba(224,72,72,0.5); border-radius: var(--radius-md); padding: 1rem 1.2rem; margin-bottom: 0.5rem; line-height: 1.5;';
+  div.style.cssText = 'grid-column: 1 / -1; background: rgba(242,169,59,0.1); border: 1px solid rgba(242,169,59,0.45); border-radius: var(--radius-md); padding: 1rem 1.2rem; margin-bottom: 0.5rem; line-height: 1.5;';
   const msg = (SHOP_STATUS.pauseMessage && SHOP_STATUS.pauseMessage.trim())
     ? SHOP_STATUS.pauseMessage.trim() : t('shop.paused_default');
   const title = document.createElement('strong');
-  title.style.cssText = 'color:#E04848; display:block; margin-bottom:0.2rem;';
+  title.style.cssText = 'color:var(--color-warn); display:block; margin-bottom:0.2rem;';
   title.textContent = t('shop.paused_title');
   const body = document.createElement('span');
   body.style.color = 'var(--color-cream-dim)';
@@ -10392,19 +10529,30 @@ function confirmDipConfig(ev) {
 }
 function updateQty(key, delta) {
   if (!cart[key]) return;
+  // Auf 0 heruntergezählt heißt entfernen, mit „Rückgängig“ wie beim Wischen
+  if (cart[key].qty + delta <= 0) { removeFromCart(key); return; }
   cart[key].qty += delta;
-  if (cart[key].qty <= 0) delete cart[key];
   saveCart();
   renderMenu();
   renderCart();
   updateCartUI();
 }
-function removeFromCart(key) {
+function cartEintragLoeschen(key) {
   delete cart[key];
   saveCart();
   renderMenu();
   renderCart();
   updateCartUI();
+}
+// Knopf „Entfernen“ und Minus auf 0: löschen und „Rückgängig“ anbieten (UX-Regel 13)
+function removeFromCart(key) {
+  if (!cart[key]) return;
+  const entry = Object.assign({}, cart[key]);
+  const order = Object.keys(cart);
+  const idx = order.indexOf(key);
+  cartEintragLoeschen(key);
+  if (typeof hapticTick === 'function') hapticTick();
+  if (window.gncCartUndo) window.gncCartUndo(key, entry, order, idx);
 }
 
 /* ====================================================================
@@ -10479,7 +10627,7 @@ function removeFromCart(key) {
       const entry = cart[key];
       const order = Object.keys(cart);
       const idx = order.indexOf(key);
-      removeFromCart(key);
+      cartEintragLoeschen(key);
       showUndoRemove(key, entry, order, idx);
     };
     if (reduce) { finish(); return; }
@@ -10500,6 +10648,22 @@ function removeFromCart(key) {
      baut den Korb neu und nimmt die Leiste dabei mit; sie wird dann ohne
      Animation wieder vorne eingesetzt. */
   let undoBar = null;
+  // Eintrag an seiner alten Stelle wieder einsetzen
+  function wiederEinsetzen(key, entry, order, idx) {
+    const rebuilt = {};
+    const keys = order.filter(function (k) { return k !== key && cart[k]; });
+    keys.splice(Math.max(0, Math.min(idx, keys.length)), 0, key);
+    keys.forEach(function (k) { rebuilt[k] = k === key ? entry : cart[k]; });
+    Object.keys(cart).forEach(function (k) { delete cart[k]; });
+    Object.keys(rebuilt).forEach(function (k) { cart[k] = rebuilt[k]; });
+    saveCart(); renderMenu(); renderCart(); updateCartUI();
+  }
+  // Im offenen Warenkorb die Leiste oben im Korb, sonst (Speisekarte) unten als Toast
+  window.gncCartUndo = function (key, entry, order, idx) {
+    const drawer = document.getElementById('cartDrawer');
+    if (drawer && drawer.classList.contains('open')) { showUndoRemove(key, entry, order, idx); return; }
+    zeigeRueckgaengig(t('cart.removed'), function () { wiederEinsetzen(key, entry, order, idx); });
+  };
   function dropUndoBar() {
     clearTimeout(undoTimer);
     if (undoBar) { undoBar.remove(); undoBar = null; }
@@ -10524,14 +10688,7 @@ function removeFromCart(key) {
     bar.querySelector('span').textContent = t('cart.removed');
     bar.querySelector('button').textContent = t('cart.undo');
     bar._undo = function () {
-      // Eintrag an seiner alten Stelle wieder einsetzen
-      const rebuilt = {};
-      const keys = order.filter(function (k) { return k !== key; });
-      keys.splice(Math.max(0, idx), 0, key);
-      keys.forEach(function (k) { if (k === key) rebuilt[k] = entry; else if (cart[k]) rebuilt[k] = cart[k]; });
-      Object.keys(cart).forEach(function (k) { delete cart[k]; });
-      Object.keys(rebuilt).forEach(function (k) { cart[k] = rebuilt[k]; });
-      saveCart(); renderMenu(); renderCart(); updateCartUI();
+      wiederEinsetzen(key, entry, order, idx);
       dropUndoBar();
       if (window.hapticTick) hapticTick(10);
     };
@@ -11935,7 +12092,7 @@ function renderCart() {
     footer.innerHTML = `
       <div class="cart-warn-banner" id="cartMinWarn" style="${belowMin ? '' : 'display:none;'}">${belowMin ? t('co.min_warn').replace('{min}', formatPrice(deliveryMin)).replace('{rest}', formatPrice(deliveryMin - sub)) : ''}</div>
 
-      ${SHOP_STATUS.paused ? `<div class="cart-warn-banner" style="display:block;border-color:rgba(224,72,72,0.5);background:rgba(224,72,72,0.12);color:#E04848;">${t('shop.paused_cart')}</div>` : ''}
+      ${SHOP_STATUS.paused ? `<div class="cart-warn-banner" style="display:block;">${t('shop.paused_cart')}</div>` : ''}
       <button class="btn btn-primary btn-block btn-lg" id="cartCheckoutBtn" data-on-click="goToCheckout()" ${belowMin || SHOP_STATUS.paused ? 'disabled' : ''}>
         ${t('cart.checkout')}
       </button>
@@ -12165,7 +12322,7 @@ function renderCart() {
        in Schritt 1 und 2. Das form-Attribut haelt die Formularpruefung
        (Pflichtfelder, AGB-Haken) unveraendert am Leben. */
     footer.innerHTML = `
-      <div id="coFormWarn" class="cart-warn-banner" style="display:none;" role="alert"></div>
+      <div id="coFormWarn" class="cart-warn-banner ist-fehler" style="display:none;" role="alert"></div>
       <div id="coMinWarn" class="cart-warn-banner" style="display:none;"></div>
       <div class="cart-foot-sum cart-foot-sum-total">
         <span>${t('cart.total')}</span>
@@ -15420,6 +15577,19 @@ function goToReview(idx) {
   showReview(idx);
   restartReviewTimer();
 }
+// Punkte-Leiste als Seitenanzeige: Tipp neben einen Punkt blättert eins weiter
+// oder zurück (auf dem Handy sind die Punkte selbst zu klein zum Treffen)
+(function () {
+  const dots = document.getElementById('reviewsDots');
+  if (!dots) return;
+  dots.addEventListener('click', (e) => {
+    if (e.target.closest('.reviews-dot')) return;
+    const a = dots.querySelector('.reviews-dot.active');
+    if (!a) return;
+    const r = a.getBoundingClientRect();
+    moveReview(e.clientX < r.left + r.width / 2 ? -1 : 1);
+  });
+})();
 
 function stopReviewTimer() {
   if (reviewTimer) clearInterval(reviewTimer);
@@ -15773,6 +15943,65 @@ function setAppView(name, opts) {
     try { history.pushState({ appview: name }, '', location.pathname + location.search + (name === 'home' ? '' : '#' + name)); } catch (e) {}
   }
   if (typeof ntbSync === 'function') ntbSync();
+}
+/* ---- Zurück schließt zuerst das offene Fenster (App) ----
+   iOS: Wischen vom linken Rand, Android: Zurück-Taste. Beides ist ein Schritt
+   zurück im Verlauf. Vorher wechselte der Schritt den Tab UNTER dem offenen
+   Warenkorb oder Konto. Jetzt legt die Seite für jedes offene Fenster einen
+   eigenen Verlaufseintrag an; Zurück schließt das oberste Fenster, im
+   Warenkorb geht es einen Schritt zurück (Schritt 3 → 2 → 1 → zu). Schließt
+   jemand das Fenster mit dem X, nimmt die Seite den Eintrag still wieder weg. */
+var ovHist = { gepusht: false, ignorieren: 0 };
+function escapeSenden() {
+  try { (document.activeElement || document.body).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); } catch (e) {}
+}
+function gncOverlayZurueck() {
+  const sel = (s) => document.querySelector(s);
+  const flex = (id) => { const el = document.getElementById(id); return !!(el && el.style.display === 'flex'); };
+  if (sel('.gncj-ov')) { escapeSenden(); return; }                                   // Dein Burger-Jahr
+  if (sel('.gnc-onb.open') && typeof gncOnbClose === 'function') { gncOnbClose('skip'); return; }
+  if (sel('#dipOverlay.open')) { closeDipConfig(); return; }
+  if (sel('#upsellOverlay.open')) { closeUpsell(); return; }
+  if (sel('#modalOverlay.open')) { closeModal(); return; }
+  if (flex('groupOverlay')) { closeGroupOverlay(); return; }
+  if (flex('accountOverlay')) { closeAccountOverlay(); return; }
+  if (sel('#cartOverlay.open')) {
+    if (CART_STEP_ORDER.indexOf(checkoutStep) > 0) cartGoBack(); else closeCart();
+    return;
+  }
+  if (sel('#navMobile.open') && typeof closeMobileMenu === 'function') { closeMobileMenu(true); return; }
+  escapeSenden();
+}
+function ovHistSync() {
+  if (!appViewActive()) return;
+  const offen = gncOverlayOpen();
+  if (offen && !ovHist.gepusht) {
+    ovHist.gepusht = true;
+    try { history.pushState(Object.assign({}, history.state || {}, { gncOv: 1 }), ''); } catch (e) {}
+  } else if (!offen && ovHist.gepusht) {
+    ovHist.gepusht = false;
+    if (history.state && history.state.gncOv) {
+      ovHist.ignorieren++;
+      try { history.back(); } catch (e) { ovHist.ignorieren--; }
+    }
+  }
+}
+window.addEventListener('popstate', (e) => {
+  if (!appViewActive()) return;
+  if (ovHist.ignorieren > 0) { ovHist.ignorieren--; e.stopImmediatePropagation(); return; }
+  if (ovHist.gepusht) {
+    ovHist.gepusht = false;
+    e.stopImmediatePropagation();
+    gncOverlayZurueck();
+    // Noch etwas offen (Warenkorb einen Schritt zurück, zweites Fenster): neuer Eintrag
+    setTimeout(ovHistSync, 0);
+  }
+});
+if (APP_FORCED) {
+  // Nach dem Neuladen (Ziehen zum Aktualisieren) ist kein Fenster mehr offen
+  try { if (history.state && history.state.gncOv) history.replaceState(Object.assign({}, history.state, { gncOv: 0 }), ''); } catch (e) {}
+  // Der Beobachter bündelt Änderungen schon je Durchlauf; die Prüfung ist billig
+  new MutationObserver(ovHistSync).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
 }
 window.addEventListener('popstate', (e) => {
   if (!appViewActive()) return;
@@ -18121,6 +18350,12 @@ window.addEventListener('load', function () {
 
   /* ---------- Haptisches Feedback (dezent, nur wo unterstützt) ---------- */
   window.hapticTick = function (pattern) {
+    // iOS-App ab Build 9: echtes Taptic-Feedback. Safari kennt navigator.vibrate
+    // nicht, ältere Builds kennen „tick“ nicht (sie spielten sonst „Erfolg“).
+    if (typeof GNC_APP_BUILD !== 'undefined' && GNC_APP_BUILD >= 9 && typeof gncHas === 'function' && gncHas('gncHaptic')) {
+      gncPost('gncHaptic', { pattern: 'tick' });
+      return;
+    }
     try { if (navigator.vibrate) navigator.vibrate(pattern || 12); } catch (e) {}
   };
 
