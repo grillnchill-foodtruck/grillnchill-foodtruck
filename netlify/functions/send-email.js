@@ -161,9 +161,12 @@ function buildInvoiceBlock(order) {
       <td style="padding:6px 14px;text-align:right;color:#3D6B34;font-size:13px;white-space:nowrap;">&minus;&nbsp;${formatPrice(betrag)}</td>
     </tr>`;
   let abzuege = '';
-  if (z(order.discount) > 0) {
+  // order.discount enthält den Geburtstags-Deal; der steht als eigene Zeile da
+  const dealBetrag = Math.min(z(order.dealDiscount), z(order.discount));
+  if (dealBetrag > 0) abzuege += abzug('Geburtstags-Deal', dealBetrag);
+  if (z(order.discount) - dealBetrag > 0.004) {
     const code = (order.promo && order.promo.code) || order.voucherCode;
-    abzuege += abzug(code ? `Rabatt (Code ${esc(code)})` : 'Rabatt', z(order.discount));
+    abzuege += abzug(code ? `Rabatt (Code ${esc(code)})` : 'Rabatt', z(order.discount) - dealBetrag);
   }
   if (z(order.loyaltyDiscount) > 0) abzuege += abzug(esc(treueLabel(order)), z(order.loyaltyDiscount));
   if (z(order.deliveryFee) > 0) {
@@ -708,10 +711,15 @@ function buildOrderConfirmationEmail(order) {
   const promoLabel = order.promo && order.promo.code
     ? `Rabatt (${order.promo.code}${order.promo.pct ? ' \u2212' + order.promo.pct + '%' : ''})`
     : 'Rabatt';
-  const discountRow = order.discount > 0
+  const dealAnteil = Math.min(Number(order.dealDiscount) || 0, Number(order.discount) || 0);
+  const codeAnteil = (Number(order.discount) || 0) - dealAnteil;
+  const discountRow = (dealAnteil > 0
+    ? `<tr><td style="padding:8px 14px;color:#E85A24;">Geburtstags-Deal</td>
+           <td style="padding:8px 14px;text-align:right;color:#E85A24;">−${formatPrice(dealAnteil)}</td></tr>`
+    : '') + (codeAnteil > 0.004
     ? `<tr><td style="padding:8px 14px;color:#E85A24;">${promoLabel}</td>
-           <td style="padding:8px 14px;text-align:right;color:#E85A24;">−${formatPrice(order.discount)}</td></tr>`
-    : '';
+           <td style="padding:8px 14px;text-align:right;color:#E85A24;">−${formatPrice(codeAnteil)}</td></tr>`
+    : '');
   const loyaltyRow = order.loyaltyDiscount > 0
     ? `<tr><td style="padding:8px 14px;color:#E85A24;">${esc(treueLabel(order))}</td>
            <td style="padding:8px 14px;text-align:right;color:#E85A24;">−${formatPrice(order.loyaltyDiscount)}</td></tr>`
@@ -1012,6 +1020,8 @@ function buildOwnerNotificationEmail(order, statusUpdateBaseUrl, statusToken) {
 
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;background:#0A0A0A;border-radius:8px;color:#ccc;">
       ${itemsHtml.replace(/border-bottom:1px solid #eee/g, 'border-bottom:1px solid #2A2520')}
+      ${order.dealDiscount > 0 ? `<tr><td style="padding:8px 12px;color:#6DBE45;">🎂 Geburtstags-Deal</td>
+          <td style="padding:8px 12px;text-align:right;color:#6DBE45;">−${formatPrice(order.dealDiscount)}</td></tr>` : ''}
       ${order.loyaltyDiscount > 0 ? `<tr><td style="padding:8px 12px;color:#6DBE45;">${order.loyaltyType === 'menu' ? '🎁 ' : ''}${esc(treueLabel(order))}</td>
           <td style="padding:8px 12px;text-align:right;color:#6DBE45;">−${formatPrice(order.loyaltyDiscount)}</td></tr>` : ''}
       ${order.tip > 0 ? `<tr><td style="padding:8px 12px;color:#FFC93C;">Trinkgeld</td>
@@ -1222,9 +1232,11 @@ async function sendTelegram(order) {
   L.push('');
   (order.items || []).forEach(it => L.push(`• ${it.qty}× ${e(it.name)}`));
   L.push('');
-  if (order.discount > 0) {
+  const dealTg = Math.min(Number(order.dealDiscount) || 0, Number(order.discount) || 0);
+  if (dealTg > 0) L.push(`🎂 Geburtstags-Deal: -${formatPrice(dealTg)}`);
+  if ((Number(order.discount) || 0) - dealTg > 0.004) {
     const pl = order.promo && order.promo.code ? ` (${order.promo.code}${order.promo.pct ? ' −' + order.promo.pct + '%' : ''})` : '';
-    L.push(`Rabatt${pl}: -${formatPrice(order.discount)}`);
+    L.push(`Rabatt${pl}: -${formatPrice(order.discount - dealTg)}`);
   }
   if (order.loyaltyDiscount > 0) L.push(`${order.loyaltyType === 'menu' ? '🎁 <b>' + e(treueLabel(order)) + '</b>' : 'Treuebonus'}: -${formatPrice(order.loyaltyDiscount)}`);
   if (order.tip > 0) L.push(`Trinkgeld: ${formatPrice(order.tip)}`);
@@ -1580,6 +1592,7 @@ exports.handler = async (event) => {
               // fehlen Zwischensumme, Rabatt und Gutscheincode.
               subtotal: order.subtotal ?? null,
               discount: order.discount || 0,
+              dealDiscount: order.dealDiscount || 0,
               loyaltyDiscount: order.loyaltyDiscount || 0,
               loyaltyType: order.loyaltyType || null,
               deliveryFee: order.deliveryFee || 0,

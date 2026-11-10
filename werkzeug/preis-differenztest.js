@@ -83,6 +83,22 @@ const baueTreueRegel = new Function('z', `
   return loyaltyDiscount;
 `);
 
+/* Geburtstags-Deal (November 2026): dealDiscount() samt Hilfsfunktionen,
+   ebenfalls echt aus index.html geschnitten. */
+const DEAL_ANFANG = 'function dealOhneMenuKey() {';
+const DEAL_ENDE = 'return dealInfo().rabatt;\n}';
+const dv = html.indexOf(DEAL_ANFANG), db = html.indexOf(DEAL_ENDE, dv);
+if (dv < 0 || db < 0) {
+  console.error('FEHLER: dealDiscount() in index.html nicht gefunden. Test nachziehen.');
+  process.exit(2);
+}
+const DEAL_QUELLE = html.slice(dv, db + DEAL_ENDE.length);
+const baueDealRegel = new Function('z', `
+  const { testPromoApplied, loyaltyApplied, loyaltyKind, loyaltyDiscount, SK, cart, checkoutMode } = z;
+  ${DEAL_QUELLE}
+  return dealDiscount;
+`);
+
 /* Der Ausschnitt greift auf Zustand der Seite zu (cart, voucherApplied, …).
    Der wird hier gestellt, sonst unverändert ausgeführt. */
 const frontendRechnung = new Function('zustand', `
@@ -90,9 +106,9 @@ const frontendRechnung = new Function('zustand', `
           SK, PROMO_MIN_ORDER, LOYALTY_MIN_ORDER, LOYALTY_REWARD, TEST_TOTAL,
           effectivePromo, testPromoApplied, loyaltyApplied, checkoutMode,
           deliveryZone, pay, tipPercent, loyaltyDiscount, loyaltyKind, email, ACCOUNT,
-          releaseCheckout, flashCartNotice, t } = zustand;
+          releaseCheckout, flashCartNotice, t, dealDiscount } = zustand;
 ${FRONTEND_QUELLE}
-  return { sub, disc, vDisc, loyDisc, fee, tip, total };
+  return { sub, deal, disc, vDisc, loyDisc, fee, tip, total };
 `);
 
 /* ---------------------------------------------------------------------------
@@ -150,8 +166,13 @@ function frontendZustand(cart, fall) {
     SK, cart, cartSubtotal: () => SK.warenwert(cart),
     LOYALTY_MIN_ORDER: SK.LOYALTY_MIN_ORDER, LOYALTY_REWARD: SK.LOYALTY_REWARD,
   });
+  const dealDiscount = baueDealRegel({
+    testPromoApplied: false, loyaltyApplied: fall.treue, loyaltyKind: fall.art,
+    loyaltyDiscount, SK, cart, checkoutMode: fall.modus,
+  });
   return {
     loyaltyDiscount,
+    dealDiscount,
     loyaltyKind: fall.art,
     email: fall.art === 'menu' ? MENU_KONTO.mail : '',
     ACCOUNT: fall.art === 'menu' ? { email: MENU_KONTO.mail, token: MENU_KONTO.token } : null,
@@ -198,7 +219,8 @@ async function einDurchgang(nr) {
     payment: fall.zahlung,
     cartSnapshot: cart,
     subtotal: f.sub,
-    discount: f.disc + f.vDisc,
+    discount: f.disc + f.vDisc + f.deal,
+    dealDiscount: f.deal,
     loyaltyDiscount: f.loyDisc,
     loyaltyApplied: f.loyDisc > 0,
     loyaltyType: f.loyDisc > 0 ? fall.art : null,

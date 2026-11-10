@@ -200,9 +200,11 @@ function buildInvoicePdf(order) {
         y += Math.max(hoehe, fett ? 14 : 11) + (fett ? 4 : 3);
       };
       summe('Zwischensumme', eur(order.subtotal));
-      if (z(order.discount) > 0) {
+      const dealTeil = Math.min(z(order.dealDiscount), z(order.discount));
+      if (dealTeil > 0) summe('Geburtstags-Deal', '- ' + eur(dealTeil), false, '#3D6B34');
+      if (z(order.discount) - dealTeil > 0.004) {
         const code = (order.promo && order.promo.code) || order.voucherCode;
-        summe(code ? `Rabatt (Code ${code})` : 'Rabatt', '- ' + eur(order.discount), false, '#3D6B34');
+        summe(code ? `Rabatt (Code ${code})` : 'Rabatt', '- ' + eur(z(order.discount) - dealTeil), false, '#3D6B34');
       }
       if (z(order.loyaltyDiscount) > 0) summe(order.loyaltyType === 'menu' ? 'Menü aufs Haus' : 'Treuebonus', '- ' + eur(order.loyaltyDiscount), false, '#3D6B34');
       if (z(order.deliveryFee) > 0) summe('Liefergebühr', eur(order.deliveryFee));
@@ -575,6 +577,7 @@ async function ergaenzeAusBestellung(rec, ordersStore) {
       ...rec,
       subtotal: nimm('subtotal', null),
       discount: nimm('discount', 0),
+      dealDiscount: nimm('dealDiscount', 0),
       loyaltyDiscount: nimm('loyaltyDiscount', 0),
       loyaltyType: nimm('loyaltyType', null),
       deliveryFee: nimm('deliveryFee', 0),

@@ -136,6 +136,80 @@
   }
 
   /* ==================================================================
+     GEBURTSTAGS-DEAL (Mo 9. bis Sa 14.11.2026)
+     Burger + normale Pommes für 10 €, nur bei Abholung (Entscheidung des
+     Betreibers vom 10.11.2026):
+       - Kubis Special ist ausgenommen.
+       - Double Patty kostet die üblichen 2,50 € dazu.
+       - Nur normale Pommes, Süßkartoffelpommes zählen nicht.
+       - Ein Menü mit normalen Pommes kostet Deal-Preis plus Getränk.
+       - Nicht zusammen mit Aktionscodes wie GRILL5. Geschenkgutscheine
+         und Treue gelten weiter.
+     Zeiten in UTC, damit Browser und Server (läuft in UTC) gleich rechnen:
+     Start Mo 9.11. 00:00 Uhr, Ende Sa 14.11. 21:00 Uhr Berliner Zeit, also
+     nach Ladenschluss. Spätere Bestellungen wären schon Vorbestellungen
+     für die nächste Woche.
+     ================================================================== */
+  const DEAL_START = Date.UTC(2026, 10, 8, 23, 0, 0);
+  const DEAL_ENDE = Date.UTC(2026, 10, 14, 20, 0, 0);
+  const DEAL_PREIS = 10.00;
+  const DEAL_MENUE_GETRAENK = 2.50;     // Menü = Deal + Getränk
+  const DEAL_AUSGENOMMEN = ['kubis'];
+  const DEAL_BEILAGE = 'pommes';
+  function dealAktiv(jetzt) {
+    const t = jetzt == null ? Date.now() : jetzt;
+    return t >= DEAL_START && t < DEAL_ENDE;
+  }
+  function dealBurger(item) {
+    return !!item && item.cat === 'burger' && DEAL_AUSGENOMMEN.indexOf(item.id) === -1;
+  }
+  /**
+   * Was der Deal für diesen Warenkorb bringt.
+   *   rabatt        Ersparnis in €, 0 außerhalb des Zeitraums und bei Lieferung
+   *   moeglich      Ersparnis, die bei Abholung gälte (für den Hinweis bei Lieferung)
+   *   paare         wie viele Burger-Pommes-Paare (Menüs mitgezählt)
+   *   offeneBurger  Burger ohne Pommes-Partner (für „Leg Pommes dazu“)
+   * opts.ohneMenuKey: Diese Menü-Zeile geht als Menü aufs Haus weg, eine
+   * Einheit davon zählt nicht mit. opts.jetzt: Zeitpunkt (Tests).
+   * Gepaart werden die teuersten Burger zuerst, das spart dem Gast am meisten.
+   */
+  function dealDetails(cart, modus, opts) {
+    opts = opts || {};
+    const ergebnis = { rabatt: 0, moeglich: 0, paare: 0, offeneBurger: 0 };
+    if (!cart || typeof cart !== 'object' || !dealAktiv(opts.jetzt)) return ergebnis;
+    const pommes = MENU.find(m => m.id === DEAL_BEILAGE);
+    if (!pommes) return ergebnis;
+    let summe = 0, paare = 0, pommesAnzahl = 0;
+    const burgerPreise = [];
+    Object.keys(cart).forEach(key => {
+      const e = cart[key];
+      const menge = Math.max(0, Math.floor(Number(e && e.qty) || 0));
+      if (!e || !menge) return;
+      const item = MENU.find(m => m.id === e.menuId);
+      if (!item) return;
+      if (e.isMenu) {
+        if (!dealBurger(item) || e.side !== DEAL_BEILAGE) return;
+        const n = menge - (opts.ohneMenuKey === key ? 1 : 0);
+        const ersparnis = item.price + MENU_SURCHARGE - (DEAL_PREIS + DEAL_MENUE_GETRAENK);
+        if (n > 0 && ersparnis > 0) { summe += ersparnis * n; paare += n; }
+        return;
+      }
+      if (item.id === DEAL_BEILAGE) { pommesAnzahl += menge; return; }
+      if (dealBurger(item)) for (let i = 0; i < menge; i++) burgerPreise.push(item.price);
+    });
+    burgerPreise.sort((a, b) => b - a);
+    const n = Math.min(burgerPreise.length, pommesAnzahl);
+    for (let i = 0; i < n; i++) summe += Math.max(0, burgerPreise[i] + pommes.price - DEAL_PREIS);
+    paare += n;
+    ergebnis.moeglich = Math.round(summe * 100) / 100;
+    ergebnis.rabatt = modus === 'pickup' ? ergebnis.moeglich : 0;
+    ergebnis.paare = paare;
+    ergebnis.offeneBurger = burgerPreise.length - n;
+    return ergebnis;
+  }
+  function dealRabatt(cart, modus, opts) { return dealDetails(cart, modus, opts).rabatt; }
+
+  /* ==================================================================
      TREUE, LIEFERZONEN, TRINKGELD, TESTBESTELLUNG
      ================================================================== */
   const LOYALTY_GOAL_EUR = 100;     // € Gesamtumsatz bis zur vollen Stempelkarte (über mehrere Bestellungen)
@@ -234,11 +308,12 @@
   function gesamtbetrag(p) {
     const w = p.warenwert || 0;
     const ab = p.aktionsRabatt || 0;
+    const dr = p.dealRabatt || 0;
     const tb = p.treueRabatt || 0;
     const gb = p.gutscheinRabatt || 0;
     const lg = p.liefergebuehr || 0;
     const tg = p.trinkgeld || 0;
-    return Math.max(0, w - ab - tb - gb + lg) + tg;
+    return Math.max(0, w - ab - dr - tb - gb + lg) + tg;
   }
 
   return {
@@ -248,6 +323,8 @@
     PROMO_CODE, PROMO_TIERS, PROMO_MIN_ORDER, PROMO_VALID_UNTIL, PROMO_VALID_UNTIL_LABEL,
     GRILL5_START, GRILL5_UNTIL,
     promoActive, grill5Active, adCode, promoTierPercent, promoDiscountFor,
+    DEAL_START, DEAL_ENDE, DEAL_PREIS, DEAL_MENUE_GETRAENK, DEAL_AUSGENOMMEN, DEAL_BEILAGE,
+    dealAktiv, dealDetails, dealRabatt,
     LOYALTY_GOAL_EUR, LOYALTY_REWARD, LOYALTY_MIN_ORDER, LOYALTY_STAMPS, LOYALTY_MENU_EXCLUDE_IDS,
     DELIVERY_ZONES, MAX_DELIVERY_KM, TIP_PERCENTS, TEST_TOTAL,
     einzelpreis, warenwert, trinkgeldBetrag, gesamtbetrag, gratisMenuZeile, gratisMenuWert,

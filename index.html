@@ -6134,6 +6134,78 @@ body.onb-lock { overflow: hidden; }
   background: var(--color-orange); color: #fff; font: inherit; font-weight: 800; cursor: pointer;
 }
 .undo-toast button:active { transform: scale(0.96); }
+/* ====================================================================
+   GEBURTSTAGS-DEAL (9.–14.11.2026): Burger + Pommes für 10 €
+   html.deal-aktiv schaltet Werbung um; ohne Klasse bleibt alles wie vorher.
+   ==================================================================== */
+html:not(.deal-aktiv) .mit-deal { display: none !important; }
+html.deal-aktiv .ohne-deal { display: none !important; }
+a.hero-badge-discount { text-decoration: none; background: var(--color-orange-solid); color: #fff; }
+.deal-kasten {
+  max-width: 720px; margin: 0 auto 1.6rem; position: relative; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.9rem 1.2rem; align-items: start;
+  padding: 1.3rem 1.3rem 1.2rem;
+  background:
+    radial-gradient(28rem 16rem at 85% 30%, rgba(232, 90, 36, 0.22), transparent 70%),
+    #110F0C;
+  border: 1px solid rgba(232, 90, 36, 0.4); border-radius: var(--radius-md);
+  box-shadow: var(--elev-1);
+}
+.deal-kopf { display: grid; gap: 0.35rem; min-width: 0; }
+.deal-eyebrow { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-orange-bright); }
+.deal-titel { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(1.7rem, 6vw, 2.4rem); line-height: 1; color: var(--color-cream); text-wrap: balance; }
+.deal-plus { color: var(--color-orange-bright); }
+.deal-preis {
+  width: 6.2rem; height: 6.2rem; border-radius: 50%; display: grid; place-content: center; text-align: center;
+  background: var(--color-orange-bright); color: #14100C; transform: rotate(-6deg);
+  box-shadow: 0 10px 30px rgba(232, 90, 36, 0.35);
+}
+.deal-preis small { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+.deal-preis b { font-family: var(--font-display); font-weight: 400; font-size: 1.85rem; line-height: 1; }
+.deal-text { grid-column: 1 / -1; margin: 0; color: var(--color-cream-dim); font-size: 0.92rem; line-height: 1.55; max-width: 60ch; }
+.deal-tage { grid-column: 1 / -1; list-style: none; margin: 0.2rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.4rem; }
+.deal-tage li {
+  border: 1px solid var(--color-border-bright); border-radius: 10px; padding: 0.5rem 0.2rem 0.45rem;
+  display: grid; justify-items: center; gap: 0.15rem; min-width: 0;
+}
+.deal-tage .tag { font-family: var(--font-display); font-size: 1.05rem; line-height: 1; color: var(--color-cream); text-transform: uppercase; }
+.deal-tage .was { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-orange-bright); text-align: center; line-height: 1.15; }
+.deal-tage li.vorbei { opacity: 0.45; }
+.deal-tage li.vorbei .tag { text-decoration: line-through; }
+.deal-tage li.vorbei .was { color: var(--color-text-muted); }
+.deal-tage li.heute { background: var(--color-orange); border-color: var(--color-orange); }
+.deal-tage li.heute .tag, .deal-tage li.heute .was { color: #fff; }
+.deal-fuss { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.7rem 1rem; margin-top: 0.2rem; }
+.deal-rest { font-weight: 700; color: var(--color-cream); font-size: 0.92rem; }
+.deal-rest b { color: var(--color-orange-bright); font-weight: 700; }
+.deal-cta { min-height: 44px; }
+@media (max-width: 420px) {
+  .deal-preis { width: 5.2rem; height: 5.2rem; }
+  .deal-preis b { font-size: 1.5rem; }
+  .deal-tage { gap: 0.3rem; }
+  .deal-tage .tag { font-size: 0.92rem; }
+  .deal-tage .was { font-size: 0.54rem; letter-spacing: 0.04em; }
+}
+/* Hinweise im Warenkorb */
+.deal-hinweis {
+  margin: 0 0 0.75rem; padding: 0.7rem 0.85rem; border-radius: var(--radius-sm);
+  border: 1px solid rgba(232, 90, 36, 0.4); background: rgba(232, 90, 36, 0.08);
+  color: var(--color-cream); font-size: 0.86rem; line-height: 1.45;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 0.8rem;
+}
+.deal-hinweis strong { color: var(--color-orange-bright); }
+.deal-hinweis .mini-btn { flex: none; }
+/* Menü-Konfigurator: Abkürzung zum Deal */
+.upsell-deal {
+  display: grid; justify-items: center; gap: 0.1rem; width: 100%; margin: 0.2rem 0 0.4rem;
+  min-height: 52px; padding: 0.55rem 1rem; cursor: pointer; font-family: inherit;
+  background: rgba(232, 90, 36, 0.1); border: 1px dashed rgba(255, 122, 61, 0.6); border-radius: var(--radius-full);
+  color: var(--color-cream);
+}
+.upsell-deal b { font-weight: 800; font-size: 0.92rem; }
+.upsell-deal small { font-size: 0.72rem; color: var(--color-orange-bright); font-weight: 700; }
+.upsell-deal:active { transform: scale(0.97); }
+
 body.app-forced .undo-toast { bottom: calc(5.6rem + var(--safe-bottom)); }   /* über der Tab-Leiste */
 body:has(.sticky-cart.show) .undo-toast { bottom: calc(5.2rem + var(--safe-bottom)); }   /* über der Warenkorb-Pille */
 body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(--safe-bottom)); }
@@ -6168,13 +6240,20 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
   setTimeout(hide, 3000);
 })();
 </script>
+<script>
+/* Geburtstags-Deal: Zeitraum wie DEAL_START/DEAL_ENDE in speisekarte.js.
+   Hier nur, damit die Werbung ohne Aufblitzen umschaltet; die Preise
+   rechnet speisekarte.js, und die setzt die Klasse danach noch einmal. */
+(function(){ var j=Date.now(); if (j>=Date.UTC(2026,10,8,23,0,0) && j<Date.UTC(2026,10,14,20,0,0)) document.documentElement.classList.add('deal-aktiv'); })();
+</script>
 <a class="skip-link" href="#menu" data-i18n="a11y.skip">Direkt zur Speisekarte</a>
 
 <!-- ============================================
      PROMO BAR (always visible, top of page)
      ============================================ -->
 <div class="promo-bar" id="promoBar" data-on-click="promoUmschalten()" data-on-keydown="promoTaste(event)">
-  <span data-i18n="promo.bar_main">Spare 5 € mit Code</span> <span class="code-pill">GRILL5</span> <small data-i18n="promo.bar_sub">(ab 20 € Bestellwert · max. 3× pro Kunde · nur online)</small>
+  <span class="ohne-deal"><span data-i18n="promo.bar_main">Spare 5 € mit Code</span> <span class="code-pill">GRILL5</span> <small data-i18n="promo.bar_sub">(ab 20 € Bestellwert · max. 3× pro Kunde · nur online)</small></span>
+  <span class="mit-deal"><span data-i18n="deal.bar_main">Geburtstags-Deal: Burger + Pommes für 10 €</span> <small data-i18n="deal.bar_sub">(bis Samstag 14.11. · nur bei Abholung · außer Kubis Special)</small></span>
 </div>
 
 <!-- ============================================
@@ -6296,10 +6375,14 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
     -->
   </div>
   <!-- discount promo, floating in the corner -->
-  <div class="hero-badge-discount">
+  <div class="hero-badge-discount ohne-deal">
     <small data-i18n="hero.badge_code">Code GRILL5</small>
     <span data-i18n="hero.badge_discount">bis zu 20 %</span>
   </div>
+  <a class="hero-badge-discount mit-deal" href="#menu">
+    <small data-i18n="deal.hero_small">Geburtstags-Deal</small>
+    <span data-i18n="deal.hero_big">Burger + Pommes 10 €</span>
+  </a>
   <div class="container">
     <div class="hero-grid">
       <div class="hero-content">
@@ -6371,6 +6454,20 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
       <span class="eyebrow" data-i18n="menu.eyebrow">Unsere Speisekarte</span>
       <h2 data-i18n="menu.h2">Bestellterminal</h2>
       <p data-i18n="menu.lead">Leg deine Burger in den Warenkorb und entscheide dann, ob du abholst oder liefern lässt. Mit dem Code GRILL5 sparst du 5 € ab 20 € Bestellwert.</p>
+    </div>
+
+    <div class="deal-kasten mit-deal" id="dealKasten" aria-labelledby="dealTitel">
+      <div class="deal-kopf">
+        <span class="deal-eyebrow" data-i18n="deal.eyebrow">Geburtstags-Deal · bis Samstag</span>
+        <h3 class="deal-titel" id="dealTitel"><span data-i18n="deal.title_a">Burger</span> <span class="deal-plus">+</span> <span data-i18n="deal.title_b">Pommes</span></h3>
+      </div>
+      <div class="deal-preis" aria-hidden="true"><small data-i18n="deal.price_small">nur</small><b>10&nbsp;€</b></div>
+      <p class="deal-text" data-i18n="deal.text">Jeder Burger mit Pommes kostet zusammen 10 €, online bei Abholung und direkt am Truck. Kubis Special ist ausgenommen, Double Patty kostet 2,50 € extra.</p>
+      <ol class="deal-tage" id="dealTage" aria-label="Aktionstage"></ol>
+      <div class="deal-fuss">
+        <span class="deal-rest" id="dealRest"></span>
+        <button type="button" class="btn btn-primary deal-cta" data-on-click="dealZuDenBurgern()" data-i18n="deal.cta">Burger aussuchen</button>
+      </div>
     </div>
 
     <div class="reveal" style="max-width:720px;margin:0 auto 1.6rem;background:linear-gradient(135deg, rgba(232,90,36,0.06), rgba(232,90,36,0.015));border:1px solid rgba(232,90,36,0.22);border-radius:var(--radius-md);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;box-shadow:var(--elev-1);">
@@ -7309,6 +7406,7 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
     <div class="upsell-actions">
     <button class="upsell-confirm" id="upsellConfirm" data-on-click="confirmMenuConfig(event)" data-i18n="config.add">Als Menü hinzufügen</button>
     <button class="upsell-skip" id="upsellSkip" data-on-click="skipUpsell(event)" data-i18n="config.skip">Nein danke, nur den Burger</button>
+    <button class="upsell-deal" id="upsellDeal" type="button" data-on-click="dealMitPommes()" hidden><b data-i18n="deal.upsell_btn">Nur mit Pommes für 10 €</b><small data-i18n="deal.upsell_sub">Geburtstags-Deal bei Abholung</small></button>
     </div>
   </div>
 </div>
@@ -7576,6 +7674,8 @@ const RESTAURANT_LOCATION = {
    Preise aendern -> speisekarte.js. Hier nichts eintragen.
    ==================================================================== */
 const SK = window.SPEISEKARTE;
+// Geburtstags-Deal: speisekarte.js entscheidet (das Kopf-Skript setzte die Klasse nur vorab)
+document.documentElement.classList.toggle('deal-aktiv', !!(SK && SK.dealAktiv && SK.dealAktiv()));
 // Promo-Code-Konfiguration
 const PROMO_CODE = SK.PROMO_CODE;
 const PROMO_TIERS = SK.PROMO_TIERS;
@@ -7592,6 +7692,8 @@ const promoDiscountFor = SK.promoDiscountFor;
 // Persönlicher Gutschein (Retargeting-Mail): fester Betrag, ab Mindestbestellwert
 function voucherDiscount() {
   if (!voucherApplied || testPromoApplied) return 0;
+  // Geburtstags-Deal im Warenkorb: Aktionscodes ruhen, Geschenkgutscheine nicht
+  if (!voucherApplied.giftcard && dealDiscount() > 0) return 0;
   // Kampagnen-Gutschein: Modus-Bindung (nur Abholung / nur Lieferung)
   if (voucherApplied.mode && voucherApplied.mode !== 'any' && checkoutMode !== voucherApplied.mode) return 0;
   if (voucherApplied.type === 'percent') {
@@ -9836,6 +9938,7 @@ function pausedBannerEl() {
 }
 
 function renderMenu(animate = false) {
+  renderDealKasten();
   const grid = document.getElementById('menuGrid');
   grid.innerHTML = '';
   if (SHOP_STATUS.paused) grid.appendChild(pausedBannerEl());
@@ -10141,13 +10244,17 @@ function splitVat(entry, bruttoGesamt) {
 
 /* Steueraufstellung für die ganze Bestellung.
    Rabatte und Liefergebühr werden im Verhältnis der Warenanteile verteilt. */
-function buildVatSummary(cartObj, rabattGesamt, liefergebuehr, trinkgeld) {
+function buildVatSummary(cartObj, rabattGesamt, liefergebuehr, trinkgeld, rabattSpeisen) {
   const brutto = { [VAT_FOOD]: 0, [VAT_DRINK]: 0 };
   Object.values(cartObj).forEach(entry => {
     const teil = splitVat(entry, entryUnitPrice(entry) * entry.qty);
     brutto[VAT_FOOD]  += teil[VAT_FOOD];
     brutto[VAT_DRINK] += teil[VAT_DRINK];
   });
+  // Geburtstags-Deal: verbilligt nur Burger und Pommes, also nur den
+  // 7%-Anteil. Er geht deshalb direkt dort ab, nicht anteilig über beide
+  // Sätze wie die übrigen Rabatte. Ohne Deal (0) bleibt alles wie bisher.
+  brutto[VAT_FOOD] -= Math.min(Math.max(0, Number(rabattSpeisen) || 0), brutto[VAT_FOOD]);
   const warenSumme = brutto[VAT_FOOD] + brutto[VAT_DRINK];
   const zeilen = [];
   // Trinkgeld: auf Wunsch des Betreibers (17.08.2026) mit 19 % versteuert,
@@ -10294,6 +10401,8 @@ function openMenuConfig(burgerId, isDouble, fromUpsell, sourceKey, editKey) {
   const title = document.getElementById('upsellTitle');
   const subtitle = document.getElementById('upsellSubtitle');
   const skipBtn = document.getElementById('upsellSkip');
+  const dealBtn = document.getElementById('upsellDeal');
+  if (dealBtn) dealBtn.hidden = !(fromUpsell && !editEntry && SK.dealAktiv() && SK.DEAL_AUSGENOMMEN.indexOf(burgerId) === -1);
 
   if (editEntry) {
     if (title) title.textContent = t('config.edit_title');
@@ -10791,8 +10900,24 @@ function cartItemCount() {
 function cartSubtotal() {
   return SK.warenwert(cart);
 }
+/* Geburtstags-Deal: Burger + Pommes für 10 €, nur bei Abholung. Die Regel
+   steht in speisekarte.js (dealDetails), der Server rechnet dieselbe nach.
+   Ein Menü, das als Menü aufs Haus weggeht, zählt nicht doppelt. */
+function dealOhneMenuKey() {
+  if (!loyaltyApplied || loyaltyKind !== 'menu' || loyaltyDiscount() <= 0) return null;
+  const z = SK.gratisMenuZeile(cart);
+  return z ? z.key : null;
+}
+function dealInfo(modus) {
+  if (testPromoApplied) return { rabatt: 0, moeglich: 0, paare: 0, offeneBurger: 0 };
+  return SK.dealDetails(cart, modus || checkoutMode, { ohneMenuKey: dealOhneMenuKey() });
+}
+function dealDiscount() {
+  return dealInfo().rabatt;
+}
 function promoDiscount() {
   if (!promoApplied || !promoActive()) return 0;
+  if (dealDiscount() > 0) return 0;
   const sub = cartSubtotal();
   if (sub < PROMO_MIN_ORDER) return 0;
   // Gestaffelter Prozent-Rabatt, nie größer als der Warenwert
@@ -10811,7 +10936,7 @@ function cartDeliveryMinOrder() {
 function cartTotal() {
   // 🔧 Test-Code: Gesamtbetrag fix auf 1 € (überschreibt alles)
   if (testPromoApplied) return TEST_TOTAL;
-  return Math.max(0, cartSubtotal() - promoDiscount() - loyaltyDiscount() - voucherDiscount() + cartDeliveryFee());
+  return Math.max(0, cartSubtotal() - promoDiscount() - dealDiscount() - loyaltyDiscount() - voucherDiscount() + cartDeliveryFee());
 }
 /* ---- Trinkgeld (nur Online-Zahlung) ---- */
 function currentPaymentMethod() {
@@ -10820,7 +10945,7 @@ function currentPaymentMethod() {
 }
 function tipBase() {
   // Trinkgeld auf den Warenwert (Zwischensumme abzüglich Rabatte), ohne Liefergebühr
-  return Math.max(0, cartSubtotal() - promoDiscount() - loyaltyDiscount() - voucherDiscount());
+  return Math.max(0, cartSubtotal() - promoDiscount() - dealDiscount() - loyaltyDiscount() - voucherDiscount());
 }
 function tipAmount() {
   if (testPromoApplied) return 0;
@@ -11241,6 +11366,7 @@ function quickApplyPromo(chip) {
         voucherApplied = {
           code,
           kind: d.kind || 'campaign',
+          giftcard: !!d.giftcard,
           type: d.type || 'fixed',
           value: d.value || 5,
           maxDiscount: d.maxDiscount || 0,
@@ -11608,6 +11734,46 @@ function suggestUpsellItems() {
 }
 
 // Vorschlag direkt hinzufügen (kein Modal/Flug – der Warenkorb ist ja offen)
+/* ---- Geburtstags-Deal: Kasten in der Speisekarte ---- */
+function dealBerlinTag(ms) {
+  return new Date(ms).toLocaleDateString('en-CA', { timeZone: 'Europe/Berlin' });   // JJJJ-MM-TT
+}
+function renderDealKasten() {
+  const liste = document.getElementById('dealTage');
+  if (!liste || !SK.dealAktiv()) return;
+  const loc = (typeof LANG_LOCALES !== 'undefined' && LANG_LOCALES[currentLang]) || 'de-DE';
+  const heute = dealBerlinTag(Date.now());
+  const tage = [];
+  for (let i = 0; i < 6; i++) {
+    const ms = SK.DEAL_START + i * 864e5 + 12 * 3600e3;   // Mittag, damit Sommer-/Winterzeit nicht stört
+    tage.push({ ms, tag: dealBerlinTag(ms) });
+  }
+  const letzter = tage[tage.length - 1].tag;
+  liste.innerHTML = tage.map(({ ms, tag }) => {
+    const name = new Date(ms).toLocaleDateString(loc, { weekday: 'short', timeZone: 'Europe/Berlin' }).replace('.', '');
+    const status = tag < heute ? 'vorbei' : (tag === heute ? 'heute' : '');
+    const was = status === 'vorbei' ? t('deal.day_past') : status === 'heute' ? t('deal.day_today')
+      : (tag === letzter ? t('deal.day_last') : '10 €');
+    return `<li class="${status}"${status === 'heute' ? ' aria-current="date"' : ''}><span class="tag">${escHtml(name)}</span><span class="was">${escHtml(was)}</span></li>`;
+  }).join('');
+  const rest = tage.filter(x => x.tag >= heute).length;
+  const r = document.getElementById('dealRest');
+  if (r) r.innerHTML = rest <= 1 ? `<b>${escHtml(t('deal.left_one'))}</b>` : escHtml(t('deal.left_many').replace('{n}', rest));
+}
+function dealZuDenBurgern() {
+  const chip = document.querySelector('#menuFilters .filter-chip[data-cat="burger"]');
+  if (chip) chip.click();
+  const ziel = document.getElementById('menuFilters') || document.getElementById('menuGrid');
+  if (ziel) ziel.scrollIntoView({ behavior: GNC_REDUCED && GNC_REDUCED.matches ? 'auto' : 'smooth', block: 'start' });
+}
+// Menü-Konfigurator: statt Menü nur Pommes dazu (der Burger liegt schon im Korb)
+function dealMitPommes() {
+  closeUpsell();
+  setTimeout(() => addToCart('pommes'), 260);
+}
+// Warenkorb: Pommes für einen Burger ohne Partner (Dip-Auswahl liegt über dem Korb)
+function dealPommesDazu() { addSuggestion('pommes'); }
+
 function addSuggestion(id) {
   const item = MENU.find(m => m.id === id);
   if (!item) return;
@@ -11867,11 +12033,20 @@ function renderCart() {
     const suggestions = suggestUpsellItems();
 
     const sub = cartSubtotal();
+    const deal = dealDiscount();
     const disc = promoDiscount();
     const vDisc = voucherDiscount();
     const loyDisc = loyaltyDiscount();
     const fee = cartDeliveryFee();
     const total = cartTotal();
+    // Geburtstags-Deal: was er bei Abholung bringt, und ob ein Burger noch Pommes braucht
+    const di = SK.dealAktiv() ? dealInfo('pickup') : null;
+    const dealSpartHtml = di && di.paare > 0
+      ? `<div class="deal-hinweis"><span>${t('deal.cart_saved').replace('{amount}', '<strong>' + formatPrice(di.moeglich) + '</strong>')}</span></div>` : '';
+    const dealPommesHtml = di && di.offeneBurger > 0
+      ? `<div class="deal-hinweis"><span>${t('deal.cart_more')}</span><button type="button" class="mini-btn" data-on-click="dealPommesDazu()">${t('deal.add_fries')}</button></div>` : '';
+    const dealLieferHtml = di && di.moeglich > 0 && checkoutMode === 'delivery'
+      ? `<div class="deal-hinweis"><span>${t('deal.delivery').replace('{amount}', '<strong>' + formatPrice(di.moeglich) + '</strong>')}</span></div>` : '';
     const deliveryMin = cartDeliveryMinOrder();
     const belowMin = checkoutMode === 'delivery' && sub < deliveryMin;
     const needAddress = checkoutMode === 'delivery' && !deliveryZone;
@@ -11911,7 +12086,9 @@ function renderCart() {
       const vEligible = vModeOk && sub >= vMinOrder;
       const vDiscNow = voucherDiscount();
       let vLine;
-      if (!vModeOk) {
+      if (!voucherApplied.giftcard && deal > 0) {
+        vLine = t('deal.no_code').replace('{code}', voucherApplied.code);
+      } else if (!vModeOk) {
         vLine = t(voucherApplied.mode === 'pickup' ? 'promo.voucher_mode_pickup' : 'promo.voucher_mode_delivery').replace('{code}', voucherApplied.code);
       } else if (!vEligible) {
         vLine = t('promo.voucher_min').replace('{code}', voucherApplied.code).replace('{min}', formatPrice(vMinOrder));
@@ -11940,7 +12117,7 @@ function renderCart() {
           <input type="text" id="promoInput" placeholder="${t('promo.placeholder')}" aria-label="${t('promo.placeholder_short')}" autocomplete="off" value="${geschenkCode}" />
           <button class="btn btn-secondary btn-sm" data-on-click="applyPromo(this)" style="min-height: auto; padding: 0.7rem 1rem;">${t('promo.redeem')}</button>
         </div>`;
-      if (adCode()) {
+      if (adCode() && !(deal > 0)) {
         // Standard: aufgeräumt – nur Ein-Tipp-Chip + dezenter Link fürs Eingabefeld
         promoHtml = `
           <div class="promo-compact">
@@ -12004,7 +12181,7 @@ function renderCart() {
     if (checkoutStep === 'cart') {
       // Summe und Frage stehen jetzt fest im Fußbereich – dort sind sie ohne
       // Scrollen sichtbar. Im Inhalt bleibt nur die Artikelliste (+ Hinweise).
-      body.innerHTML = itemsHtml + menuWartetHtml() + `${stepBanner}`;
+      body.innerHTML = itemsHtml + menuWartetHtml() + dealSpartHtml + dealPommesHtml + `${stepBanner}`;
       footer.innerHTML = groupJoin ? `
         <button type="button" class="btn btn-primary btn-block btn-lg" data-on-click="submitToGroup(this)" style="font-size:1.05rem;">${t('grp.cart_btn')}</button>
         <p style="text-align:center;color:var(--color-cream-dim);font-size:0.78rem;margin:0.6rem 0 0;line-height:1.5;">${t('grp.entry_join').replace('{host}', escG(groupJoin.host || ''))}<br>${t('grp.join_s3')}</p>
@@ -12030,6 +12207,8 @@ function renderCart() {
       </div>
       ${stepBanner}
 
+      ${checkoutMode === 'pickup' ? dealPommesHtml : dealLieferHtml}
+
       ${upsellHtml}
 
       ${deliveryInfo}
@@ -12044,6 +12223,12 @@ function renderCart() {
           <span>${t('cart.subtotal')}</span>
           <span>${formatPrice(sub)}</span>
         </div>
+        ${deal > 0 ? `
+          <div class="cart-summary-row discount">
+            <span>${t('deal.line')}</span>
+            <span>− ${formatPrice(deal)}</span>
+          </div>
+        ` : ''}
         ${disc > 0 ? `
           <div class="cart-summary-row discount">
             <span>${t('co.discount')} (${PROMO_CODE})</span>
@@ -12285,6 +12470,11 @@ function renderCart() {
           <div class="cart-summary-row">
             <span>${t('cart.subtotal')}</span><span>${formatPrice(cartSubtotal())}</span>
           </div>
+          ${dealDiscount() > 0 ? `
+            <div class="cart-summary-row discount">
+              <span>${t('deal.line')}</span><span>− ${formatPrice(dealDiscount())}</span>
+            </div>
+          ` : ''}
           ${promoDiscount() > 0 ? `
             <div class="cart-summary-row discount">
               <span>${t('co.discount')} (${PROMO_CODE})</span><span>− ${formatPrice(promoDiscount())}</span>
@@ -12772,7 +12962,8 @@ async function submitOrder(e) {
 
   // Calculate effective totals
   const sub = cartSubtotal();
-  const disc = effectivePromo && sub >= PROMO_MIN_ORDER ? promoDiscountFor(sub) : 0;
+  const deal = dealDiscount();
+  const disc = effectivePromo && !deal && sub >= PROMO_MIN_ORDER ? promoDiscountFor(sub) : 0;
   const vDisc = voucherDiscount();
   // Treue: 5-€-Bonus oder Menü aufs Haus (Regeln in loyaltyDiscount)
   const loyDisc = loyaltyDiscount();
@@ -12787,13 +12978,13 @@ async function submitOrder(e) {
   const fee = (checkoutMode === 'delivery' && deliveryZone) ? deliveryZone.fee : 0;
   // Trinkgeld nur bei Online-Zahlung, auf Warenwert (sub - disc - loyDisc)
   const tip = (pay === 'sumup' && !testPromoApplied && tipPercent > 0)
-    ? SK.trinkgeldBetrag(sub - disc - loyDisc - vDisc, tipPercent)
+    ? SK.trinkgeldBetrag(sub - disc - deal - loyDisc - vDisc, tipPercent)
     : 0;
   // 🔧 Test-Modus: Gesamtbetrag fix auf 1 € (überschreibt Rabatt/Liefergebühr-Logik)
   // Die Summenformel steht in speisekarte.js – der Server rechnet mit genau
   // derselben Funktion nach, deshalb kann hier nichts abweichen.
   const total = testPromoApplied ? TEST_TOTAL : SK.gesamtbetrag({
-    warenwert: sub, aktionsRabatt: disc, treueRabatt: loyDisc,
+    warenwert: sub, aktionsRabatt: disc, dealRabatt: deal, treueRabatt: loyDisc,
     gutscheinRabatt: vDisc, liefergebuehr: fee, trinkgeld: tip,
   });
 
@@ -12832,7 +13023,9 @@ async function submitOrder(e) {
     payment: pay,
     items,
     subtotal: sub,
-    discount: disc + vDisc,
+    // Rabatt gesamt inkl. Geburtstags-Deal; dealDiscount sagt, wie viel davon der Deal ist
+    discount: disc + vDisc + deal,
+    dealDiscount: deal,
     loyaltyDiscount: loyDisc,
     loyaltyApplied: loyDisc > 0,
     loyaltyType: loyDisc > 0 ? loyaltyKind : null,
@@ -12865,7 +13058,7 @@ async function submitOrder(e) {
       city: (form['co-inv-city'] || {}).value || '',
     } : null,
     vat: (pay === 'firma' || (form['co-company'] && form['co-company'].value.trim()))
-      ? buildVatSummary(cart, disc + vDisc + loyDisc, fee, tip) : null,
+      ? buildVatSummary(cart, disc + vDisc + loyDisc, fee, tip, deal) : null,
     deliveryAddress: checkoutMode === 'delivery' ? {
       street: form['co-street'].value,
       zip: form['co-zip'].value,

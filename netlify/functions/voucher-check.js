@@ -145,6 +145,8 @@ exports.handler = async (event) => {
       return json(200, {
         valid: true,
         kind: 'campaign',
+        // Geschenkgutscheine gelten auch neben dem Geburtstags-Deal, Aktionscodes nicht
+        giftcard: !!c.giftcard,
         type: c.type,
         value: c.value,
         maxDiscount: c.maxDiscount || 0,

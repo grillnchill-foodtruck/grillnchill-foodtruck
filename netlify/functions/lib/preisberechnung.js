@@ -23,6 +23,9 @@
  *
  *   Warenwert       aus dem Warenkorb, mit derselben Funktion wie im Browser
  *   Aktionsrabatt   aus der Staffel; nur wenn die Aktion wirklich läuft
+ *   Geburtstags-    Burger + Pommes für 10 € (speisekarte.js dealDetails),
+ *   Deal            nur bei Abholung und nur im Aktionszeitraum. Solange er
+ *                   greift, zählen Aktionscodes nicht, Geschenkgutscheine schon
  *   Gutschein       aus dem Gutschein-Speicher, nie aus der Anfrage, mit
  *                   Laufzeit und Limits (gesamt und pro Kunde)
  *   Treuebonus      5-€-Bonus gegen den Kundendatensatz, ohne Konto auf 5 €
@@ -151,12 +154,15 @@ let verbranntGemeldet = false;
    Telefon-Zählung, und Codes mit Kundenlimit gibt es nicht für Adressen von
    Wegwerf-Maildiensten (grund 'wegwerf').
 --------------------------------------------------------------------------- */
-async function gutscheinRabatt(code, warenwert, modus, imApp, order) {
+async function gutscheinRabatt(code, warenwert, modus, imApp, order, ohneAktionscodes) {
   const sauber = codeNormalisieren(code);
   if (!sauber) return { betrag: 0 };
   const vs = store('vouchers');
   const c = await vs.get('c:' + sauber, { type: 'json' });
   if (!c) return { betrag: 0 };
+  // Geburtstags-Deal im Warenkorb: Codes wie GRILL5 gelten nicht zusätzlich,
+  // Geschenkgutscheine sind bezahltes Guthaben und bleiben einlösbar.
+  if (ohneAktionscodes && !c.giftcard) return { betrag: 0, grund: 'deal' };
 
   // Modus-Bindung (nur Abholung / nur Lieferung)
   if (c.mode && c.mode !== 'any' && modus !== c.mode) return { betrag: 0 };
@@ -334,29 +340,35 @@ async function betragErmitteln(order) {
   }
 
   const warenwert = SK.warenwert(korb);
+  const modus = order.mode === 'delivery' ? 'delivery' : 'pickup';
+
+  // --- Geburtstags-Deal: Burger + Pommes für 10 €, nur bei Abholung -------
+  // Geht ein Menü als Menü aufs Haus weg, zählt eine Einheit davon nicht
+  // zum Deal (sonst wäre dasselbe Menü doppelt rabattiert).
+  const gratisMenu = (order.loyaltyApplied && order.loyaltyType === 'menu') ? SK.gratisMenuZeile(korb) : null;
+  const dealRabatt = SK.dealRabatt(korb, modus, { ohneMenuKey: gratisMenu ? gratisMenu.key : null });
 
   // --- Aktionsrabatt: aus der Staffel, nur solange die Aktion läuft --------
   let aktionsRabatt = 0;
   const promoCode = String((order.promo && order.promo.code) || '').toUpperCase();
-  if (promoCode && promoCode === SK.PROMO_CODE && SK.promoActive() && warenwert >= SK.PROMO_MIN_ORDER) {
+  if (!dealRabatt && promoCode && promoCode === SK.PROMO_CODE && SK.promoActive() && warenwert >= SK.PROMO_MIN_ORDER) {
     aktionsRabatt = SK.promoDiscountFor(warenwert);
   }
 
   // --- Gutschein: aus dem Speicher ----------------------------------------
   let gutschein = 0;
   let gutscheinGesperrt = null;
-  const modus = order.mode === 'delivery' ? 'delivery' : 'pickup';
   const gutscheinCode = order.voucherCode || (order.promo && order.promo.code);
   if (gutscheinCode && String(gutscheinCode).toUpperCase() !== SK.PROMO_CODE) {
     try {
-      const g = await gutscheinRabatt(gutscheinCode, warenwert, modus, !!order.app, order);
+      const g = await gutscheinRabatt(gutscheinCode, warenwert, modus, !!order.app, order, dealRabatt > 0);
       gutschein = g.betrag;
       if (g.grund) gutscheinGesperrt = { code: codeNormalisieren(gutscheinCode), grund: g.grund, max: g.max || 0 };
     } catch (e) {
       // Gutschein-Speicher nicht erreichbar: den angezeigten Abzug stehen
       // lassen, aber auf den Warenwert begrenzen. Lieber ein Gutschein zu
       // viel als eine abgelehnte Bestellung.
-      gutschein = Math.min(Math.max(0, zahl(order.discount)), warenwert);
+      gutschein = Math.min(Math.max(0, zahl(order.discount) - zahl(order.dealDiscount)), warenwert);
     }
   }
 
@@ -375,7 +387,7 @@ async function betragErmitteln(order) {
   }
 
   // --- Trinkgeld: nur die angebotenen Stufen ------------------------------
-  const basis = Math.max(0, warenwert - aktionsRabatt - treue - gutschein);
+  const basis = Math.max(0, warenwert - aktionsRabatt - dealRabatt - treue - gutschein);
   const gemeldetesTrinkgeld = runde(order.tip);
   let trinkgeld = 0;
   if (gemeldetesTrinkgeld > 0) {
@@ -386,7 +398,7 @@ async function betragErmitteln(order) {
   }
 
   const berechnet = runde(SK.gesamtbetrag({
-    warenwert, aktionsRabatt, treueRabatt: treue,
+    warenwert, aktionsRabatt, dealRabatt, treueRabatt: treue,
     gutscheinRabatt: gutschein, liefergebuehr: gebuehr, trinkgeld,
   }));
 
@@ -396,7 +408,7 @@ async function betragErmitteln(order) {
   // Nie mehr verlangen als angezeigt, nie weniger als die Karte hergibt.
   ergebnis.betrag = Math.max(berechnet, ausBrowser);
   ergebnis.posten = {
-    warenwert: runde(warenwert), aktionsRabatt: runde(aktionsRabatt),
+    warenwert: runde(warenwert), aktionsRabatt: runde(aktionsRabatt), dealRabatt: runde(dealRabatt),
     gutscheinRabatt: runde(gutschein), treueRabatt: runde(treue),
     liefergebuehr: runde(gebuehr), trinkgeld: runde(trinkgeld),
   };
@@ -426,7 +438,7 @@ async function meldeAbweichung(p, order) {
       + '\nNachgerechnet: ' + Number(p.berechnet).toFixed(2) + ' €'
       + '\nBelastet: ' + Number(p.betrag).toFixed(2) + ' €'
       + (p.posten ? '\nWarenwert ' + p.posten.warenwert.toFixed(2)
-          + ' · Rabatt ' + (p.posten.aktionsRabatt + p.posten.gutscheinRabatt + p.posten.treueRabatt).toFixed(2)
+          + ' · Rabatt ' + (p.posten.aktionsRabatt + (p.posten.dealRabatt || 0) + p.posten.gutscheinRabatt + p.posten.treueRabatt).toFixed(2)
           + ' · Lieferung ' + p.posten.liefergebuehr.toFixed(2)
           + ' · Trinkgeld ' + p.posten.trinkgeld.toFixed(2) : '')
       + (p.gutscheinGesperrt ? '\nCode ' + p.gutscheinGesperrt.code + ' nicht angerechnet: '
@@ -465,7 +477,8 @@ async function pruefeUndKorrigiere(order) {
       order.preisKorrigiert = true;
       if (p.posten) {
         order.subtotal = p.posten.warenwert;
-        order.discount = runde(p.posten.aktionsRabatt + p.posten.gutscheinRabatt);
+        order.discount = runde(p.posten.aktionsRabatt + p.posten.gutscheinRabatt + (p.posten.dealRabatt || 0));
+        order.dealDiscount = p.posten.dealRabatt || 0;
         order.loyaltyDiscount = p.posten.treueRabatt;
         order.deliveryFee = p.posten.liefergebuehr;
         order.tip = p.posten.trinkgeld;
