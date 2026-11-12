@@ -6266,7 +6266,7 @@ a.hero-badge-discount { text-decoration: none; background: var(--color-orange-so
   .menu-grid { gap: 0.7rem; }
   .menu-card {
     display: grid;
-    grid-template-columns: 88px minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);   /* auto: Spalte = Foto plus Rand, Text hält Abstand */
     align-items: start;
   }
   .menu-card-img {
@@ -6279,20 +6279,40 @@ a.hero-badge-discount { text-decoration: none; background: var(--color-orange-so
   .menu-card-tag { top: 5px; left: 5px; font-size: 0.46rem; padding: 0.12rem 0.36rem; }
   .menu-card-tag.veggie { font-size: 0.72rem; padding: 0.12rem 0.3rem; }
   .soldout-overlay { font-size: 0.62rem; padding: 0.25rem 0.45rem; }
-  .menu-card-body { padding: 0.8rem 0.85rem 0.85rem 0.8rem; min-width: 0; }
-  .menu-card-title { font-size: 1.02rem; margin-bottom: 0.25rem; }
-  .menu-card-desc {
-    font-size: 0.8rem; line-height: 1.4; margin-bottom: 0.55rem;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  .menu-card:not(.menu-card-soldout) { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .menu-card-body { padding: 0.95rem 0.9rem 0.9rem 0.85rem; min-width: 0; gap: 0; }
+  .menu-card-title {
+    font-size: 1.04rem; line-height: 1.12; letter-spacing: 0.01em;
+    margin-bottom: 0.3rem;
+    /* Keine automatische Trennung (sie machte aus Chicken „CHI-CKEN“).
+       Lange Wörter bekommen eine weiche Trennstelle (kartenTitel). */
+    overflow-wrap: break-word; hyphens: manual;
+    text-wrap: balance;
   }
-  .menu-card-badges { margin-bottom: 0.55rem; }
+  /* Beschreibung ganz zeigen: Zutaten zählen bei Allergien */
+  .menu-card-desc {
+    font-size: 0.82rem; line-height: 1.45; margin-bottom: 0.65rem;
+    flex: none; text-wrap: pretty;
+  }
+  .menu-card-badges { margin-bottom: 0.7rem; gap: 0.35rem; }
   .menu-card-price { font-size: 1.15rem; }
   .menu-card-footer { gap: 0.5rem; }
   .patty-options { gap: 0.35rem; }
-  .patty-row { padding: 0.4rem 0.4rem 0.4rem 0.65rem; min-height: 0; }
+  /* Reicht die Breite nicht, rutscht der Mengenregler unter den Preis,
+     statt „Single 8,00 €“ zu verdecken */
+  .patty-row { padding: 0.4rem 0.4rem 0.4rem 0.65rem; min-height: 0; flex-wrap: wrap; row-gap: 0.35rem; }
+  .patty-row-info { flex: 1 1 4.5rem; min-width: 4.5rem; }
+  .patty-row .qty-control { margin-left: auto; }
   /* Den Aufpreis zeigt schon der Preis darunter (10,50 €), die Pille kostete eine Zeile */
   .patty-row .patty-extra { display: none; }
   .patty-price { font-size: 1rem; }
+}
+/* Schmale Telefone (iPhone SE, kleine Android): Foto 72 px, mehr Platz für Text */
+@media (max-width: 380px) {
+  .menu-card-img { width: 72px; height: 72px; margin: 0.8rem 0 0.8rem 0.75rem; border-radius: 12px; }
+  .menu-card-img > span[style] { font-size: 2.1rem !important; }
+  .menu-card-body { padding: 0.9rem 0.8rem 0.85rem 0.75rem; }
+  .menu-card-title { font-size: 0.98rem; }
 }
 
 /* Seitenwechsel (Jury-Fix 4): Inhalt blendet über, der Kopf bleibt stehen.
@@ -10072,6 +10092,8 @@ function renderMenu(animate = false) {
     card.className = animate ? 'menu-card reveal' : 'menu-card reveal visible';
     const soldOut = isSoldOut(item.id);
     if (soldOut) card.className += ' menu-card-soldout';
+    // Mobil ist die ganze Karte antippbar (karteTipp), wie bisher das Foto
+    else card.setAttribute('data-on-click', `karteTipp('${item.id}', '${renderAsMenu ? 'menue' : 'artikel'}', event)`);
 
     // === MENÜ-KARTE (in der Menü-Kategorie) ===
     if (renderAsMenu) {
@@ -10204,7 +10226,7 @@ function renderMenu(animate = false) {
         ${cardVisual(item)}
       </div>
       <div class="menu-card-body">
-        <div class="menu-card-title">${productName(item)}</div>
+        <div class="menu-card-title">${kartenTitel(productName(item))}</div>
         <p class="menu-card-desc">${productDesc(item)}</p>
         ${badges ? `<div class="menu-card-badges">${badges}</div>` : ''}
         ${allergenDetail}
@@ -10403,6 +10425,24 @@ function sideLabel(id) {
   const s = sideOption(id);
   const m = MENU.find(x => x.id === s.id);
   return m ? productName(m) : s.label;
+}
+
+// Tipp auf die Karte in der mobilen Liste (unter 520 px): macht dasselbe wie
+// ein Tipp aufs Foto. Knöpfe, Links, Mengenregler, Allergene und das Foto
+// selbst haben eigene Aktionen; deren Klick steigt bis zur Karte auf und wird
+// hier übergangen, sonst landete ein Artikel doppelt im Warenkorb.
+// Weiche Trennstelle in langen Produktnamen, nur für den Kartentitel
+// (Warenkorb, Mails und Belege bekommen den Namen unverändert)
+function kartenTitel(name) {
+  return String(name).replace(/(kartoffel)(pommes)/gi, '$1\u00AD$2');
+}
+
+function karteTipp(menuId, art, ev) {
+  if (!window.matchMedia || !window.matchMedia('(max-width: 519px)').matches) return;
+  const ziel = ev && ev.target;
+  if (ziel && ziel.closest && ziel.closest('button, a, input, select, textarea, label, .qty-control, .allergen-detail, .menu-card-img')) return;
+  if (art === 'menue') openMenuConfig(menuId, false, false, null);
+  else addToCart(menuId, false, ev);
 }
 
 function addToCart(menuId, isDouble = false, ev = null) {
