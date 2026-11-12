@@ -71,7 +71,7 @@
     { id: 'spommes',     cat: 'sides', emoji: '🍠', image: 'produktbilder/spommes.webp', name: "Süßkartoffelpommes",    desc: "Knusprig frittiert inkl. 1 Dip", price: 5.00, spuren: '1, 3', veggie: true, vegan: true, includesDip: true, tag: { label: 'VEGGIE', class: 'veggie' } },
 
     // DIPS
-    { id: 'dip-mayo',    cat: 'dips', emoji: '🥚', name: "Dip: Mayo",              desc: "Cremige Mayonnaise", price: 0.50, allergens: '3', tag: null },
+    { id: 'dip-mayo',    cat: 'dips', emoji: '🥣', name: "Dip: Mayo",              desc: "Cremige Mayonnaise", price: 0.50, allergens: '3', tag: null },
     { id: 'dip-ket',     cat: 'dips', emoji: '🍅', name: "Dip: Ketchup",           desc: "Klassischer Tomaten-Ketchup", price: 0.50, allergens: '9', tag: null },
     { id: 'dip-mango',   cat: 'dips', emoji: '🥭', name: "Dip: Mango-Curry",       desc: "Fruchtig-würzig", price: 0.50, allergens: '9', tag: null },
     { id: 'dip-sweetsour', cat: 'dips', emoji: '🍯', name: "Dip: Süß-Sauer",        desc: "Asia-Style", price: 0.50, tag: null },

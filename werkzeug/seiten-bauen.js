@@ -110,7 +110,7 @@ function karteHtml(lang) {
       preise = `<div class="menu-card-footer"><span class="menu-card-price">${preis(item.price)}${grundpreis}</span></div>`;
     }
     const bild = item.image
-      ? `<img src="${esc(bildPfad(item.image))}" alt="${esc(name(item))}" class="menu-card-photo" loading="lazy" decoding="async" />`
+      ? `<img src="${esc(bildPfad(item.image))}" alt="${esc(name(item))}" class="menu-card-photo" width="600" height="600" loading="lazy" decoding="async" />`
       : `<span style="font-size: 4.5rem; position: relative; z-index: 1;">${item.emoji}</span>`;
     const etikett = item.tag
       ? `<span class="menu-card-tag ${esc(item.tag.class)}">${item.tag.class === 'veggie' ? '🌱' : esc(tag(item.tag.label))}</span>` : '';
@@ -208,7 +208,7 @@ function metaInhalt(html, sel, wert) {
 }
 
 const TR = {
-  titel: 'Grilln Chill | Helal Burger Bielefeld, Teslimat ve Gel-Al',
+  titel: "Grill'n Chill | Helal Burger Bielefeld, Teslimat ve Gel-Al",
   beschreibung: "Bielefeld-Brackwede'de food truck'tan helal burger. Online sipariş ver, gel al veya teslimat iste, GRILL5 koduyla 5 € tasarruf et (20 € üzeri siparişte).",
   ogBeschreibung: "Bielefeld-Brackwede'den %100 helal burger ve sokak lezzetleri. Online sipariş ver, GRILL5 koduyla 5 € tasarruf et. Teslimat ve gel-al.",
   restaurant: "Bielefeld-Brackwede'de helal burger food truck'ı: %100 helal burgerler, tavuk nugget, patates kızartması ve sokak lezzetleri, taze ızgarada. Food truck'tan gel al veya Bielefeld, Gütersloh ve çevresine teslimat. Classic, Cheese, Chili-Cheese ve White BBQ vejetaryen ve vegan olarak da var.",
@@ -451,9 +451,9 @@ function kopfHtml(o) {
   ].map(([href, key, text, id]) => `<li><a href="${href}" data-i18n="${key}"${mehrAkt(id)}>${text}</a></li>`).join('\n          ');
   const sprache = o.sprache ? `
       <div class="lang-dd">
-        <button type="button" class="lang-dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sprache wählen" data-i18n-aria="a11y.lang" data-on-click="toggleLangDd(null, this)">
+        <button type="button" class="lang-dd-btn" aria-haspopup="listbox" aria-expanded="false" data-on-click="toggleLangDd(null, this)">
           <span class="lang-dd-flag"></span>
-          <span class="lang-dd-code">DE</span>
+          <span class="lang-dd-code">DE</span><span class="sk-sr" data-i18n="a11y.lang">Sprache wählen</span>
           <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <ul class="lang-dd-list" role="listbox" hidden></ul>
