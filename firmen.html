@@ -114,19 +114,7 @@
   .btn-ghost:hover{transform:translateY(-2px);border-color:var(--orange);color:var(--cream)}
   .btn:active,.btn-ghost:active{transform:scale(.97)}
   .btn[disabled]{opacity:.6;cursor:progress;transform:none;box-shadow:none}
-  .mini{display:inline-flex;align-items:center;gap:0.35rem;min-height:40px;padding:0.35rem 0.85rem;border:1px solid var(--border);border-radius:999px;color:var(--dim);text-decoration:none;font-size:0.8rem;font-weight:700}
-  .mini:hover{border-color:var(--orange);color:var(--cream)}
-  .mini svg{width:14px;height:14px;flex:none}
 
-  header{border-bottom:1px solid var(--border);background:rgba(12,11,9,0.92);position:sticky;top:0;z-index:10;backdrop-filter:blur(8px)}
-  .hdr{display:flex;align-items:center;gap:0.7rem;padding:0.7rem 0}
-  .hdr img{width:40px;height:40px;border-radius:10px;flex:none}
-  .hdr .marke{min-width:0}
-  .hdr .marke .display{font-size:1rem;letter-spacing:0.02em;line-height:1.2}
-  .hdr small{display:block;color:var(--orange-b);font-size:0.62rem;font-weight:800;letter-spacing:0.14em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .hdr .rechts{margin-left:auto;display:flex;align-items:center;gap:0.5rem;flex:none}
-  @media(max-width:430px){ .hdr .zurueck-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap} .hdr .mini{padding:0.35rem 0.7rem} }
-  @media(max-width:360px){ .hdr small{display:none} }
 
   /* Sprachwahl (Logik aus i18n.js, wie auf der Startseite) */
   .lang-dd{position:relative}
@@ -223,18 +211,28 @@
   a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--orange-b);outline-offset:3px;border-radius:8px}
   @media (prefers-reduced-motion: reduce){ .btn,.btn-ghost{transition:none} .btn:hover,.btn-ghost:hover{transform:none} }
 </style>
+<link rel="stylesheet" href="/seitenkopf.css">
 <script src="/ereignisse.js"></script>
 </head>
 <body>
 
-<header>
-  <div class="container hdr">
-    <img src="/logo.png" alt="Grill'n Chill Logo" width="40" height="40">
-    <div class="marke">
-      <div class="display" lang="en">GRILL'N CHILL</div>
-      <small data-i18n="firmen.hdr">FIRMEN-MITTAG · BIELEFELD</small>
-    </div>
-    <div class="rechts">
+<!-- SEITENKOPF:START (werkzeug/seiten-bauen.js) -->
+<a class="sk-skip" href="#main">Zum Inhalt springen</a>
+<header class="sk-kopf" id="seitenkopf">
+  <div class="sk-innen">
+    <a class="sk-marke" id="marke" href="/" aria-label="Grill'n Chill, zur Startseite">
+      <img src="/logo.png" alt="" width="44" height="44">
+      <span lang="en">Grill'n Chill</span>
+    </a>
+    <nav class="sk-links" aria-label="Hauptnavigation" data-i18n-aria="a11y.nav_main">
+      <a href="/#menu" data-i18n="nav.menu">Speisekarte</a>
+      <a href="/#story" data-i18n="nav.about">Über uns</a>
+      <a href="/#location"><span class="sk-wort-voll" data-i18n="nav.location_hours">Standort &amp; Zeiten</span><span class="sk-wort-kurz" data-i18n="nav.location">Standort</span></a>
+      <a href="/catering" data-i18n="nav.catering">Catering</a>
+      <a href="/#faq" data-i18n="nav.faq">FAQ</a>
+    </nav>
+    <div class="sk-aktionen">
+      <a class="sk-status" id="skStatus" href="/#location" hidden><svg class="sk-flamme" viewBox="0 0 16 20" aria-hidden="true"><path class="koerper" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="kern" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg><span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>
       <div class="lang-dd">
         <button type="button" class="lang-dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sprache wählen" data-i18n-aria="a11y.lang" data-on-click="toggleLangDd(null, this)">
           <span class="lang-dd-flag"></span>
@@ -243,36 +241,59 @@
         </button>
         <ul class="lang-dd-list" role="listbox" hidden></ul>
       </div>
-      <a class="mini" href="/" aria-label="Zur Hauptseite" data-i18n-aria="firmen.back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-        <span class="zurueck-text" data-i18n="firmen.back">Zur Hauptseite</span>
-      </a>
+      <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
+      <details class="sk-menu">
+        <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
+        <div class="sk-menu-flaeche">
+          <ul class="sk-menu-liste">
+          <li><a href="/#menu" data-i18n="nav.menu">Speisekarte</a></li>
+          <li><a href="/#story" data-i18n="nav.about">Über uns</a></li>
+          <li><a href="/#location" data-i18n="nav.location_hours">Standort &amp; Zeiten</a></li>
+          <li><a href="/catering" data-i18n="nav.catering">Catering</a></li>
+          <li><a href="/#faq" data-i18n="nav.faq">FAQ</a></li>
+          </ul>
+          <ul class="sk-menu-mehr">
+          <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
+          <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
+          <li><a href="/firmen" data-i18n="footer.menu_firmen" aria-current="page">Firmen-Mittag</a></li>
+          <li><a href="/gutscheine" data-i18n="firmen.foot_vouchers">Gutscheine</a></li>
+          </ul>
+        </div>
+      </details>
     </div>
   </div>
 </header>
+<!-- SEITENKOPF:ENDE -->
 
-<main>
+<main id="main">
   <div class="hero">
     <div class="container">
-      <span class="eyebrow" data-i18n="firmen.eyebrow">Firmen-Mittag</span>
-      <h1 data-i18n="firmen.h1">Burger fürs Büro, eine Rechnung im Monat</h1>
-      <p class="lead" data-i18n="firmen.lead">Ihr bestellt gemeinsam bis 11 Uhr, wir liefern um 12 Uhr. Bezahlt wird nicht an der Tür, sondern einmal im Monat per Rechnung an eure Firma.</p>
-      <div class="hero-cta">
-        <a class="btn" href="#antrag" data-i18n="firmen.cta">Firmenkonto anfragen</a>
-        <a class="btn-ghost" href="/#menu" data-i18n="firmen.cta_menu">Speisekarte ansehen</a>
+      <div class="sk-hero">
+      <div class="sk-hero-text">
+          <span class="eyebrow" data-i18n="firmen.eyebrow">Firmen-Mittag</span>
+          <h1 class="sk-luft" data-i18n="firmen.h1">Burger fürs Büro, eine Rechnung im Monat</h1>
+          <p class="lead" data-i18n="firmen.lead">Ihr bestellt gemeinsam bis 11 Uhr, wir liefern um 12 Uhr. Bezahlt wird nicht an der Tür, sondern einmal im Monat per Rechnung an eure Firma.</p>
+          <div class="hero-cta">
+            <a class="btn" href="#antrag" data-i18n="firmen.cta">Firmenkonto anfragen</a>
+            <a class="btn-ghost" href="/#menu" data-i18n="firmen.cta_menu">Speisekarte ansehen</a>
+          </div>
+          <div class="hero-facts">
+            <div><b>11:00</b><span data-i18n="firmen.fact1">Bestellschluss</span></div>
+            <div><b>12:00</b><span data-i18n="firmen.fact2">Lieferung</span></div>
+            <div><b data-i18n="firmen.fact3_b">1 Rechnung</b><span data-i18n="firmen.fact3">pro Monat</span></div>
+            <div><b data-i18n="firmen.fact4_b">100 % halal</b><span data-i18n="firmen.fact4">zertifiziert</span></div>
+          </div>
       </div>
-      <div class="hero-facts">
-        <div><b>11:00</b><span data-i18n="firmen.fact1">Bestellschluss</span></div>
-        <div><b>12:00</b><span data-i18n="firmen.fact2">Lieferung</span></div>
-        <div><b data-i18n="firmen.fact3_b">1 Rechnung</b><span data-i18n="firmen.fact3">pro Monat</span></div>
-        <div><b data-i18n="firmen.fact4_b">100 % halal</b><span data-i18n="firmen.fact4">zertifiziert</span></div>
+        <figure class="sk-foto" style="--fp:50% 42%">
+          <img src="/bilder/seite-firmen.webp" alt="Kubi reicht einen frisch gegrillten Burger in Papier" width="640" height="800" decoding="async">
+        </figure>
       </div>
     </div>
   </div>
 
   <section id="ablauf">
     <div class="container">
-      <h2 data-i18n="firmen.how_h2">So läuft der Firmen-Mittag</h2>
+      <h2 class="sk-luft" data-i18n="firmen.how_h2">So läuft der Firmen-Mittag</h2>
       <p class="sub" data-i18n="firmen.how_sub">Einmal einrichten, danach bestellt jede und jeder selbst.</p>
       <ol class="schritte">
         <li class="schritt"><h3 data-i18n="firmen.s1_h">Konto anfragen</h3><p data-i18n="firmen.s1_p">Schickt uns das Formular unten. Wir prüfen eure Adresse und schicken euch den Firmencode.</p></li>
@@ -583,5 +604,6 @@
   if (typeof initI18n === 'function') initI18n();
 })();
 </script>
+<script src="/seitenkopf.js" defer></script>
 </body>
 </html>

@@ -12,7 +12,7 @@
    ==================================================================== */
 
 // Bei jedem Deploy mit Code-Änderung hochzählen!
-const CACHE_VERSION = 'gnc-v205';
+const CACHE_VERSION = 'gnc-v206';
 const CACHE_NAME = `grillnchill-${CACHE_VERSION}`;
 
 // Nur unkritische, statische Assets vorladen (KEIN HTML/JS – die kommen frisch)
@@ -33,7 +33,8 @@ const PRECACHE_URLS = [
 function isCodeFile(url) {
   return url.pathname === '/' ||
          url.pathname.endsWith('.html') ||
-         url.pathname.endsWith('.js');
+         url.pathname.endsWith('.js') ||
+         url.pathname.endsWith('.css');   // seitenkopf.css: neue Stile gleich beim ersten Aufruf
 }
 
 self.addEventListener('install', (event) => {

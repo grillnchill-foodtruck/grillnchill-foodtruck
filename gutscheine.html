@@ -92,16 +92,6 @@
   button{font:inherit}
 
   /* ---------- Kopf ---------- */
-  header{border-bottom:1px solid var(--border);background:rgba(12,11,9,0.92);position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-  .hdr{display:flex;align-items:center;gap:0.8rem;padding:0.8rem 0}
-  .hdr .marke{display:flex;align-items:center;gap:0.8rem;color:inherit;text-decoration:none}
-  .hdr img{width:40px;height:40px;border-radius:10px}
-  .hdr .display{font-size:1rem;letter-spacing:0.02em}
-  .hdr small{display:block;color:var(--orange-b);font-size:0.62rem;font-weight:800;letter-spacing:0.14em}
-  .hdr .back{margin-left:auto;font-size:0.85rem;color:var(--dim);text-decoration:none;font-weight:600}
-  .app-zurueck{display:inline-flex;align-items:center;gap:0.35rem;margin-left:auto;border:1px solid var(--border2);border-radius:999px;padding:0.4rem 0.85rem;color:var(--cream);text-decoration:none;font-size:0.85rem;font-weight:700}
-  .app-zurueck[hidden]{display:none}
-  .app-zurueck:not([hidden]) ~ .back{display:none}
 
   /* ---------- Hero ---------- */
   .hero{padding:3rem 0 1.4rem;position:relative;overflow:hidden}
@@ -321,40 +311,76 @@
     .btn,.btn-ghost,.gs-tile{transition:none}
   }
 </style>
+<link rel="stylesheet" href="/seitenkopf.css">
 </head>
 <body>
 
-<header>
-  <div class="wrap hdr">
-    <a class="marke" id="marke" href="/">
-      <img src="/logo.png" alt="Grill'n Chill Logo" width="40" height="40">
-      <div>
-        <div class="display">GRILL'N CHILL</div>
-        <small>GESCHENKGUTSCHEINE</small>
-      </div>
+<!-- SEITENKOPF:START (werkzeug/seiten-bauen.js) -->
+<a class="sk-skip" href="#main">Zum Inhalt springen</a>
+<header class="sk-kopf" id="seitenkopf">
+  <div class="sk-innen">
+    <a class="sk-marke" id="marke" href="/" aria-label="Grill'n Chill, zur Startseite">
+      <img src="/logo.png" alt="" width="44" height="44">
+      <span lang="en">Grill'n Chill</span>
     </a>
-    <a class="app-zurueck" id="appZurueck" href="/?app=1" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span data-text>Zurück</span></a>
-    <a class="back" href="/">← Zur Hauptseite</a>
+    <nav class="sk-links" aria-label="Hauptnavigation" data-i18n-aria="a11y.nav_main">
+      <a href="/#menu" data-i18n="nav.menu">Speisekarte</a>
+      <a href="/#story" data-i18n="nav.about">Über uns</a>
+      <a href="/#location"><span class="sk-wort-voll" data-i18n="nav.location_hours">Standort &amp; Zeiten</span><span class="sk-wort-kurz" data-i18n="nav.location">Standort</span></a>
+      <a href="/catering" data-i18n="nav.catering">Catering</a>
+      <a href="/#faq" data-i18n="nav.faq">FAQ</a>
+    </nav>
+    <div class="sk-aktionen">
+      <a class="sk-status" id="skStatus" href="/#location" hidden><svg class="sk-flamme" viewBox="0 0 16 20" aria-hidden="true"><path class="koerper" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="kern" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg><span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>
+      <a class="app-zurueck" id="appZurueck" href="/?app=1" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span data-text>Zurück</span></a>
+      <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
+      <details class="sk-menu">
+        <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
+        <div class="sk-menu-flaeche">
+          <ul class="sk-menu-liste">
+          <li><a href="/#menu" data-i18n="nav.menu">Speisekarte</a></li>
+          <li><a href="/#story" data-i18n="nav.about">Über uns</a></li>
+          <li><a href="/#location" data-i18n="nav.location_hours">Standort &amp; Zeiten</a></li>
+          <li><a href="/catering" data-i18n="nav.catering">Catering</a></li>
+          <li><a href="/#faq" data-i18n="nav.faq">FAQ</a></li>
+          </ul>
+          <ul class="sk-menu-mehr">
+          <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
+          <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
+          <li><a href="/firmen" data-i18n="footer.menu_firmen">Firmen-Mittag</a></li>
+          <li><a href="/gutscheine" data-i18n="firmen.foot_vouchers" aria-current="page">Gutscheine</a></li>
+          </ul>
+        </div>
+      </details>
+    </div>
   </div>
 </header>
+<!-- SEITENKOPF:ENDE -->
 
 <main id="main">
   <div id="shopAnsicht">
     <div class="hero">
       <div class="wrap">
-        <span class="eyebrow">Burger verschenken</span>
-        <h1>Der Gutschein, der nach Burger schmeckt</h1>
-        <p class="lead">Betrag wählen, Nachricht dazuschreiben, fertig. Wir schicken den Gutschein direkt an die beschenkte Person, sofort oder an einem Tag deiner Wahl. Oder du druckst ihn selbst aus.</p>
-        <div class="cta">
-          <a class="btn" href="#kaufen">Gutschein gestalten</a>
-          <a class="btn-ghost" href="#pruefen">Gutschein prüfen</a>
+        <div class="sk-hero">
+        <div class="sk-hero-text">
+            <span class="eyebrow">Burger verschenken</span>
+            <h1>Der Gutschein, der nach Burger schmeckt</h1>
+            <p class="lead">Betrag wählen, Nachricht dazuschreiben, fertig. Wir schicken den Gutschein direkt an die beschenkte Person, sofort oder an einem Tag deiner Wahl. Oder du druckst ihn selbst aus.</p>
+            <div class="cta">
+              <a class="btn" href="#kaufen">Gutschein gestalten</a>
+              <a class="btn-ghost" href="#pruefen">Gutschein prüfen</a>
+            </div>
+            <ul class="fakten" aria-label="Das Wichtigste">
+              <li>10 bis 200 €</li>
+              <li>3 Jahre gültig</li>
+              <li>Per Mail oder zum Ausdrucken</li>
+              <li>Versand zum Wunschdatum</li>
+            </ul>
         </div>
-        <ul class="fakten" aria-label="Das Wichtigste">
-          <li>10 bis 200 €</li>
-          <li>3 Jahre gültig</li>
-          <li>Per Mail oder zum Ausdrucken</li>
-          <li>Versand zum Wunschdatum</li>
-        </ul>
+          <figure class="sk-foto" style="--fp:50% 62%">
+            <img src="/bilder/seite-gutscheine.webp" alt="Sauce läuft über frisch gegrillte Burger" width="640" height="800" decoding="async">
+          </figure>
+        </div>
       </div>
     </div>
 
@@ -484,7 +510,7 @@
     <div class="wrap danke-box">
       <div id="dk-pruefen">
         <div class="danke-ring"><span class="spin" aria-hidden="true"></span></div>
-        <h2>Zahlung wird geprüft</h2>
+        <h2 class="sk-luft">Zahlung wird geprüft</h2>
         <p>Einen Moment, gleich steht hier dein Code.</p>
       </div>
       <div id="dk-ok" hidden>
@@ -523,7 +549,7 @@
 
   <section class="band" id="ablauf">
     <div class="wrap">
-      <h2 class="kopf">So läuft's</h2>
+      <h2 class="kopf sk-luft">So läuft's</h2>
       <div class="schritte">
         <div class="schritt"><i>01</i><h3>Gestalten</h3><p>Betrag wählen, Name und Nachricht eintragen. Die Karte zeigt dir sofort, wie der Gutschein aussieht.</p></div>
         <div class="schritt"><i>02</i><h3>Bezahlen</h3><p>Sicher über SumUp mit Karte, Apple Pay oder Google Pay, wie bei unseren Bestellungen.</p></div>
@@ -553,7 +579,7 @@
 
   <section class="band" id="faq">
     <div class="wrap">
-      <h2 class="kopf">Häufige Fragen</h2>
+      <h2 class="kopf sk-luft">Häufige Fragen</h2>
       <div class="faq">
         <details><summary>Wo kann man den Gutschein einlösen?</summary><p>Online auf grillnchill-foodtruck.de und in der App „Grill'n Chill“, zum Abholen oder Liefern: Im Warenkorb tippst du den Code ins Gutschein-Feld. Oder direkt am Truck: Zeig den QR-Code vom Gutschein oder aus der Mail an der Kasse, wir lösen ihn dort ein.</p></details>
         <details><summary>Wie lange ist der Gutschein gültig?</summary><p>Drei Jahre ab dem Kauf. Das Datum steht auf dem Gutschein, in der Mail und unter „Gutschein prüfen“.</p></details>
@@ -576,5 +602,6 @@
 <script src="/app-leiste.js"></script>
 <script src="/vendor/qrcode.js"></script>
 <script src="/gutschein-shop.js"></script>
+<script src="/seitenkopf.js" defer></script>
 </body>
 </html>

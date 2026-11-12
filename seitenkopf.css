@@ -1,0 +1,283 @@
+/* ==========================================================================
+   seitenkopf.css – gemeinsamer Kopf der Unterseiten
+   --------------------------------------------------------------------------
+   Halal, Liefergebiet, Catering, Firmen und Gutscheine tragen denselben Kopf
+   wie die Startseite: Logo mit Namen, Menü, Status-Pille, Bestellen. Das HTML
+   schreibt werkzeug/seiten-bauen.js zwischen die Marker SEITENKOPF:START/ENDE,
+   die Öffnungszeiten der Pille rechnet seitenkopf.js.
+
+   Dazu die gemeinsame Typografie (Überschriften in Versalien wie auf der
+   Startseite) und das Foto im Kopfbereich jeder Seite (.sk-hero, .sk-foto).
+   Die Datei steht im <head> NACH dem Inline-Stil der Seite und gewinnt
+   deshalb bei gleicher Spezifität.
+   ========================================================================== */
+:root {
+  --sk-bg: #0A0A0A;
+  --sk-card: #1C1C1C;
+  --sk-cream: #F5E9D0;
+  --sk-cream-dim: #E6D9BC;
+  --sk-muted: #9A8E7A;
+  --sk-border: #2A2520;
+  --sk-border-hell: #3A332C;
+  --sk-orange: #E85A24;
+  --sk-orange-solid: #CC4715;
+  --sk-orange-hell: #FF7A3D;
+  --sk-glut: #FFB070;
+  --sk-display: 'Bowlby One', Impact, sans-serif;
+  --sk-tap: 44px;
+  --sk-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---- Sprunglink -------------------------------------------------------- */
+.sk-skip {
+  position: absolute; left: 1rem; top: -100px; z-index: 200;
+  background: var(--sk-cream); color: var(--sk-bg);
+  padding: 0.7rem 1rem; border-radius: 10px;
+  font-weight: 800; text-decoration: none;
+}
+.sk-skip:focus { top: 0.6rem; }
+
+/* ---- Kopfleiste ---------------------------------------------------------- */
+.sk-kopf {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10, 10, 10, 0.8);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.25s ease;
+}
+.sk-kopf::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 14px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.38), transparent);
+  opacity: 0; transition: opacity 0.25s ease; pointer-events: none;
+}
+.sk-kopf.sk-gescrollt { background: rgba(10, 10, 10, 0.86); }
+.sk-kopf.sk-gescrollt::after { opacity: 1; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sk-kopf, .sk-kopf.sk-gescrollt { background: rgba(10, 10, 10, 0.96); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .sk-kopf { background: var(--sk-bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+.sk-innen {
+  max-width: 1240px; margin: 0 auto;
+  padding: 0.65rem 1rem;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.sk-marke {
+  display: flex; align-items: center; gap: 0.6rem; flex: none;
+  color: var(--sk-cream); text-decoration: none;
+  font-family: var(--sk-display); font-size: 1.15rem;
+  letter-spacing: 0.02em; text-transform: uppercase;
+  transition: transform 0.12s;
+}
+.sk-marke:active { transform: scale(0.97); }
+.sk-marke img { width: 44px; height: 44px; border-radius: 50%; display: block; }
+.sk-marke span { display: none; }
+
+.sk-links { display: none; }
+.sk-aktionen { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+
+/* Status-Pille: Form statt nur Farbe (brennende Flamme = offen) */
+.sk-status {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  min-height: 36px; padding: 0.35rem 0.75rem;
+  border: 1px solid var(--sk-border-hell); border-radius: 999px;
+  color: var(--sk-muted); text-decoration: none;
+  font-size: 0.74rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.sk-status[hidden] { display: none; }
+.sk-status:hover { border-color: var(--sk-orange); color: var(--sk-cream); }
+.sk-status.offen { color: var(--sk-cream-dim); border-color: rgba(232, 90, 36, 0.45); }
+.sk-flamme { width: 13px; height: 16px; flex: none; overflow: visible; }
+.sk-flamme path { transform-box: fill-box; transform-origin: 50% 100%; }
+.sk-flamme .kern { fill: none; opacity: 0; }
+.sk-flamme .koerper { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.sk-status.offen .koerper { fill: var(--sk-orange); stroke: none; }
+.sk-status.offen .kern { fill: var(--sk-glut); opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .sk-status.offen .koerper { animation: skFlamme 2.3s ease-in-out infinite; }
+  .sk-status.offen .kern { animation: skKern 3.1s ease-in-out infinite; }
+  @keyframes skFlamme { 0%, 100% { transform: scaleY(1) scaleX(1); } 50% { transform: scaleY(1.06) scaleX(0.97); } }
+  @keyframes skKern { 0%, 100% { transform: scaleY(1); opacity: 1; } 50% { transform: scaleY(0.88) translateY(0.4px); opacity: 0.8; } }
+}
+.sk-status-kurz { display: none; }
+@media (max-width: 400px) {
+  .sk-status-lang { display: none; }
+  .sk-status-kurz { display: inline; }
+}
+
+.sk-bestellen {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: var(--sk-tap); padding: 0.55rem 1rem;
+  background: var(--sk-orange-solid); color: #fff;
+  border-radius: 999px; text-decoration: none;
+  font-weight: 700; font-size: 0.85rem; white-space: nowrap;
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.sk-bestellen:hover { background: var(--sk-orange-hell); box-shadow: 0 8px 22px rgba(232, 90, 36, 0.35); }
+.sk-bestellen:active { transform: scale(0.95); }
+
+/* Zurück in die App (nur Gutscheine, nur in der App sichtbar) */
+.sk-kopf .app-zurueck {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  min-height: var(--sk-tap); padding: 0 0.85rem;
+  border: 1px solid var(--sk-border-hell); border-radius: 999px;
+  color: var(--sk-cream); text-decoration: none; font-size: 0.85rem; font-weight: 700;
+}
+.sk-kopf .app-zurueck[hidden] { display: none; }
+
+/* ---- Menü (mobil): <details> klappt auch ohne JavaScript ----------------- */
+/* Die Seiten stylen details/summary als FAQ-Karte mit „+“. Der Kopf setzt
+   das mit höherer Spezifität zurück. */
+.sk-kopf .sk-menu {
+  position: static; margin: 0; padding: 0; overflow: visible;
+  background: none; border: 0; border-radius: 0; box-shadow: none; transform: none;
+}
+.sk-kopf .sk-menu > summary {
+  list-style: none; cursor: pointer;
+  width: var(--sk-tap); height: var(--sk-tap); min-height: 0; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  background: none; border: 0; border-radius: 10px;
+}
+.sk-kopf .sk-menu > summary::after, .sk-kopf .sk-menu > summary::before { content: none; display: none; }
+.sk-menu > summary::-webkit-details-marker { display: none; }
+.sk-menu > summary span {
+  display: block; width: 22px; height: 2px; border-radius: 2px; background: var(--sk-cream);
+  transition: transform 0.25s var(--sk-ease), opacity 0.15s ease;
+}
+.sk-menu[open] > summary span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.sk-menu[open] > summary span:nth-child(2) { opacity: 0; }
+.sk-menu[open] > summary span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.sk-menu > summary:active { transform: scale(0.92); }
+.sk-menu-flaeche {
+  position: absolute; left: 0; right: 0; top: 100%;
+  max-height: calc(100dvh - 64px); overflow-y: auto; overscroll-behavior: contain;
+  /* deckend: halbtransparent ließ die Überschrift darunter durchscheinen */
+  background: #0E0D0C;
+  border-bottom: 1px solid var(--sk-border);
+  /* der Rest der Seite tritt zurück, solange das Menü offen ist */
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 100vmax rgba(0, 0, 0, 0.5);
+  clip-path: inset(0 0 -100vmax 0);
+  padding: 0.75rem 1rem 1.25rem;
+}
+.sk-menu[open] .sk-menu-flaeche { animation: skAuf 0.24s var(--sk-ease); }
+@keyframes skAuf { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.sk-menu-liste { list-style: none; padding: 0; margin: 0 auto; max-width: 560px; }
+.sk-menu-liste a {
+  display: flex; align-items: center; min-height: 48px;
+  color: var(--sk-cream); text-decoration: none;
+  font-family: var(--sk-display); font-size: 1.15rem; letter-spacing: 0.01em; text-transform: uppercase;
+  border-bottom: 1px solid var(--sk-border);
+}
+.sk-menu-liste a:hover, .sk-menu-liste a[aria-current] { color: var(--sk-orange-hell); }
+.sk-menu-mehr { list-style: none; padding: 0; margin: 0.9rem auto 0; max-width: 560px; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.sk-menu-mehr a {
+  display: inline-flex; align-items: center; min-height: var(--sk-tap); padding: 0 0.95rem;
+  border: 1px solid var(--sk-border-hell); border-radius: 999px;
+  color: var(--sk-cream-dim); text-decoration: none; font-size: 0.85rem; font-weight: 700;
+}
+.sk-menu-mehr a:hover, .sk-menu-mehr a[aria-current] { border-color: var(--sk-orange); color: var(--sk-cream); }
+@media (prefers-reduced-motion: reduce) {
+  .sk-menu[open] .sk-menu-flaeche { animation: none; }
+  .sk-menu > summary span { transition: none; }
+}
+
+/* ---- Desktop ------------------------------------------------------------- */
+@media (min-width: 880px) {
+  .sk-innen { padding: 0.7rem 1.5rem; gap: 1.5rem; }
+  .sk-marke span { display: inline; }
+  .sk-links { display: flex; gap: 1.5rem; align-items: center; }
+  .sk-links a {
+    position: relative; padding: 0.3rem 0;
+    color: var(--sk-cream-dim); text-decoration: none; white-space: nowrap;
+    font-weight: 600; font-size: 0.9rem;
+  }
+  .sk-links a::after {
+    content: ''; position: absolute; left: 0; bottom: -2px; height: 2px; width: 100%;
+    background: var(--sk-orange); transform: scaleX(0); transform-origin: left;
+    transition: transform 0.25s var(--sk-ease);
+  }
+  .sk-links a:hover, .sk-links a[aria-current] { color: var(--sk-cream); }
+  .sk-links a:hover::after, .sk-links a[aria-current]::after { transform: scaleX(1); }
+  .sk-menu { display: none; }
+  .sk-bestellen { padding: 0.55rem 1.2rem; }
+}
+@media (min-width: 880px) and (max-width: 1080px) {
+  .sk-links { gap: 1rem; }
+  .sk-links a { font-size: 0.85rem; }
+  .sk-wort-voll { display: none; }
+}
+@media (max-width: 1080px) { .sk-wort-kurz { display: inline; } }
+@media (min-width: 1081px) { .sk-wort-kurz { display: none; } }
+
+/* In der App: Navigation übernimmt die Tab-Leiste, oben bleibt Marke, Zurück, Bestellen */
+html.sk-app .sk-menu, html.sk-app .sk-links { display: none; }
+
+/* Fokus wie auf der Startseite */
+.sk-kopf a:focus-visible, .sk-menu > summary:focus-visible, .sk-skip:focus-visible {
+  outline: 3px solid var(--sk-orange-hell); outline-offset: 3px; border-radius: 10px;
+}
+
+/* Sprachwahl im Kopf (nur /firmen): mobil nur die Flagge */
+.sk-kopf .lang-dd { position: relative; }
+@media (max-width: 879px) {
+  .sk-kopf .lang-dd-code, .sk-kopf .lang-dd-caret { display: none; }
+  .sk-kopf .lang-dd-btn { min-height: var(--sk-tap); padding: 0 0.75rem; }
+}
+/* Sehr schmale Telefone: Pille weicht, Bestellen und Menü bleiben */
+@media (max-width: 359px) {
+  .sk-status { display: none; }
+}
+
+/* ==========================================================================
+   Gemeinsame Typografie: Versalien wie auf der Startseite
+   ========================================================================== */
+main h1, main h2 {
+  text-transform: uppercase;
+  letter-spacing: -0.005em;
+  line-height: 1.02;
+  overflow-wrap: break-word;
+  hyphens: manual;
+}
+/* Die Punkte auf Ä, Ö, Ü stehen in Bowlby One 1,11 Schrifthöhen über der
+   Grundlinie. Bei engem Zeilenabstand liegen sie auf der Zeile darüber und
+   verschwinden Creme auf Creme („GUTERSLOH“). Titel mit solchen Zeichen
+   bekommen mehr Luft, wie .gnc-luft auf der Startseite. Die Klasse setzt
+   werkzeug/seiten-bauen.js ins HTML, seitenkopf.js nach einem Sprachwechsel. */
+main h1.sk-luft, main h2.sk-luft { line-height: 1.2; }
+
+/* Kennzahlen im Kopfbereich: Creme statt Gelb (Gelb gibt es auf der Startseite nur in der Flamme) */
+.hero-facts b, .fakten b { color: var(--sk-cream) !important; white-space: nowrap; }
+
+/* ==========================================================================
+   Foto im Kopfbereich: mobil ein Querstreifen unter dem Text, ab 880 px eine
+   Hochformat-Karte rechts daneben (wie das Video auf der Startseite)
+   ========================================================================== */
+.sk-hero { display: grid; gap: 1.6rem; position: relative; z-index: 1; }
+.sk-foto {
+  margin: 0; position: relative; overflow: hidden;
+  border-radius: 20px; aspect-ratio: 16 / 10;
+  background: var(--sk-card);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(245, 233, 208, 0.08);
+}
+.sk-foto img {
+  width: 100%; height: 100%; display: block;
+  object-fit: cover; object-position: var(--fp, 50% 50%);
+}
+.sk-foto figcaption {
+  position: absolute; left: 0.8rem; bottom: 0.8rem; right: 0.8rem;
+  color: var(--sk-cream); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+.sk-foto::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(0deg, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0) 45%);
+}
+@media (min-width: 880px) {
+  .sk-hero { grid-template-columns: minmax(0, 1fr) 320px; align-items: center; gap: 3rem; }
+  .sk-foto { aspect-ratio: 4 / 5; border-radius: 26px; }
+  .sk-foto img { object-position: 50% 50%; }
+}

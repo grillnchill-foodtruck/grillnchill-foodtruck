@@ -72,12 +72,6 @@
   .btn:active{transform:translateY(1px)}
   .btn-ghost{display:inline-block;border:1px solid var(--border);color:var(--dim);text-decoration:none;padding:0.9rem 1.6rem;border-radius:12px;font-weight:700}
 
-  header{border-bottom:1px solid var(--border);background:rgba(12,11,9,0.92);position:sticky;top:0;z-index:10;backdrop-filter:blur(8px)}
-  .hdr{display:flex;align-items:center;gap:0.8rem;padding:0.8rem 0}
-  .hdr img{width:40px;height:40px;border-radius:10px}
-  .hdr .display{font-size:1rem;letter-spacing:0.02em}
-  .hdr small{display:block;color:var(--orange-b);font-size:0.62rem;font-weight:800;letter-spacing:0.14em}
-  .hdr a.back{margin-left:auto;font-size:0.85rem;color:var(--dim);text-decoration:none;font-weight:600}
 
   .hero{padding:4rem 0 3rem;position:relative;overflow:hidden}
   .hero::before{content:"";position:absolute;top:-140px;left:-100px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(232,90,36,0.16),transparent 65%);pointer-events:none}
@@ -169,35 +163,73 @@
   .steps .step:nth-child(4){transition-delay:.21s}
   @media(prefers-reduced-motion:reduce){h2::after{opacity:.9}}
 </style>
+<link rel="stylesheet" href="/seitenkopf.css">
 </head>
 <body>
 
-<header>
-  <div class="container hdr">
-    <img src="logo.png" alt="Grilln Chill Logo" width="40" height="40">
-    <div>
-      <div class="display">GRILL'N CHILL</div>
-      <small>FOODTRUCK CATERING · BIELEFELD</small>
+<!-- SEITENKOPF:START (werkzeug/seiten-bauen.js) -->
+<a class="sk-skip" href="#main">Zum Inhalt springen</a>
+<header class="sk-kopf" id="seitenkopf">
+  <div class="sk-innen">
+    <a class="sk-marke" id="marke" href="/" aria-label="Grill'n Chill, zur Startseite">
+      <img src="/logo.png" alt="" width="44" height="44">
+      <span lang="en">Grill'n Chill</span>
+    </a>
+    <nav class="sk-links" aria-label="Hauptnavigation" data-i18n-aria="a11y.nav_main">
+      <a href="/#menu" data-i18n="nav.menu">Speisekarte</a>
+      <a href="/#story" data-i18n="nav.about">Über uns</a>
+      <a href="/#location"><span class="sk-wort-voll" data-i18n="nav.location_hours">Standort &amp; Zeiten</span><span class="sk-wort-kurz" data-i18n="nav.location">Standort</span></a>
+      <a href="/catering" data-i18n="nav.catering" aria-current="page">Catering</a>
+      <a href="/#faq" data-i18n="nav.faq">FAQ</a>
+    </nav>
+    <div class="sk-aktionen">
+      <a class="sk-status" id="skStatus" href="/#location" hidden><svg class="sk-flamme" viewBox="0 0 16 20" aria-hidden="true"><path class="koerper" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="kern" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg><span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>
+      <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
+      <details class="sk-menu">
+        <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
+        <div class="sk-menu-flaeche">
+          <ul class="sk-menu-liste">
+          <li><a href="/#menu" data-i18n="nav.menu">Speisekarte</a></li>
+          <li><a href="/#story" data-i18n="nav.about">Über uns</a></li>
+          <li><a href="/#location" data-i18n="nav.location_hours">Standort &amp; Zeiten</a></li>
+          <li><a href="/catering" data-i18n="nav.catering" aria-current="page">Catering</a></li>
+          <li><a href="/#faq" data-i18n="nav.faq">FAQ</a></li>
+          </ul>
+          <ul class="sk-menu-mehr">
+          <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
+          <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
+          <li><a href="/firmen" data-i18n="footer.menu_firmen">Firmen-Mittag</a></li>
+          <li><a href="/gutscheine" data-i18n="firmen.foot_vouchers">Gutscheine</a></li>
+          </ul>
+        </div>
+      </details>
     </div>
-    <a class="back" href="/">← Zur Hauptseite</a>
   </div>
 </header>
+<!-- SEITENKOPF:ENDE -->
 
-<main>
+<main id="main">
   <div class="hero">
     <div class="container">
-      <span class="eyebrow">Halal Burger Catering</span>
-      <h1>Foodtruck Catering in Bielefeld &amp; Umgebung</h1>
-      <p class="lead">Hochzeit, Firmenfeier, Geburtstag oder Sommerfest: Wir kommen mit dem Foodtruck zu euch und grillen frisch vor den Augen eurer Gäste – 100&nbsp;% halal, mit vegetarischen und veganen Optionen. Ihr feiert, wir übernehmen den Rest.</p>
-      <div class="hero-cta">
-        <a class="btn" href="/?pkg=gnc#catering">Jetzt unverbindlich anfragen</a>
-        <a class="btn-ghost" href="tel:+4915118540604">0151 18 54 06 04</a>
+      <div class="sk-hero">
+      <div class="sk-hero-text">
+          <span class="eyebrow">Halal Burger Catering</span>
+          <h1>Foodtruck Catering in Bielefeld &amp; Umgebung</h1>
+          <p class="lead">Hochzeit, Firmenfeier, Geburtstag oder Sommerfest: Wir kommen mit dem Foodtruck zu euch und grillen frisch vor den Augen eurer Gäste – 100&nbsp;% halal, mit vegetarischen und veganen Optionen. Ihr feiert, wir übernehmen den Rest.</p>
+          <div class="hero-cta">
+            <a class="btn" href="/?pkg=gnc#catering">Jetzt unverbindlich anfragen</a>
+            <a class="btn-ghost" href="tel:+4915118540604">0151 18 54 06 04</a>
+          </div>
+          <div class="hero-facts">
+            <div><b>4,9 ★</b>auf Google</div>
+            <div><b>30–150</b>Gäste</div>
+            <div><b>100 %</b>Halal · HCG-zertifiziert</div>
+            <div><b>25 km</b>Anfahrt inklusive</div>
+          </div>
       </div>
-      <div class="hero-facts">
-        <div><b>5,0 ★</b>auf Google</div>
-        <div><b>30–150</b>Gäste</div>
-        <div><b>100 %</b>Halal · HCG-zertifiziert</div>
-        <div><b>25 km</b>Anfahrt inklusive</div>
+        <figure class="sk-foto" style="--fp:50% 62%">
+          <img src="/bilder/seite-catering.webp" alt="Gäste mit Burgern am Truck bei einem Event" width="640" height="800" decoding="async">
+        </figure>
       </div>
     </div>
   </div>
@@ -267,7 +299,7 @@
 
   <section id="ablauf">
     <div class="container">
-      <h2>So läuft's</h2>
+      <h2 class="sk-luft">So läuft's</h2>
       <p class="sub">Vom ersten Kontakt bis zum letzten Burger – in vier Schritten.</p>
       <div class="steps">
         <div class="step"><b>Anfrage stellen</b><p>Datum, Gästezahl, Ort und Wunsch-Paket ins Formular – dauert zwei Minuten.</p></div>
@@ -280,7 +312,7 @@
 
   <section id="faq">
     <div class="container">
-      <h2>Häufige Fragen zum Catering</h2>
+      <h2 class="sk-luft">Häufige Fragen zum Catering</h2>
       <p class="sub"></p>
       <details>
         <summary>Was kostet Foodtruck Catering in Bielefeld?</summary>
@@ -329,7 +361,7 @@
   try{
     if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if(!('IntersectionObserver' in window)) return;
-    var sels = ['.hero .container > *','section > .container > h2','section > .container > .sub','.card','.step','.term','.karte','details'];
+    var sels = ['.hero .container > *','section > .container > h2','section > .container > .sub','.card','.step','.term','.karte','main details'];
     var nodes = [];
     sels.forEach(function(s){ Array.prototype.forEach.call(document.querySelectorAll(s), function(n){ if(nodes.indexOf(n)<0) nodes.push(n); }); });
     if(!nodes.length) return;
@@ -342,5 +374,6 @@
   }catch(e){}
 })();
 </script>
+<script src="/seitenkopf.js" defer></script>
 </body>
 </html>

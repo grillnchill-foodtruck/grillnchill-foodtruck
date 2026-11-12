@@ -415,6 +415,124 @@ function agbBauen(html, indexHtml) {
   return bereich(html, 'AGB', text.replace(/^\n+|\s+$/g, ''), 'agb.html');
 }
 
+/* ---- 3c. Gemeinsamer Kopf der Unterseiten ---------------------------------- */
+// Halal, Liefergebiet, Catering, Firmen und Gutscheine hatten je einen eigenen
+// Kopf mit „← Zur Hauptseite“ und sonst nichts. Jetzt tragen sie den Kopf der
+// Startseite: Logo mit Namen, Menü, Status-Pille, Bestellen. Das HTML steht
+// hier einmal und landet zwischen <!-- SEITENKOPF:START --> und :ENDE.
+// Stile: seitenkopf.css. Pille und Menü: seitenkopf.js, das dieser Build aus
+// werkzeug/seitenkopf-vorlage.js und den Öffnungszeiten aus index.html baut.
+const KOPF_SEITEN = {
+  'halal.html': { mehr: 'halal' },
+  'liefergebiet.html': { mehr: 'liefergebiet' },
+  'catering.html': { aktiv: 'catering' },
+  'firmen.html': { mehr: 'firmen', sprache: true },
+  'gutscheine.html': { mehr: 'gutscheine', appZurueck: true },
+};
+const FLAMME = '<svg class="sk-flamme" viewBox="0 0 16 20" aria-hidden="true"><path class="koerper" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="kern" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg>';
+function kopfHtml(o) {
+  const akt = (id) => (o.aktiv === id ? ' aria-current="page"' : '');
+  const mehrAkt = (id) => (o.mehr === id ? ' aria-current="page"' : '');
+  const haupt = [
+    ['/#menu', 'nav.menu', 'Speisekarte', ''],
+    ['/#story', 'nav.about', 'Über uns', ''],
+    ['/#location', '', '<span class="sk-wort-voll" data-i18n="nav.location_hours">Standort &amp; Zeiten</span><span class="sk-wort-kurz" data-i18n="nav.location">Standort</span>', ''],
+    ['/catering', 'nav.catering', 'Catering', 'catering'],
+    ['/#faq', 'nav.faq', 'FAQ', ''],
+  ];
+  const link = ([href, key, text, id]) => `<a href="${href}"${key ? ` data-i18n="${key}"` : ''}${id ? akt(id) : ''}>${text}</a>`;
+  // Im Menü steht immer der ganze Name („Standort & Zeiten“)
+  const menuLink = ([href, key, text, id]) => `<li><a href="${href}" data-i18n="${key || 'nav.location_hours'}"${id ? akt(id) : ''}>${key ? text : 'Standort &amp; Zeiten'}</a></li>`;
+  const mehr = [
+    ['/liefergebiet', 'footer.menu_delivery', 'Liefergebiet', 'liefergebiet'],
+    ['/halal', 'footer.menu_halal', 'Halal-Zertifikat', 'halal'],
+    ['/firmen', 'footer.menu_firmen', 'Firmen-Mittag', 'firmen'],
+    ['/gutscheine', 'firmen.foot_vouchers', 'Gutscheine', 'gutscheine'],
+  ].map(([href, key, text, id]) => `<li><a href="${href}" data-i18n="${key}"${mehrAkt(id)}>${text}</a></li>`).join('\n          ');
+  const sprache = o.sprache ? `
+      <div class="lang-dd">
+        <button type="button" class="lang-dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Sprache wählen" data-i18n-aria="a11y.lang" data-on-click="toggleLangDd(null, this)">
+          <span class="lang-dd-flag"></span>
+          <span class="lang-dd-code">DE</span>
+          <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="lang-dd-list" role="listbox" hidden></ul>
+      </div>` : '';
+  const zurueck = o.appZurueck ? `
+      <a class="app-zurueck" id="appZurueck" href="/?app=1" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span data-text>Zurück</span></a>` : '';
+  return `<a class="sk-skip" href="#main">Zum Inhalt springen</a>
+<header class="sk-kopf" id="seitenkopf">
+  <div class="sk-innen">
+    <a class="sk-marke" id="marke" href="/" aria-label="Grill'n Chill, zur Startseite">
+      <img src="/logo.png" alt="" width="44" height="44">
+      <span lang="en">Grill'n Chill</span>
+    </a>
+    <nav class="sk-links" aria-label="Hauptnavigation" data-i18n-aria="a11y.nav_main">
+      ${haupt.map(link).join('\n      ')}
+    </nav>
+    <div class="sk-aktionen">
+      <a class="sk-status" id="skStatus" href="/#location" hidden>${FLAMME}<span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>${sprache}${zurueck}
+      <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
+      <details class="sk-menu">
+        <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
+        <div class="sk-menu-flaeche">
+          <ul class="sk-menu-liste">
+          ${haupt.map(menuLink).join('\n          ')}
+          </ul>
+          <ul class="sk-menu-mehr">
+          ${mehr}
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>`;
+}
+
+// Öffnungszeiten-Code aus index.html: von HOURS bis parseTime, dazu findNextOpening
+function oeffnungszeitenQuelle(indexHtml) {
+  const a = indexHtml.indexOf('const HOURS = {');
+  const b = indexHtml.indexOf('// Öffnungsstatus als ganzer Satz', a);
+  const c = indexHtml.indexOf('function findNextOpening(now) {');
+  const d = c < 0 ? -1 : indexHtml.indexOf('\n}\n', c);
+  if (a < 0 || b < 0 || c < 0 || d < 0) throw new Error('Öffnungszeiten in index.html nicht gefunden (HOURS … parseTime, findNextOpening)');
+  return indexHtml.slice(a, b).trim() + '\n\n' + indexHtml.slice(c, d + 2).trim();
+}
+function seitenkopfJsBauen(indexHtml) {
+  const vorlage = lies('werkzeug/seitenkopf-vorlage.js');
+  if (!vorlage.includes('/*%OEFFNUNGSZEITEN%*/')) throw new Error('Platzhalter fehlt in werkzeug/seitenkopf-vorlage.js');
+  const code = vorlage.replace('/*%OEFFNUNGSZEITEN%*/', () => '/* ---- Öffnungszeiten, kopiert aus index.html ---- */\n'
+    + oeffnungszeitenQuelle(indexHtml).split('\n').map((z) => (z ? '  ' + z : z)).join('\n'));
+  new vm.Script(code, { filename: 'seitenkopf.js' });   // Syntaxfehler brechen den Build ab
+  fs.writeFileSync(path.join(WURZEL, 'seitenkopf.js'), code);
+}
+// Überschriften mit Umlaut oder Akzent bekommen class="sk-luft" (seitenkopf.css)
+const AKZENT = /[À-ÖØ-öø-ÿĀ-ſ]/;
+function akzentLuft(html) {
+  const a = html.indexOf('<main'), b = html.indexOf('</main>');
+  if (a < 0 || b < 0) return html;
+  const mitte = html.slice(a, b).replace(/<(h[12])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (m, tag, attrs, inner) => {
+    attrs = attrs || '';
+    const luft = AKZENT.test(inner.replace(/<[^>]+>/g, ''));
+    const k = attrs.match(/\sclass="([^"]*)"/);
+    let klassen = (k ? k[1].split(/\s+/) : []).filter((x) => x && x !== 'sk-luft');
+    if (luft) klassen.push('sk-luft');
+    const ohne = attrs.replace(/\sclass="[^"]*"/, '');
+    return '<' + tag + (klassen.length ? ' class="' + klassen.join(' ') + '"' : '') + ohne + '>' + inner + '</' + tag + '>';
+  });
+  return html.slice(0, a) + mitte + html.slice(b);
+}
+function kopfEinsetzen(datei) {
+  const p = path.join(WURZEL, datei);
+  if (!fs.existsSync(p)) return;
+  let html = fs.readFileSync(p, 'utf8');
+  html = akzentLuft(bereich(html, 'SEITENKOPF', kopfHtml(KOPF_SEITEN[datei]), datei));
+  if (!html.includes('<link rel="stylesheet" href="/seitenkopf.css">')) throw new Error('seitenkopf.css fehlt im <head> von ' + datei);
+  if (!html.includes('<script src="/seitenkopf.js" defer></script>')) throw new Error('seitenkopf.js fehlt in ' + datei);
+  if (!/<main[^>]*\bid="main"/.test(html)) throw new Error('<main id="main"> fehlt in ' + datei + ' (Sprunglink)');
+  fs.writeFileSync(p, html);
+}
+
 /* ---- Ablauf ---------------------------------------------------------------- */
 const indexPfad = path.join(WURZEL, 'index.html');
 const deHtml = karteEinsetzen(fs.readFileSync(indexPfad, 'utf8'), 'de');
@@ -433,6 +551,8 @@ const firmenPfad = path.join(WURZEL, 'firmen.html');
 if (fs.existsSync(firmenPfad)) fs.writeFileSync(firmenPfad, faqDaten(fs.readFileSync(firmenPfad, 'utf8'), SEITE + '/firmen'));
 const agbPfad = path.join(WURZEL, 'agb.html');
 fs.writeFileSync(agbPfad, agbBauen(fs.readFileSync(agbPfad, 'utf8'), deHtml));
+seitenkopfJsBauen(deHtml);
+Object.keys(KOPF_SEITEN).forEach(kopfEinsetzen);
 
 /* ---- Content-Security-Policy ---------------------------------------------- */
 /* SumUp-Widget in der Kasse („Bezahlen ohne Umweg“, Admin-Schalter, Paket
