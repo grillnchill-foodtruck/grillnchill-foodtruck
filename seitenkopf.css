@@ -253,7 +253,7 @@ main h1, main h2 {
    verschwinden Creme auf Creme („GUTERSLOH“). Titel mit solchen Zeichen
    bekommen mehr Luft, wie .gnc-luft auf der Startseite. Die Klasse setzt
    werkzeug/seiten-bauen.js ins HTML, seitenkopf.js nach einem Sprachwechsel. */
-main h1.sk-luft, main h2.sk-luft { line-height: 1.2; }
+main h1.sk-luft, main h2.sk-luft { line-height: 1.3; }
 
 /* Kennzahlen im Kopfbereich: Creme statt Gelb (Gelb gibt es auf der Startseite nur in der Flamme) */
 .hero-facts b, .fakten b { color: var(--sk-cream) !important; white-space: nowrap; }
