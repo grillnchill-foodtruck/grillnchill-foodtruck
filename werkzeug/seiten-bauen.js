@@ -471,7 +471,7 @@ function kopfHtml(o) {
       ${haupt.map(link).join('\n      ')}
     </nav>
     <div class="sk-aktionen">
-      <a class="sk-status" id="skStatus" href="/#location" hidden>${FLAMME}<span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>${sprache}${zurueck}
+      <a class="sk-status" id="skStatus" href="/#location" aria-label="Öffnungszeiten" hidden>${FLAMME}<span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>${sprache}${zurueck}
       <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
       <details class="sk-menu">
         <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
