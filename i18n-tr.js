@@ -708,6 +708,7 @@ Object.assign(I18N.tr, {
   "gs.js_hinweis_maus": "Hediye kartın böyle görünecek. Fareyle kartın üzerinde gezin.",
   "gs.js_hinweis_finger": "Hediye kartın böyle görünecek. Kartı parmağınla yana çek.",
   "gs.js_karte_de": "Hediye kartı ve e-posta Almanca.",
+  "agb.nur_de": "Bu şartlar yalnızca Almanca olarak mevcuttur.",
   "gs.js_zahlen": "Ödemeye geç",
   "gs.js_wer": "Hediye ettiğin kişi",
   "gs.js_z_druck": "Ödemeden sonra yazdırmak için PDF'i indirirsin. Ayrıca sana e-postayla da gelir.",

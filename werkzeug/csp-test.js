@@ -40,7 +40,7 @@ const SKRIPTE = ['i18n.js', 'speisekarte.js', 'burger-jahr.js', 'admin-anmeldung
 const EIGENE = { 'index.html': ['i18n.js', 'speisekarte.js', 'burger-jahr.js'], 'tr/index.html': ['i18n.js', 'speisekarte.js', 'burger-jahr.js'], 'firmen.html': ['i18n.js', 'speisekarte.js'],
   // Unterseiten seit 13.11.2026 mehrsprachig: Sprachwahl im Kopf ruft toggleLangDd aus i18n.js
   'halal.html': ['i18n.js'], 'catering.html': ['i18n.js'], 'liefergebiet.html': ['i18n.js', 'speisekarte.js'],
-  'gutscheine.html': ['i18n.js', 'gutschein-shop.js'], '404.html': ['i18n.js'] };
+  'gutscheine.html': ['i18n.js', 'gutschein-shop.js'], '404.html': ['i18n.js'], 'agb.html': ['i18n.js'] };
 
 let fehler = 0, n = 0;
 const ok = (name, b, info) => { n++; console.log((b ? '✅ ' : '❌ ') + name + (b || !info ? '' : '\n   ' + info)); if (!b) fehler++; };

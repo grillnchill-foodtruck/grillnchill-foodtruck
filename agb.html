@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- SPRACHE-VORAB:START (werkzeug/seiten-bauen.js) -->
+<script>(function(){try{var d=document.documentElement;if((d.getAttribute('data-seite')||'de')!=='de'||/bot\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}if(!l||!P[l])return;window.gncI18nZiel=l;var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);var s=document.createElement('style');s.textContent='html.i18n-wartet :is(main,footer,.promo-bar>*,.nav-links,.nav-actions,.sk-links,.sk-aktionen){visibility:hidden}html.i18n-wartet :is(.hero-bg,.sk-foto){visibility:visible}';document.head.appendChild(s);d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>
+<!-- SPRACHE-VORAB:ENDE -->
 <title>AGB und Nutzungsbedingungen | Grill'n Chill Bielefeld</title>
 <meta name="description" content="Allgemeine Geschäftsbedingungen und Nutzungsbedingungen von Grill'n Chill für Bestellungen am Foodtruck, auf grillnchill-foodtruck.de und in der App für iOS und Android.">
 <link rel="canonical" href="https://grillnchill-foodtruck.de/agb">
@@ -52,12 +55,6 @@
   @media(min-width:600px){.container{padding:0 1.25rem}}
   a{color:var(--orange-b)}
 
-  header{border-bottom:1px solid var(--border);background:rgba(12,11,9,0.92);position:sticky;top:0;z-index:10;backdrop-filter:blur(8px)}
-  .hdr{display:flex;align-items:center;gap:0.8rem;padding:0.8rem 0}
-  .hdr img{width:40px;height:40px;border-radius:10px}
-  .hdr .display{font-size:1rem;letter-spacing:0.02em}
-  .hdr small{display:block;color:var(--orange-b);font-size:0.62rem;font-weight:800;letter-spacing:0.14em}
-  .hdr a.back{margin-left:auto;font-size:0.85rem;color:var(--dim);text-decoration:none;font-weight:600}
 
   .kopf{padding:2.8rem 0 1.6rem}
   .eyebrow{color:var(--orange-b);font-size:0.75rem;font-weight:800;letter-spacing:0.16em;text-transform:uppercase}
@@ -68,7 +65,13 @@
   /* Inhaltsverzeichnis und Rechtslinks als kleine Pillen */
   .pillen{display:flex;flex-wrap:wrap;gap:0.45rem;margin:1.4rem 0 0;padding:0;list-style:none}
   .pille{display:inline-block;border:1px solid var(--border);border-radius:999px;padding:0.32rem 0.8rem;font-size:0.8rem;font-weight:600;color:var(--dim);text-decoration:none;font-variant-numeric:tabular-nums}
-  .pille:hover{border-color:var(--orange);color:var(--cream)}
+  .pille{transition:transform .2s cubic-bezier(0.16,1,0.3,1),background-color .15s ease,border-color .15s ease,color .15s ease}
+  /* Hover mit Glut-Tönung und Hub, nicht nur Farbe (Jury R5, agb h-01/h-02) */
+  @media (hover:hover) and (pointer:fine){.pille:hover{border-color:var(--orange);color:var(--cream);background-color:rgba(232,90,36,.14);transform:translateY(-1px)}}
+  /* Hinweis für andere Sprachen: Die AGB gibt es nur auf Deutsch */
+  .nur-de{display:inline-flex;align-items:center;gap:0.5rem;margin:2.2rem 0 -1.6rem;padding:0.45rem 0.9rem;border:1px solid var(--border);border-radius:999px;color:var(--dim);font-size:0.85rem;font-weight:600}
+  .nur-de svg{width:16px;height:16px;flex:none;color:var(--orange-b)}
+  html:lang(de) .nur-de{display:none}
 
   .agb{padding:1rem 0 1rem}
   .agb h2{font-size:1.05rem;font-weight:700;margin:2rem 0 0.5rem;padding-top:1.4rem;border-top:1px solid var(--border);text-wrap:balance}
@@ -81,32 +84,73 @@
   .weiter{margin-top:2.4rem;padding:1.4rem;background:var(--card);border:1px solid var(--border);border-radius:14px}
   .weiter p{color:var(--dim);font-size:0.9rem}
 
-  footer{border-top:1px solid var(--border);padding:2rem 0 2.6rem;margin-top:2.4rem;color:var(--muted);font-size:0.8rem}
-  footer .row{display:flex;gap:1rem 1.4rem;flex-wrap:wrap;justify-content:space-between}
-  footer a{color:var(--muted);text-decoration:none}
-  footer a:hover{color:var(--cream)}
+  main{padding-bottom:3rem}
   a:focus-visible{outline:3px solid var(--orange-b);outline-offset:3px;border-radius:8px}
 /* Seitenwechsel wie auf allen Seiten (sonst bricht der Übergang beim Ankommen ab) */
 @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
 </style>
+<link rel="stylesheet" href="/seitenkopf.css">
+<script src="/ereignisse.js"></script>
 </head>
 <body>
 
-<header>
-  <div class="container hdr">
-    <img src="/logo.png" alt="Grill'n Chill Logo" width="40" height="40">
-    <div>
-      <div class="display">GRILL'N CHILL</div>
-      <small>FOODTRUCK · BIELEFELD</small>
+<!-- SEITENKOPF:START (werkzeug/seiten-bauen.js) -->
+<a class="sk-skip" href="#main" data-i18n="sk.skip">Zum Inhalt springen</a>
+<header class="sk-kopf" id="seitenkopf">
+  <div class="sk-innen">
+    <a class="sk-marke" id="marke" href="/" aria-label="Grill'n Chill, zur Startseite">
+      <img src="/logo.png" alt="" width="44" height="44">
+      <span lang="en">Grill'n Chill</span>
+    </a>
+    <nav class="sk-links" aria-label="Hauptnavigation" data-i18n-aria="a11y.nav_main">
+      <a href="/#menu" data-i18n="nav.menu">Speisekarte</a>
+      <a href="/#story" data-i18n="nav.about">Über uns</a>
+      <a href="/#location"><span class="sk-wort-voll" data-i18n="nav.location_hours">Standort &amp; Zeiten</span><span class="sk-wort-kurz" data-i18n="nav.location">Standort</span></a>
+      <a href="/catering" data-i18n="nav.catering">Catering</a>
+      <a href="/#faq" data-i18n="nav.faq">FAQ</a>
+    </nav>
+    <div class="sk-aktionen">
+      <a class="sk-status" id="skStatus" href="/#location" aria-label="Öffnungszeiten" hidden><svg class="sk-flamme" viewBox="0 0 16 20" aria-hidden="true"><path class="koerper" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="kern" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg><span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>
+      <div class="lang-dd">
+        <button type="button" class="lang-dd-btn" aria-haspopup="listbox" aria-expanded="false" data-on-click="toggleLangDd(null, this)">
+          <span class="lang-dd-flag"></span>
+          <span class="lang-dd-code">DE</span><span class="sk-sr" data-i18n="a11y.lang">Sprache wählen</span>
+          <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="lang-dd-list" role="listbox" hidden></ul>
+      </div>
+      <a class="sk-icon" href="/#konto" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto" data-i18n-title="acc.nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
+      <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
+      <details class="sk-menu">
+        <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
+        <div class="sk-menu-flaeche">
+          <ul class="sk-menu-liste">
+          <li><a href="/#menu" data-i18n="nav.menu">Speisekarte</a></li>
+          <li><a href="/#story" data-i18n="nav.about">Über uns</a></li>
+          <li><a href="/#location" data-i18n="nav.location_hours">Standort &amp; Zeiten</a></li>
+          <li><a href="/catering" data-i18n="nav.catering">Catering</a></li>
+          <li><a href="/#faq" data-i18n="nav.faq">FAQ</a></li>
+          </ul>
+          <ul class="sk-menu-mehr">
+          <li><a href="/#konto" data-i18n="acc.nav">Mein Konto</a></li>
+          <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
+          <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
+          <li><a href="/firmen" data-i18n="footer.menu_firmen">Firmen-Mittag</a></li>
+          <li><a href="/gutscheine" data-i18n="firmen.foot_vouchers">Gutscheine</a></li>
+          </ul>
+        </div>
+      </details>
     </div>
-    <a class="back" href="/">← Zur Hauptseite</a>
   </div>
 </header>
+<!-- SEITENKOPF:ENDE -->
 
-<main class="container">
-  <div class="kopf">
+<main id="main" class="container">
+  <!-- Nur in anderen Sprachen sichtbar (html:lang(de) blendet aus); der Rechtstext darunter trägt lang="de" -->
+  <p class="nur-de"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span data-i18n="agb.nur_de">Diese AGB gibt es nur auf Deutsch.</span></p>
+  <div class="kopf" lang="de">
     <span class="eyebrow">Rechtliches</span>
-    <h1>AGB und Nutzungsbedingungen</h1>
+    <h1>AGB und Nutzungs&shy;bedingungen</h1>
     <p class="lead">Diese Bedingungen gelten für Bestellungen am Foodtruck, auf grillnchill-foodtruck.de und in der App „Grill'n Chill“ für iOS und Android.</p>
     <!-- AGB-VERZEICHNIS:START werkzeug/seiten-bauen.js füllt die Sprungmarken -->
     <nav aria-label="Inhalt"><ul class="pillen">
@@ -130,7 +174,7 @@
 <!-- AGB-VERZEICHNIS:ENDE -->
   </div>
 
-  <article class="agb">
+  <article class="agb" lang="de">
     <!-- AGB:START werkzeug/seiten-bauen.js übernimmt den Text aus LEGAL.agb in index.html -->
       <h2 id="p1">§ 1 Geltungsbereich</h2>
       <p>Diese AGB gelten für alle Verkäufe am Foodtruck, alle Online-Bestellungen über
@@ -190,7 +234,7 @@
       nur Bestellungen über die Grill'n&nbsp;Chill App (App&nbsp;Store / Google&nbsp;Play).
       Wird ein Code außerhalb des vorgesehenen Bestellwegs eingegeben, zeigt die Website einen
       entsprechenden Hinweis; ein Anspruch auf den Rabatt besteht in diesem Fall nicht.</p>
-      <h2 id="p8">§ 8 Persönliche Gutscheine</h2>
+      <h2 class="sk-luft" id="p8">§ 8 Persönliche Gutscheine</h2>
       <p>Persönliche Gutschein-Codes (z.&nbsp;B. aus unseren E-Mails) gelten mit dem in der
       jeweiligen E-Mail genannten Wert und Gültigkeitszeitraum (in der Regel 3 Tage ab Versand)
       und – sofern nicht anders angegeben – ab einem Bestellwert von 15,00&nbsp;€. Sie sind nur
@@ -234,7 +278,7 @@
       Empfehlungen (§&nbsp;15). Sie sind ab einem Bestellwert von 15,00&nbsp;€ einlösbar.
       Prämien aus dem Treueprogramm sind nicht übertragbar, nicht mit Aktionscodes oder
       Gutscheinen kombinierbar und werden nicht bar ausgezahlt.</p>
-      <h2 id="p10">§ 10 Verfügbarkeit &amp; Öffnungszeiten</h2>
+      <h2 class="sk-luft" id="p10">§ 10 Verfügbarkeit &amp; Öffnungszeiten</h2>
       <p>Es gelten die auf der Website angezeigten Öffnungszeiten. Einzelne Produkte können
       tagesbedingt ausverkauft sein; ebenso können wir die Online-Bestellannahme vorübergehend
       pausieren (z.&nbsp;B. bei hoher Auslastung oder an Feiertagen). Ein Anspruch auf die
@@ -267,7 +311,7 @@
       <p>Bei frisch zubereiteten Speisen und Getränken besteht gemäß §&nbsp;312g Abs.&nbsp;2
       Nr.&nbsp;2 BGB <strong>kein Widerrufsrecht</strong>, da es sich um Waren handelt, die
       schnell verderben können. Näheres regelt die Widerrufsbelehrung.</p>
-      <h2 id="p13">§ 13 Gewährleistung, Haftung &amp; Allergene</h2>
+      <h2 class="sk-luft" id="p13">§ 13 Gewährleistung, Haftung &amp; Allergene</h2>
       <p>Es gelten die gesetzlichen Mängelrechte. Beanstandungen melde bitte umgehend telefonisch
       oder per E-Mail. Angaben zu Allergenen und Zusatzstoffen findest du in der Speisekarte;
       bei Allergien oder Unverträglichkeiten informiere uns bitte vor der Bestellung (Notizfeld
@@ -318,7 +362,7 @@
 <!-- AGB:ENDE -->
   </article>
 
-  <div class="weiter">
+  <div class="weiter" lang="de">
     <p>Mehr zu deinen Daten und deinen Rechten:</p>
     <ul class="pillen">
       <li><a class="pille" href="/#datenschutz">Datenschutz</a></li>
@@ -328,11 +372,73 @@
   </div>
 </main>
 
-<footer>
-  <div class="container row">
-    <span>Grill'n Chill Yildiz und Öztas GbR · Gütersloher Straße 122, 33649 Bielefeld</span>
-    <span><a href="/liefergebiet">Liefergebiet</a> · <a href="/catering">Catering</a> · <a href="/halal">Halal</a> · <a href="mailto:info@grillnchill-foodtruck.de">info@grillnchill-foodtruck.de</a> · <a href="tel:+4915118540604">0151 18 54 06 04</a></span>
+<!-- SEITENFUSS:START (werkzeug/seiten-bauen.js) -->
+<footer class="sf-fuss" id="kontakt">
+  <div class="sf-innen">
+    <div class="sf-raster">
+      <div class="sf-marke">
+        <img src="/logo.png" alt="Grill'n Chill" width="60" height="60" loading="lazy">
+        <p data-i18n="footer.tagline">Streetfood mit Charakter aus Bielefeld Brackwede. Frisch gegrillt, chillig serviert.</p>
+        <div class="sf-social">
+          <a href="https://www.instagram.com/grillnchill.bi/" target="_blank" rel="noopener" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63a5.9 5.9 0 0 0-2.13 1.38A5.9 5.9 0 0 0 .63 4.14C.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91a5.9 5.9 0 0 0 1.38 2.13 5.9 5.9 0 0 0 2.13 1.38c.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.9 5.9 0 0 0 2.13-1.38 5.9 5.9 0 0 0 1.38-2.13c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.9 5.9 0 0 0-1.38-2.13A5.9 5.9 0 0 0 19.86.63C19.1.33 18.22.13 16.95.07 15.67.01 15.26 0 12 0Zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32ZM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm6.4-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88Z"/></svg>
+          </a>
+          <a href="https://www.facebook.com/profile.php?id=61582843259873" target="_blank" rel="noopener" aria-label="Facebook">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07Z"/></svg>
+          </a>
+          <a href="https://www.tiktok.com/@grillnchill.bi" target="_blank" rel="noopener" aria-label="TikTok">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.1Z"/></svg>
+          </a>
+        </div>
+        <div class="sf-badges">
+          <a href="https://apps.apple.com/de/app/id6804967024" target="_blank" rel="noopener">
+            <img data-badge="app-store" src="/badges/app-store-de.svg" alt="Laden im App Store" width="120" height="40" loading="lazy" />
+          </a>
+          <a href="https://play.google.com/store/apps/details?id=de.grillnchillfoodtruck.app" target="_blank" rel="noopener">
+            <img data-badge="google-play" src="/badges/google-play-de.png" alt="Jetzt bei Google Play" width="135" height="40" loading="lazy" />
+          </a>
+        </div>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_menu">Menü</h2>
+        <ul>
+          <li><a href="/#menu" data-i18n="footer.menu_speisekarte">Speisekarte</a></li>
+          <li><a href="/catering" data-i18n="footer.menu_catering">Foodtruck Catering</a></li>
+          <li><a href="/#location" data-i18n="footer.menu_location">Standort &amp; Zeiten</a></li>
+          <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
+          <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
+          <li><a href="/firmen" data-i18n="footer.menu_firmen">Firmen-Mittag</a></li>
+          <li><a href="/gutscheine" data-i18n="firmen.foot_vouchers">Gutscheine</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_service">Service</h2>
+        <ul>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/agb" data-i18n="footer.agb">AGB</a></li>
+          <li><a href="/#widerruf" data-i18n="footer.service_withdrawal">Widerrufsbelehrung</a></li>
+          <li><a href="/#cookies" data-i18n="footer.service_cookies">Cookies</a></li>
+          <li><a href="/#barrierefreiheit" data-i18n="footer.service_a11y">Barrierefreiheit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_contact">Kontakt</h2>
+        <ul>
+          <li class="sf-adresse">Gütersloher Straße 122<br>33649 Bielefeld</li>
+          <li><a href="tel:+4915118540604">+49 151 18 54 06 04</a></li>
+          <li><a href="mailto:info@grillnchill-foodtruck.de">info@grillnchill-foodtruck.de</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="sf-wort" aria-hidden="true" data-wort="GRILL'N CHILL"></div>
+    <div class="sf-unten">
+      <div>© 2026 Grill'n Chill Yildiz und Öztas GbR · <span data-i18n="footer.rights">Alle Rechte vorbehalten</span></div>
+      <div class="sf-recht"><a href="/#impressum" data-i18n="footer.impressum">Impressum</a><a href="/#datenschutz" data-i18n="footer.datenschutz">Datenschutz</a><a href="/agb" data-i18n="footer.agb">AGB</a></div>
+    </div>
   </div>
 </footer>
+<!-- SEITENFUSS:ENDE -->
+<script src="/i18n.js"></script>
+<script src="/seitenkopf.js" defer></script>
 </body>
 </html>

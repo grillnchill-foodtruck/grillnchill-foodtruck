@@ -708,6 +708,7 @@ Object.assign(I18N.nl, {
   "gs.js_hinweis_maus": "Zo ziet je cadeaubon eruit. Beweeg met de muis over de kaart.",
   "gs.js_hinweis_finger": "Zo ziet je cadeaubon eruit. Sleep de kaart opzij.",
   "gs.js_karte_de": "De cadeaubon en de e-mail zijn in het Duits.",
+  "agb.nur_de": "Deze voorwaarden zijn alleen in het Duits beschikbaar.",
   "gs.js_zahlen": "Verder naar betalen",
   "gs.js_wer": "De ontvanger",
   "gs.js_z_druck": "Na de betaling download je de pdf om te printen. Je krijgt hem ook per mail.",

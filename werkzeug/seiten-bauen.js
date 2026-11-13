@@ -442,6 +442,7 @@ const KOPF_SEITEN = {
   'firmen.html': { mehr: 'firmen', sprache: true },
   'gutscheine.html': { mehr: 'gutscheine', appZurueck: true, sprache: true },
   '404.html': { sprache: true },   // Jury R4: 404 mit Kopf, Sprunglink und Fuß wie alle Unterseiten
+  'agb.html': { sprache: true },   // Jury R5: AGB mit Kopf, Sprunglink und Fuß; der Text bleibt deutsch
 };
 const FLAMME = '<svg class="sk-flamme" viewBox="0 0 16 20" aria-hidden="true"><path class="koerper" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="kern" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg>';
 function kopfHtml(o) {
@@ -584,7 +585,7 @@ const SPRACHE_VORAB = "<script>(function(){try{var d=document.documentElement;"
   + "var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);"
   + "var s=document.createElement('style');s.textContent='html.i18n-wartet :is(main,footer,.promo-bar>*,.nav-links,.nav-actions,.sk-links,.sk-aktionen){visibility:hidden}html.i18n-wartet :is(.hero-bg,.sk-foto){visibility:visible}';document.head.appendChild(s);"
   + "d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>";
-const VORAB_SEITEN = ['halal.html', 'liefergebiet.html', 'catering.html', 'firmen.html', 'gutscheine.html', '404.html'];
+const VORAB_SEITEN = ['halal.html', 'liefergebiet.html', 'catering.html', 'firmen.html', 'gutscheine.html', '404.html', 'agb.html'];
 
 // Öffnungszeiten-Code aus index.html: von HOURS bis parseTime, dazu findNextOpening
 function oeffnungszeitenQuelle(indexHtml) {
