@@ -683,6 +683,7 @@ Object.assign(I18N.de, {
   "gs.js_hinweis": "So sieht dein Gutschein aus.",
   "gs.js_hinweis_maus": "So sieht dein Gutschein aus. Fahr mit der Maus über die Karte.",
   "gs.js_hinweis_finger": "So sieht dein Gutschein aus. Zieh seitlich an der Karte.",
+  "gs.js_karte_de": "Gutschein und E-Mail sind auf Deutsch.",
   "gs.js_zahlen": "Weiter zur Zahlung",
   "gs.js_wer": "Die beschenkte Person",
   "gs.js_z_druck": "Nach der Zahlung lädst du das PDF zum Ausdrucken herunter. Es kommt auch per Mail an dich.",

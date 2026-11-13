@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <!-- SPRACHE-VORAB:START (werkzeug/seiten-bauen.js) -->
-<script>(function(){try{var d=document.documentElement;if((d.getAttribute('data-seite')||'de')!=='de'||/bot\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}if(!l||!P[l])return;window.gncI18nZiel=l;var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);var s=document.createElement('style');s.textContent='html.i18n-wartet main,html.i18n-wartet footer{visibility:hidden}';document.head.appendChild(s);d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>
+<script>(function(){try{var d=document.documentElement;if((d.getAttribute('data-seite')||'de')!=='de'||/bot\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}if(!l||!P[l])return;window.gncI18nZiel=l;var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);var s=document.createElement('style');s.textContent='html.i18n-wartet :is(main,footer,.promo-bar>*,.nav-links,.nav-actions,.sk-links,.sk-aktionen){visibility:hidden}';document.head.appendChild(s);d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>
 <!-- SPRACHE-VORAB:ENDE -->
 <title data-i18n="meta.titel">Grill'n Chill | Halal Burger Bielefeld, Lieferung &amp; Abholung</title>
 <meta name="description" content="Halal-Burger vom Foodtruck in Bielefeld-Brackwede. Online bestellen, abholen oder liefern lassen und mit dem Code GRILL5 5 € sparen (ab 20 € Bestellwert)." />
@@ -11843,6 +11843,10 @@ function escHtml(str) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
+// Link-Ziel als fertiges Attribut: Vorlagen schreiben ${hrefAttr(url)} statt
+// eines Link-Attributs mit Platzhalter. Crawler lasen die sonst als echte Links, die auf
+// die 404 führen (Jury R4, 7 FAIL im Audit).
+function hrefAttr(url) { return 'href="' + escHtml(url) + '"'; }
 
 // Intelligente Upsell-Vorschläge je nach Warenkorb (One-Tap-Artikel: Getränke, Nuggets, Dips)
 function suggestUpsellItems() {
@@ -12039,7 +12043,7 @@ function renderCart() {
           <div class="addr-lines"><strong>Grill&rsquo;n Chill</strong><br>${TRUCK_ADDR}</div>
           ${o.pickupTime ? `<div class="addr-note">${t('co.s_pickup_time')}: <strong style="color:var(--color-cream)">${escHtml(o.pickupTime)}</strong></div>` : ''}
           <div class="addr-note">${t('co.s_pickup_note')}</div>
-          <a class="addr-maps" href="${mapsUrl}" target="_blank" rel="noopener">${t('co.s_maps')}</a>
+          <a class="addr-maps" ${hrefAttr(mapsUrl)} target="_blank" rel="noopener">${t('co.s_maps')}</a>
         </div>`;
     }
 
@@ -12061,7 +12065,7 @@ function renderCart() {
           <span class="success-nr-wert">${escHtml(t('co.pickup_nr').replace('{n}', o.abholnr))}</span>
           ${isDelivery ? '' : `<span class="success-nr-hint">${t('co.pickup_no_hint')}</span>`}
         </div>` : ''}
-        ${o.statusUrl ? `<p class="success-status"><a class="status-btn" href="${o.statusUrl}${APP_FORCED ? '&app=1' : ''}"${APP_FORCED ? '' : ' target="_blank" rel="noopener"'}>
+        ${o.statusUrl ? `<p class="success-status"><a class="status-btn" ${hrefAttr(o.statusUrl + (APP_FORCED ? '&app=1' : ''))}${APP_FORCED ? '' : ' target="_blank" rel="noopener"'}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.2v5l3.2 1.9"/></svg>
           <span>${t('co.status_link')}</span>
           <svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M19 14.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4.5"/></svg>
@@ -14885,7 +14889,7 @@ async function renderGroupHost(preloaded, refresh) {
       <button class="btn btn-secondary" style="flex:none;padding:0.7rem 1rem;" data-on-click="copyGroupLink(this)">${t('grp.copy')}</button>
     </div>
     ${shareBtn}
-    ${GNC_IMESSAGE ? '' : `<a href="${wa}" target="_blank" rel="noopener" class="btn ${canShare ? 'btn-secondary' : 'btn-primary'} btn-block" style="text-align:center;text-decoration:none;margin-bottom:1.2rem;">${t('grp.whatsapp')}</a>`}
+    ${GNC_IMESSAGE ? '' : `<a ${hrefAttr(wa)} target="_blank" rel="noopener" class="btn ${canShare ? 'btn-secondary' : 'btn-primary'} btn-block" style="text-align:center;text-decoration:none;margin-bottom:1.2rem;">${t('grp.whatsapp')}</a>`}
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.3rem;">
       <strong style="font-size:0.9rem;">${t('grp.list_title').replace('{n}', (g.contributions || []).length)}</strong>
       <button data-on-click="refreshGroupHost(this)" style="background:none;border:none;color:var(--color-orange-bright);font-weight:700;font-size:0.8rem;cursor:pointer;">${t('grp.refresh')}</button>

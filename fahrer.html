@@ -327,6 +327,8 @@
 
   /* ---------------- Kleinkram ---------------- */
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  // Link-Ziel als fertiges Attribut, damit kein Platzhalter-href im HTML steht (Crawler, Jury R4)
+  function hrefAttr(u) { return 'href="' + esc(u) + '"'; }
   function toast(text, art) {
     var t = $('toast');
     t.textContent = text;
@@ -551,7 +553,7 @@
     if (z.notiz) h += '<p class="lf-notiz"><b>Notiz:</b> ' + esc(z.notiz) + '</p>';
     h += '<div class="lf-knoepfe">';
     if (z.telefon) h += '<a class="k k-neben k-klein" href="tel:' + esc(z.telefon.replace(/[^\d+]/g, '')) + '">' + ICON.tel + '<span>Anrufen</span></a>';
-    h += '<a class="k k-neben k-klein" href="' + esc(navUrl(a)) + '" target="_blank" rel="noopener">' + ICON.nav + '<span>Navigation</span></a>';
+    h += '<a class="k k-neben k-klein" ' + hrefAttr(navUrl(a)) + ' target="_blank" rel="noopener">' + ICON.nav + '<span>Navigation</span></a>';
     h += '</div>';
     if (unterwegs) h += '<button type="button" class="k k-zu" data-aktion="zu">' + ICON.fertig + '<span>Zugestellt</span></button>';
     else h += '<button type="button" class="k k-haupt" data-aktion="los">' + ICON.los + '<span>Losfahren</span></button>';

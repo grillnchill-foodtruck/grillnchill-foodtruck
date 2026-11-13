@@ -707,6 +707,7 @@ Object.assign(I18N.en, {
   "gs.js_hinweis": "This is what your gift card looks like.",
   "gs.js_hinweis_maus": "This is what your gift card looks like. Move your mouse over the card.",
   "gs.js_hinweis_finger": "This is what your gift card looks like. Drag the card sideways.",
+  "gs.js_karte_de": "The gift card and email are in German.",
   "gs.js_zahlen": "Continue to payment",
   "gs.js_wer": "The recipient",
   "gs.js_z_druck": "After payment you download the PDF to print. It also comes to you by email.",

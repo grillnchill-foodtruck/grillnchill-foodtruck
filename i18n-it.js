@@ -707,6 +707,7 @@ Object.assign(I18N.it, {
   "gs.js_hinweis": "Ecco come sarà il tuo buono.",
   "gs.js_hinweis_maus": "Ecco come sarà il tuo buono. Passa il mouse sul biglietto.",
   "gs.js_hinweis_finger": "Ecco come sarà il tuo buono. Trascina il biglietto di lato.",
+  "gs.js_karte_de": "Il buono e l'e-mail sono in tedesco.",
   "gs.js_zahlen": "Vai al pagamento",
   "gs.js_wer": "La persona a cui fai il regalo",
   "gs.js_z_druck": "Dopo il pagamento scarichi il PDF da stampare. Ti arriva anche via e-mail.",

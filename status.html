@@ -427,11 +427,13 @@ function fbTexteLaden() {
 var STERN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.25 1.03 6-5.38-2.83-5.38 2.83 1.03-6L3.3 9.6l6-.9z"/></svg>';
 var EXT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M19 14.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4.5"/></svg>';
 function fbEsc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+// Link-Ziel als fertiges Attribut, damit kein Platzhalter-href im HTML steht (Crawler, Jury R4)
+function hrefAttr(u) { return 'href="' + fbEsc(u) + '"'; }
 function fbStart() {
   fbTexteLaden().then(fbZeichnen);
 }
 function fbGoogleHtml() {
-  return '<a class="pill-link" href="' + GOOGLE_BEWERTEN + '" target="_blank" rel="noopener">' + fbEsc(fbT('fb.google')) + EXT_SVG + '</a>';
+  return '<a class="pill-link" ' + hrefAttr(GOOGLE_BEWERTEN) + ' target="_blank" rel="noopener">' + fbEsc(fbT('fb.google')) + EXT_SVG + '</a>';
 }
 function fbFertig(text) {
   var c = document.getElementById('fbCard');

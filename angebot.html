@@ -222,6 +222,8 @@ var ICON = {
 };
 
 function h(x) { return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+// Link-Ziel als fertiges Attribut, damit kein Platzhalter-href im HTML steht (Crawler, Jury R4)
+function hrefAttr(u) { return 'href="' + h(u) + '"'; }
 function f(key, werte) {
   var s = t(key);
   Object.keys(werte || {}).forEach(function (k) { s = s.split('{' + k + '}').join(werte[k]); });
@@ -377,8 +379,8 @@ function zeichnen() {
       + '<button type="button" class="btn" id="annehmenKnopf" data-on-click="angebotAnnehmen(this)">' + ICON.ok + '<span>' + h(t('ang.accept')) + '</span></button>'
       + '<p class="klein">' + h(f('ang.total_short', { amount: geld(a.gesamt) })) + '</p></section>';
   }
-  html += '<div class="reihe" style="margin:0 0 1rem"><a class="mini" href="' + h(API + '?id=' + encodeURIComponent(ANG_ID) + '&t=' + encodeURIComponent(ANG_T) + '&pdf=1')
-    + '" target="_blank" rel="noopener">' + ICON.pdf + '<span>' + h(t('ang.pdf')) + '</span></a></div>';
+  html += '<div class="reihe" style="margin:0 0 1rem"><a class="mini" ' + hrefAttr(API + '?id=' + encodeURIComponent(ANG_ID) + '&t=' + encodeURIComponent(ANG_T) + '&pdf=1')
+    + ' target="_blank" rel="noopener">' + ICON.pdf + '<span>' + h(t('ang.pdf')) + '</span></a></div>';
   html += kontaktHtml();
   app.innerHTML = html;
   var cb = document.getElementById('haken');

@@ -707,6 +707,7 @@ Object.assign(I18N.es, {
   "gs.js_hinweis": "Así queda tu vale.",
   "gs.js_hinweis_maus": "Así queda tu vale. Pasa el ratón por encima de la tarjeta.",
   "gs.js_hinweis_finger": "Así queda tu vale. Desliza la tarjeta hacia un lado.",
+  "gs.js_karte_de": "El vale y el correo están en alemán.",
   "gs.js_zahlen": "Continuar al pago",
   "gs.js_wer": "La persona que lo recibe",
   "gs.js_z_druck": "Después del pago descargas el PDF para imprimir. También te llega por email.",

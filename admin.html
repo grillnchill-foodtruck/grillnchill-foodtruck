@@ -2812,6 +2812,8 @@ function ordTime(iso){
   }catch(e){ return {d:'—',t:''}; }
 }
 function esc2(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+// Link-Ziel als fertiges Attribut, damit kein Platzhalter-href im HTML steht (Crawler, Jury R4)
+function hrefAttr(u){ return 'href="'+esc2(u)+'"'; }
 let ordFilterKey='all';
 const ORD_FILTERS=[
   {key:'all',     label:'Alle',           test:r=>true},
@@ -3778,7 +3780,7 @@ function angAnsichtHtml(a){
   let h='<p class="hint" style="margin:0 0 .4rem">'+esc2(info.join(' · '))+'</p>';
   if(a.link) h+='<div class="ang-sec">Kundenlink</div><div class="ang-link"><code>'+esc2(a.link)+'</code>'
     +'<button type="button" class="ang-pille-btn" data-on-click="angLinkKopieren()">'+ANG_ICON.kopie+'Kopieren</button>'
-    +'<a class="ang-pille-btn" href="'+esc2(a.link)+'" target="_blank" rel="noopener">'+ANG_ICON.extern+'Ansehen</a></div>';
+    +'<a class="ang-pille-btn" '+hrefAttr(a.link)+' target="_blank" rel="noopener">'+ANG_ICON.extern+'Ansehen</a></div>';
   const k=a.kunde||{}, ev=a.event||{};
   h+='<div class="ang-sec">Kunde</div><p class="cat-info" style="margin:0">'+esc2(k.name)+(k.firma?' · '+esc2(k.firma):'')+'<br>'
     +(k.email?'<a href="mailto:'+esc2(k.email)+'">'+esc2(k.email)+'</a>':'')+(k.telefon?' · <a href="tel:'+esc2(k.telefon)+'">'+esc2(k.telefon)+'</a>':'')+'</p>';
@@ -3818,8 +3820,8 @@ function angPdfZeigen(url, nummer){
     +'<button type="button" class="ang-zu" aria-label="Vorschau schließen" data-on-click="angPdfZu()">'+ANG_ICON.x+'</button></div>'
     +'<div class="ang-body"><iframe class="ang-pdf" title="Angebot '+esc2(nummer)+' als PDF" src="'+esc2(url)+'"></iframe>'
     +'<p class="hint" style="margin-top:.6rem">Auf dem Handy zeigt die Vorschau oft nur die erste Seite. „In neuem Tab“ zeigt alles. Der Link gilt 10 Minuten.</p></div>'
-    +'<div class="ang-ft"><a class="abtn" href="'+esc2(url)+'" target="_blank" rel="noopener">'+ANG_ICON.extern+'In neuem Tab</a>'
-    +'<a class="abtn primary" href="'+esc2(url)+'&amp;download=1" download="Angebot-'+esc2(nummer)+'.pdf">'+ANG_ICON.laden+'Herunterladen</a></div></div>';
+    +'<div class="ang-ft"><a class="abtn" '+hrefAttr(url)+' target="_blank" rel="noopener">'+ANG_ICON.extern+'In neuem Tab</a>'
+    +'<a class="abtn primary" '+hrefAttr(url+'&download=1')+' download="Angebot-'+esc2(nummer)+'.pdf">'+ANG_ICON.laden+'Herunterladen</a></div></div>';
   ov.addEventListener('click',e=>{ if(e.target===ov) angPdfZu(); });
   document.body.appendChild(ov);
   if(!$('angOv')){ document.body.style.overflow='hidden'; document.addEventListener('keydown',angTaste); }

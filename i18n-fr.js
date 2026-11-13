@@ -707,6 +707,7 @@ Object.assign(I18N.fr, {
   "gs.js_hinweis": "Voici à quoi ressemble ton bon.",
   "gs.js_hinweis_maus": "Voici à quoi ressemble ton bon. Passe la souris sur la carte.",
   "gs.js_hinweis_finger": "Voici à quoi ressemble ton bon. Fais glisser la carte sur le côté.",
+  "gs.js_karte_de": "Le bon et l'e-mail sont en allemand.",
   "gs.js_zahlen": "Passer au paiement",
   "gs.js_wer": "La personne que tu gâtes",
   "gs.js_z_druck": "Après le paiement, tu télécharges le PDF à imprimer. Tu le reçois aussi par e-mail.",

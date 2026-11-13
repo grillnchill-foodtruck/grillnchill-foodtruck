@@ -90,6 +90,9 @@
     });
   }
   document.addEventListener('gnc-sprache', function () { status(); luft(); badges(); });
+  // /firmen übersetzt schon vor diesem Skript (defer); kam „gnc-sprache“ vorher,
+  // stünden Badges und Titel sonst in der falschen Sprache (Jury R4, firmen d-07).
+  luft(); badges();
   // Übersetzung starten (i18n.js lädt das Sprachpaket bei Bedarf nach).
   // /firmen ruft initI18n selbst auf, der zweite Aufruf ist dann wirkungslos.
   if (typeof window.initI18n === 'function') window.initI18n();

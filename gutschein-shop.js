@@ -223,10 +223,15 @@
     var gezeigt = reduce ? st.amount : 0;
     var bereit = true;
 
+    // In anderen Sprachen sagt der Hinweis dazu, dass Karte, PDF und E-Mail
+    // deutsch sind. Sonst lesen die deutschen Wörter auf der Karte sich wie ein
+    // vergessener Rest (Jury R4, gutscheine d-02).
     function hinweis() {
-      $('gs-hinweis').textContent = reduce ? T('gs.js_hinweis', 'So sieht dein Gutschein aus.')
+      var text = reduce ? T('gs.js_hinweis', 'So sieht dein Gutschein aus.')
         : feinZeiger ? T('gs.js_hinweis_maus', 'So sieht dein Gutschein aus. Fahr mit der Maus über die Karte.')
           : T('gs.js_hinweis_finger', 'So sieht dein Gutschein aus. Zieh seitlich an der Karte.');
+      var deutsch = typeof currentLang === 'undefined' || currentLang === 'de';
+      $('gs-hinweis').textContent = deutsch ? text : text + ' ' + T('gs.js_karte_de', '');
     }
     hinweis();
 
