@@ -232,6 +232,12 @@
   [headers.values]
     Cache-Control = "public, max-age=604800"
 
+# Vorschaubild für Links (og:image, Twitter, JSON-LD)
+[[headers]]
+  for = "/og-grillnchill.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
 [[headers]]
   for = "/hcg-siegel.*"
   [headers.values]
