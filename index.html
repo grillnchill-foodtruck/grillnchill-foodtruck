@@ -4605,9 +4605,12 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 }
 .footer ul { list-style: none; }
 .footer ul li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.1rem;
 }
+/* Tippfläche mindestens 24 px: Polster am Link statt Abstand zwischen den Zeilen,
+   der Zeilenabstand bleibt optisch gleich (Jury R4, 17 px hohe Links) */
 .footer ul a {
+  display: inline-block; padding-block: 0.2rem;
   color: var(--color-cream-dim);
   font-size: 0.88rem;
 }
@@ -5165,10 +5168,15 @@ section[id], footer[id] { scroll-margin-top: 84px; }
   border-radius: var(--radius-full);
   background: var(--color-border-bright);
   padding: 0; border: none; cursor: pointer;
-  transition: background .25s, width .25s;
+  transition: background .25s, width .25s, filter .25s;
 }
 .sig-dot.active { background: var(--color-orange); width: 46px; }
-.sig-dot:hover:not(.active) { background: var(--color-text-muted); }
+/* Hover: der Punkt wächst und wird hell, der aktive glüht (Jury R4, home h-06/h-07).
+   drop-shadow statt box-shadow, weil der Punkt per padding eine größere Tippfläche hat. */
+@media (hover: hover) and (pointer: fine) {
+  .sig-dot:hover:not(.active) { background: var(--color-cream-dim); width: 38px; }
+  .sig-dot.active:hover { filter: drop-shadow(0 0 6px rgba(232, 90, 36, 0.75)); }
+}
 
 /* ---------- Mobiler Warenkorb-Pill (Daumenzone) ---------- */
 .cart-fab {
@@ -5452,6 +5460,9 @@ input[type="checkbox"].cfun-invalid {
 /* Zentrierte Fliesstexte auf Lesebreite begrenzen (max. ~70 Zeichen je Zeile) */
 #halal .container > p, .comparison .container > p { max-width: 68ch; margin-left: auto; margin-right: auto; }
 .catering-footnote { font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 2.2rem; max-width: 68ch; }
+/* Eigenständige Links als Mini-Pillen mit Rand, 40 px hoch (vorher Textlinks mit 15 px, Jury R4) */
+.cat-links { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1rem; max-width: none; }
+.mini-pille { border-radius: var(--radius-full); text-decoration: none; }
 
 /* ---------- Partner werden (bewusst kompakt) ---------- */
 .partner-band {
@@ -7154,7 +7165,7 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
         <p data-i18n="catp.cond_text">Mit 50 % Anzahlung bei der Buchung ist euer Termin fest reserviert. Wie viele Gäste vegetarisch oder vegan essen, fragen wir vorher ab. Sonntags sind wir nur für Events unterwegs. Absagen ist bis 60 Tage vorher kostenfrei, die Staffel danach steht in den AGB.</p>
       </div>
     </div>
-    <p class="catering-footnote reveal" style="margin-bottom:0.6rem;"><a href="/catering" style="color:var(--color-orange-bright);font-weight:700;text-decoration:none;" data-i18n="home.cat_details">Alle Catering-Details auf einer Seite ansehen →</a> &nbsp;·&nbsp; <a href="/gutscheine" style="color:var(--color-orange-bright);font-weight:700;text-decoration:none;" data-i18n="home.gift_link">Gutschein verschenken →</a></p>
+    <p class="catering-footnote cat-links reveal"><a class="mini-btn mini-pille" href="/catering" data-i18n="home.cat_details">Alle Catering-Details auf einer Seite ansehen →</a><a class="mini-btn mini-pille" href="/gutscheine" data-i18n="home.gift_link">Gutschein verschenken →</a></p>
     <p class="catering-footnote reveal" data-i18n="catp.footnote">Genannte Preise für Privatkunden inkl. MwSt. Firmenkunden erhalten ein Netto-Angebot. Verbindlich ist das individuelle Angebot, das du nach deiner Anfrage erhältst.</p>
 
     <div class="catering-grid">

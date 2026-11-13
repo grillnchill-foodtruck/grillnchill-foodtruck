@@ -15,24 +15,25 @@
   @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400-normal.woff2')format('woff2')}
   @font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/inter-latin-700-normal.woff2')format('woff2')}
   *{box-sizing:border-box;margin:0}
-  body{min-height:100svh;display:grid;place-items:center;background:#0C0B09;color:#F5E9D0;
-    font-family:'Inter',-apple-system,sans-serif;text-align:center;padding:2rem;
+  body{background:#0C0B09;color:#F5E9D0;font-family:'Inter',-apple-system,sans-serif;line-height:1.6;-webkit-text-size-adjust:100%}
+  /* Kopf und Fuß wie auf allen Unterseiten (werkzeug/seiten-bauen.js), die 404 mittig dazwischen */
+  main.e404{min-height:calc(100svh - 76px);display:grid;place-content:center;justify-items:center;text-align:center;
+    padding:4rem 1.25rem 5rem;
     background-image:radial-gradient(circle at 50% 120%, rgba(232,90,36,0.14), transparent 55%);}
   .code{font-family:'Bowlby One',cursive;font-size:clamp(4.5rem,20vw,8rem);line-height:1;
     color:#E85A24;text-shadow:0 0 60px rgba(232,90,36,0.35);letter-spacing:0.04em;}
   h1{font-family:'Bowlby One',cursive;font-weight:400;font-size:clamp(1.1rem,4vw,1.5rem);margin:0.8rem 0 0.6rem;}
   p{color:#C9BCA4;max-width:42ch;margin:0 auto 1.8rem;line-height:1.6;font-size:0.95rem;}
   .row{display:flex;gap:0.8rem;justify-content:center;flex-wrap:wrap;}
-  a.btn{display:inline-block;padding:0.9rem 1.7rem;border-radius:12px;text-decoration:none;font-weight:700;font-size:0.95rem;}
-  a.primary{background:#CC4715;color:#fff;}
-  a.ghost{border:1px solid #2E2820;color:#C9BCA4;}
-  a.ghost:hover{border-color:#E85A24;color:#F5E9D0;}
+  /* Form (Pille, Versalien) kommt aus seitenkopf.css wie auf den anderen Unterseiten */
+  .btn{background:#CC4715;color:#fff;text-decoration:none}
+  .btn-ghost{border:2px solid #2E2820;color:#C9BCA4;text-decoration:none}
 
   /* ============ DESIGN PASS v2 · ui-ux-pro-max ============ */
-  a.btn{transition:transform .22s cubic-bezier(0.34,1.56,0.64,1),box-shadow .22s cubic-bezier(0.16,1,0.3,1),border-color .22s ease,color .22s ease;will-change:transform}
-  a.primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(232,90,36,.42)}
-  a.ghost:hover{transform:translateY(-2px)}
-  a.btn:active{transform:scale(.97)}
+  .btn,.btn-ghost{transition:transform .22s cubic-bezier(0.34,1.56,0.64,1),box-shadow .22s cubic-bezier(0.16,1,0.3,1),border-color .22s ease,color .22s ease,background-color .22s ease}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(232,90,36,.42)}
+  .btn-ghost:hover{transform:translateY(-2px);border-color:#E85A24;color:#F5E9D0}
+  .btn:active,.btn-ghost:active{transform:scale(.97)}
   a:focus-visible{outline:3px solid #FF7A3D;outline-offset:3px;border-radius:10px}
   @media(prefers-reduced-motion:no-preference){
     .code{animation:d404 .7s cubic-bezier(0.16,1,0.3,1) both}
@@ -44,19 +45,136 @@
 /* Seitenwechsel wie auf allen Seiten (sonst bricht der Übergang beim Ankommen ab) */
 @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
 </style>
+<link rel="stylesheet" href="/seitenkopf.css">
 <script src="/ereignisse.js"></script>
 </head>
 <body>
-  <main>
+<!-- SEITENKOPF:START (werkzeug/seiten-bauen.js) -->
+<a class="sk-skip" href="#main" data-i18n="sk.skip">Zum Inhalt springen</a>
+<header class="sk-kopf" id="seitenkopf">
+  <div class="sk-innen">
+    <a class="sk-marke" id="marke" href="/" aria-label="Grill'n Chill, zur Startseite">
+      <img src="/logo.png" alt="" width="44" height="44">
+      <span lang="en">Grill'n Chill</span>
+    </a>
+    <nav class="sk-links" aria-label="Hauptnavigation" data-i18n-aria="a11y.nav_main">
+      <a href="/#menu" data-i18n="nav.menu">Speisekarte</a>
+      <a href="/#story" data-i18n="nav.about">Über uns</a>
+      <a href="/#location"><span class="sk-wort-voll" data-i18n="nav.location_hours">Standort &amp; Zeiten</span><span class="sk-wort-kurz" data-i18n="nav.location">Standort</span></a>
+      <a href="/catering" data-i18n="nav.catering">Catering</a>
+      <a href="/#faq" data-i18n="nav.faq">FAQ</a>
+    </nav>
+    <div class="sk-aktionen">
+      <a class="sk-status" id="skStatus" href="/#location" aria-label="Öffnungszeiten" hidden><svg class="sk-flamme" viewBox="0 0 16 20" aria-hidden="true"><path class="koerper" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="kern" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg><span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>
+      <div class="lang-dd">
+        <button type="button" class="lang-dd-btn" aria-haspopup="listbox" aria-expanded="false" data-on-click="toggleLangDd(null, this)">
+          <span class="lang-dd-flag"></span>
+          <span class="lang-dd-code">DE</span><span class="sk-sr" data-i18n="a11y.lang">Sprache wählen</span>
+          <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="lang-dd-list" role="listbox" hidden></ul>
+      </div>
+      <a class="sk-icon" href="/#konto" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto" data-i18n-title="acc.nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
+      <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
+      <details class="sk-menu">
+        <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
+        <div class="sk-menu-flaeche">
+          <ul class="sk-menu-liste">
+          <li><a href="/#menu" data-i18n="nav.menu">Speisekarte</a></li>
+          <li><a href="/#story" data-i18n="nav.about">Über uns</a></li>
+          <li><a href="/#location" data-i18n="nav.location_hours">Standort &amp; Zeiten</a></li>
+          <li><a href="/catering" data-i18n="nav.catering">Catering</a></li>
+          <li><a href="/#faq" data-i18n="nav.faq">FAQ</a></li>
+          </ul>
+          <ul class="sk-menu-mehr">
+          <li><a href="/#konto" data-i18n="acc.nav">Mein Konto</a></li>
+          <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
+          <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
+          <li><a href="/firmen" data-i18n="footer.menu_firmen">Firmen-Mittag</a></li>
+          <li><a href="/gutscheine" data-i18n="firmen.foot_vouchers">Gutscheine</a></li>
+          </ul>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>
+<!-- SEITENKOPF:ENDE -->
+  <main id="main" class="e404">
     <div class="code">404</div>
     <h1 data-i18n="e404.h1">Diese Seite ist durchgebrannt</h1>
     <p data-i18n="e404.p">Den Link gibt es nicht (mehr). Saftige Halal-Burger gibt es zum Glück immer. Zurück zum Wesentlichen?</p>
     <div class="row">
-      <a class="btn primary" href="/#menu" data-i18n="e404.menu">Zur Speisekarte</a>
-      <a class="btn ghost" href="/" data-i18n="e404.start">Zur Startseite</a>
+      <a class="btn" href="/#menu" data-i18n="e404.menu">Zur Speisekarte</a>
+      <a class="btn-ghost" href="/" data-i18n="e404.start">Zur Startseite</a>
     </div>
   </main>
+<!-- SEITENFUSS:START (werkzeug/seiten-bauen.js) -->
+<footer class="sf-fuss" id="kontakt">
+  <div class="sf-innen">
+    <div class="sf-raster">
+      <div class="sf-marke">
+        <img src="/logo.png" alt="Grill'n Chill" width="60" height="60" loading="lazy">
+        <p data-i18n="footer.tagline">Streetfood mit Charakter aus Bielefeld Brackwede. Frisch gegrillt, chillig serviert.</p>
+        <div class="sf-social">
+          <a href="https://www.instagram.com/grillnchill.bi/" target="_blank" rel="noopener" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63a5.9 5.9 0 0 0-2.13 1.38A5.9 5.9 0 0 0 .63 4.14C.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91a5.9 5.9 0 0 0 1.38 2.13 5.9 5.9 0 0 0 2.13 1.38c.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.9 5.9 0 0 0 2.13-1.38 5.9 5.9 0 0 0 1.38-2.13c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.9 5.9 0 0 0-1.38-2.13A5.9 5.9 0 0 0 19.86.63C19.1.33 18.22.13 16.95.07 15.67.01 15.26 0 12 0Zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32ZM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm6.4-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88Z"/></svg>
+          </a>
+          <a href="https://www.facebook.com/profile.php?id=61582843259873" target="_blank" rel="noopener" aria-label="Facebook">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07Z"/></svg>
+          </a>
+          <a href="https://www.tiktok.com/@grillnchill.bi" target="_blank" rel="noopener" aria-label="TikTok">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.1Z"/></svg>
+          </a>
+        </div>
+        <div class="sf-badges">
+          <a href="https://apps.apple.com/de/app/id6804967024" target="_blank" rel="noopener">
+            <img data-badge="app-store" src="/badges/app-store-de.svg" alt="Laden im App Store" width="120" height="40" loading="lazy" />
+          </a>
+          <a href="https://play.google.com/store/apps/details?id=de.grillnchillfoodtruck.app" target="_blank" rel="noopener">
+            <img data-badge="google-play" src="/badges/google-play-de.png" alt="Jetzt bei Google Play" width="135" height="40" loading="lazy" />
+          </a>
+        </div>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_menu">Menü</h2>
+        <ul>
+          <li><a href="/#menu" data-i18n="footer.menu_speisekarte">Speisekarte</a></li>
+          <li><a href="/catering" data-i18n="footer.menu_catering">Foodtruck Catering</a></li>
+          <li><a href="/#location" data-i18n="footer.menu_location">Standort &amp; Zeiten</a></li>
+          <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
+          <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
+          <li><a href="/firmen" data-i18n="footer.menu_firmen">Firmen-Mittag</a></li>
+          <li><a href="/gutscheine" data-i18n="firmen.foot_vouchers">Gutscheine</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_service">Service</h2>
+        <ul>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/agb" data-i18n="footer.agb">AGB</a></li>
+          <li><a href="/#widerruf" data-i18n="footer.service_withdrawal">Widerrufsbelehrung</a></li>
+          <li><a href="/#cookies" data-i18n="footer.service_cookies">Cookies</a></li>
+          <li><a href="/#barrierefreiheit" data-i18n="footer.service_a11y">Barrierefreiheit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_contact">Kontakt</h2>
+        <ul>
+          <li class="sf-adresse">Gütersloher Straße 122<br>33649 Bielefeld</li>
+          <li><a href="tel:+4915118540604">+49 151 18 54 06 04</a></li>
+          <li><a href="mailto:info@grillnchill-foodtruck.de">info@grillnchill-foodtruck.de</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="sf-wort" aria-hidden="true" data-wort="GRILL'N CHILL"></div>
+    <div class="sf-unten">
+      <div>© 2026 Grill'n Chill Yildiz und Öztas GbR · <span data-i18n="footer.rights">Alle Rechte vorbehalten</span></div>
+      <div class="sf-recht"><a href="/#impressum" data-i18n="footer.impressum">Impressum</a><a href="/#datenschutz" data-i18n="footer.datenschutz">Datenschutz</a><a href="/agb" data-i18n="footer.agb">AGB</a></div>
+    </div>
+  </div>
+</footer>
+<!-- SEITENFUSS:ENDE -->
 <script src="/i18n.js"></script>
-<script>initI18n();</script>
+<script src="/seitenkopf.js" defer></script>
 </body>
 </html>
