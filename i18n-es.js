@@ -750,5 +750,15 @@ Object.assign(I18N.es, {
   "e404.p": "Este enlace no existe o ya no está activo. Por suerte, burgers halal jugosas siempre hay. ¿Volvemos a lo importante?",
   "e404.menu": "Ver la carta",
   "e404.start": "Ir al inicio",
+  "footer.impressum": "Aviso legal",
+  "footer.datenschutz": "Privacidad",
+  "footer.agb": "Condiciones",
+  "home.cat_details": "Todos los detalles del catering en una página →",
+  "home.gift_link": "Regala un vale →",
+  "meta.titel": "Grill'n Chill | Hamburguesas halal en Bielefeld, a domicilio y para recoger",
+  "firmen.titel": "Comida de empresa en Bielefeld | Hamburguesas halal para la oficina con factura mensual",
+  "gs.ph_msg": "Feliz cumpleaños. El doble patty corre de mi cuenta.",
+  "gs.ph_mail": "nombre@ejemplo.es",
+  "firmen.ph_domain": "empresa.es",
 });
 /* UNTERSEITEN:ENDE */

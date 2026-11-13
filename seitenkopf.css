@@ -377,3 +377,97 @@ footer a { display: inline-block; padding-block: 0.3rem; }
 }
 .sk-kopf { view-transition-name: kopf; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.26s; }
+
+/* ==========================================================================
+   Kopf wie auf der Startseite (Jury R3, Fix 1): Navigation mittig,
+   Konto-Symbol neben Bestellen, Logo mit Hover
+   ========================================================================== */
+.sk-icon {
+  display: none; align-items: center; justify-content: center;
+  width: var(--sk-tap); height: var(--sk-tap); flex: none;
+  border: 1px solid var(--sk-border-hell); border-radius: 12px;
+  color: var(--sk-cream-dim);
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.1s ease-out, background-color 0.15s ease;
+}
+.sk-icon:active { transform: scale(0.94); }
+@media (min-width: 880px) {
+  .sk-links { flex: 1; justify-content: center; }
+  .sk-aktionen { margin-left: 0; }
+  .sk-icon { display: inline-flex; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .sk-icon:hover { border-color: var(--sk-orange); color: var(--sk-cream); background: #252220; transform: translateY(-1px); }
+  .sk-marke img { transition: transform 0.35s var(--sk-ease), box-shadow 0.25s ease; }
+  .sk-marke:hover img { transform: rotate(-8deg) scale(1.06); box-shadow: 0 0 0 2px rgba(232, 90, 36, 0.55), 0 0 18px rgba(232, 90, 36, 0.35); }
+  .sk-marke span { transition: color 0.15s ease; }
+  .sk-marke:hover span { color: var(--sk-orange-hell); }
+  .sk-status:hover { transform: translateY(-1px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk-marke:hover img { transform: none; }
+}
+
+/* Knöpfe wie auf der Startseite: Pille, Versalien */
+main .btn, main .btn-ghost, main .btn.gs-zahlen {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  min-height: var(--sk-tap); padding: 0.9rem 1.5rem;
+  border-radius: 999px;
+  font-family: 'Inter', -apple-system, sans-serif; font-weight: 700; font-size: 0.95rem;
+  line-height: 1.25; letter-spacing: 0.01em; text-transform: uppercase;
+}
+main .btn-ghost { border-width: 2px; }
+
+/* ==========================================================================
+   Fußzeile wie auf der Startseite (werkzeug/seiten-bauen.js, fussHtml)
+   ========================================================================== */
+.sf-fuss {
+  background: #141414; border-top: 1px solid var(--sk-border);
+  padding: 2.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  color: var(--sk-muted); font-size: 0.88rem; text-align: left; margin: 0;
+}
+.sf-innen { max-width: 1240px; margin: 0 auto; padding: 0 1.25rem; }
+.sf-raster { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
+.sf-marke { grid-column: 1 / -1; }
+.sf-marke img { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 0.8rem; display: block; }
+.sf-marke p { color: var(--sk-muted); font-size: 0.85rem; max-width: 320px; margin: 0 0 1rem; line-height: 1.55; }
+.sf-fuss .sf-titel {
+  font-family: var(--sk-display); font-weight: 400; font-size: 1rem; line-height: 1.2;
+  color: var(--sk-cream); margin: 0 0 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.sf-fuss ul { list-style: none; margin: 0; padding: 0; }
+.sf-fuss li { margin-bottom: 0.5rem; }
+.sf-fuss .sf-adresse { color: var(--sk-cream-dim); line-height: 1.5; }
+.sf-fuss ul a, .sf-recht a { color: var(--sk-cream-dim); font-size: 0.88rem; text-decoration: none; }
+.sf-social { display: flex; gap: 0.6rem; margin-top: 1rem; }
+.sf-social a {
+  width: 44px; height: 44px; border-radius: 50%; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--sk-card); color: var(--sk-cream-dim); border: 1px solid var(--sk-border);
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.sf-social svg { width: 20px; height: 20px; }
+.sf-badges { display: flex; gap: 0.7rem; margin-top: 1.1rem; flex-wrap: wrap; align-items: center; }
+.sf-badges a { display: block; padding: 0; border-radius: 7px; transition: transform 0.15s ease, opacity 0.15s ease; background: none; }
+.sf-badges img { height: 44px; width: auto; display: block; border-radius: 7px; }
+html.sk-app .sf-badges { display: none; }
+.sf-wort {
+  font-family: var(--sk-display); font-size: clamp(2.6rem, 11vw, 8.5rem); line-height: 0.95;
+  text-align: center; color: rgba(245, 233, 208, 0.05); letter-spacing: 0.01em;
+  margin: 1.2rem 0 0.4rem; white-space: nowrap; overflow: hidden; user-select: none;
+}
+.sf-wort::before { content: attr(data-wort); }
+.sf-unten {
+  border-top: 1px solid var(--sk-border); padding-top: 1.3rem;
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+  font-size: 0.82rem; color: var(--sk-muted);
+}
+.sf-recht { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+@media (min-width: 720px) {
+  .sf-raster { grid-template-columns: 1.5fr 1fr 1fr 1fr; }
+  .sf-marke { grid-column: auto; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .sf-fuss ul a:hover, .sf-recht a:hover { color: var(--sk-orange-hell); }
+  .sf-social a:hover { background: var(--sk-orange); color: #fff; border-color: var(--sk-orange); transform: translateY(-2px); }
+  .sf-badges a:hover { transform: translateY(-2px); opacity: 0.9; background: none; }
+}

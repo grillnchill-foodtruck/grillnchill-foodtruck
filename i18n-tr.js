@@ -750,5 +750,15 @@ Object.assign(I18N.tr, {
   "e404.p": "Bu bağlantı yok ya da artık geçerli değil. Neyse ki sulu helal burgerler her zaman var. Asıl konuya dönelim mi?",
   "e404.menu": "Menüye git",
   "e404.start": "Ana sayfaya dön",
+  "footer.impressum": "Künye",
+  "footer.datenschutz": "Gizlilik",
+  "footer.agb": "Genel Şartlar",
+  "home.cat_details": "Tüm catering ayrıntılarını tek sayfada gör →",
+  "home.gift_link": "Hediye kartı hediye et →",
+  "meta.titel": "Grill'n Chill | Helal Burger Bielefeld, Teslimat ve Gel-Al",
+  "firmen.titel": "Bielefeld şirket öğle yemeği | Ofise helal burger, aylık faturayla",
+  "gs.ph_msg": "Doğum günün kutlu olsun. Double patty benden.",
+  "gs.ph_mail": "isim@ornek.com",
+  "firmen.ph_domain": "sirket.com",
 });
 /* UNTERSEITEN:ENDE */

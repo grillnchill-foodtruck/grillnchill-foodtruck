@@ -79,7 +79,17 @@
   status();
   setInterval(status, 60000);
   // Nach jedem Sprachwechsel (i18n.js meldet „gnc-sprache“) Pille und Titel neu
-  document.addEventListener('gnc-sprache', function () { status(); luft(); });
+  // Store-Badges in der Fußzeile gibt es je Sprache (/badges/app-store-en.svg …)
+  function badges() {
+    var l = document.documentElement.lang || 'de';
+    if (!/^(de|en|tr|it|es|pt|fr|nl)$/.test(l)) l = 'de';
+    Array.prototype.forEach.call(document.querySelectorAll('img[data-badge]'), function (i) {
+      var art = i.getAttribute('data-badge');
+      var ziel = '/badges/' + art + '-' + l + (art === 'app-store' ? '.svg' : '.png');
+      if (i.getAttribute('src') !== ziel) i.setAttribute('src', ziel);
+    });
+  }
+  document.addEventListener('gnc-sprache', function () { status(); luft(); badges(); });
   // Übersetzung starten (i18n.js lädt das Sprachpaket bei Bedarf nach).
   // /firmen ruft initI18n selbst auf, der zweite Aufruf ist dann wirkungslos.
   if (typeof window.initI18n === 'function') window.initI18n();

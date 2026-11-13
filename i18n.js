@@ -726,6 +726,16 @@ Object.assign(I18N.de, {
   "e404.p": "Den Link gibt es nicht (mehr). Saftige Halal-Burger gibt es zum Glück immer. Zurück zum Wesentlichen?",
   "e404.menu": "Zur Speisekarte",
   "e404.start": "Zur Startseite",
+  "footer.impressum": "Impressum",
+  "footer.datenschutz": "Datenschutz",
+  "footer.agb": "AGB",
+  "home.cat_details": "Alle Catering-Details auf einer Seite ansehen →",
+  "home.gift_link": "Gutschein verschenken →",
+  "meta.titel": "Grill'n Chill | Halal Burger Bielefeld, Lieferung & Abholung",
+  "firmen.titel": "Firmen-Mittag Bielefeld | Halal-Burger fürs Büro auf Monatsrechnung",
+  "gs.ph_msg": "Alles Gute zum Geburtstag. Der Doppel-Patty geht auf mich.",
+  "gs.ph_mail": "name@beispiel.de",
+  "firmen.ph_domain": "firma.de",
 });
 /* UNTERSEITEN:ENDE */
 
@@ -849,7 +859,7 @@ function setLang(lang) {
     ensureLang(lang, function () { setLang(lang); });
     return;
   }
-  if (!I18N[lang]) return; // Paket nicht ladbar -> Abbruch ohne Retry (t() faellt ohnehin auf DE zurueck, gespeicherte Wahl bleibt erhalten)
+  if (!I18N[lang]) { i18nZeigen(); return; } // Paket nicht ladbar -> Abbruch ohne Retry (t() faellt ohnehin auf DE zurueck, gespeicherte Wahl bleibt erhalten)
   currentLang = lang;
   document.documentElement.lang = lang;
   try { localStorage.setItem('gnc_lang', lang); } catch (e) {}
@@ -859,7 +869,11 @@ function setLang(lang) {
   if (typeof updateCartUI === 'function') updateCartUI();   // Leiste unten ("1 Artikel")
   if (typeof updateOpenStatus === 'function') updateOpenStatus();
   if (typeof renderReviews === 'function') renderReviews();
+  i18nZeigen();
 }
+
+// Das Skript „Sprache vorab“ im Kopf hält Inhalt unsichtbar, bis übersetzt ist
+function i18nZeigen() { document.documentElement.classList.remove('i18n-wartet'); }
 
 function initI18n() {
   // Einmal je Seite: /firmen ruft es selbst auf, seitenkopf.js für die übrigen Unterseiten
@@ -876,6 +890,7 @@ function initI18n() {
   }
   currentLang = want;
   applyTranslations();
+  i18nZeigen();
   // Dynamische Inhalte in der Startsprache rendern (Produktnamen etc.)
   if (typeof renderMenu === 'function') renderMenu();
   if (typeof renderCart === 'function') renderCart();

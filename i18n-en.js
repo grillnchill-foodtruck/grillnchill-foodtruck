@@ -750,5 +750,15 @@ Object.assign(I18N.en, {
   "e404.p": "This link doesn't exist (any more). Luckily, juicy halal burgers always do. Back to what matters?",
   "e404.menu": "See the menu",
   "e404.start": "Back to home",
+  "footer.impressum": "Legal notice",
+  "footer.datenschutz": "Privacy",
+  "footer.agb": "Terms",
+  "home.cat_details": "See all catering details on one page →",
+  "home.gift_link": "Give a gift card →",
+  "meta.titel": "Grill'n Chill | Halal burgers in Bielefeld, delivery & pickup",
+  "firmen.titel": "Office lunch in Bielefeld | Halal burgers for the office, billed monthly",
+  "gs.ph_msg": "Happy birthday. The double patty is on me.",
+  "gs.ph_mail": "name@example.com",
+  "firmen.ph_domain": "company.com",
 });
 /* UNTERSEITEN:ENDE */

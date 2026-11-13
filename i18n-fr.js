@@ -750,5 +750,15 @@ Object.assign(I18N.fr, {
   "e404.p": "Ce lien n'existe pas (ou plus). Heureusement, les burgers halal bien juteux, eux, sont toujours là. On revient à l'essentiel ?",
   "e404.menu": "Voir la carte",
   "e404.start": "Retour à l'accueil",
+  "footer.impressum": "Mentions légales",
+  "footer.datenschutz": "Confidentialité",
+  "footer.agb": "CGV",
+  "home.cat_details": "Tous les détails du traiteur sur une page →",
+  "home.gift_link": "Offrir un bon cadeau →",
+  "meta.titel": "Grill'n Chill | Burgers halal à Bielefeld, livraison et à emporter",
+  "firmen.titel": "Déjeuner d'entreprise à Bielefeld | Burgers halal au bureau, facture mensuelle",
+  "gs.ph_msg": "Joyeux anniversaire. Le double steak, c'est pour moi.",
+  "gs.ph_mail": "nom@exemple.fr",
+  "firmen.ph_domain": "entreprise.fr",
 });
 /* UNTERSEITEN:ENDE */

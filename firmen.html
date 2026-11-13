@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Firmen-Mittag Bielefeld | Halal-Burger fürs Büro auf Monatsrechnung</title>
+<!-- SPRACHE-VORAB:START (werkzeug/seiten-bauen.js) -->
+<script>(function(){try{var d=document.documentElement;if((d.getAttribute('data-seite')||'de')!=='de'||/bot\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}if(!l||!P[l])return;window.gncI18nZiel=l;var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);var s=document.createElement('style');s.textContent='html.i18n-wartet main,html.i18n-wartet footer{visibility:hidden}';document.head.appendChild(s);d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>
+<!-- SPRACHE-VORAB:ENDE -->
+<title data-i18n="firmen.titel">Firmen-Mittag Bielefeld | Halal-Burger fürs Büro auf Monatsrechnung</title>
 <meta name="description" content="Firmen-Mittag von Grill'n Chill in Bielefeld: gemeinsam bis 11 Uhr bestellen, um 12 Uhr geliefert, eine Rechnung im Monat. 100 % halal, ohne Vorkasse.">
 <link rel="canonical" href="https://grillnchill-foodtruck.de/firmen">
 <link rel="icon" href="/logo.png">
@@ -245,6 +248,7 @@
         </button>
         <ul class="lang-dd-list" role="listbox" hidden></ul>
       </div>
+      <a class="sk-icon" href="/#konto" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto" data-i18n-title="acc.nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
       <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
       <details class="sk-menu">
         <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
@@ -257,6 +261,7 @@
           <li><a href="/#faq" data-i18n="nav.faq">FAQ</a></li>
           </ul>
           <ul class="sk-menu-mehr">
+          <li><a href="/#konto" data-i18n="acc.nav">Mein Konto</a></li>
           <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
           <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
           <li><a href="/firmen" data-i18n="footer.menu_firmen" aria-current="page">Firmen-Mittag</a></li>
@@ -289,7 +294,7 @@
           </div>
       </div>
         <figure class="sk-foto" style="--fp:50% 42%">
-          <img src="/bilder/seite-firmen.webp" alt="Kubi reicht einen frisch gegrillten Burger in Papier" width="640" height="800" decoding="async">
+          <img src="/bilder/seite-firmen.webp" alt="Kubi reicht einen frisch gegrillten Burger in Papier" width="640" height="800" decoding="async" fetchpriority="high">
         </figure>
       </div>
     </div>
@@ -369,7 +374,7 @@
             <div class="feld"><label for="fPersonen" data-i18n="firmen.f_personen">Wie viele Personen bestellen ungefähr?</label><input id="fPersonen" type="number" min="1" max="5000" required inputmode="numeric"></div>
             <div class="feld breit">
               <label for="fDomain" data-i18n="firmen.f_domain">E-Mail-Domain der Mitarbeitenden (optional)</label>
-              <input id="fDomain" maxlength="80" autocapitalize="off" spellcheck="false" placeholder="firma.de">
+              <input id="fDomain" maxlength="80" autocapitalize="off" spellcheck="false" placeholder="firma.de" data-i18n-placeholder="firmen.ph_domain">
               <p class="notiz" data-i18n="firmen.f_domain_note">Zum Beispiel firma.de. Dann geht nur mit dieser Domain eine Bestellung auf eure Rechnung.</p>
             </div>
           </div>
@@ -435,12 +440,72 @@
   </section>
 </main>
 
-<footer>
-  <div class="container row">
-    <span>Grill'n Chill Yildiz und Öztas GbR · Gütersloher Straße 122, 33649 Bielefeld</span>
-    <span><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a> · <a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a> · <a href="/catering" data-i18n="footer.menu_catering">Foodtruck Catering</a> · <a href="/gutscheine" data-i18n="firmen.foot_vouchers">Gutscheine</a> · <a href="tel:+4915118540604">0151 18 54 06 04</a> · <a href="/#impressum" data-i18n="firmen.foot_imprint">Impressum</a> · <a href="/#datenschutz" data-i18n="firmen.f_privacy_link">Datenschutz</a></span>
+<!-- SEITENFUSS:START (werkzeug/seiten-bauen.js) -->
+<footer class="sf-fuss" id="kontakt">
+  <div class="sf-innen">
+    <div class="sf-raster">
+      <div class="sf-marke">
+        <img src="/logo.png" alt="Grill'n Chill" width="60" height="60" loading="lazy">
+        <p data-i18n="footer.tagline">Streetfood mit Charakter aus Bielefeld Brackwede. Frisch gegrillt, chillig serviert.</p>
+        <div class="sf-social">
+          <a href="https://www.instagram.com/grillnchill.bi/" target="_blank" rel="noopener" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63a5.9 5.9 0 0 0-2.13 1.38A5.9 5.9 0 0 0 .63 4.14C.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91a5.9 5.9 0 0 0 1.38 2.13 5.9 5.9 0 0 0 2.13 1.38c.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.9 5.9 0 0 0 2.13-1.38 5.9 5.9 0 0 0 1.38-2.13c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.9 5.9 0 0 0-1.38-2.13A5.9 5.9 0 0 0 19.86.63C19.1.33 18.22.13 16.95.07 15.67.01 15.26 0 12 0Zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32ZM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm6.4-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88Z"/></svg>
+          </a>
+          <a href="https://www.facebook.com/profile.php?id=61582843259873" target="_blank" rel="noopener" aria-label="Facebook">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.69.24 2.69.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07Z"/></svg>
+          </a>
+          <a href="https://www.tiktok.com/@grillnchill.bi" target="_blank" rel="noopener" aria-label="TikTok">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5.8 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.84-.1Z"/></svg>
+          </a>
+        </div>
+        <div class="sf-badges">
+          <a href="https://apps.apple.com/de/app/id6804967024" target="_blank" rel="noopener">
+            <img data-badge="app-store" src="/badges/app-store-de.svg" alt="Laden im App Store" width="120" height="40" loading="lazy" />
+          </a>
+          <a href="https://play.google.com/store/apps/details?id=de.grillnchillfoodtruck.app" target="_blank" rel="noopener">
+            <img data-badge="google-play" src="/badges/google-play-de.png" alt="Jetzt bei Google Play" width="135" height="40" loading="lazy" />
+          </a>
+        </div>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_menu">Menü</h2>
+        <ul>
+          <li><a href="/#menu" data-i18n="footer.menu_speisekarte">Speisekarte</a></li>
+          <li><a href="/catering" data-i18n="footer.menu_catering">Foodtruck Catering</a></li>
+          <li><a href="/#location" data-i18n="footer.menu_location">Standort &amp; Zeiten</a></li>
+          <li><a href="/liefergebiet" data-i18n="footer.menu_delivery">Liefergebiet</a></li>
+          <li><a href="/halal" data-i18n="footer.menu_halal">Halal-Zertifikat</a></li>
+          <li><a href="/firmen" data-i18n="footer.menu_firmen">Firmen-Mittag</a></li>
+          <li><a href="/gutscheine" data-i18n="firmen.foot_vouchers">Gutscheine</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_service">Service</h2>
+        <ul>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a href="/agb" data-i18n="footer.agb">AGB</a></li>
+          <li><a href="/#widerruf" data-i18n="footer.service_withdrawal">Widerrufsbelehrung</a></li>
+          <li><a href="/#cookies" data-i18n="footer.service_cookies">Cookies</a></li>
+          <li><a href="/#barrierefreiheit" data-i18n="footer.service_a11y">Barrierefreiheit</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_contact">Kontakt</h2>
+        <ul>
+          <li class="sf-adresse">Gütersloher Straße 122<br>33649 Bielefeld</li>
+          <li><a href="tel:+4915118540604">+49 151 18 54 06 04</a></li>
+          <li><a href="mailto:info@grillnchill-foodtruck.de">info@grillnchill-foodtruck.de</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="sf-wort" aria-hidden="true" data-wort="GRILL'N CHILL"></div>
+    <div class="sf-unten">
+      <div>© 2026 Grill'n Chill Yildiz und Öztas GbR · <span data-i18n="footer.rights">Alle Rechte vorbehalten</span></div>
+      <div class="sf-recht"><a href="/#impressum" data-i18n="footer.impressum">Impressum</a><a href="/#datenschutz" data-i18n="footer.datenschutz">Datenschutz</a><a href="/agb" data-i18n="footer.agb">AGB</a></div>
+    </div>
   </div>
 </footer>
+<!-- SEITENFUSS:ENDE -->
 
 <script src="/i18n.js"></script>
 <script src="/speisekarte.js"></script>

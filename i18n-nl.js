@@ -750,5 +750,15 @@ Object.assign(I18N.nl, {
   "e404.p": "Deze link bestaat niet (meer). Sappige halal burgers zijn er gelukkig altijd. Terug naar waar het om draait?",
   "e404.menu": "Naar de menukaart",
   "e404.start": "Naar de homepage",
+  "footer.impressum": "Colofon",
+  "footer.datenschutz": "Privacy",
+  "footer.agb": "Voorwaarden",
+  "home.cat_details": "Alle cateringdetails op één pagina →",
+  "home.gift_link": "Cadeaubon geven →",
+  "meta.titel": "Grill'n Chill | Halal burgers in Bielefeld, bezorgen en afhalen",
+  "firmen.titel": "Bedrijfslunch in Bielefeld | Halal burgers op kantoor met maandfactuur",
+  "gs.ph_msg": "Gefeliciteerd. De dubbele patty is van mij.",
+  "gs.ph_mail": "naam@voorbeeld.nl",
+  "firmen.ph_domain": "bedrijf.nl",
 });
 /* UNTERSEITEN:ENDE */

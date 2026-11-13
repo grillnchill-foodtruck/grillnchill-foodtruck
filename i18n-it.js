@@ -750,5 +750,15 @@ Object.assign(I18N.it, {
   "e404.p": "Questo link non esiste (più). Per fortuna i burger halal succosi ci sono sempre. Torniamo all'essenziale?",
   "e404.menu": "Vai al menù",
   "e404.start": "Vai alla home",
+  "footer.impressum": "Note legali",
+  "footer.datenschutz": "Privacy",
+  "footer.agb": "Condizioni",
+  "home.cat_details": "Tutti i dettagli del catering in una pagina →",
+  "home.gift_link": "Regala un buono →",
+  "meta.titel": "Grill'n Chill | Burger halal a Bielefeld, consegna e ritiro",
+  "firmen.titel": "Pranzo aziendale a Bielefeld | Burger halal in ufficio con fattura mensile",
+  "gs.ph_msg": "Buon compleanno. Il doppio patty lo offro io.",
+  "gs.ph_mail": "nome@esempio.it",
+  "firmen.ph_domain": "azienda.it",
 });
 /* UNTERSEITEN:ENDE */

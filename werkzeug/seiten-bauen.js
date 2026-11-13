@@ -247,7 +247,7 @@ function tuerkischeSeite(deHtml) {
   let h = karteEinsetzen(deHtml, 'tr');
 
   h = ersetzePflicht(h, '<html lang="de">', '<html lang="tr" data-seite="tr">', 'html lang');
-  h = h.replace(/<title>[^<]*<\/title>/, '<title>' + esc(TR.titel) + '</title>');
+  h = h.replace(/(<title[^>]*>)[^<]*(<\/title>)/, (m, a, b) => a + esc(TR.titel) + b);
   h = metaInhalt(h, 'name="description"', TR.beschreibung);
   h = metaInhalt(h, 'property="og:title"', TR.titel);
   h = metaInhalt(h, 'property="og:description"', TR.ogBeschreibung);
@@ -457,6 +457,7 @@ function kopfHtml(o) {
   // Im Menü steht immer der ganze Name („Standort & Zeiten“)
   const menuLink = ([href, key, text, id]) => `<li><a href="${href}" data-i18n="${key || 'nav.location_hours'}"${id ? akt(id) : ''}>${key ? text : 'Standort &amp; Zeiten'}</a></li>`;
   const mehr = [
+    ['/#konto', 'acc.nav', 'Mein Konto', ''],
     ['/liefergebiet', 'footer.menu_delivery', 'Liefergebiet', 'liefergebiet'],
     ['/halal', 'footer.menu_halal', 'Halal-Zertifikat', 'halal'],
     ['/firmen', 'footer.menu_firmen', 'Firmen-Mittag', 'firmen'],
@@ -485,6 +486,7 @@ function kopfHtml(o) {
     </nav>
     <div class="sk-aktionen">
       <a class="sk-status" id="skStatus" href="/#location" aria-label="Öffnungszeiten" hidden>${FLAMME}<span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>${sprache}${zurueck}
+      <a class="sk-icon" href="/#konto" aria-label="Mein Konto" data-i18n-aria="acc.nav" title="Mein Konto" data-i18n-title="acc.nav"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a>
       <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
       <details class="sk-menu">
         <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
@@ -501,6 +503,81 @@ function kopfHtml(o) {
   </div>
 </header>`;
 }
+
+// Fußzeile wie auf der Startseite (Spalten, Social-Links, Store-Badges,
+// Wortmarke). Social-Links und Badges kommen aus index.html, damit beide
+// Fassungen nie auseinanderlaufen. Rechtstexte öffnen auf der Startseite
+// (/#impressum usw.), die AGB haben die eigene Seite /agb.
+function fussHtml(indexHtml) {
+  const block = (rx, was) => {
+    const m = indexHtml.match(rx);
+    if (!m) throw new Error(was + ' in index.html nicht gefunden (Fußzeile der Unterseiten)');
+    return m[0];
+  };
+  const social = block(/<div class="social-links">[\s\S]*?<\/div>/, 'social-links')
+    .replace('class="social-links"', 'class="sf-social"');
+  const badges = block(/<div class="store-badges">[\s\S]*?<\/div>/, 'store-badges')
+    .replace('class="store-badges"', 'class="sf-badges"')
+    .replace(/src="badges\//g, 'src="/badges/')
+    .replace(/ id="badge(AppStore|PlayStore)"/g, (m, w) => ` data-badge="${w === 'AppStore' ? 'app-store' : 'google-play'}"`);
+  const li = (href, key, text) => `<li><a href="${href}"${key ? ` data-i18n="${key}"` : ''}>${text}</a></li>`;
+  return `<footer class="sf-fuss" id="kontakt">
+  <div class="sf-innen">
+    <div class="sf-raster">
+      <div class="sf-marke">
+        <img src="/logo.png" alt="Grill'n Chill" width="60" height="60" loading="lazy">
+        <p data-i18n="footer.tagline">Streetfood mit Charakter aus Bielefeld Brackwede. Frisch gegrillt, chillig serviert.</p>
+        ${social}
+        ${badges}
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_menu">Menü</h2>
+        <ul>
+          ${[['/#menu', 'footer.menu_speisekarte', 'Speisekarte'], ['/catering', 'footer.menu_catering', 'Foodtruck Catering'],
+            ['/#location', 'footer.menu_location', 'Standort &amp; Zeiten'], ['/liefergebiet', 'footer.menu_delivery', 'Liefergebiet'],
+            ['/halal', 'footer.menu_halal', 'Halal-Zertifikat'], ['/firmen', 'footer.menu_firmen', 'Firmen-Mittag'],
+            ['/gutscheine', 'firmen.foot_vouchers', 'Gutscheine']].map((x) => li(...x)).join('\n          ')}
+        </ul>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_service">Service</h2>
+        <ul>
+          ${[['/#faq', '', 'FAQ'], ['/agb', 'footer.agb', 'AGB'], ['/#widerruf', 'footer.service_withdrawal', 'Widerrufsbelehrung'],
+            ['/#cookies', 'footer.service_cookies', 'Cookies'], ['/#barrierefreiheit', 'footer.service_a11y', 'Barrierefreiheit']].map((x) => li(...x)).join('\n          ')}
+        </ul>
+      </div>
+      <div>
+        <h2 class="sf-titel" data-i18n="footer.col_contact">Kontakt</h2>
+        <ul>
+          <li class="sf-adresse">Gütersloher Straße 122<br>33649 Bielefeld</li>
+          <li><a href="tel:+4915118540604">+49 151 18 54 06 04</a></li>
+          <li><a href="mailto:info@grillnchill-foodtruck.de">info@grillnchill-foodtruck.de</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="sf-wort" aria-hidden="true" data-wort="GRILL'N CHILL"></div>
+    <div class="sf-unten">
+      <div>© ${new Date().getFullYear()} Grill'n Chill Yildiz und Öztas GbR · <span data-i18n="footer.rights">Alle Rechte vorbehalten</span></div>
+      <div class="sf-recht"><a href="/#impressum" data-i18n="footer.impressum">Impressum</a><a href="/#datenschutz" data-i18n="footer.datenschutz">Datenschutz</a><a href="/agb" data-i18n="footer.agb">AGB</a></div>
+    </div>
+  </div>
+</footer>`;
+}
+
+// Sprache vorab (Kopf jeder Seite): Ist die Zielsprache nicht Deutsch, lädt
+// das Sprachpaket sofort vor und der Inhalt bleibt unsichtbar, bis i18n.js
+// übersetzt hat (höchstens 2,5 s). Sonst stand erst Deutsch da und sprang
+// dann um: CLS 0,137 auf /gutscheine, LCP 3,7 s auf /firmen (Jury R3).
+// Erkennung wie detectLang() in i18n.js. Gleicher Text überall = ein Hash.
+const SPRACHE_VORAB = "<script>(function(){try{var d=document.documentElement;"
+  + "if((d.getAttribute('data-seite')||'de')!=='de'||/bot\\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;"
+  + "var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}"
+  + "if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}"
+  + "if(!l||!P[l])return;window.gncI18nZiel=l;"
+  + "var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);"
+  + "var s=document.createElement('style');s.textContent='html.i18n-wartet main,html.i18n-wartet footer{visibility:hidden}';document.head.appendChild(s);"
+  + "d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>";
+const VORAB_SEITEN = ['halal.html', 'liefergebiet.html', 'catering.html', 'firmen.html', 'gutscheine.html', '404.html'];
 
 // Öffnungszeiten-Code aus index.html: von HOURS bis parseTime, dazu findNextOpening
 function oeffnungszeitenQuelle(indexHtml) {
@@ -535,10 +612,11 @@ function akzentLuft(html) {
   });
   return html.slice(0, a) + mitte + html.slice(b);
 }
-function kopfEinsetzen(datei) {
+function kopfEinsetzen(datei, indexHtml) {
   const p = path.join(WURZEL, datei);
   if (!fs.existsSync(p)) return;
   let html = fs.readFileSync(p, 'utf8');
+  html = bereich(html, 'SEITENFUSS', fussHtml(indexHtml), datei);
   html = akzentLuft(bereich(html, 'SEITENKOPF', kopfHtml(KOPF_SEITEN[datei]), datei));
   if (!html.includes('<link rel="stylesheet" href="/seitenkopf.css">')) throw new Error('seitenkopf.css fehlt im <head> von ' + datei);
   if (!html.includes('<script src="/seitenkopf.js" defer></script>')) throw new Error('seitenkopf.js fehlt in ' + datei);
@@ -549,7 +627,7 @@ function kopfEinsetzen(datei) {
 
 /* ---- Ablauf ---------------------------------------------------------------- */
 const indexPfad = path.join(WURZEL, 'index.html');
-const deHtml = karteEinsetzen(fs.readFileSync(indexPfad, 'utf8'), 'de');
+const deHtml = bereich(karteEinsetzen(fs.readFileSync(indexPfad, 'utf8'), 'de'), 'SPRACHE-VORAB', SPRACHE_VORAB, 'index.html');
 fs.writeFileSync(indexPfad, deHtml);
 
 const trHtml = tuerkischeSeite(deHtml);
@@ -566,7 +644,11 @@ if (fs.existsSync(firmenPfad)) fs.writeFileSync(firmenPfad, faqDaten(fs.readFile
 const agbPfad = path.join(WURZEL, 'agb.html');
 fs.writeFileSync(agbPfad, agbBauen(fs.readFileSync(agbPfad, 'utf8'), deHtml));
 seitenkopfJsBauen(deHtml);
-Object.keys(KOPF_SEITEN).forEach(kopfEinsetzen);
+Object.keys(KOPF_SEITEN).forEach((d) => kopfEinsetzen(d, deHtml));
+VORAB_SEITEN.forEach((d) => {
+  const p = path.join(WURZEL, d);
+  fs.writeFileSync(p, bereich(fs.readFileSync(p, 'utf8'), 'SPRACHE-VORAB', SPRACHE_VORAB, d));
+});
 
 /* ---- Content-Security-Policy ---------------------------------------------- */
 /* SumUp-Widget in der Kasse („Bezahlen ohne Umweg“, Admin-Schalter, Paket

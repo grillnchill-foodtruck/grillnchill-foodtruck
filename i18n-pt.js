@@ -750,5 +750,15 @@ Object.assign(I18N.pt, {
   "e404.p": "Este link não existe (ou já não existe). Felizmente, hambúrgueres halal suculentos há sempre. Voltamos ao essencial?",
   "e404.menu": "Ver o menu",
   "e404.start": "Ir para a página inicial",
+  "footer.impressum": "Informação legal",
+  "footer.datenschutz": "Privacidade",
+  "footer.agb": "Termos",
+  "home.cat_details": "Todos os detalhes do catering numa página →",
+  "home.gift_link": "Oferece um vale →",
+  "meta.titel": "Grill'n Chill | Hambúrgueres halal em Bielefeld, entrega e recolha",
+  "firmen.titel": "Almoço de empresa em Bielefeld | Hambúrgueres halal para o escritório com fatura mensal",
+  "gs.ph_msg": "Parabéns. O duplo patty é por minha conta.",
+  "gs.ph_mail": "nome@exemplo.pt",
+  "firmen.ph_domain": "empresa.pt",
 });
 /* UNTERSEITEN:ENDE */
