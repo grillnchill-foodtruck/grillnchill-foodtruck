@@ -4286,6 +4286,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 .hours-list li {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;     /* Tag, Pille und erste Zeile der Uhrzeit auf einer Linie, auch wenn darunter ein Hinweis steht */
   padding: 0.65rem 0;
   border-bottom: 1px solid var(--color-border);
   font-size: 0.95rem;
@@ -4299,7 +4300,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
    Rahmen helfen beim Finden der Zeile – die Uhrzeit bleibt neutral. */
 .hours-list li.today {
   margin: 0 -1.5rem;
-  padding-left: 1.5rem; padding-right: 1.5rem;
+  padding-left: calc(1.5rem - 3px); padding-right: 1.5rem;   /* der Rand links ist 3 px breit, der Tag bleibt bündig mit den anderen */
   background: rgba(232, 90, 36, 0.06);
   border-left: 3px solid var(--color-orange);
 }
@@ -4308,7 +4309,8 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 .day-today {
   margin-left: 0.5rem;
   margin-right: auto;        /* bleibt beim Wochentag, die Uhrzeit bleibt rechts */
-  align-self: center;
+  position: relative; top: -0.14em;   /* Grundlinie wie der Tag, optisch mittig zu dessen Großbuchstaben */
+  line-height: 1.5;
   padding: 0.1rem 0.42rem;
   border-radius: var(--radius-full);
   background: rgba(232, 90, 36, 0.18);
@@ -4317,7 +4319,6 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   font-weight: 700;
   letter-spacing: 0.04em;   /* kleine Schrift braucht etwas Luft zwischen den Buchstaben */
   text-transform: uppercase;
-  vertical-align: 0.06em;
 }
 .hours-list li.today .time { color: var(--color-cream); }
 /* Ruhetag ist eine Angabe, kein Fehler – gedämpft statt rot. */
