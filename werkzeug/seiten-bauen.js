@@ -709,7 +709,10 @@ for (const f of seiten) {
 const policy = CSP.replace('%HASHES%', [...hashes].join(' '));
 fs.writeFileSync(path.join(WURZEL, '_headers'),
   '# Entsteht bei jedem Build (werkzeug/seiten-bauen.js). Nicht von Hand ändern.\n'
-  + '/*\n  Content-Security-Policy: ' + policy + '\n');
+  + '/*\n  Content-Security-Policy: ' + policy + '\n'
+  // Team-Werkzeuge nie in Suchmaschinen, auch wenn ein Crawler sie findet
+  + ['/admin', '/admin.html', '/cockpit', '/cockpit.html', '/fahrer', '/fahrer.html', '/dienstplan', '/dienstplan.html', '/firmen-admin', '/firmen-admin.html']
+    .map((pfad) => '\n' + pfad + '\n  X-Robots-Tag: noindex, nofollow\n').join(''));
 
 const reste = (trHtml.match(/data-i18n="[^"]+"/g) || []).length;
 console.log('seiten-bauen: Speisekarte mit ' + SK.MENU.length + ' Artikeln in index.html, tr/index.html geschrieben ('

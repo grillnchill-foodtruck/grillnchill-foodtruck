@@ -471,3 +471,18 @@ html.sk-app .sf-badges { display: none; }
   .sf-social a:hover { background: var(--sk-orange); color: #fff; border-color: var(--sk-orange); transform: translateY(-2px); }
   .sf-badges a:hover { transform: translateY(-2px); opacity: 0.9; background: none; }
 }
+
+/* Geschlossenes Menü: Inhalt ganz aus dem Layout (Chrome gab den Links sonst
+   eine Größe, obwohl man sie nicht sieht) */
+.sk-menu:not([open]) .sk-menu-flaeche { display: none; }
+
+/* Kleine Links in Hinweisen (z. B. „Datenschutz“ unter Formularen): 24 px hoch,
+   unterstrichen, mit Hover */
+main .hinweis a, main a.mini {
+  display: inline-block; padding-block: 0.3rem;
+  color: var(--sk-cream-dim); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+  transition: color 0.15s ease, text-underline-offset 0.2s var(--sk-ease), text-decoration-color 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  main .hinweis a:hover, main a.mini:hover { color: var(--sk-orange-hell); text-underline-offset: 5px; }
+}

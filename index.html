@@ -62,7 +62,7 @@
 <meta name="apple-mobile-web-app-title" content="Grilln Chill" />
 <meta name="application-name" content="Grilln Chill" />
 
-<link rel="preload" as="image" href="hero/poster.webp" fetchpriority="high">
+<link rel="preload" as="image" href="hero/poster.webp" imagesrcset="hero/poster-780.webp 780w, hero/poster.webp 1080w" imagesizes="(min-width: 880px) 420px, 100vw" fetchpriority="high">
 <link rel="preload" as="font" type="font/woff2" href="/fonts/bowlby-one-latin-400-normal.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-400-normal.woff2" crossorigin>
 <style>
@@ -6318,6 +6318,13 @@ a.hero-badge-discount { text-decoration: none; background: var(--color-orange-so
   .menu-card-title { font-size: 0.98rem; }
 }
 
+/* TREFFERFLÄCHE IM ELEMENT (Jury R3): Punkt und Strich sehen gleich aus,
+   das Element selbst misst aber 24 px. Der durchsichtige Rand zählt zum
+   Antippen, negative Ränder halten die Abstände wie bisher. */
+.reviews-dot, .reviews-dots.viele .reviews-dot { box-sizing: content-box; padding: 9px; margin: -9px; background-clip: content-box; }
+.reviews-dot::before, .reviews-dots.viele .reviews-dot::before { content: none; }
+.sig-dot { box-sizing: content-box; padding: 10px 0; margin: -10px 0; background-clip: content-box; }
+
 /* Seitenwechsel (Jury-Fix 4): Inhalt blendet über, der Kopf bleibt stehen.
    Die Unterseiten geben ihrem Kopf denselben Namen (seitenkopf.css). */
 @media (prefers-reduced-motion: no-preference) {
@@ -6344,7 +6351,9 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
 (function(){
   var bl=document.getElementById('brandLoader');
   try{
-    if(sessionStorage.getItem('gnc_ldr')){ bl.parentNode.removeChild(bl); return; }
+    // Nur beim Einstieg von außen: Wer von einer Unterseite kommt, ist schon da
+    var intern=false; try{ intern=!!document.referrer && new URL(document.referrer).origin===location.origin; }catch(e){}
+    if(intern || sessionStorage.getItem('gnc_ldr')){ bl.parentNode.removeChild(bl); return; }
     sessionStorage.setItem('gnc_ldr','1');
   }catch(e){}
   var t0=Date.now();
@@ -6479,7 +6488,7 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
   <div class="hero-bg" aria-hidden="true">
     <!-- still shown before the video loads / under reduced-motion -->
     <picture>
-      <source srcset="hero/poster.webp" type="image/webp" />
+      <source srcset="hero/poster-780.webp 780w, hero/poster.webp 1080w" sizes="(min-width: 880px) 420px, 100vw" type="image/webp" />
       <img class="hero-video-poster" src="hero/poster.jpg" alt="" width="1080" height="1920" decoding="async" fetchpriority="high" />
     </picture>
     <!-- DEFAULT: looping background video – deferred until after load (Performance) -->
