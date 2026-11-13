@@ -479,7 +479,7 @@ Object.assign(I18N.de, {
   "lg.t35": "Zur Speisekarte",
   "lg.t36": "<a href=\"/halal\">Halal-Zertifikat</a> · <a href=\"/catering\">Catering</a> · <a href=\"/firmen\">Firmen-Mittag</a> · <a href=\"/gutscheine\">Gutscheine</a> · <a href=\"tel:+4915118540604\">0151 18 54 06 04</a> · <a href=\"/#impressum\">Impressum</a> · <a href=\"/#datenschutz\">Datenschutz</a>",
   "lg.titel": "Burger-Lieferung Bielefeld | Liefergebiet von Grill'n Chill",
-  "cat.t01": "Halal-Burger-Catering · Bielefeld und Umgebung",
+  "cat.t01": "Halal-Burger-Catering · Bielefeld und Umgebung",
   "cat.t02": "Foodtruck-Catering in Bielefeld",
   "cat.t03": "Hochzeit, Firmenfeier, Geburtstag oder Sommerfest: Wir kommen mit dem Foodtruck zu euch und grillen frisch vor den Augen eurer Gäste. Alles 100&nbsp;% halal, mit vegetarischen und veganen Optionen. Ihr feiert, wir übernehmen den Rest.",
   "cat.t04": "Jetzt unverbindlich anfragen",
