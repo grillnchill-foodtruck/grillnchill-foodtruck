@@ -572,13 +572,16 @@ function fussHtml(indexHtml) {
 // Kopf und Promo-Leiste bleiben als Flächen stehen, nur ihre Texte warten mit:
 // Beim Seitenwechsel stand sonst kurz ein deutscher Kopf über leerem Inhalt
 // (Jury R4, d-90-transition-a). .nav/.promo-bar = Startseite, .sk-* = Unterseiten.
+// Bilder ohne Text (Hero-Video der Startseite, Foto der Unterseiten) zeigt die
+// Seite sofort: Sie sind das LCP-Element, sonst wartete es auf die Übersetzung
+// (home mobil englisch 2,9 s statt 2,1 s, Jury R4).
 const SPRACHE_VORAB = "<script>(function(){try{var d=document.documentElement;"
   + "if((d.getAttribute('data-seite')||'de')!=='de'||/bot\\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;"
   + "var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}"
   + "if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}"
   + "if(!l||!P[l])return;window.gncI18nZiel=l;"
   + "var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);"
-  + "var s=document.createElement('style');s.textContent='html.i18n-wartet :is(main,footer,.promo-bar>*,.nav-links,.nav-actions,.sk-links,.sk-aktionen){visibility:hidden}';document.head.appendChild(s);"
+  + "var s=document.createElement('style');s.textContent='html.i18n-wartet :is(main,footer,.promo-bar>*,.nav-links,.nav-actions,.sk-links,.sk-aktionen){visibility:hidden}html.i18n-wartet :is(.hero-bg,.sk-foto){visibility:visible}';document.head.appendChild(s);"
   + "d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>";
 const VORAB_SEITEN = ['halal.html', 'liefergebiet.html', 'catering.html', 'firmen.html', 'gutscheine.html', '404.html'];
 

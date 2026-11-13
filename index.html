@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <!-- SPRACHE-VORAB:START (werkzeug/seiten-bauen.js) -->
-<script>(function(){try{var d=document.documentElement;if((d.getAttribute('data-seite')||'de')!=='de'||/bot\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}if(!l||!P[l])return;window.gncI18nZiel=l;var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);var s=document.createElement('style');s.textContent='html.i18n-wartet :is(main,footer,.promo-bar>*,.nav-links,.nav-actions,.sk-links,.sk-aktionen){visibility:hidden}';document.head.appendChild(s);d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>
+<script>(function(){try{var d=document.documentElement;if((d.getAttribute('data-seite')||'de')!=='de'||/bot\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}if(!l||!P[l])return;window.gncI18nZiel=l;var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);var s=document.createElement('style');s.textContent='html.i18n-wartet :is(main,footer,.promo-bar>*,.nav-links,.nav-actions,.sk-links,.sk-aktionen){visibility:hidden}html.i18n-wartet :is(.hero-bg,.sk-foto){visibility:visible}';document.head.appendChild(s);d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>
 <!-- SPRACHE-VORAB:ENDE -->
 <title data-i18n="meta.titel">Grill'n Chill | Halal Burger Bielefeld, Lieferung &amp; Abholung</title>
 <meta name="description" content="Halal-Burger vom Foodtruck in Bielefeld-Brackwede. Online bestellen, abholen oder liefern lassen und mit dem Code GRILL5 5 € sparen (ab 20 € Bestellwert)." />
@@ -6493,8 +6493,10 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
       <img class="hero-video-poster" src="hero/poster.jpg" alt="" width="1080" height="1920" decoding="async" fetchpriority="high" />
     </picture>
     <!-- DEFAULT: looping background video – deferred until after load (Performance) -->
-    <video class="hero-video" muted loop playsinline preload="none" id="heroVideo"
-           poster="hero/poster.webp">
+    <!-- Ohne poster-Attribut: Das Standbild liegt schon darunter (<picture>). Mit
+         poster lud der Browser sofort weitere 66 KB neben dem LCP-Bild (Jury R4).
+         Das Skript nach „load“ setzt das schon geladene Standbild als Poster. -->
+    <video class="hero-video" muted loop playsinline preload="none" id="heroVideo">
       <source data-src="hero/grillnchill-hero.webm" type="video/webm" />
       <source data-src="hero/grillnchill-hero-lean.mp4" type="video/mp4" />
     </video>
@@ -18663,6 +18665,8 @@ window.addEventListener('load', function () {
     if (!v) return;
     var sources = v.querySelectorAll('source[data-src]');
     if (!sources.length) return;
+    var still = document.querySelector('.hero-video-poster');
+    v.setAttribute('poster', (still && still.currentSrc) || 'hero/poster.webp');
     sources.forEach(function (s) { s.src = s.getAttribute('data-src'); });
     v.load();
     var p = v.play();
