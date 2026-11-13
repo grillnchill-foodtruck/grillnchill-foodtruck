@@ -1342,6 +1342,10 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   display: inline-flex; align-items: center; gap: 0.35rem;
 }
 .hero-trust-row strong { color: var(--color-cream); font-weight: 700; }
+/* Handy: 2 × 2 statt Fließen, sonst stand „Lieferung in Bielefeld“ allein in Zeile drei (Jury R5, m-01) */
+@media (max-width: 879px) {
+  .hero-trust-row { display: grid; grid-template-columns: repeat(2, auto); justify-content: center; gap: 0.55rem 1.5rem; }
+}
 
 @media (min-width: 880px) {
   .hero-grid {
@@ -1673,6 +1677,9 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
   height: 100%;
   object-fit: cover;
   z-index: 1;
+  /* Die Produktfotos tragen einen orangen Rahmen 4 % vom Rand. In der 16:10-Kachel
+     standen dessen senkrechte Kanten als Streifen links und rechts (Jury R5, home d-02). */
+  transform: scale(1.12);
 }
 .menu-card-img:has(.menu-card-photo) { background: var(--color-bg); }
 .menu-card-img:has(.menu-card-photo)::after { display: none; }
@@ -3927,8 +3934,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   color: var(--color-orange-bright);
   line-height: 1;
 }
-/* Einheit (z. B. „Jahre") immer unter der Zahl – konsistent bei 12 und 6 */
-.story-stat-num span { display: block; }
+/* Einheit (z. B. „Jahre“) klein neben der Zahl: So bleiben alle vier Werte einzeilig
+   wie „4,9★“ und „100%“ (Jury R5, r-02-mid: „12 / years“ brach zweizeilig) */
+.story-stat-num span { font-family: var(--font-body); font-size: 0.4em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-cream-dim); }
 .story-stat-label {
   font-size: 0.78rem;
   color: var(--color-text-muted);
@@ -4074,10 +4082,17 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   color: var(--color-cream-dim);
   font-size: 1rem;
   line-height: 1.6;
-  margin: auto 0;               /* freier Raum verteilt sich ober- und unterhalb des Zitats */
-  padding-bottom: 1.3rem;
+  margin: 0 0 1.3rem;
   font-style: italic;
+  /* Höchstens 5 Zeilen: Sonst bestimmte die längste Bewertung (11 Zeilen) die Höhe
+     der Bühne, und kurze Karten schwebten in viel Leerraum (Jury R5, m-04).
+     „Ganze Bewertung lesen“ klappt den Rest auf. */
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; line-clamp: 5; overflow: hidden;
 }
+.review-offen .review-text { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
+/* Die Pille sitzt neben dem Namen und braucht so keine eigene Zeile */
+.review-mehr { min-height: 36px; font-size: 0.78rem; margin-left: 0.3rem; }
+.review-author { flex-wrap: wrap; justify-content: center; }
 .review-author {
   display: flex;
   align-items: center;
@@ -4393,6 +4408,21 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   overflow: hidden;
   min-height: 320px;
   position: relative;
+}
+/* Vor dem Laden der Karte: Radar um den Standort wie die Lieferzonen auf /liefergebiet
+   (Jury R5: die Truck-Idee weitertragen; vorher ein abgedunkeltes Foto) */
+.map-radar { background: radial-gradient(circle at 50% 40%, #1d1813 0, #0f0d0a 75%); }
+.map-radar > * { position: relative; z-index: 1; }
+/* Die Ringe hängen an der Stecknadel, so sitzen sie bei jeder Kartenhöhe mittig */
+.radar-mitte { display: inline-flex; }
+.radar-mitte::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 640px; height: 640px;
+  transform: translate(-50%, -50%); z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(circle, rgba(232, 90, 36, 0.28) 0 22px, transparent 60px),
+    repeating-radial-gradient(circle, transparent 0 47px, rgba(232, 90, 36, 0.2) 48px 49px);
+  -webkit-mask-image: radial-gradient(circle, #000 0 110px, transparent 300px);
+  mask-image: radial-gradient(circle, #000 0 110px, transparent 300px);
 }
 .map-frame iframe {
   width: 100%;
@@ -4866,7 +4896,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 /* Produktfotos: sanfter Zoom beim Hover (nur echte Pointer-Geräte) */
 @media (hover: hover) {
   .menu-card-photo { transition: transform .5s var(--ease-out); }
-  .menu-card:hover .menu-card-photo { transform: scale(1.06); }
+  .menu-card:hover .menu-card-photo { transform: scale(1.17); }
   .menu-card:hover { box-shadow: var(--shadow-md), 0 0 32px rgba(232, 90, 36, 0.12); }
 }
 
@@ -5058,12 +5088,13 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
   .nav-status-kurz { display: inline; }
 }
 
-/* ---------- Hero-Eingangssequenz (einmalig beim Laden) ---------- */
+/* ---------- Hero-Eingangssequenz (nur beim ersten Besuch der Sitzung) ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  .hero h1 span { display: inline-block; opacity: 0; transform: translateY(24px); animation: heroRise .7s var(--ease-out) forwards; }
-  .hero h1 span:nth-child(3) { animation-delay: .12s; }
-  .hero-lead    { opacity: 0; animation: heroFade .6s ease .3s forwards; }
-  .hero-actions { opacity: 0; animation: heroFade .6s ease .42s forwards; }
+  .hero h1 span { display: inline-block; }
+  html:not(.gnc-wieder) .hero h1 span { opacity: 0; transform: translateY(24px); animation: heroRise .7s var(--ease-out) forwards; }
+  html:not(.gnc-wieder) .hero h1 span:nth-child(3) { animation-delay: .12s; }
+  html:not(.gnc-wieder) .hero-lead    { opacity: 0; animation: heroFade .6s ease .3s forwards; }
+  html:not(.gnc-wieder) .hero-actions { opacity: 0; animation: heroFade .6s ease .42s forwards; }
   @keyframes heroRise { to { opacity: 1; transform: none; } }
   @keyframes heroFade { to { opacity: 1; } }
 }
@@ -5540,7 +5571,7 @@ html.imgfx img[loading="lazy"].img-in { opacity: 1; }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .menu-card-photo { transition: transform 0.45s var(--ease-out); }
-  .menu-card:hover .menu-card-photo { transform: scale(1.045); }
+  .menu-card:hover .menu-card-photo { transform: scale(1.17); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -6383,7 +6414,9 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
   try{
     // Nur beim Einstieg von außen: Wer von einer Unterseite kommt, ist schon da
     var intern=false; try{ intern=!!document.referrer && new URL(document.referrer).origin===location.origin; }catch(e){}
-    if(intern || sessionStorage.getItem('gnc_ldr')){ bl.parentNode.removeChild(bl); return; }
+    // Wer zurückkommt, sieht die Startseite sofort fertig: kein Loader, kein Hero-Intro
+    // (Jury R5: beim Ankommen fehlten sonst Text und Knöpfe für einen Moment)
+    if(intern || sessionStorage.getItem('gnc_ldr')){ document.documentElement.classList.add('gnc-wieder'); bl.parentNode.removeChild(bl); return; }
     sessionStorage.setItem('gnc_ldr','1');
   }catch(e){}
   var t0=Date.now();
@@ -7081,8 +7114,8 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
       </div>
 
       <div class="map-frame reveal">
-        <div id="mapConsent" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.7rem;background:linear-gradient(160deg,rgba(23,20,15,0.8),rgba(15,13,10,0.93)),url(/bilder/seite-liefergebiet.webp) center/cover no-repeat;border-radius:inherit;text-align:center;padding:1.2rem;">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange-bright)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        <div id="mapConsent" class="map-radar" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.7rem;border-radius:inherit;text-align:center;padding:1.2rem;">
+          <span class="radar-mitte"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--color-orange-bright)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
           <p style="margin:0;font-size:0.85rem;color:var(--color-cream-dim);max-width:34ch;line-height:1.5;" data-i18n="map.consent_text">Gütersloher Str. 122, 33649 Bielefeld. Mit dem Laden der Karte werden Daten an Google übertragen.</p>
           <button type="button" class="btn btn-primary" data-on-click="loadMap()" data-i18n="map.load_btn">Karte laden</button>
           <a href="https://maps.google.com/maps?cid=2860232172322750720" target="_blank" rel="noopener" class="map-ext-link" style="font-size:0.75rem;color:var(--color-text-muted);" data-i18n="map.open_ext">In Google Maps öffnen</a>
@@ -15868,8 +15901,31 @@ function renderReviews() {
     zahl.setAttribute('aria-hidden', 'true');   // die Karten tragen „4 / 23“ schon als Name
     dots.appendChild(zahl);
   }
+  langeBewertungenKuerzen(track);
   scrollToReview(currentReview, false);   // Sprachwechsel/Neuaufbau: Position halten, nicht animieren
   fetchLiveReviews(currentLang);
+}
+
+// Gekürzte Bewertungen (mehr als 5 Zeilen) bekommen „Ganze Bewertung lesen“ neben dem Namen.
+// Aufklappen hält den Auto-Wechsel an, damit die Karte nicht wegrollt.
+function langeBewertungenKuerzen(track) {
+  track.querySelectorAll('.review-card').forEach((card) => {
+    const p = card.querySelector('.review-text');
+    if (!p || card.querySelector('.review-mehr') || p.scrollHeight - p.clientHeight < 4) return;
+    const knopf = document.createElement('button');
+    knopf.type = 'button';
+    knopf.className = 'mini-btn mini-pille review-mehr';
+    knopf.textContent = t('reviews.more');
+    knopf.setAttribute('aria-expanded', 'false');
+    knopf.addEventListener('click', () => {
+      const offen = card.classList.toggle('review-offen');
+      knopf.setAttribute('aria-expanded', String(offen));
+      knopf.textContent = t(offen ? 'reviews.less' : 'reviews.more');
+      reviewAutoStopped = true;
+      stopReviewTimer();
+    });
+    (card.querySelector('.review-author') || card).appendChild(knopf);
+  });
 }
 
 /* Live-Rezensionen einsetzen, ohne dem Finger die Karten wegzuziehen:
@@ -16990,7 +17046,7 @@ function teamHtml() {
   if (st) {
     inner = '<p class="team-ok">' + escG(t('team.coupled').replace('{name}', st.name || 'Team')) + '</p>' +
       '<p class="team-hint">' + escG(t('team.coupled_hint')) + '</p>' +
-      '<div class="team-row"><a class="mini-btn" href="/cockpit.html">' + escG(t('team.cockpit')) + '</a>' +
+      '<div class="team-row"><a class="mini-btn" ' + hrefAttr('/cockpit') + '>' + escG(t('team.cockpit')) + '</a>' +   // per hrefAttr: Crawler sollen die Team-Anmeldung nicht finden (Jury R5)
       '<button type="button" class="mini-btn" data-on-click="teamUncouple()">' + escG(t('team.uncouple')) + '</button></div>';
   } else {
     inner = '<p class="team-hint" id="teamHint">' + escG(t('team.hint')) + '</p>' +

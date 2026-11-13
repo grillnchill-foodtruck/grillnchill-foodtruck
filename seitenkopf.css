@@ -329,7 +329,16 @@ main h1.sk-luft, main h2.sk-luft { line-height: 1.3; }
   background: linear-gradient(0deg, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0) 45%);
 }
 @media (min-width: 880px) {
-  .sk-hero { grid-template-columns: minmax(0, 1fr) 320px; align-items: center; gap: 3rem; }
+  .sk-hero { grid-template-columns: minmax(0, 1fr) 320px; align-items: center; gap: 3rem; isolation: isolate; }
+  /* Radar-Ringe um das Foto wie die Lieferzonen um den Truck (Jury R5, Kreativität):
+     Mitte = Mitte des Fotos, nach außen ausgeblendet, hinter allem */
+  .sk-hero::before {
+    content: ''; position: absolute; inset: -4rem -2rem; z-index: -1; pointer-events: none;
+    background: repeating-radial-gradient(circle at calc(100% - 2rem - 160px) 50%,
+      transparent 0 63px, rgba(232, 90, 36, 0.16) 64px 65px);
+    -webkit-mask-image: radial-gradient(circle at calc(100% - 2rem - 160px) 50%, #000 0 190px, transparent 400px);
+    mask-image: radial-gradient(circle at calc(100% - 2rem - 160px) 50%, #000 0 190px, transparent 400px);
+  }
   .sk-foto { aspect-ratio: 4 / 5; border-radius: 26px; }
   .sk-foto img { object-position: 50% 50%; }
 }
@@ -527,3 +536,27 @@ main .hinweis a, main a.mini {
 /* Eyebrows ausgewogen umbrechen: Sonst stand auf dem Handy „AROUND“ allein
    in der zweiten Zeile (Jury R4, catering m-01). */
 main .sk-hero-text > .eyebrow { display: block; text-wrap: balance; }   /* balance wirkt nur auf Blöcke */
+
+/* Checkboxen im Stil der Seite statt weißer Standard-Box (Jury R5, gutscheine d-04).
+   accent-color färbt nur den angehakten Zustand, leer blieb das Kästchen weiß. */
+main input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 22px; flex: none; margin: 1px 0 0;
+  display: inline-grid; place-content: center;
+  border: 2px solid var(--sk-border-hell); border-radius: 6px;
+  background: rgba(245, 233, 208, 0.04); cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+main input[type="checkbox"]::before {
+  content: ''; width: 12px; height: 12px; background: #fff;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  transform: scale(0); transition: transform 0.15s var(--sk-ease);
+}
+main input[type="checkbox"]:checked { background: var(--sk-orange-solid); border-color: var(--sk-orange-solid); }
+main input[type="checkbox"]:checked::before { transform: scale(1); }
+main input[type="checkbox"]:focus-visible { outline: 3px solid var(--sk-orange-hell); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  main input[type="checkbox"]:not(:checked):hover { border-color: var(--sk-orange); }
+}
+/* Fehlerzustand (Gutschein: AGB nicht bestätigt) auch am Kästchen zeigen */
+main .gs-check.bad input[type="checkbox"] { border-color: #E04848; }
