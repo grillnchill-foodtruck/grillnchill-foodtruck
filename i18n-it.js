@@ -409,7 +409,7 @@ Object.assign(I18N.it, {
   "halal.t03": "Tutto ciò che da Grill'n Chill finisce sulla griglia è halal. Halal Certification Germany lo conferma con il certificato n. HCG00279, per il truck, ogni consegna e il catering.",
   "halal.t04": "Ordina ora",
   "halal.t05": "Richiedi un catering halal",
-  "halal.t06": "Kubi nel truck di Grill'n Chill con un burger appena grigliato",
+  "halal.t06": "Polpette di manzo sulla piastra rovente nel truck, una viene schiacciata",
   "halal.t07": "Il nostro certificato",
   "halal.t08": "Il certificato vale per tutto ciò che vendiamo.",
   "halal.t09": "Sigillo ufficiale di Halal Certification Germany",

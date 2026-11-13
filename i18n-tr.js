@@ -409,7 +409,7 @@ Object.assign(I18N.tr, {
   "halal.t03": "Grill'n Chill'de ızgaraya giren her şey helal. Halal Certification Germany bunu HCG00279 numaralı sertifikayla onaylıyor: truck'ta, her teslimatta ve catering'de.",
   "halal.t04": "Hemen sipariş ver",
   "halal.t05": "Helal catering teklifi iste",
-  "halal.t06": "Grill'n Chill truck'ında taze ızgara bir burgerle Kubi",
+  "halal.t06": "Truck içinde kızgın sacda dana köfteler, biri bastırılarak yassılaştırılıyor",
   "halal.t07": "Sertifikamız",
   "halal.t08": "Sertifika, sattığımız her şey için geçerli.",
   "halal.t09": "Halal Certification Germany'nin resmi mührü",

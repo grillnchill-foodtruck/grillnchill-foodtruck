@@ -409,7 +409,7 @@ Object.assign(I18N.pt, {
   "halal.t03": "Tudo o que vai para o grelhador no Grill'n Chill é halal. A Halal Certification Germany confirma-o com o certificado n.º HCG00279, para o truck, cada entrega e o catering.",
   "halal.t04": "Encomendar agora",
   "halal.t05": "Pedir catering halal",
-  "halal.t06": "O Kubi no truck do Grill'n Chill com um hambúrguer acabado de grelhar",
+  "halal.t06": "Hambúrgueres de vaca na chapa quente do truck, um a ser espalmado",
   "halal.t07": "O nosso certificado",
   "halal.t08": "O certificado aplica-se a tudo o que vendemos.",
   "halal.t09": "Selo oficial da Halal Certification Germany",
