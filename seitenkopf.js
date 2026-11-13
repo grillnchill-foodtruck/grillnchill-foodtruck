@@ -191,10 +191,11 @@
   }
   status();
   setInterval(status, 60000);
-  // i18n.js ruft das nach jedem Sprachwechsel auf (setLang)
-  if (typeof window.updateOpenStatus !== 'function') {
-    window.updateOpenStatus = function () { status(); luft(); };
-  }
+  // Nach jedem Sprachwechsel (i18n.js meldet „gnc-sprache“) Pille und Titel neu
+  document.addEventListener('gnc-sprache', function () { status(); luft(); });
+  // Übersetzung starten (i18n.js lädt das Sprachpaket bei Bedarf nach).
+  // /firmen ruft initI18n selbst auf, der zweite Aufruf ist dann wirkungslos.
+  if (typeof window.initI18n === 'function') window.initI18n();
 
   /* ---- Schatten beim Scrollen -------------------------------------------- */
   var zuletzt = null;

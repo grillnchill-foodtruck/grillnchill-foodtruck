@@ -327,6 +327,13 @@ const ORTE_KM = ORTE.map((o) => ({ ...o, km: luftlinie(TRUCK, o) })).sort((a, b)
 const ZONEN_FARBE = ['#FF7A3D', '#E85A24', '#A8441E'];
 const spanne = (z) => (z.von ? `${z.von} bis ${z.maxKm} km` : `bis ${z.maxKm} km`);
 
+// Übersetzungsschlüssel mit Zahlen aus speisekarte.js (i18n.js setzt {name} ein)
+const vars = (v) => " data-i18n-vars='" + JSON.stringify(v).replace(/'/g, '&#39;') + "'";
+const ue = (key, v) => ` data-i18n="${key}"` + (v ? vars(v) : '');
+const spanneHtml = (z) => (z.von
+  ? `<span${ue('lgb.spanne_von_bis', { von: z.von, bis: z.maxKm })}>${z.von} bis ${z.maxKm} km</span>`
+  : `<span${ue('lgb.spanne_bis', { bis: z.maxKm })}>bis ${z.maxKm} km</span>`);
+
 function karteSvg() {
   const M = 200, R = 180, s = R / SK.MAX_DELIVERY_KM;
   const cos = Math.cos(TRUCK.lat * Math.PI / 180);
@@ -347,7 +354,7 @@ function karteSvg() {
       + `<text x="${t.x.toFixed(1)}" y="${t.y.toFixed(1)}" text-anchor="${t.a}" class="ortname">${esc(o.name)}</text>`;
   }).join('');
   return `<svg viewBox="0 0 400 400" role="img" aria-labelledby="kartenTitel">
-  <title id="kartenTitel">Lieferzonen rund um den Truck in Brackwede: ${ZONEN.map((z) => `Zone ${z.nr} ${spanne(z)}`).join(', ')}</title>
+  <title id="kartenTitel"${ue('lgb.svg_titel', { ringe: ZONEN.map((z) => z.maxKm).join(', ') })}>Lieferzonen rund um den Truck in Brackwede, Ringe bei ${ZONEN.map((z) => z.maxKm).join(', ')} km</title>
   <style>.ring{font:600 10px Inter,sans-serif;fill:#8F8471}.ort{fill:#F5E9D0}.ortname{font:600 11px Inter,sans-serif;fill:#C9BCA4}.truck{font:800 10px Inter,sans-serif;fill:#FFC93C;letter-spacing:.08em}</style>
   ${ringe}${orte}
   <circle cx="${M}" cy="${M}" r="7" fill="#FFC93C" stroke="#0C0B09" stroke-width="2"/>
@@ -360,9 +367,9 @@ function zonenHtml() {
     const orte = ORTE_KM.filter((o) => zoneVon(o.km) === z)
       .map((o) => `<li>${esc(o.name)} <span>${kmText(o.km)}</span></li>`).join('');
     return `<div class="zone">
-        <div class="zone-kopf"><span class="zone-nr"><i style="background:${ZONEN_FARBE[z.nr - 1]}"></i>Zone ${z.nr}</span><span class="zone-km">${spanne(z)}</span></div>
-        <dl><div><dt>Mindestbestellwert</dt><dd>${preis(z.minOrder)}</dd></div><div><dt>Liefergebühr</dt><dd>${preis(z.fee)}</dd></div></dl>
-        ${orte ? `<ul class="orte" aria-label="Stadtteile, deren Mitte in Zone ${z.nr} liegt">${orte}</ul>` : ''}
+        <div class="zone-kopf"><span class="zone-nr"><i style="background:${ZONEN_FARBE[z.nr - 1]}"></i><span${ue('lgb.zone', { nr: z.nr })}>Zone ${z.nr}</span></span><span class="zone-km">${spanneHtml(z)}</span></div>
+        <dl><div><dt data-i18n="lgb.mindest">Mindestbestellwert</dt><dd>${preis(z.minOrder)}</dd></div><div><dt data-i18n="lgb.gebuehr">Liefergebühr</dt><dd>${preis(z.fee)}</dd></div></dl>
+        ${orte ? `<ul class="orte" aria-label="Stadtteile, deren Mitte in Zone ${z.nr} liegt" data-i18n-aria="lgb.orte_aria"${vars({ nr: z.nr })}>${orte}</ul>` : ''}
       </div>`;
   }).join('\n      ');
   return `<div class="zonen">
@@ -371,23 +378,28 @@ function zonenHtml() {
       ${karten}
       </div>
     </div>
-    <p class="zone-notiz">Entfernung jeweils Luftlinie vom Truck zur Mitte des Stadtteils (Daten: OpenStreetMap). Weiter als ${SK.MAX_DELIVERY_KM} km liefern wir nicht.</p>`;
+    <p class="zone-notiz"${ue('lgb.notiz', { km: SK.MAX_DELIVERY_KM })}>Entfernung jeweils Luftlinie vom Truck zur Mitte des Stadtteils (Daten: OpenStreetMap). Weiter als ${SK.MAX_DELIVERY_KM} km liefern wir nicht.</p>`;
 }
 
 function liefergebietBauen(html) {
   const datei = 'liefergebiet.html';
   const guenstigste = Math.min(...ZONEN.map((z) => z.fee));
   html = bereich(html, 'FAKTEN', `      <div class="hero-facts">
-        <div><b>${SK.MAX_DELIVERY_KM} km</b>Luftlinie</div>
-        <div><b>ab ${preis(guenstigste)}</b>Liefergebühr</div>
-        <div><b>30 bis 45 Min.</b>Lieferzeit</div>
-        <div><b>Mo bis Sa</b>12:00 bis 20:30</div>
+        <div><b>${SK.MAX_DELIVERY_KM} km</b><span data-i18n="lgb.f_luft">Luftlinie</span></div>
+        <div><b${ue('lgb.ab', { x: preis(guenstigste) })}>ab ${preis(guenstigste)}</b><span data-i18n="lgb.gebuehr">Liefergebühr</span></div>
+        <div><b${ue('lgb.min_spanne', { a: 30, b: 45 })}>30 bis 45 Min.</b><span data-i18n="lgb.f_zeit">Lieferzeit</span></div>
+        <div><b data-i18n="lgb.mo_sa">Mo bis Sa</b><span${ue('lgb.uhr_spanne', { a: '12:00', b: '20:30' })}>12:00 bis 20:30</span></div>
       </div>`, datei);
   html = bereich(html, 'ZONEN', zonenHtml(), datei);
   const fern = ORTE_KM.filter((o) => zoneVon(o.km)).slice(-3).map((o) => o.name);
-  html = bereich(html, 'RADIUS', `Bis ${SK.MAX_DELIVERY_KM} km Luftlinie rund um unseren Truck in der Gütersloher Straße 122, zum Beispiel bis ${fern.slice(0, -1).join(', ')} und ${fern[fern.length - 1]}.`, datei);
-  html = bereich(html, 'PREISE', ZONEN.map((z) => `Zone ${z.nr} (${spanne(z)}): ${preis(z.minOrder)} Mindestbestellwert, ${preis(z.fee)} Liefergebühr.`).join(' ')
-    + ' Welche Zone für dich gilt, zeigt die Adressprüfung oben.', datei);
+  const rv = { km: SK.MAX_DELIVERY_KM, orte: fern.slice(0, -1).join(', '), letzter: fern[fern.length - 1] };
+  html = bereich(html, 'RADIUS', `<span${ue('lgb.radius', rv)}>Bis ${rv.km} km Luftlinie rund um unseren Truck in der Gütersloher Straße 122, zum Beispiel bis ${rv.orte} und ${rv.letzter}.</span>`, datei);
+  html = bereich(html, 'PREISE', ZONEN.map((z) => {
+    const v = { nr: z.nr, von: z.von, bis: z.maxKm, min: preis(z.minOrder), fee: preis(z.fee) };
+    return z.von
+      ? `<span${ue('lgb.preis_von_bis', v)}>Zone ${z.nr} (${z.von} bis ${z.maxKm} km): ${v.min} Mindestbestellwert, ${v.fee} Liefergebühr.</span>`
+      : `<span${ue('lgb.preis_bis', v)}>Zone ${z.nr} (bis ${z.maxKm} km): ${v.min} Mindestbestellwert, ${v.fee} Liefergebühr.</span>`;
+  }).join(' ') + ' <span data-i18n="lgb.preis_ende">Welche Zone für dich gilt, zeigt die Adressprüfung oben.</span>', datei);
   return faqDaten(html, SEITE + '/liefergebiet');
 }
 
@@ -422,12 +434,13 @@ function agbBauen(html, indexHtml) {
 // hier einmal und landet zwischen <!-- SEITENKOPF:START --> und :ENDE.
 // Stile: seitenkopf.css. Pille und Menü: seitenkopf.js, das dieser Build aus
 // werkzeug/seitenkopf-vorlage.js und den Öffnungszeiten aus index.html baut.
+// Alle Unterseiten sind mehrsprachig (i18n.js), darum überall die Sprachwahl
 const KOPF_SEITEN = {
-  'halal.html': { mehr: 'halal' },
-  'liefergebiet.html': { mehr: 'liefergebiet' },
-  'catering.html': { aktiv: 'catering' },
+  'halal.html': { mehr: 'halal', sprache: true },
+  'liefergebiet.html': { mehr: 'liefergebiet', sprache: true },
+  'catering.html': { aktiv: 'catering', sprache: true },
   'firmen.html': { mehr: 'firmen', sprache: true },
-  'gutscheine.html': { mehr: 'gutscheine', appZurueck: true },
+  'gutscheine.html': { mehr: 'gutscheine', appZurueck: true, sprache: true },
 };
 const FLAMME = '<svg class="sk-flamme" viewBox="0 0 16 20" aria-hidden="true"><path class="koerper" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="kern" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg>';
 function kopfHtml(o) {
@@ -460,7 +473,7 @@ function kopfHtml(o) {
       </div>` : '';
   const zurueck = o.appZurueck ? `
       <a class="app-zurueck" id="appZurueck" href="/?app=1" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span data-text>Zurück</span></a>` : '';
-  return `<a class="sk-skip" href="#main">Zum Inhalt springen</a>
+  return `<a class="sk-skip" href="#main" data-i18n="sk.skip">Zum Inhalt springen</a>
 <header class="sk-kopf" id="seitenkopf">
   <div class="sk-innen">
     <a class="sk-marke" id="marke" href="/" aria-label="Grill'n Chill, zur Startseite">
@@ -529,6 +542,7 @@ function kopfEinsetzen(datei) {
   html = akzentLuft(bereich(html, 'SEITENKOPF', kopfHtml(KOPF_SEITEN[datei]), datei));
   if (!html.includes('<link rel="stylesheet" href="/seitenkopf.css">')) throw new Error('seitenkopf.css fehlt im <head> von ' + datei);
   if (!html.includes('<script src="/seitenkopf.js" defer></script>')) throw new Error('seitenkopf.js fehlt in ' + datei);
+  if (!html.includes('<script src="/i18n.js"></script>')) throw new Error('i18n.js fehlt in ' + datei + ' (Sprachwahl im Kopf)');
   if (!/<main[^>]*\bid="main"/.test(html)) throw new Error('<main id="main"> fehlt in ' + datei + ' (Sprunglink)');
   fs.writeFileSync(p, html);
 }

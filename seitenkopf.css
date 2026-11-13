@@ -11,6 +11,17 @@
    Die Datei steht im <head> NACH dem Inline-Stil der Seite und gewinnt
    deshalb bei gleicher Spezifität.
    ========================================================================== */
+/* Türkische Großbuchstaben (İ, Ş, Ğ) fehlen in Bowlby One. Diese Ergänzung
+   hängt sich unter demselben Namen an, nur für diese Zeichen, wie
+   'GNC Display Ext' auf der Startseite. Sonst steht „CATERİNG“ mit einem
+   İ aus einer fremden Schrift im Titel. */
+@font-face {
+  font-family: 'Bowlby One';
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url('/fonts/gnc-display-ext-400.woff2') format('woff2');
+  unicode-range: U+011E-011F, U+0130, U+015E-015F;
+}
+
 :root {
   --sk-bg: #0A0A0A;
   --sk-card: #1C1C1C;
@@ -227,11 +238,46 @@ html.sk-app .sk-menu, html.sk-app .sk-links { display: none; }
   outline: 3px solid var(--sk-orange-hell); outline-offset: 3px; border-radius: 10px;
 }
 
-/* Sprachwahl im Kopf (nur /firmen): mobil nur die Flagge */
+/* Sprachwahl im Kopf (Logik aus i18n.js, wie auf der Startseite); mobil nur die Flagge */
 .sk-kopf .lang-dd { position: relative; }
+.sk-kopf .lang-dd-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  min-height: 40px; padding: 0.5rem 0.75rem;
+  background: var(--sk-card); border: 1px solid var(--sk-border-hell); border-radius: 999px;
+  color: var(--sk-cream); font: 700 0.78rem/1 'Inter', sans-serif; letter-spacing: 0.03em; cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.12s ease-out;
+}
+.sk-kopf .lang-dd-btn:hover { border-color: var(--sk-orange); transform: translateY(-1px); }
+.sk-kopf .lang-dd-flag svg, .sk-kopf .lang-dd-opt svg { width: 20px; height: 13px; border-radius: 2px; display: block; flex-shrink: 0; }
+.sk-kopf .lang-dd-caret { width: 10px; height: 6px; color: var(--sk-muted); transition: transform 0.15s; }
+.sk-kopf .lang-dd.open .lang-dd-caret { transform: rotate(180deg); }
+.sk-kopf .lang-dd-list {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 120;
+  min-width: 170px; margin: 0; padding: 0.3rem; list-style: none;
+  background: #161412; border: 1px solid var(--sk-border-hell); border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+}
+.sk-kopf .lang-dd-list[hidden] { display: none; }
+.sk-kopf .lang-dd-opt {
+  display: flex; align-items: center; gap: 0.55rem; width: 100%; min-height: 44px;
+  padding: 0.45rem 0.6rem; border: 0; border-radius: 8px; background: none; cursor: pointer;
+  color: var(--sk-cream-dim); font: 600 0.88rem 'Inter', sans-serif; text-align: left;
+}
+.sk-kopf .lang-dd-opt:hover { background: rgba(255, 255, 255, 0.06); color: var(--sk-cream); }
+.sk-kopf .lang-dd-opt.active { color: var(--sk-orange-hell); }
 @media (max-width: 879px) {
   .sk-kopf .lang-dd-code, .sk-kopf .lang-dd-caret { display: none; }
   .sk-kopf .lang-dd-btn { min-height: var(--sk-tap); padding: 0 0.75rem; }
+}
+/* Schmale Telefone: engere Abstände, damit auch „Commander“ oder
+   „Bestellen“ in längeren Sprachen neben Pille, Flagge und Menü passt */
+@media (max-width: 420px) {
+  .sk-innen { gap: 0.4rem; padding-inline: 0.75rem; }
+  .sk-aktionen { gap: 0.35rem; }
+  .sk-bestellen { padding: 0.55rem 0.8rem; font-size: 0.82rem; }
+  .sk-status { padding: 0.35rem 0.6rem; gap: 0.35rem; }
+  .sk-kopf .lang-dd-btn { padding: 0 0.6rem; }
+  .sk-marke img { width: 40px; height: 40px; }
 }
 /* Sehr schmale Telefone: Pille weicht, Bestellen und Menü bleiben */
 @media (max-width: 359px) {

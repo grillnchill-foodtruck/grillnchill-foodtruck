@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Halal Burger Bielefeld | 100 % zertifiziert bei Grill'n Chill</title>
+<title data-i18n="halal.titel">Halal Burger Bielefeld | 100 % zertifiziert bei Grill'n Chill</title>
 <meta name="description" content="Alle Burger bei Grill'n Chill in Bielefeld-Brackwede sind halal, zertifiziert von Halal Certification Germany (HCG00279). Am Truck, bei Lieferung und Catering.">
 <link rel="canonical" href="https://grillnchill-foodtruck.de/halal">
 <link rel="icon" href="/logo.png">
@@ -173,11 +173,12 @@
   a:focus-visible,summary:focus-visible{outline:3px solid var(--orange-b);outline-offset:3px;border-radius:8px}
 </style>
 <link rel="stylesheet" href="/seitenkopf.css">
+<script src="/ereignisse.js"></script>
 </head>
 <body>
 
 <!-- SEITENKOPF:START (werkzeug/seiten-bauen.js) -->
-<a class="sk-skip" href="#main">Zum Inhalt springen</a>
+<a class="sk-skip" href="#main" data-i18n="sk.skip">Zum Inhalt springen</a>
 <header class="sk-kopf" id="seitenkopf">
   <div class="sk-innen">
     <a class="sk-marke" id="marke" href="/" aria-label="Grill'n Chill, zur Startseite">
@@ -193,6 +194,14 @@
     </nav>
     <div class="sk-aktionen">
       <a class="sk-status" id="skStatus" href="/#location" aria-label="Öffnungszeiten" hidden><svg class="sk-flamme" viewBox="0 0 16 20" aria-hidden="true"><path class="koerper" d="M8 1.3c2.4 2.9 1.2 4.6 2.5 5.9.9 1 1.9-.2 1.9-1.5 1.5 1.8 2.3 3.8 2.3 5.8 0 3.6-3 6.7-6.7 6.7S1.3 15.1 1.3 11.5c0-3.7 2.3-6 3.9-7.8C6.6 2 7.6 2 8 1.3z"/><path class="kern" d="M8 9.4c1 1.2.5 2 1 2.6.4.4.8-.1.8-.7.6.8 1 1.6 1 2.5 0 1.6-1.3 2.8-2.8 2.8s-2.8-1.2-2.8-2.8c0-1.6 1-2.6 1.7-3.4C7.4 9.7 7.8 9.7 8 9.4z"/></svg><span class="sk-status-lang"></span><span class="sk-status-kurz" aria-hidden="true"></span></a>
+      <div class="lang-dd">
+        <button type="button" class="lang-dd-btn" aria-haspopup="listbox" aria-expanded="false" data-on-click="toggleLangDd(null, this)">
+          <span class="lang-dd-flag"></span>
+          <span class="lang-dd-code">DE</span><span class="sk-sr" data-i18n="a11y.lang">Sprache wählen</span>
+          <svg class="lang-dd-caret" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <ul class="lang-dd-list" role="listbox" hidden></ul>
+      </div>
       <a class="sk-bestellen" href="/#menu" data-i18n="nav.order">Bestellen</a>
       <details class="sk-menu">
         <summary aria-label="Menü öffnen"><span></span><span></span><span></span></summary>
@@ -222,16 +231,16 @@
     <div class="container">
       <div class="sk-hero">
       <div class="sk-hero-text">
-          <span class="eyebrow">Halal-Zertifikat</span>
-          <h1>Halal-Burger in Bielefeld, zertifiziert</h1>
-          <p class="lead">Alles, was bei Grill'n Chill auf den Grill kommt, ist halal. Halal Certification Germany bestätigt das mit dem Zertifikat Nr. HCG00279, für den Truck, jede Lieferung und das Catering.</p>
+          <span class="eyebrow" data-i18n="halal.t01">Halal-Zertifikat</span>
+          <h1 data-i18n="halal.t02">Halal-Burger in Bielefeld, zertifiziert</h1>
+          <p class="lead" data-i18n="halal.t03">Alles, was bei Grill'n Chill auf den Grill kommt, ist halal. Halal Certification Germany bestätigt das mit dem Zertifikat Nr. HCG00279, für den Truck, jede Lieferung und das Catering.</p>
           <div class="hero-cta">
-            <a class="btn" href="/#menu">Jetzt bestellen</a>
-            <a class="btn-ghost" href="/catering">Halal-Catering anfragen</a>
+            <a class="btn" href="/#menu" data-i18n="halal.t04">Jetzt bestellen</a>
+            <a class="btn-ghost" href="/catering" data-i18n="halal.t05">Halal-Catering anfragen</a>
           </div>
       </div>
         <figure class="sk-foto" style="--fp:50% 28%">
-          <img src="/bilder/seite-halal.webp" alt="Kubi im Grill'n-Chill-Truck mit einem frisch gegrillten Burger" width="640" height="800" decoding="async">
+          <img src="/bilder/seite-halal.webp" alt="Kubi im Grill'n-Chill-Truck mit einem frisch gegrillten Burger" width="640" height="800" decoding="async" data-i18n-alt="halal.t06">
         </figure>
       </div>
     </div>
@@ -239,56 +248,56 @@
 
   <section id="zertifikat">
     <div class="container">
-      <h2>Unser Zertifikat</h2>
-      <p class="sub">Das Zertifikat gilt für alles, was wir verkaufen.</p>
+      <h2 data-i18n="halal.t07">Unser Zertifikat</h2>
+      <p class="sub" data-i18n="halal.t08">Das Zertifikat gilt für alles, was wir verkaufen.</p>
       <div class="zert">
         <picture>
           <source srcset="/hcg-siegel.webp" type="image/webp">
-          <img src="/hcg-siegel.png" alt="Offizielles Siegel von Halal Certification Germany" width="150" height="150" loading="lazy">
+          <img src="/hcg-siegel.png" alt="Offizielles Siegel von Halal Certification Germany" width="150" height="150" loading="lazy" data-i18n-alt="halal.t09">
         </picture>
         <dl>
-          <div><dt>Zertifiziert von</dt><dd>Halal Certification Germany (HCG)</dd></div>
-          <div><dt>Zertifikat</dt><dd class="nr">HCG00279</dd></div>
-          <div><dt>Gilt für</dt><dd>unser ganzes Sortiment</dd></div>
-          <div><dt>Gilt wo</dt><dd>am Truck, bei Lieferung und beim Catering</dd></div>
+          <div><dt data-i18n="halal.t10">Zertifiziert von</dt><dd data-i18n="halal.t11">Halal Certification Germany (HCG)</dd></div>
+          <div><dt data-i18n="halal.t12">Zertifikat</dt><dd class="nr">HCG00279</dd></div>
+          <div><dt data-i18n="halal.t13">Gilt für</dt><dd data-i18n="halal.t14">unser ganzes Sortiment</dd></div>
+          <div><dt data-i18n="halal.t15">Gilt wo</dt><dd data-i18n="halal.t16">am Truck, bei Lieferung und beim Catering</dd></div>
         </dl>
       </div>
-      <p class="sub" style="margin-top:1rem">Das Original-Siegel hängt an unserer Ausgabe in der Gütersloher Straße 122.</p>
+      <p class="sub" style="margin-top:1rem" data-i18n="halal.t17">Das Original-Siegel hängt an unserer Ausgabe in der Gütersloher Straße 122.</p>
     </div>
   </section>
 
   <section id="karte">
     <div class="container">
-      <h2>Was bei uns auf den Grill kommt</h2>
-      <p class="sub">Unser Fleisch kaufen wir nur bei Lieferanten mit Halal-Zertifikat.</p>
+      <h2 data-i18n="halal.t18">Was bei uns auf den Grill kommt</h2>
+      <p class="sub" data-i18n="halal.t19">Unser Fleisch kaufen wir nur bei Lieferanten mit Halal-Zertifikat.</p>
       <div class="gruppen">
         <div class="gruppe">
-          <h3>Rind</h3>
-          <p class="art">Beef-Patty, auf Wunsch als Double Patty</p>
+          <h3 data-i18n="halal.t20">Rind</h3>
+          <p class="art" data-i18n="halal.t21">Beef-Patty, auf Wunsch als Double Patty</p>
           <ul>
-            <li>Classic Burger</li>
-            <li>Cheeseburger</li>
-            <li>Chili-Cheese-Burger</li>
-            <li>White BBQ Burger</li>
-            <li>Sucuk Burger</li>
-            <li>Kubis Special (Smashburger)</li>
+            <li data-i18n="halal.t22">Classic Burger</li>
+            <li data-i18n="halal.t23">Cheeseburger</li>
+            <li data-i18n="halal.t24">Chili-Cheese-Burger</li>
+            <li data-i18n="halal.t25">White BBQ Burger</li>
+            <li data-i18n="halal.t26">Sucuk Burger</li>
+            <li data-i18n="halal.t27">Kubis Special (Smashburger)</li>
           </ul>
         </div>
         <div class="gruppe">
-          <h3>Hähnchen</h3>
-          <p class="art">knusprig paniert</p>
+          <h3 data-i18n="halal.t28">Hähnchen</h3>
+          <p class="art" data-i18n="halal.t29">knusprig paniert</p>
           <ul>
-            <li>Crispy Chicken Burger</li>
-            <li>Chicken Nuggets (6er, 9er, 20er)</li>
+            <li data-i18n="halal.t30">Crispy Chicken Burger</li>
+            <li data-i18n="halal.t31">Chicken Nuggets (6er, 9er, 20er)</li>
           </ul>
         </div>
         <div class="gruppe ohne">
-          <h3>Ohne Fleisch</h3>
-          <p class="art">100 % Gemüse-Patty, veganer Käse</p>
+          <h3 data-i18n="halal.t32">Ohne Fleisch</h3>
+          <p class="art" data-i18n="halal.t33">100 % Gemüse-Patty, veganer Käse</p>
           <ul>
-            <li>Classic, Cheese, Chili-Cheese und White BBQ als Veggie-Variante, alle vegan</li>
-            <li>Pommes, vegan</li>
-            <li>Süßkartoffelpommes, vegan</li>
+            <li data-i18n="halal.t34">Classic, Cheese, Chili-Cheese und White BBQ als Veggie-Variante, alle vegan</li>
+            <li data-i18n="halal.t35">Pommes, vegan</li>
+            <li data-i18n="halal.t36">Süßkartoffelpommes, vegan</li>
           </ul>
         </div>
       </div>
@@ -297,19 +306,19 @@
 
   <section id="wissen">
     <div class="container">
-      <h2>Gut zu wissen</h2>
+      <h2 data-i18n="halal.t37">Gut zu wissen</h2>
       <div class="terms">
         <div class="term">
-          <h3>Kein Schweinefleisch, kein Alkohol</h3>
-          <p>Auf unserer Karte stehen weder Schweinefleisch noch Alkohol. Zu trinken gibt es Fritz Kola, Fritz Orange und Fritz Kola Super Zero.</p>
+          <h3 data-i18n="halal.t38">Kein Schweinefleisch, kein Alkohol</h3>
+          <p data-i18n="halal.t39">Auf unserer Karte stehen weder Schweinefleisch noch Alkohol. Zu trinken gibt es Fritz Kola, Fritz Orange und Fritz Kola Super Zero.</p>
         </div>
         <div class="term">
-          <h3>Eine Fritteuse für alles</h3>
-          <p>Pommes und Süßkartoffelpommes kommen aus derselben Fritteuse wie Nuggets und Crispy Chicken. Sie können deshalb Spuren von Gluten und Ei enthalten. Wichtig, wenn du vegan isst.</p>
+          <h3 data-i18n="halal.t40">Eine Fritteuse für alles</h3>
+          <p data-i18n="halal.t41">Pommes und Süßkartoffelpommes kommen aus derselben Fritteuse wie Nuggets und Crispy Chicken. Sie können deshalb Spuren von Gluten und Ei enthalten. Wichtig, wenn du vegan isst.</p>
         </div>
         <div class="term">
-          <h3>Ohne Aufpreis veggie</h3>
-          <p>Die vier Veggie-Burger kosten dasselbe wie das Original mit Fleisch. Du findest sie in der Speisekarte unter „Veggie/Vegan“.</p>
+          <h3 data-i18n="halal.t42">Ohne Aufpreis veggie</h3>
+          <p data-i18n="halal.t43">Die vier Veggie-Burger kosten dasselbe wie das Original mit Fleisch. Du findest sie in der Speisekarte unter „Veggie/Vegan“.</p>
         </div>
       </div>
     </div>
@@ -317,30 +326,30 @@
 
   <section id="faq">
     <div class="container">
-      <h2>Fragen zu Halal</h2>
+      <h2 data-i18n="halal.t44">Fragen zu Halal</h2>
       <details>
-        <summary>Ist bei Grill'n Chill wirklich alles halal?</summary>
-        <p>Ja. Halal Certification Germany (HCG) hat unser ganzes Sortiment zertifiziert, Zertifikat Nr. HCG00279.</p>
+        <summary><span data-i18n="halal.t45">Ist bei Grill'n Chill wirklich alles halal?</span></summary>
+        <p><span data-i18n="halal.t46">Ja. Halal Certification Germany (HCG) hat unser ganzes Sortiment zertifiziert, Zertifikat Nr. HCG00279.</span></p>
       </details>
       <details>
-        <summary>Gilt das auch bei Lieferung und Catering?</summary>
-        <p>Ja. Das Zertifikat gilt für unser ganzes Sortiment, egal ob du am Truck isst, dir liefern lässt oder uns für ein Event buchst.</p>
+        <summary><span data-i18n="halal.t47">Gilt das auch bei Lieferung und Catering?</span></summary>
+        <p><span data-i18n="halal.t48">Ja. Das Zertifikat gilt für unser ganzes Sortiment, egal ob du am Truck isst, dir liefern lässt oder uns für ein Event buchst.</span></p>
       </details>
       <details>
-        <summary>Woher kommt euer Fleisch?</summary>
-        <p>Wir kaufen unser Fleisch nur bei Lieferanten mit Halal-Zertifikat.</p>
+        <summary><span data-i18n="halal.t49">Woher kommt euer Fleisch?</span></summary>
+        <p><span data-i18n="halal.t50">Wir kaufen unser Fleisch nur bei Lieferanten mit Halal-Zertifikat.</span></p>
       </details>
       <details>
-        <summary>Gibt es bei euch Schweinefleisch oder Alkohol?</summary>
-        <p>Nein. Beides steht nicht auf unserer Karte.</p>
+        <summary><span data-i18n="halal.t51">Gibt es bei euch Schweinefleisch oder Alkohol?</span></summary>
+        <p><span data-i18n="halal.t52">Nein. Beides steht nicht auf unserer Karte.</span></p>
       </details>
       <details>
-        <summary>Habt ihr vegetarische oder vegane Burger?</summary>
-        <p>Ja. Classic, Cheese, Chili-Cheese und White BBQ gibt es ohne Aufpreis mit 100 % Gemüse-Patty und veganem Käse. Pommes und Süßkartoffelpommes sind vegan, kommen aber aus derselben Fritteuse wie die Nuggets.</p>
+        <summary><span data-i18n="halal.t53">Habt ihr vegetarische oder vegane Burger?</span></summary>
+        <p><span data-i18n="halal.t54">Ja. Classic, Cheese, Chili-Cheese und White BBQ gibt es ohne Aufpreis mit 100 % Gemüse-Patty und veganem Käse. Pommes und Süßkartoffelpommes sind vegan, kommen aber aus derselben Fritteuse wie die Nuggets.</span></p>
       </details>
       <details>
-        <summary>Wo sehe ich das Zertifikat?</summary>
-        <p>Das Original-Siegel hängt an unserer Ausgabe in der Gütersloher Straße 122 in Bielefeld-Brackwede.</p>
+        <summary><span data-i18n="halal.t55">Wo sehe ich das Zertifikat?</span></summary>
+        <p><span data-i18n="halal.t56">Das Original-Siegel hängt an unserer Ausgabe in der Gütersloher Straße 122 in Bielefeld-Brackwede.</span></p>
       </details>
     </div>
   </section>
@@ -348,11 +357,11 @@
   <section>
     <div class="container">
       <div class="cta-band">
-        <div class="display">Halal, frisch vom Grill</div>
-        <p>Abholen am Truck in Brackwede oder liefern lassen. Mit dem Code GRILL5 sparst du 5 € ab 20 € Bestellwert.</p>
+        <div class="display" data-i18n="halal.t57">Halal, frisch vom Grill</div>
+        <p data-i18n="halal.t58">Abholen am Truck in Brackwede oder liefern lassen. Mit dem Code GRILL5 sparst du 5 € ab 20 € Bestellwert.</p>
         <div class="knoepfe">
-          <a class="btn" href="/#menu">Zur Speisekarte</a>
-          <a class="btn-ghost" href="/liefergebiet">Liefergebiet ansehen</a>
+          <a class="btn" href="/#menu" data-i18n="halal.t59">Zur Speisekarte</a>
+          <a class="btn-ghost" href="/liefergebiet" data-i18n="halal.t60">Liefergebiet ansehen</a>
         </div>
       </div>
     </div>
@@ -362,9 +371,11 @@
 <footer>
   <div class="container row">
     <span>Grill'n Chill Yildiz und Öztas GbR · Gütersloher Straße 122, 33649 Bielefeld</span>
-    <span><a href="/liefergebiet">Liefergebiet</a> · <a href="/catering">Catering</a> · <a href="/firmen">Firmen-Mittag</a> · <a href="/gutscheine">Gutscheine</a> · <a href="tel:+4915118540604">0151 18 54 06 04</a> · <a href="/#impressum">Impressum</a> · <a href="/#datenschutz">Datenschutz</a></span>
+    <span data-i18n-html="halal.t61"><a href="/liefergebiet">Liefergebiet</a> · <a href="/catering">Catering</a> · <a href="/firmen">Firmen-Mittag</a> · <a href="/gutscheine">Gutscheine</a> · <a href="tel:+4915118540604">0151 18 54 06 04</a> · <a href="/#impressum">Impressum</a> · <a href="/#datenschutz">Datenschutz</a></span>
   </div>
 </footer>
+
+<script src="/i18n.js"></script>
 <script src="/seitenkopf.js" defer></script>
 </body>
 </html>

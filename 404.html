@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Seite nicht gefunden – Grill'n Chill</title>
+<title data-i18n="e404.titel">Seite nicht gefunden | Grill'n Chill</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/logo.png">
 <meta name="theme-color" content="#0A0A0A">
@@ -41,16 +41,19 @@
 /* Seitenwechsel wie auf allen Seiten (sonst bricht der Übergang beim Ankommen ab) */
 @media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }
 </style>
+<script src="/ereignisse.js"></script>
 </head>
 <body>
   <main>
     <div class="code">404</div>
-    <h1>Diese Seite ist durchgebrannt</h1>
-    <p>Den Link gibt es nicht (mehr) – aber saftige Halal-Burger gibt es zum Glück immer. Zurück zum Wesentlichen?</p>
+    <h1 data-i18n="e404.h1">Diese Seite ist durchgebrannt</h1>
+    <p data-i18n="e404.p">Den Link gibt es nicht (mehr). Saftige Halal-Burger gibt es zum Glück immer. Zurück zum Wesentlichen?</p>
     <div class="row">
-      <a class="btn primary" href="/#menu">Zur Speisekarte</a>
-      <a class="btn ghost" href="/">Zur Startseite</a>
+      <a class="btn primary" href="/#menu" data-i18n="e404.menu">Zur Speisekarte</a>
+      <a class="btn ghost" href="/" data-i18n="e404.start">Zur Startseite</a>
     </div>
   </main>
+<script src="/i18n.js"></script>
+<script>initI18n();</script>
 </body>
 </html>

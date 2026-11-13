@@ -24,10 +24,23 @@
   var VORSCHLAG = { menue: 'Ein Burger-Menü', zwei: 'Menü für zwei', abend: 'Ein Abend mit Freunden', crew: 'Mittag für die Crew' };
   var EMAIL = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]{2,}$/;
 
+  /* ---- Sprache: Texte aus i18n.js (Schlüssel gs.js_*), Deutsch als Rückfall.
+     Die Kartenvorschau bleibt Deutsch, weil das Gutschein-PDF deutsch ist. */
+  function T(k, de, v) {
+    var s = (typeof window.t === 'function' && window.t(k) !== k) ? window.t(k) : de;
+    return v ? s.replace(/\{(\w+)\}/g, function (m, n) { return n in v ? v[n] : m; }) : s;
+  }
+  function ort() {
+    try { return (typeof LANG_LOCALES !== 'undefined' && typeof currentLang !== 'undefined' && LANG_LOCALES[currentLang]) || 'de-DE'; }
+    catch (e) { return 'de-DE'; }
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function sprachwechsel(fn) { document.addEventListener('gnc-sprache', fn); }
+
   /* ---- App: Rückweg und Glas-Leiste (app-leiste.js) ---------------------- */
   var leiste = window.GNCAppLeiste;
   var inApp = !!(leiste && leiste.inApp);
-  if (leiste) leiste.start({ zurueck: 'appZurueck', marke: 'marke', text: 'Zurück' });
+  if (leiste) leiste.start({ zurueck: 'appZurueck', marke: 'marke', text: T('gs.js_zurueck', 'Zurück') });
   var START = inApp ? '/?app=1' : '/';
   Array.prototype.forEach.call(document.querySelectorAll('.app-start'), function (a) { a.href = START; });
 
@@ -38,12 +51,13 @@
   }
   function euroHtml(n) { return euro(n).replace(' €', '<span class="eur">€</span>'); }
   function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-  function datum(isoTag, lang) {
+  // lang: mit Wochentag; deutsch: immer de-DE (Kartenvorschau wie das PDF)
+  function datum(isoTag, lang, deutsch) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(isoTag || '')) return '';
     var p = isoTag.split('-');
     var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2], 12));
     try {
-      return new Intl.DateTimeFormat('de-DE', lang ? { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' } : { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(d);
+      return new Intl.DateTimeFormat(deutsch ? 'de-DE' : ort(), lang ? { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' } : { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(d);
     } catch (e) { return p.reverse().join('.'); }
   }
   function lade(k, s) { try { return JSON.parse((s || sessionStorage).getItem(k) || 'null'); } catch (e) { return null; } }
@@ -68,7 +82,7 @@
       var svg = document.createElementNS(ns, 'svg');
       svg.setAttribute('viewBox', '0 0 ' + n + ' ' + n);
       svg.setAttribute('role', 'img');
-      svg.setAttribute('aria-label', 'QR-Code des Gutscheins ' + code);
+      svg.setAttribute('aria-label', T('gs.js_qr_aria', 'QR-Code des Gutscheins {code}', { code: code }));
       svg.setAttribute('shape-rendering', 'crispEdges');
       var p = document.createElementNS(ns, 'path');
       p.setAttribute('d', pfad); p.setAttribute('fill', '#0C0B09');
@@ -82,8 +96,8 @@
     var box = document.createElement('div'); box.className = 'qr-box';
     var bild = document.createElement('div'); bild.className = 'qr'; bild.appendChild(svg);
     var p = document.createElement('p');
-    var st = document.createElement('strong'); st.textContent = 'Am Truck einlösen';
-    p.appendChild(st); p.appendChild(document.createTextNode('QR-Code oder Code an der Kasse zeigen.'));
+    var st = document.createElement('strong'); st.textContent = T('gs.js_qr_t', 'Am Truck einlösen');
+    p.appendChild(st); p.appendChild(document.createTextNode(T('gs.js_qr', 'QR-Code oder Code an der Kasse zeigen.')));
     box.appendChild(bild); box.appendChild(p);
     return box;
   }
@@ -209,8 +223,12 @@
     var gezeigt = reduce ? st.amount : 0;
     var bereit = true;
 
-    $('gs-hinweis').textContent = reduce ? 'So sieht dein Gutschein aus.'
-      : feinZeiger ? 'So sieht dein Gutschein aus. Fahr mit der Maus über die Karte.' : 'So sieht dein Gutschein aus. Zieh seitlich an der Karte.';
+    function hinweis() {
+      $('gs-hinweis').textContent = reduce ? T('gs.js_hinweis', 'So sieht dein Gutschein aus.')
+        : feinZeiger ? T('gs.js_hinweis_maus', 'So sieht dein Gutschein aus. Fahr mit der Maus über die Karte.')
+          : T('gs.js_hinweis_finger', 'So sieht dein Gutschein aus. Zieh seitlich an der Karte.');
+    }
+    hinweis();
 
     function merken() {
       var o = { preset: st.preset, amount: st.amount, delivery: st.delivery, when: st.when, date: st.date };
@@ -230,7 +248,7 @@
     $('gs-date').max = iso(new Date(heute.getFullYear() + 1, heute.getMonth(), heute.getDate()));
     if (st.date) $('gs-date').value = st.date;
     var gueltigBis = new Date(heute.getFullYear() + 3, heute.getMonth(), heute.getDate());
-    $('gc-gueltig').textContent = 'gültig bis ' + datum(iso(gueltigBis));
+    $('gc-gueltig').textContent = 'gültig bis ' + datum(iso(gueltigBis), false, true);
 
     // Betrag zählt vom gezeigten Wert aus hoch oder runter (unterbrechbar)
     var zaehlRaf = 0;
@@ -261,16 +279,20 @@
       $('gc-nachricht').textContent = $('gs-msg').value.trim();
       platzhalter($('gc-fuer'), $('gs-rname').value.trim(), 'Name');
       platzhalter($('gc-von'), $('gs-bname').value.trim(), 'Dein Name');
-      $('gs-zahlen-text').textContent = 'Weiter zur Zahlung' + (gueltigerBetrag() ? ' · ' + euro(st.amount) : '');
+      $('gs-zahlen-text').textContent = T('gs.js_zahlen', 'Weiter zur Zahlung') + (gueltigerBetrag() ? ' · ' + euro(st.amount) : '');
       $('gs-zaehler').textContent = $('gs-msg').value.length + ' / 300';
       $('rname-opt').hidden = st.delivery === 'mail';
       var name = $('gs-rname').value.trim();
       var adresse = $('gs-remail').value.trim();
-      var wer = name || 'Die beschenkte Person';
+      var v = { wer: name || T('gs.js_wer', 'Die beschenkte Person'), datum: datum(st.date, true), mail: adresse };
       var text;
-      if (st.delivery === 'print') text = 'Nach der Zahlung lädst du das PDF zum Ausdrucken herunter. Es kommt auch per Mail an dich.';
-      else if (st.when === 'date' && st.date) text = wer + ' bekommt den Gutschein am ' + datum(st.date, true) + ' um 8 Uhr per Mail' + (adresse ? ' an ' + adresse : '') + '.';
-      else text = wer + ' bekommt den Gutschein direkt nach der Zahlung per Mail' + (adresse ? ' an ' + adresse : '') + '.';
+      if (st.delivery === 'print') text = T('gs.js_z_druck', 'Nach der Zahlung lädst du das PDF zum Ausdrucken herunter. Es kommt auch per Mail an dich.');
+      else if (st.when === 'date' && st.date) text = adresse
+        ? T('gs.js_z_datum_an', '{wer} bekommt den Gutschein am {datum} um 8 Uhr per Mail an {mail}.', v)
+        : T('gs.js_z_datum', '{wer} bekommt den Gutschein am {datum} um 8 Uhr per Mail.', v);
+      else text = adresse
+        ? T('gs.js_z_sofort_an', '{wer} bekommt den Gutschein direkt nach der Zahlung per Mail an {mail}.', v)
+        : T('gs.js_z_sofort', '{wer} bekommt den Gutschein direkt nach der Zahlung per Mail.', v);
       $('gs-zusammen').textContent = text;
     }
 
@@ -390,17 +412,18 @@
       return true;
     }
 
+    // Fehlertexte des Servers (Schlüssel gs.js_f_*), beim Anzeigen übersetzt
     var FEHLER = {
-      bad_amount: 'Wähl einen Betrag zwischen 10 und 200 €.',
-      bad_email: 'Deine E-Mail-Adresse stimmt nicht. Prüf sie bitte.',
-      bad_buyer: 'Gib deinen Namen ein.',
-      bad_recipient: 'Gib den Namen der beschenkten Person ein.',
-      bad_recipient_email: 'Die E-Mail-Adresse der beschenkten Person stimmt nicht.',
-      bad_date: 'Wähl ein Wunschdatum ab morgen, höchstens ein Jahr im Voraus.',
-      terms: 'Bestätige bitte, dass du die Gutscheinbedingungen gelesen hast.',
-      too_many_requests: 'Gerade kommen zu viele Anfragen. Versuch es in ein paar Minuten noch einmal.',
-      rate_limited: 'Gerade kommen zu viele Anfragen. Versuch es in ein paar Minuten noch einmal.',
-      not_configured: 'Der Gutscheinkauf ist gerade nicht verfügbar. Schreib uns an info@grillnchill-foodtruck.de.',
+      bad_amount: ['gs.js_f_betrag', 'Wähl einen Betrag zwischen 10 und 200 €.'],
+      bad_email: ['gs.js_f_mail', 'Deine E-Mail-Adresse stimmt nicht. Prüf sie bitte.'],
+      bad_buyer: ['gs.js_f_name', 'Gib deinen Namen ein.'],
+      bad_recipient: ['gs.js_f_empf', 'Gib den Namen der beschenkten Person ein.'],
+      bad_recipient_email: ['gs.js_f_empf_mail', 'Die E-Mail-Adresse der beschenkten Person stimmt nicht.'],
+      bad_date: ['gs.js_f_datum', 'Wähl ein Wunschdatum ab morgen, höchstens ein Jahr im Voraus.'],
+      terms: ['gs.js_f_agb', 'Bestätige bitte, dass du die Gutscheinbedingungen gelesen hast.'],
+      too_many_requests: ['gs.js_f_viele', 'Gerade kommen zu viele Anfragen. Versuch es in ein paar Minuten noch einmal.'],
+      rate_limited: ['gs.js_f_viele', 'Gerade kommen zu viele Anfragen. Versuch es in ein paar Minuten noch einmal.'],
+      not_configured: ['gs.js_f_aus', 'Der Gutscheinkauf ist gerade nicht verfügbar. Schreib uns an info@grillnchill-foodtruck.de.'],
     };
 
     form.addEventListener('submit', function (e) {
@@ -442,7 +465,8 @@
           clearTimeout(warte);
           knopf.classList.remove('busy');
           knopf.disabled = false;
-          meldung(FEHLER[d && d.error] || 'Das hat nicht geklappt. Prüf deine Verbindung und versuch es noch einmal.', true);
+          var f = FEHLER[d && d.error];
+          meldung(f ? T(f[0], f[1]) : T('gs.js_f_netz', 'Das hat nicht geklappt. Prüf deine Verbindung und versuch es noch einmal.'), true);
           $('gs-alert').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
         });
     });
@@ -452,6 +476,9 @@
       if (!e.persisted) return;
       var k = $('gs-zahlen'); k.disabled = false; k.classList.remove('busy');
     });
+
+    // Sprachwechsel: Hinweis, Bezahlknopf und Zusammenfassung neu
+    sprachwechsel(function () { hinweis(); karteAktualisieren(false); });
 
     return { meldung: meldung };
   }
@@ -488,7 +515,7 @@
             fetch(API + 'giftcard-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ cancelOnly: true, supersedes: { reference: offen.reference, checkoutId: offen.checkoutId } }) }).catch(function () {});
             weg(PENDING_KEY, localStorage);
-            return zumShop('Die Zahlung wurde nicht abgeschlossen. Wir haben nichts abgebucht, deine Angaben sind noch da.');
+            return zumShop(T('gs.js_offen', 'Die Zahlung wurde nicht abgeschlossen. Wir haben nichts abgebucht, deine Angaben sind noch da.'));
           }
           weiter();
         })
@@ -504,14 +531,19 @@
       weg(FORM_KEY);
       $('dk-code').textContent = d.code;
       $('dk-betrag').textContent = euro(d.amount);
-      $('dk-meta').textContent = (d.recipientName ? 'Für ' + d.recipientName + ' · ' : '') + (d.validUntil ? 'gültig bis ' + datum(d.validUntil) : '');
+      var meta = [];
+      if (d.recipientName) meta.push(T('gs.js_fuer', 'Für {name}', { name: d.recipientName }));
+      if (d.validUntil) meta.push(T('gs.js_gueltig', 'gültig bis {datum}', { datum: datum(d.validUntil) }));
+      $('dk-meta').textContent = meta.join(' · ');
       var t;
-      if (d.delivery === 'print') t = 'Lad dir das PDF herunter und druck es aus. Die Karte zum Ausschneiden ist drauf.';
-      else if (d.delivery === 'mail' && d.sendOn && !d.recipientMailed) t = (d.recipientName || 'Die beschenkte Person') + ' bekommt ihn am ' + datum(d.sendOn, true) + ' um 8 Uhr per Mail.';
-      else if (d.delivery === 'mail') t = 'Wir haben ihn an ' + (d.recipientName || 'die beschenkte Person') + ' geschickt.';
-      else t = 'Gib den Code weiter oder bestell selbst damit.';
+      if (d.delivery === 'print') t = T('gs.js_w_druck', 'Lad dir das PDF herunter und druck es aus. Die Karte zum Ausschneiden ist drauf.');
+      else if (d.delivery === 'mail' && d.sendOn && !d.recipientMailed) t = T('gs.js_w_datum', '{wer} bekommt ihn am {datum} um 8 Uhr per Mail.', { wer: d.recipientName || T('gs.js_wer', 'Die beschenkte Person'), datum: datum(d.sendOn, true) });
+      else if (d.delivery === 'mail') t = T('gs.js_w_mail', 'Wir haben ihn an {wer} geschickt.', { wer: d.recipientName || T('gs.js_wer_klein', 'die beschenkte Person') });
+      else t = T('gs.js_w_selbst', 'Gib den Code weiter oder bestell selbst damit.');
       $('dk-weg').textContent = t;
-      $('dk-mail').textContent = offen.email || 'deine Adresse';
+      // Satz als Ganzes übersetzen, die Adresse steht je nach Sprache an anderer Stelle
+      $('dk-mailsatz').innerHTML = T('gs.js_mailsatz', 'Die Bestätigung mit Code, Gutschein-PDF und Kaufbeleg ist an {mail} unterwegs. Schau auch im Spam-Ordner nach.',
+        { mail: '<strong id="dk-mail">' + esc(offen.email || T('gs.js_deine_adresse', 'deine Adresse')) + '</strong>' });
       if (d.beleg) { $('dk-beleg').href = d.beleg; $('dk-beleg').hidden = false; }
       var svg = qrSvg(d.code);
       if (svg) { $('dk-qr-bild').textContent = ''; $('dk-qr-bild').appendChild(svg); $('dk-qr').hidden = false; }
@@ -523,12 +555,13 @@
       zeige('ok');
     }
     $('dk-nochmal').addEventListener('click', function () { seit = Date.now(); versuche = 0; zeige('pruefen'); abfragen(); });
+    sprachwechsel(function () { if (daten) bezahlt(daten); });
     $('dk-kopieren').addEventListener('click', function () {
       var k = this;
       if (!daten || !navigator.clipboard) return;
       navigator.clipboard.writeText(daten.code).then(function () {
-        k.textContent = 'Kopiert';
-        setTimeout(function () { k.textContent = 'Code kopieren'; }, 1800);
+        k.textContent = T('gs.js_kopiert', 'Kopiert');
+        setTimeout(function () { k.textContent = T('gs.t66', 'Code kopieren'); }, 1800);
       }, function () {});
     });
     abfragen();
@@ -547,34 +580,38 @@
       var f = this.value.trim() ? format(this.value) : '';
       if (f !== this.value) this.value = f;
     });
+    var letztes = null;
+    sprachwechsel(function () { if (letztes) zeigen(letztes); });
     function zeigen(r) {
+      letztes = r;
       box.hidden = false;
       box.className = 'pr-ergebnis ' + (r.valid ? 'ok' : 'bad');
       box.textContent = '';
       if (!r.valid) {
         var p = document.createElement('p');
         p.className = 'pr-msg';
-        p.textContent = {
-          format: 'Ein Gutschein-Code beginnt mit GNC, dahinter folgen sechs Zeichen, zum Beispiel GNCK7P2QX.',
-          unknown: 'Diesen Code finden wir nicht. Prüf die Schreibweise, 0 und O kommen nicht vor.',
-          used: 'Dieser Gutschein wurde schon eingelöst.',
-          expired: 'Dieser Gutschein ist am ' + datum(r.validUntil) + ' abgelaufen.',
-          inactive: 'Dieser Gutschein ist gesperrt. Schreib uns an info@grillnchill-foodtruck.de.',
-          rate: 'Zu viele Versuche. Probier es in ein paar Minuten noch einmal.',
-        }[r.reason] || 'Das hat nicht geklappt. Versuch es noch einmal.';
+        var grund = {
+          format: ['gs.js_p_format', 'Ein Gutschein-Code beginnt mit GNC, dahinter folgen sechs Zeichen, zum Beispiel GNCK7P2QX.'],
+          unknown: ['gs.js_p_unbekannt', 'Diesen Code finden wir nicht. Prüf die Schreibweise, 0 und O kommen nicht vor.'],
+          used: ['gs.js_p_eingeloest', 'Dieser Gutschein wurde schon eingelöst.'],
+          expired: ['gs.js_p_abgelaufen', 'Dieser Gutschein ist am {datum} abgelaufen.'],
+          inactive: ['gs.js_p_gesperrt', 'Dieser Gutschein ist gesperrt. Schreib uns an info@grillnchill-foodtruck.de.'],
+          rate: ['gs.js_p_viele', 'Zu viele Versuche. Probier es in ein paar Minuten noch einmal.'],
+        }[r.reason] || ['gs.js_p_fehler', 'Das hat nicht geklappt. Versuch es noch einmal.'];
+        p.textContent = T(grund[0], grund[1], { datum: datum(r.validUntil) });
         box.appendChild(p);
         return;
       }
       var kopf = document.createElement('div'); kopf.className = 'pr-kopf';
-      var badge = document.createElement('span'); badge.className = 'pr-badge'; badge.textContent = 'Gültig';
+      var badge = document.createElement('span'); badge.className = 'pr-badge'; badge.textContent = T('gs.js_p_gueltig', 'Gültig');
       var code = document.createElement('span'); code.className = 'pr-code'; code.textContent = r.code;
       kopf.appendChild(badge); kopf.appendChild(code);
       var betrag = document.createElement('div'); betrag.className = 'pr-betrag'; betrag.textContent = euro(r.value);
       var meta = document.createElement('p'); meta.className = 'pr-meta';
-      meta.textContent = 'Einlösbar ab ' + euro(r.minOrder) + ' Bestellwert · gültig bis ' + datum(r.validUntil);
+      meta.textContent = T('gs.js_p_meta', 'Einlösbar ab {min} Bestellwert · gültig bis {datum}', { min: euro(r.minOrder), datum: datum(r.validUntil) });
       var los = document.createElement('a'); los.className = 'btn';
       los.href = (inApp ? '/?app=1&gutschein=' : '/?gutschein=') + encodeURIComponent(r.code) + '#menu';
-      los.textContent = 'Jetzt Burger aussuchen';
+      los.textContent = T('gs.js_p_los', 'Jetzt Burger aussuchen');
       [kopf, betrag, meta].forEach(function (x) { box.appendChild(x); });
       var q = qrBox(r.code);
       if (q) box.appendChild(q);
