@@ -300,7 +300,7 @@ I18N.fr = {
     "promo.voucher_wegwerf": "Pour ce code, il te faut une adresse e-mail permanente, pas une adresse jetable.",
     "cart.upsell_title": "Un petit truc en plus ?", "cart.upsell_min": "Encore {rest} pour atteindre la commande minimum", "cart.upsell_add": "ajouter",
     "cart.edit": "Modifier",
-    "menu.tag_meal": "OFFRE MENU", "menu.meal_suffix": "Menu", "menu.meal_desc": "accompagnement + boisson + dip au choix",
+    "menu.tag_meal": "Offre menu", "menu.meal_suffix": "Menu", "menu.meal_desc": "accompagnement + boisson + dip au choix",
     "badge.halal": "Halal", "badge.veggie": "Veggie / Vegan disponible", "badge.allergens": "Allergènes", "menu.single": "Simple", "menu.double": "Double steak",
     "cart.subtotal": "Sous-total", "cart.how": "Comment veux-tu commander ?", "cart.total": "Total", "cart.total_nodelivery": "Total (hors livraison)",
     "cart.checkout": "Passer à la caisse →", "cart.pickup": "Retrait", "cart.delivery": "Livraison",

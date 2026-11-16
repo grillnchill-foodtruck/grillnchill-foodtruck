@@ -300,7 +300,7 @@ I18N.en = {
     "promo.voucher_wegwerf": "This code needs a permanent email address, not a disposable one.",
     "cart.upsell_title": "Anything else?", "cart.upsell_min": "{rest} more to reach the minimum order", "cart.upsell_add": "add",
     "cart.edit": "Edit",
-    "menu.tag_meal": "MEAL DEAL", "menu.meal_suffix": "Meal", "menu.meal_desc": "side + drink + dip of your choice",
+    "menu.tag_meal": "Meal deal", "menu.meal_suffix": "Meal", "menu.meal_desc": "side + drink + dip of your choice",
     "badge.halal": "Halal", "badge.veggie": "Veggie / Vegan available", "badge.allergens": "Allergens", "menu.single": "Single", "menu.double": "Double Patty",
     "cart.subtotal": "Subtotal", "cart.how": "How would you like to order?", "cart.total": "Total", "cart.total_nodelivery": "Total (excl. delivery)",
     "cart.checkout": "Continue to checkout →", "cart.pickup": "Pickup", "cart.delivery": "Delivery",

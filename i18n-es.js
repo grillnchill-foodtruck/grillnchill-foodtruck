@@ -300,7 +300,7 @@ I18N.es = {
     "promo.voucher_wegwerf": "Para este código necesitas una dirección de email permanente, no una desechable.",
     "cart.upsell_title": "¿Algo más?", "cart.upsell_min": "Faltan {rest} para el pedido mínimo", "cart.upsell_add": "añadir",
     "cart.edit": "Editar",
-    "menu.tag_meal": "MENÚ", "menu.meal_suffix": "Menú", "menu.meal_desc": "acompañamiento + bebida + dip a elegir",
+    "menu.tag_meal": "Menú", "menu.meal_suffix": "Menú", "menu.meal_desc": "acompañamiento + bebida + dip a elegir",
     "badge.halal": "Halal", "badge.veggie": "Disponible veggie / vegano", "badge.allergens": "Alérgenos", "menu.single": "Sencilla", "menu.double": "Doble carne",
     "cart.subtotal": "Subtotal", "cart.how": "¿Cómo quieres pedir?", "cart.total": "Total", "cart.total_nodelivery": "Total (sin envío)",
     "cart.checkout": "Continuar con el pedido →", "cart.pickup": "Recogida", "cart.delivery": "A domicilio",

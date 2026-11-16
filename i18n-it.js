@@ -300,7 +300,7 @@ I18N.it = {
     "promo.voucher_wegwerf": "Per questo codice ti serve un indirizzo email permanente, non usa e getta.",
     "cart.upsell_title": "Qualcos'altro?", "cart.upsell_min": "Mancano {rest} all'ordine minimo", "cart.upsell_add": "aggiungi",
     "cart.edit": "Modifica",
-    "menu.tag_meal": "MENÙ COMPLETO", "menu.meal_suffix": "Menù", "menu.meal_desc": "contorno + bevanda + dip a scelta",
+    "menu.tag_meal": "Menù completo", "menu.meal_suffix": "Menù", "menu.meal_desc": "contorno + bevanda + dip a scelta",
     "badge.halal": "Halal", "badge.veggie": "Disponibile veggie / vegan", "badge.allergens": "Allergeni", "menu.single": "Singolo", "menu.double": "Doppio patty",
     "cart.subtotal": "Subtotale", "cart.how": "Come vuoi ordinare?", "cart.total": "Totale", "cart.total_nodelivery": "Totale (senza consegna)",
     "cart.checkout": "Vai al checkout →", "cart.pickup": "Ritiro", "cart.delivery": "Consegna",

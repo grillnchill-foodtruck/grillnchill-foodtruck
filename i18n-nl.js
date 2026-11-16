@@ -300,7 +300,7 @@ I18N.nl = {
     "promo.voucher_wegwerf": "Voor deze code heb je een vast e-mailadres nodig, geen wegwerpadres.",
     "cart.upsell_title": "Nog iets erbij?", "cart.upsell_min": "Nog {rest} tot de minimale bestelling", "cart.upsell_add": "toevoegen",
     "cart.edit": "Bewerken",
-    "menu.tag_meal": "MENUDEAL", "menu.meal_suffix": "Menu", "menu.meal_desc": "side + drankje + dip naar keuze",
+    "menu.tag_meal": "Menudeal", "menu.meal_suffix": "Menu", "menu.meal_desc": "side + drankje + dip naar keuze",
     "badge.halal": "Halal", "badge.veggie": "Veggie / vegan mogelijk", "badge.allergens": "Allergenen", "menu.single": "Enkel", "menu.double": "Dubbele patty",
     "cart.subtotal": "Subtotaal", "cart.how": "Hoe wil je bestellen?", "cart.total": "Totaal", "cart.total_nodelivery": "Totaal (excl. bezorging)",
     "cart.checkout": "Verder naar afrekenen →", "cart.pickup": "Afhalen", "cart.delivery": "Bezorging",

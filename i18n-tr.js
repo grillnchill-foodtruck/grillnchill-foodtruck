@@ -300,7 +300,7 @@ I18N.tr = {
     "promo.voucher_wegwerf": "Bu kod için kalıcı bir e-posta adresi gerekiyor, geçici adresle olmaz.",
     "cart.upsell_title": "Başka bir şey?", "cart.upsell_min": "Minimum sipariş tutarına {rest} kaldı", "cart.upsell_add": "ekle",
     "cart.edit": "Düzenle",
-    "menu.tag_meal": "MENÜ FIRSATI", "menu.meal_suffix": "Menü", "menu.meal_desc": "garnitür + içecek + sos seçimli",
+    "menu.tag_meal": "Menü fırsatı", "menu.meal_suffix": "Menü", "menu.meal_desc": "garnitür + içecek + sos seçimli",
     "badge.halal": "Helal", "badge.veggie": "Veggie / Vegan mevcut", "badge.allergens": "Alerjenler", "menu.single": "Tekli", "menu.double": "Double Patty",
     "cart.subtotal": "Ara toplam", "cart.how": "Nasıl sipariş vermek istersin?", "cart.total": "Toplam", "cart.total_nodelivery": "Toplam (teslimat hariç)",
     "cart.checkout": "Ödemeye devam →", "cart.pickup": "Teslim alma", "cart.delivery": "Teslimat",

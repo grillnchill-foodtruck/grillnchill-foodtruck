@@ -300,7 +300,7 @@ I18N.pt = {
     "promo.voucher_wegwerf": "Para este código precisas de um endereço de email permanente, não descartável.",
     "cart.upsell_title": "Mais alguma coisa?", "cart.upsell_min": "Faltam {rest} para a encomenda mínima", "cart.upsell_add": "adicionar",
     "cart.edit": "Editar",
-    "menu.tag_meal": "MENU", "menu.meal_suffix": "Menu", "menu.meal_desc": "acompanhamento + bebida + dip à tua escolha",
+    "menu.tag_meal": "Menu", "menu.meal_suffix": "Menu", "menu.meal_desc": "acompanhamento + bebida + dip à tua escolha",
     "badge.halal": "Halal", "badge.veggie": "Disponível veggie / vegan", "badge.allergens": "Alergénios", "menu.single": "Simples", "menu.double": "Patty Duplo",
     "cart.subtotal": "Subtotal", "cart.how": "Como queres encomendar?", "cart.total": "Total", "cart.total_nodelivery": "Total (sem entrega)",
     "cart.checkout": "Continuar para o checkout →", "cart.pickup": "Levantamento", "cart.delivery": "Entrega",

@@ -109,11 +109,23 @@ function karteHtml(lang) {
     } else {
       preise = `<div class="menu-card-footer"><span class="menu-card-price">${preis(item.price)}${grundpreis}</span></div>`;
     }
+    // Wie renderMenu() in index.html (Unslop 16.11.2026): Dips als gezeichneter Becher,
+    // Veggie als Blatt-Icon, Badges in normaler Schreibweise
     const bild = item.image
       ? `<img src="${esc(bildPfad(item.image))}" alt="${esc(name(item))}" class="menu-card-photo" width="600" height="600" loading="lazy" decoding="async" />`
-      : `<span style="font-size: 4.5rem; position: relative; z-index: 1;">${item.emoji}</span>`;
-    const etikett = item.tag
-      ? `<span class="menu-card-tag ${esc(item.tag.class)}">${item.tag.class === 'veggie' ? '🌱' : esc(tag(item.tag.label))}</span>` : '';
+      : item.cat === 'dips'
+        ? `<span class="dip-becher s-${esc(String(item.id).replace('dip-', ''))}" role="img" aria-label="${esc(name(item))}"><i></i></span>`
+        : `<span style="font-size: 4.5rem; position: relative; z-index: 1;">${item.emoji}</span>`;
+    const BLATT = '<svg class="tag-blatt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>';
+    const SATZ_DE = { 'BELIEBT': 'Beliebt', 'SCHARF': 'Scharf', 'CHEF-EMPFEHLUNG': 'Chef-Empfehlung', 'TO SHARE': 'Zum Teilen', 'VEGGIE': 'Veggie', 'NEU': 'Neu' };
+    const satz = (s) => {
+      if (lang === 'de' && SATZ_DE[s]) return SATZ_DE[s];
+      if (!s || s !== s.toUpperCase()) return s;
+      const k = s.toLocaleLowerCase(lang); return k.charAt(0).toLocaleUpperCase(lang) + k.slice(1);
+    };
+    const etikett = !item.tag ? '' : item.tag.class === 'veggie'
+      ? `<span class="menu-card-tag veggie" role="img" aria-label="${esc(t('menu.filter_veggie'))}">${BLATT}</span>`
+      : `<span class="menu-card-tag ${esc(item.tag.class)}">${esc(satz(tag(item.tag.label)))}</span>`;
     return `<article class="menu-card">
       <div class="menu-card-img">${etikett}${bild}</div>
       <div class="menu-card-body">

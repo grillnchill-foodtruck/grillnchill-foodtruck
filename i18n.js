@@ -307,7 +307,7 @@ const I18N = {
     "promo.voucher_wegwerf": "Für diesen Code brauchst du eine dauerhafte E-Mail-Adresse, keine Wegwerf-Adresse.",
     "cart.upsell_title": "Fehlt noch etwas?", "cart.upsell_min": "Noch {rest} bis zum Mindestbestellwert", "cart.upsell_add": "hinzufügen",
     "cart.edit": "Bearbeiten",
-    "menu.tag_meal": "SPAR-MENÜ", "menu.meal_suffix": "Menü", "menu.meal_desc": "Beilage + Getränk + Dip nach Wahl",
+    "menu.tag_meal": "Spar-Menü", "menu.meal_suffix": "Menü", "menu.meal_desc": "Beilage + Getränk + Dip nach Wahl",
     "badge.halal": "Halal", "badge.veggie": "Veggie / Vegan möglich", "badge.allergens": "Allergene", "menu.single": "Single", "menu.double": "Double Patty",
     "cart.subtotal": "Zwischensumme", "cart.how": "Wie möchtest du bestellen?", "cart.total": "Gesamt", "cart.total_nodelivery": "Gesamt (ohne Lieferung)",
     "cart.checkout": "Weiter zur Kasse →", "cart.pickup": "Abholung", "cart.delivery": "Lieferung",
