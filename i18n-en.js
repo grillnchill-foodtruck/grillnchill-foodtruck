@@ -9,7 +9,7 @@ I18N.en = {
     "nav.catering": "Catering", "nav.faq": "FAQ", "nav.cart": "Cart",
     "nav.rent": "Book foodtruck", "nav.contact": "Contact", "nav.claim": "Streetfood with character",
 
-    "hero.h1a": "Halal Burgers in Bielefeld", "hero.h1b": "Street food with character.",
+    "hero.h1a": "Halal Burgers in Bielefeld", "hero.h1b": "Street food with character",
     "hero.lead": "Juicy halal burgers and crispy fries, grilled fresh in Bielefeld-Brackwede. Order here and save €5 with code GRILL5 (from €20 order value).",
     "hero.cta_order": "Order now", "hero.cta_catering": "Book foodtruck",
     "hero.reviews": "{count} reviews on Google", "hero.badge_code": "Code GRILL5", "hero.badge_discount": "€5 off",
@@ -22,12 +22,12 @@ I18N.en = {
     "ticker.rating": "{rating} from {count} reviews", "ticker.delivery": "Delivery across Bielefeld",
 
     "comparison.eyebrow": "Your direct-order advantage", "comparison.h2": "Why order directly from us?",
-    "comparison.lead": "Delivery platforms take up to 30% commission per order. When you order directly from us, you save money and it stays in Bielefeld.",
-    "comparison.recommended": "★ RECOMMENDED ★", "comparison.direct": "Directly from us", "comparison.fee_lieferando": "+ €1.99 delivery fee",
+    "comparison.lead": "Delivery platforms keep a commission on every order. When you order directly from us, you save money and it stays in Bielefeld.",
+    "comparison.recommended": "Recommended", "comparison.direct": "Directly from us", "comparison.fee_lieferando": "+ €1.99 delivery fee",
     "comparison.fee_direct": "+ €2.50 delivery fee (Brackwede)", "comparison.fee_uber": "+ €2.49 delivery fee",
     "comparison.min15": "Minimum order €15", "comparison.min18": "Minimum order €18",
-    "comparison.savings": "✓ Save €5 with code GRILL5",
-    "comparison.note": "Example with a Classic Cheeseburger from €20 order value. With code GRILL5 you save €5, online only and up to 3× per customer.",
+    "comparison.savings": "Save €5 with code GRILL5",
+    "comparison.note": "Example with a Classic Cheeseburger from €20 order value, as of November 2026. Platform prices and fees may differ. With code GRILL5 you save €5, online only and up to 3× per customer.",
 
     "menu.eyebrow": "Our menu", "menu.h2": "Order terminal",
     "menu.lead": "Add your burgers to the cart, then decide whether to pick up or get delivery. With code GRILL5 you save €5 from €20 order value.",
@@ -54,7 +54,7 @@ I18N.en = {
     "location.mon": "Monday", "location.tue": "Tuesday", "location.wed": "Wednesday", "location.thu": "Thursday",
     "location.fri": "Friday", "location.fri_delivery": "Delivery from 14:30", "location.sat": "Saturday", "location.sun": "Sunday", "location.closed": "Closed", "location.today": "Today", "cookie.title": "🍪 Cookies & privacy", "cookie.text": "We use cookies to run our website and improve your experience. You need the necessary cookies to order. Optional ones help us make the site better.", "cookie.more": "More in our privacy policy", "cookie.needed": "Necessary", "cookie.needed_desc": "Ordering, cart, security", "cookie.stats": "Statistics", "cookie.stats_desc": "Anonymous usage analysis", "cookie.marketing": "Marketing", "cookie.marketing_desc": "Personalised content & map embedding", "cookie.details": "Details", "cookie.reject": "Necessary only", "cookie.accept": "Accept all",
     "live.title": "Live tracking", "live.badge": "Live", "live.eta": "Arriving around {time}", "live.soon": "Almost there", "live.moving": "Kubi is on the way to you", "live.updated": "Location from {time}", "live.no_pos": "Live location is not available right now. The arrival time still applies.", "live.map_label": "Map with Kubi's location and your delivery address", "live.driver": "Kubi", "live.dest": "Your address", "live.osm": "© OpenStreetMap contributors",
-    "location.zones_title": "🛵 We deliver to these districts",
+    "location.zones_title": "We deliver to these districts",
     "location.zones_show": "Show delivery areas", "location.zones_hide": "Hide delivery areas",
 
     "catering.eyebrow": "Foodtruck catering", "catering.h2": "We bring the grill to your event",
@@ -277,7 +277,7 @@ I18N.en = {
     "grp.firma_banner": "Office lunch for {firma}: pick by {schluss}, delivery {day}, {time}.",
     "grp.firma_schluss": "The deadline was {time}. This group is not taking orders anymore.",
     "grp.firma_share": "Office lunch at Grill'n Chill ({host}). Pick your food by {time}:",
-    "faq.a7": "Lieferando and Uber Eats take 14 to 30% commission from us per order. When you order directly, that commission disappears, and we give you €5 off in return with code GRILL5 (from €20 order value, online only). The money stays in Bielefeld.",
+    "faq.a7": "Delivery platforms like Lieferando and Uber Eats keep a commission on every order. When you order directly, there is none, and we give you €5 off in return with code GRILL5 (from €20 order value, online only). The money stays in Bielefeld.",
     "faq.q8": "How is the delivery fee calculated?",
     "faq.a8_intro": "The delivery fee depends on the straight-line distance between your address and our location at Gütersloher Straße 122:",
     "faq.a8_z1": "Up to 3 km (Brackwede, Quelle): €15 minimum order · €2.50 delivery fee",

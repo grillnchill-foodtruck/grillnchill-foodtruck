@@ -16,7 +16,7 @@ const I18N = {
     "nav.catering": "Catering", "nav.faq": "FAQ", "nav.cart": "Warenkorb",
     "nav.rent": "Foodtruck mieten", "nav.contact": "Kontakt", "nav.claim": "Streetfood mit Charakter",
 
-    "hero.h1a": "Halal Burger in Bielefeld", "hero.h1b": "Streetfood mit Charakter.",
+    "hero.h1a": "Halal Burger in Bielefeld", "hero.h1b": "Streetfood mit Charakter",
     "hero.lead": "Saftige Halal-Burger und knusprige Pommes, frisch gegrillt in Bielefeld-Brackwede. Bestell hier und spar 5 € mit dem Code GRILL5 (ab 20 € Bestellwert).",
     "hero.cta_order": "Jetzt bestellen", "hero.cta_catering": "Foodtruck mieten",
     "hero.reviews": "{count} Bewertungen auf Google", "hero.badge_code": "Code GRILL5", "hero.badge_discount": "5 € Rabatt",
@@ -29,12 +29,12 @@ const I18N = {
     "ticker.rating": "{rating} bei {count} Bewertungen", "ticker.delivery": "Lieferung im ganzen Bielefeld",
 
     "comparison.eyebrow": "Dein Direkt-Bestellvorteil", "comparison.h2": "Warum direkt bei uns bestellen?",
-    "comparison.lead": "Lieferplattformen nehmen bis zu 30 % Provision pro Bestellung. Bestellst du direkt bei uns, sparst du Geld, und es bleibt in Bielefeld.",
-    "comparison.recommended": "★ EMPFOHLEN ★", "comparison.direct": "Direkt bei uns", "comparison.fee_lieferando": "+ 1,99 € Liefergebühr",
+    "comparison.lead": "Lieferplattformen behalten bei jeder Bestellung eine Provision ein. Bestellst du direkt bei uns, sparst du Geld, und es bleibt in Bielefeld.",
+    "comparison.recommended": "Empfohlen", "comparison.direct": "Direkt bei uns", "comparison.fee_lieferando": "+ 1,99 € Liefergebühr",
     "comparison.fee_direct": "+ 2,50 € Liefergebühr (Brackwede)", "comparison.fee_uber": "+ 2,49 € Liefergebühr",
     "comparison.min15": "Mindestbestellwert 15 €", "comparison.min18": "Mindestbestellwert 18 €",
-    "comparison.savings": "✓ Spare 5 € mit Code GRILL5",
-    "comparison.note": "Beispielrechnung mit Classic Cheeseburger ab 20 € Bestellwert. Mit dem Code GRILL5 sparst du 5 €, nur online und bis zu 3× pro Kunde.",
+    "comparison.savings": "Spare 5 € mit Code GRILL5",
+    "comparison.note": "Beispielrechnung mit Classic Cheeseburger ab 20 € Bestellwert, Stand November 2026. Preise und Gebühren der Plattformen können abweichen. Mit dem Code GRILL5 sparst du 5 €, nur online und bis zu 3× pro Kunde.",
 
     "menu.eyebrow": "Unsere Speisekarte", "menu.h2": "Bestellterminal",
     "menu.lead": "Leg deine Burger in den Warenkorb und entscheide dann, ob du abholst oder liefern lässt. Mit dem Code GRILL5 sparst du 5 € ab 20 € Bestellwert.",
@@ -61,7 +61,7 @@ const I18N = {
     "location.mon": "Montag", "location.tue": "Dienstag", "location.wed": "Mittwoch", "location.thu": "Donnerstag",
     "location.fri": "Freitag", "location.fri_delivery": "Lieferung ab 14:30 Uhr", "location.sat": "Samstag", "location.sun": "Sonntag", "location.closed": "Ruhetag", "location.today": "Heute", "cookie.title": "🍪 Cookies & Datenschutz", "cookie.text": "Wir verwenden Cookies, um unsere Website zu betreiben und dein Erlebnis zu verbessern. Notwendige Cookies sind für den Bestellvorgang erforderlich. Optionale Cookies helfen uns, die Seite zu verbessern.", "cookie.more": "Mehr in unserer Datenschutzerklärung", "cookie.needed": "Notwendig", "cookie.needed_desc": "Bestellvorgang, Warenkorb, Sicherheit", "cookie.stats": "Statistik", "cookie.stats_desc": "Anonyme Nutzungsanalyse", "cookie.marketing": "Marketing", "cookie.marketing_desc": "Personalisierte Inhalte & Karten-Einbettung", "cookie.details": "Details", "cookie.reject": "Nur notwendige", "cookie.accept": "Alle akzeptieren",
     "live.title": "Live verfolgen", "live.badge": "Live", "live.eta": "Ankunft gegen {time}", "live.soon": "Gleich bei dir", "live.moving": "Kubi ist unterwegs zu dir", "live.updated": "Standort von {time}", "live.no_pos": "Der Live-Standort ist gerade nicht verfügbar. Die Ankunftszeit gilt weiter.", "live.map_label": "Karte mit Kubis Standort und deiner Lieferadresse", "live.driver": "Kubi", "live.dest": "Deine Adresse", "live.osm": "© OpenStreetMap-Mitwirkende",
-    "location.zones_title": "🛵 Wir liefern in folgende Stadtteile",
+    "location.zones_title": "Wir liefern in folgende Stadtteile",
     "location.zones_show": "Liefergebiete anzeigen", "location.zones_hide": "Liefergebiete ausblenden",
 
     "catering.eyebrow": "Foodtruck Catering", "catering.h2": "Wir bringen den Grill zu deiner Feier",
@@ -284,7 +284,7 @@ const I18N = {
     "grp.firma_banner": "Firmen-Mittag für {firma}: auswählen bis {schluss} Uhr, Lieferung {day}, {time} Uhr.",
     "grp.firma_schluss": "Annahmeschluss war um {time} Uhr. Diese Gruppe nimmt nichts mehr an.",
     "grp.firma_share": "Firmen-Mittag bei Grill'n Chill ({host}). Wähl bis {time} Uhr dein Essen:",
-    "faq.a7": "Lieferando und Uber Eats nehmen pro Bestellung 14 bis 30 % Provision von uns. Bestellst du direkt, fällt diese Provision weg, und wir geben dir dafür 5 € Rabatt mit dem Code GRILL5 (ab 20 € Bestellwert, nur online). Das Geld bleibt in Bielefeld.",
+    "faq.a7": "Lieferplattformen wie Lieferando und Uber Eats behalten bei jeder Bestellung eine Provision ein. Bestellst du direkt, fällt sie weg, und wir geben dir dafür 5 € Rabatt mit dem Code GRILL5 (ab 20 € Bestellwert, nur online). Das Geld bleibt in Bielefeld.",
     "faq.q8": "Wie wird die Liefergebühr berechnet?",
     "faq.a8_intro": "Die Liefergebühr hängt von der Luftlinie zwischen deiner Adresse und unserem Standort in der Gütersloher Straße 122 ab:",
     "faq.a8_z1": "Bis 3 km (Brackwede, Quelle): 15 € Mindestbestellwert · 2,50 € Liefergebühr",
@@ -999,12 +999,20 @@ const PRODUCTS_I18N = {
 // Produkt-Tags (BELIEBT, SCHARF, ...) je Sprache, Schlüssel = deutsches Original-Label
 const TAGS_I18N = {
 };
-// Übersetztes Tag-Label holen (Fallback: deutsches Original)
+// Übersetztes Tag-Label holen (Fallback: deutsches Original), in normaler
+// Schreibweise statt Versalien (Unslop): „Beliebt“, „Chef's choice“.
+// Deutsch über eine Tabelle, weil Substantive groß bleiben („Zum Teilen“).
+var TAG_SATZ_DE = { 'BELIEBT': 'Beliebt', 'SCHARF': 'Scharf', 'CHEF-EMPFEHLUNG': 'Chef-Empfehlung', 'TO SHARE': 'Zum Teilen', 'VEGGIE': 'Veggie', 'NEU': 'Neu' };
+function satzSchreibung(s, lang) {
+  if (!s || s !== s.toUpperCase()) return s;
+  var klein = s.toLocaleLowerCase(lang);
+  return klein.charAt(0).toLocaleUpperCase(lang) + klein.slice(1);
+}
 function tagLabel(label) {
   if (currentLang !== 'de' && TAGS_I18N[currentLang] && TAGS_I18N[currentLang][label]) {
-    return TAGS_I18N[currentLang][label];
+    return satzSchreibung(TAGS_I18N[currentLang][label], currentLang);
   }
-  return label;
+  return TAG_SATZ_DE[label] || satzSchreibung(label, 'de');
 }
 
 function productName(item) {

@@ -620,7 +620,7 @@
       "name": "Warum direkt bestellen statt über Lieferando oder Uber Eats?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Lieferplattformen nehmen 14 bis 30 % Provision pro Bestellung. Bei einer Direktbestellung über grillnchill-foodtruck.de fällt diese Provision weg, und Grill'n Chill gibt dafür 5 € Rabatt mit dem Code GRILL5 (ab 20 € Bestellwert, nur online)."
+        "text": "Lieferplattformen behalten bei jeder Bestellung eine Provision ein. Bei einer Direktbestellung über grillnchill-foodtruck.de fällt sie weg, und Grill'n Chill gibt dafür 5 € Rabatt mit dem Code GRILL5 (ab 20 € Bestellwert, nur online)."
       }
     },
     {
@@ -6398,6 +6398,101 @@ body.app-forced .undo-toast { bottom: calc(5.6rem + var(--safe-bottom)); }   /* 
 body:has(.sticky-cart.show) .undo-toast { bottom: calc(5.2rem + var(--safe-bottom)); }   /* über der Warenkorb-Pille */
 body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(--safe-bottom)); }
 @media (prefers-reduced-motion: reduce) { .undo-toast { transform: translate(-50%, 0); transition: opacity .2s; } }
+
+/* =====================================================================
+   UNSLOP-POLISH (16.11.2026)
+   Farbe und Licht tragen die Burger im Lichtkegel, das Hero-Video und der
+   Kubis-Slider. Alles drumherum bleibt ruhig: Orange nur für die Hauptaktion
+   je Abschnitt, keine farbigen Schatten in Ruhe, keine Farbwolken, Labels in
+   normaler Schreibweise. Das Hover-System (aufhellen, Hub, Glühen) bleibt.
+   ===================================================================== */
+/* Farbe: ruhige Flächen */
+body { background-image: none; }
+.pointer-glow { display: none !important; }
+.btn-primary, .nav-mobile-logo, .promo-apply, .cat-featured { box-shadow: none; }
+.sticky-cart, .cart-fab { box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); }
+/* Plus-Knöpfe: dunkle Fläche, cremefarbenes Plus, orange erst bei Hover und Druck */
+.add-btn { background: var(--color-bg-soft); color: var(--color-cream); border: 1px solid var(--color-border-bright); box-shadow: none; }
+@media (hover: hover) and (pointer: fine) {
+  .add-btn:hover { background: var(--color-orange-solid); border-color: var(--color-orange-solid); color: #fff; }
+}
+.add-btn:active { background: var(--color-orange-solid); border-color: var(--color-orange-solid); color: #fff; }
+/* Preise creme; Orange bleibt dem Preis im Kubis-Slider und der Direkt-Karte */
+.menu-card-price, .patty-price { color: var(--color-cream); }
+.patty-extra { color: var(--color-cream-dim); background: rgba(245, 233, 208, 0.08); }
+.patty-row-double { border-color: var(--color-border); background: var(--color-bg); }   /* wie die Single-Zeile */
+
+/* Labels: normale Schreibweise, ruhig */
+.eyebrow, .deal-eyebrow, .menu-offer-eyebrow {
+  text-transform: none; letter-spacing: 0.01em; font-size: 0.875rem; font-weight: 600; color: var(--color-cream-dim);
+}
+.story-stat-label { text-transform: none; letter-spacing: 0.01em; }
+.menu-card-tag, .menu-card-tag.new, .menu-card-tag.popular, .menu-card-tag.spicy {
+  background: rgba(10, 10, 10, 0.72); color: var(--color-cream); border: 1px solid rgba(245, 233, 208, 0.14);
+  box-shadow: none; font-size: 0.66rem; font-weight: 600; letter-spacing: 0.01em; padding: 0.2rem 0.5rem; border-radius: 6px;
+}
+.menu-card-tag.veggie { color: var(--color-success); padding: 0.25rem; display: inline-flex; }
+.menu-card-tag .tag-blatt { width: 14px; height: 14px; display: block; }
+@media (max-width: 519px) { .menu-card-tag, .menu-card-tag.new, .menu-card-tag.popular, .menu-card-tag.spicy { font-size: 0.52rem; padding: 0.08rem 0.3rem; top: 4px; left: 4px; border-radius: 4px; } .menu-card-tag.veggie { padding: 0.15rem; } .menu-card-tag .tag-blatt { width: 11px; height: 11px; } }
+.comparison-card.highlight .comparison-badge, .cat-badge {
+  background: var(--color-bg); color: var(--color-cream); border: 1px solid rgba(232, 90, 36, 0.55);
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.01em; text-transform: none;
+}
+.review-new {
+  background: transparent; color: var(--color-cream-dim); border: 1px solid rgba(245, 233, 208, 0.2);
+  font-weight: 600; letter-spacing: 0.01em; text-transform: none; font-size: 0.7rem;
+}
+
+/* Schrift: Lesetext in Inter, Plakatschrift nur für Titel */
+.faq-question { font-family: var(--font-body); font-weight: 600; text-transform: none; letter-spacing: 0; }
+.footer h3 { font-family: var(--font-body); font-weight: 600; text-transform: none; letter-spacing: 0.01em; font-size: 0.95rem; }
+.zones-title { font-family: var(--font-body); font-weight: 600; text-transform: none; font-size: 1.05rem; }
+.review-text { font-style: normal; }
+
+/* Details: kein Strich unter jeder Überschrift, kein Deko-Symbol im Upsell */
+.section-header::after { content: none; display: none; }
+.upsell-icon { display: none; }
+
+/* Bewegung: Inhalte stehen da, statt beim Scrollen einzufliegen.
+   Einmalig bleibt nur das Hero-Intro beim ersten Besuch. */
+.reveal, .reveal.visible, .rv { opacity: 1; transform: none; }
+
+/* Dip-Becher statt Emoji: Pappbecher mit Soße, in Code gezeichnet.
+   Größe über font-size (1em = 16 px bei voller Größe). */
+.dip-becher { --sosse: #F3E2A6; position: relative; z-index: 1; display: block; width: 5.75em; height: 4.75em; font-size: 16px;
+  filter: drop-shadow(0 0.5em 0.6em rgba(0, 0, 0, 0.5)); }
+.dip-becher::before { /* Becher */
+  content: ''; position: absolute; left: 0.5em; right: 0.5em; top: 1.4em; bottom: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0 0.12em, transparent 0.12em 0.45em),
+    linear-gradient(90deg, #bdb4a2 0%, #ebe5d8 28%, #f8f4ec 52%, #d5ccba 100%);
+  clip-path: polygon(0 0, 100% 0, 87% 100%, 13% 100%);
+}
+.dip-becher::after { /* Rand */
+  content: ''; position: absolute; left: 0.25em; right: 0.25em; top: 0.7em; height: 1.45em; border-radius: 50%;
+  background: linear-gradient(180deg, #fbf8f2, #e2dbcc); box-shadow: inset 0 -0.12em 0.2em rgba(0, 0, 0, 0.12);
+}
+.dip-becher i { /* Soße */
+  position: absolute; left: 0.62em; right: 0.62em; top: 0.92em; height: 1em; border-radius: 50%; z-index: 1;
+  background: radial-gradient(ellipse at 34% 32%, rgba(255, 255, 255, 0.6) 0 7%, transparent 26%), var(--sosse);
+  box-shadow: inset 0 0.15em 0.3em rgba(0, 0, 0, 0.28);
+}
+.dip-becher.s-mayo { --sosse: #F3E2A6; }
+.dip-becher.s-ket { --sosse: #B5221A; }
+.dip-becher.s-mango { --sosse: #E9A23B; }
+.dip-becher.s-sweetsour { --sosse: #D9481F; }
+.cart-item-icon .dip-becher, .cart-upsell-img .dip-becher { font-size: 8px; }
+/* Dip-Kachel wie die Produktfotos: dunkler Grund, Lichtkegel in der Mitte */
+.menu-card-img:has(.dip-becher) { background: radial-gradient(circle at 50% 52%, rgba(150, 78, 38, 0.42) 0, rgba(70, 36, 18, 0.28) 30%, #0c0b0a 62%); }
+.menu-card-img:has(.dip-becher)::after, .menu-card-img:has(.dip-becher)::before { display: none; }
+/* Weitere Akzente ohne Funktion zurücknehmen: Catering-Preise (außer dem
+   empfohlenen Paket), Listenpunkte, Story-Zahlen */
+.cat-price { color: var(--color-cream); }
+.cat-featured .cat-price { color: var(--color-orange-bright); }
+.catering-features li::before, .cat-card ul li::before { background: var(--color-text-muted); }
+.story-stat-num { color: var(--color-cream); }
+/* Gruppenlink ist eine Nebenaktion: ruhig in Ruhe, orange beim Hover */
+#groupEntryBtn { background: var(--color-bg-soft) !important; border: 1px solid var(--color-border-bright) !important; color: var(--color-cream) !important; }   /* ::before = Lade-Shimmer für Fotos, lief bei den Dips endlos */
 </style>
 <script src="/ereignisse.js"></script>
 </head>
@@ -6562,7 +6657,6 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
       <source data-src="hero/grillnchill-hero.webm" type="video/webm" />
       <source data-src="hero/grillnchill-hero-lean.mp4" type="video/mp4" />
     </video>
-    <canvas class="hero-embers" id="heroEmbers" aria-hidden="true"></canvas>
   </div>
   <div class="container">
     <div class="hero-grid">
@@ -6573,7 +6667,7 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
         </div>
         <h1>
           <span data-i18n="hero.h1a">Halal Burger in Bielefeld</span><br />
-          <span class="accent" data-i18n="hero.h1b">Streetfood mit Charakter.</span>
+          <span class="accent" data-i18n="hero.h1b">Streetfood mit Charakter</span>
         </h1>
         <p class="hero-lead" data-i18n="hero.lead">Saftige Halal-Burger und knusprige Pommes, frisch gegrillt in Bielefeld-Brackwede. Bestell hier und spar 5 € mit dem Code GRILL5 (ab 20 € Bestellwert).</p>
         <div class="hero-actions">
@@ -6958,9 +7052,8 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
 <section class="comparison">
   <div class="container">
     <div class="section-header reveal">
-      <span class="eyebrow" data-i18n="comparison.eyebrow">Dein Direkt-Bestellvorteil</span>
       <h2 data-i18n="comparison.h2">Warum direkt bei uns bestellen?</h2>
-      <p data-i18n="comparison.lead">Lieferplattformen nehmen bis zu 30 % Provision pro Bestellung. Bestellst du direkt bei uns, sparst du Geld, und es bleibt in Bielefeld.</p>
+      <p data-i18n="comparison.lead">Lieferplattformen behalten bei jeder Bestellung eine Provision ein. Bestellst du direkt bei uns, sparst du Geld, und es bleibt in Bielefeld.</p>
     </div>
 
     <div class="comparison-grid">
@@ -6972,11 +7065,11 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
       </div>
 
       <div class="comparison-card highlight reveal">
-        <span class="comparison-badge" data-i18n="comparison.recommended">★ EMPFOHLEN ★</span>
+        <span class="comparison-badge" data-i18n="comparison.recommended">Empfohlen</span>
         <div class="comparison-platform" data-i18n="comparison.direct">Direkt bei uns</div>
         <div class="comparison-price">9,90 €</div>
         <div class="comparison-fee" data-i18n="comparison.fee_direct">+ 2,50 € Liefergebühr (Brackwede)</div>
-        <div class="comparison-savings" data-i18n="comparison.savings">✓ Spare 5 € mit Code GRILL5</div>
+        <div class="comparison-savings" data-i18n="comparison.savings">Spare 5 € mit Code GRILL5</div>
       </div>
 
       <div class="comparison-card reveal">
@@ -6987,7 +7080,7 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
       </div>
     </div>
 
-    <p style="text-align: center; margin-top: 2rem; color: var(--color-text-muted); font-size: 0.85rem;" data-i18n="comparison.note">Beispielrechnung mit Classic Cheeseburger ab 20 € Bestellwert. Mit dem Code GRILL5 sparst du 5 €, nur online und bis zu 3× pro Kunde.</p>
+    <p style="text-align: center; margin-top: 2rem; color: var(--color-text-muted); font-size: 0.85rem;" data-i18n="comparison.note">Beispielrechnung mit Classic Cheeseburger ab 20 € Bestellwert, Stand November 2026. Preise und Gebühren der Plattformen können abweichen. Mit dem Code GRILL5 sparst du 5 €, nur online und bis zu 3× pro Kunde.</p>
   </div>
 </section>
 
@@ -6998,7 +7091,6 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
   <div class="container">
     <div class="story-grid">
       <div class="story-content reveal">
-        <span class="eyebrow" data-i18n="story.eyebrow">Unsere Story</span>
         <h2 data-i18n="story.h2">Streetfood mit Charakter aus Brackwede</h2>
         <p data-i18n="story.p1">Bei Grill'n Chill kommt dein Burger aus frischen Zutaten auf den Grill, sobald du bestellst. Streetfood aus Brackwede, ohne Schnickschnack.</p>
         <p data-i18n="story.p2">Hinter Grill'n Chill stecken 12 Jahre Gastronomie und 6 Jahre Foodtruck.</p>
@@ -7082,7 +7174,6 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
 <section id="location" aria-labelledby="locationTitle">
   <div class="container">
     <div class="section-header reveal">
-      <span class="eyebrow" data-i18n="location.eyebrow">📍 Standort</span>
       <h2 id="locationTitle" data-i18n="location.h2">Hier findest du uns</h2>
       <p data-i18n="location.lead">Unser Truck steht in Bielefeld-Brackwede. Komm vorbei oder lass dir dein Essen liefern.</p>
     </div>
@@ -7124,7 +7215,7 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
     </div>
 
     <div class="zones reveal">
-      <div class="zones-title" data-i18n="location.zones_title">🛵 Wir liefern in folgende Stadtteile</div>
+      <div class="zones-title" data-i18n="location.zones_title">Wir liefern in folgende Stadtteile</div>
       <button class="zones-toggle" id="zonesToggle" type="button" data-on-click="toggleZones()" aria-expanded="false" aria-controls="zonesList">
         <span class="zones-toggle-label" data-i18n="location.zones_show">Liefergebiete anzeigen</span> <span aria-hidden="true">▾</span>
       </button>
@@ -7360,7 +7451,6 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
 <section id="faq">
   <div class="container">
     <div class="section-header reveal">
-      <span class="eyebrow" data-i18n="faq.eyebrow">FAQ</span>
       <h2 data-i18n="faq.h2">Häufig gestellte Fragen</h2>
     </div>
     <div class="faq-list">
@@ -7411,7 +7501,7 @@ body.app-forced:has(.sticky-cart.show) .undo-toast { bottom: calc(8.6rem + var(-
           <span data-i18n="faq.q7">Warum direkt bestellen statt über Lieferando?</span>
           <span class="faq-toggle">+</span>
         </button>
-        <div class="faq-answer" data-i18n="faq.a7">Lieferando und Uber Eats nehmen pro Bestellung 14 bis 30 % Provision von uns. Bestellst du direkt, fällt diese Provision weg, und wir geben dir dafür 5 € Rabatt mit dem Code GRILL5 (ab 20 € Bestellwert, nur online). Das Geld bleibt in Bielefeld.</div>
+        <div class="faq-answer" data-i18n="faq.a7">Lieferplattformen wie Lieferando und Uber Eats behalten bei jeder Bestellung eine Provision ein. Bestellst du direkt, fällt sie weg, und wir geben dir dafür 5 € Rabatt mit dem Code GRILL5 (ab 20 € Bestellwert, nur online). Das Geld bleibt in Bielefeld.</div>
       </div>
       <div class="faq-item">
         <button class="faq-question" data-on-click="toggleFaq(this)" aria-expanded="false">
@@ -9964,7 +10054,12 @@ function cardVisual(item) {
   if (item.image) {
     return `<img src="${item.image}" alt="${productName(item)}" class="menu-card-photo" width="600" height="600" loading="lazy" decoding="async" />`;
   }
-  return `<span style="font-size: 4.5rem; position: relative; z-index: 1;">${item.emoji}</span>`;
+  return dipBecher(item) || `<span style="font-size: 4.5rem; position: relative; z-index: 1;">${item.emoji}</span>`;
+}
+// Dips haben kein Foto: ein in CSS gezeichneter Becher mit Soßenfarbe statt Emoji (Unslop)
+function dipBecher(item) {
+  if (!item || item.cat !== 'dips') return '';
+  return `<span class="dip-becher s-${String(item.id).replace('dip-', '')}" role="img" aria-label="${escHtml(productName(item))}"><i></i></span>`;
 }
 
 /* ====================================================================
@@ -10298,7 +10393,9 @@ function renderMenu(animate = false) {
 
     card.innerHTML = `
       <div class="menu-card-img"${soldOut ? '' : ` data-on-click="addToCart('${item.id}', false, event)"`}>
-        ${item.tag ? `<span class="menu-card-tag ${item.tag.class}">${item.tag.class === 'veggie' ? '🌱' : tagLabel(item.tag.label)}</span>` : ''}
+        ${item.tag ? (item.tag.class === 'veggie'
+          ? `<span class="menu-card-tag veggie" role="img" aria-label="${escHtml(t('menu.filter_veggie'))}"><svg class="tag-blatt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>`
+          : `<span class="menu-card-tag ${item.tag.class}">${tagLabel(item.tag.label)}</span>`) : ''}
         ${soldOut ? `<span class="soldout-overlay">${t('shop.soldout')}</span>` : ''}
         ${cardVisual(item)}
       </div>
@@ -10639,21 +10736,21 @@ function renderConfigOptions() {
   if (sidesWrap) {
     sidesWrap.innerHTML = MENU_SIDE_OPTIONS.map(s => {
       const extra = s.surcharge > 0 ? ` <span style="opacity:0.8;font-size:0.82em;">+${formatPrice(s.surcharge)}</span>` : ` <span style="opacity:0.8;font-size:0.82em;">${t('config.incl')}</span>`;
-      return `<button type="button" class="config-chip ${configSide === s.id ? 'selected' : ''}" data-on-click="selectConfigSide('${s.id}')">${s.emoji} ${sideLabel(s.id)}${extra}</button>`;
+      return `<button type="button" class="config-chip ${configSide === s.id ? 'selected' : ''}" data-on-click="selectConfigSide('${s.id}')">${sideLabel(s.id)}${extra}</button>`;
     }).join('');
   }
   if (drinksWrap) {
     drinksWrap.innerHTML = MENU_DRINK_IDS.map(id => {
       const d = MENU.find(m => m.id === id);
       if (!d) return '';
-      return `<button type="button" class="config-chip ${configDrink === id ? 'selected' : ''}" data-on-click="selectConfigDrink('${id}')">${d.emoji} ${productName(d)}</button>`;
+      return `<button type="button" class="config-chip ${configDrink === id ? 'selected' : ''}" data-on-click="selectConfigDrink('${id}')">${productName(d)}</button>`;
     }).join('');
   }
   if (dipsWrap) {
     dipsWrap.innerHTML = MENU_DIP_IDS.map(id => {
       const d = MENU.find(m => m.id === id);
       if (!d) return '';
-      return `<button type="button" class="config-chip ${configDip === id ? 'selected' : ''}" data-on-click="selectConfigDip('${id}')">${d.emoji} ${dipShortName(id)}</button>`;
+      return `<button type="button" class="config-chip ${configDip === id ? 'selected' : ''}" data-on-click="selectConfigDip('${id}')">${dipShortName(id)}</button>`;
     }).join('');
   }
   // Confirm-Button mit aktuellem Preis aktualisieren
@@ -10770,7 +10867,7 @@ function renderDipPickerOptions() {
     wrap.innerHTML = MENU_DIP_IDS.map(id => {
       const d = MENU.find(m => m.id === id);
       if (!d) return '';
-      return `<button type="button" class="config-chip ${dipSelection === id ? 'selected' : ''}" data-on-click="selectDipPicker('${id}')">${d.emoji} ${dipShortName(id)}</button>`;
+      return `<button type="button" class="config-chip ${dipSelection === id ? 'selected' : ''}" data-on-click="selectDipPicker('${id}')">${dipShortName(id)}</button>`;
     }).join('');
   }
   const btn = document.getElementById('dipConfirm');
@@ -12194,7 +12291,7 @@ function renderCart() {
         displayName = `${productName(item)}-${t('menu.meal_suffix')}`;
         if (entry.double) displayName += ` <span class="cart-item-variant">Double</span>`;
         const side = sideOption(entry.side);
-        variantDetail = `<div class="cart-item-menu-detail">${side.emoji} ${sideLabel(entry.side)} · ${drinkName(entry.drink)} · ${dipShortName(entry.dip)}</div>`;
+        variantDetail = `<div class="cart-item-menu-detail">${sideLabel(entry.side)} · ${drinkName(entry.drink)} · ${dipShortName(entry.dip)}</div>`;
       } else {
         displayName = entry.double ? `${productName(item)} <span class="cart-item-variant">Double Patty</span>` : productName(item);
         if (entry.dip) variantDetail = `<div class="cart-item-menu-detail">${dipShortName(entry.dip)}</div>`;
@@ -12206,7 +12303,7 @@ function renderCart() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7"/><path d="M6.5 7l.9 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.5 7"/><path d="M10.5 11v5.5M13.5 11v5.5"/></svg>
         </div>
         <div class="cart-item">
-          <div class="cart-item-icon">${item.image ? `<img src="${item.image}" alt="${productName(item)}" width="600" height="600" loading="lazy" />` : item.emoji}</div>
+          <div class="cart-item-icon">${item.image ? `<img src="${item.image}" alt="${productName(item)}" width="600" height="600" loading="lazy" />` : (dipBecher(item) || item.emoji)}</div>
           <div class="cart-item-info">
             <div class="cart-item-name">${displayName}</div>
             ${variantDetail}
@@ -12263,7 +12360,7 @@ function renderCart() {
             const it = MENU.find(m => m.id === id);
             return `<button type="button" class="cart-upsell-card" data-on-click="addSuggestion('${id}')" aria-label="${productName(it)} ${t('cart.upsell_add')}">
               <div class="cart-upsell-add">+</div>
-              <div class="cart-upsell-img">${it.image ? `<img src="${it.image}" alt="" width="600" height="600" loading="lazy">` : `<span>${it.emoji}</span>`}</div>
+              <div class="cart-upsell-img">${it.image ? `<img src="${it.image}" alt="" width="600" height="600" loading="lazy">` : (dipBecher(it) || `<span>${it.emoji}</span>`)}</div>
               <div class="cart-upsell-name">${productName(it)}</div>
               <div class="cart-upsell-price">${formatPrice(it.price)}</div>
             </button>`;

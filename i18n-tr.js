@@ -9,7 +9,7 @@ I18N.tr = {
     "nav.catering": "Catering", "nav.faq": "SSS", "nav.cart": "Sepet",
     "nav.rent": "Foodtruck kirala", "nav.contact": "İletişim", "nav.claim": "Karakterli sokak lezzeti",
 
-    "hero.h1a": "Bielefeld'de Helal Burger", "hero.h1b": "Karakterli sokak lezzeti.",
+    "hero.h1a": "Bielefeld'de Helal Burger", "hero.h1b": "Karakterli sokak lezzeti",
     "hero.lead": "Sulu helal burgerler ve çıtır patates, Bielefeld-Brackwede'de taze ızgarada. Buradan sipariş ver, GRILL5 koduyla 5 € tasarruf et (20 € sipariş tutarından itibaren).",
     "hero.cta_order": "Hemen sipariş ver", "hero.cta_catering": "Foodtruck kirala",
     "hero.reviews": "Google'da {count} değerlendirme", "hero.badge_code": "Kod GRILL5", "hero.badge_discount": "5 € indirim",
@@ -22,12 +22,12 @@ I18N.tr = {
     "ticker.rating": "{count} değerlendirmede {rating}", "ticker.delivery": "Tüm Bielefeld'e teslimat",
 
     "comparison.eyebrow": "Doğrudan sipariş avantajın", "comparison.h2": "Neden doğrudan bizden sipariş vermelisin?",
-    "comparison.lead": "Teslimat platformları sipariş başına %30'a varan komisyon alır. Doğrudan bizden sipariş verirsen tasarruf edersin ve para Bielefeld'de kalır.",
-    "comparison.recommended": "★ ÖNERİLEN ★", "comparison.direct": "Doğrudan bizden", "comparison.fee_lieferando": "+ 1,99 € teslimat ücreti",
+    "comparison.lead": "Teslimat platformları her siparişten komisyon alır. Doğrudan bizden sipariş verirsen tasarruf edersin ve para Bielefeld'de kalır.",
+    "comparison.recommended": "Önerilen", "comparison.direct": "Doğrudan bizden", "comparison.fee_lieferando": "+ 1,99 € teslimat ücreti",
     "comparison.fee_direct": "+ 2,50 € teslimat ücreti (Brackwede)", "comparison.fee_uber": "+ 2,49 € teslimat ücreti",
     "comparison.min15": "Minimum sipariş 15 €", "comparison.min18": "Minimum sipariş 18 €",
-    "comparison.savings": "✓ GRILL5 koduyla 5 € tasarruf",
-    "comparison.note": "20 € sipariş tutarından itibaren Classic Cheeseburger ile örnek hesap. GRILL5 koduyla 5 € tasarruf edersin, yalnızca online ve kişi başı en fazla 3 kez.",
+    "comparison.savings": "GRILL5 koduyla 5 € tasarruf",
+    "comparison.note": "20 € sipariş tutarından itibaren Classic Cheeseburger ile örnek hesap, Kasım 2026 itibarıyla. Platformların fiyat ve ücretleri farklı olabilir. GRILL5 koduyla 5 € tasarruf edersin, yalnızca online ve kişi başı en fazla 3 kez.",
 
     "menu.eyebrow": "Menümüz", "menu.h2": "Sipariş terminali",
     "menu.lead": "Burgerlerini sepete ekle, sonra gel-al mı teslimat mı istediğine karar ver. GRILL5 koduyla 20 € sipariş tutarından itibaren 5 € tasarruf edersin.",
@@ -54,7 +54,7 @@ I18N.tr = {
     "location.mon": "Pazartesi", "location.tue": "Salı", "location.wed": "Çarşamba", "location.thu": "Perşembe",
     "location.fri": "Cuma", "location.fri_delivery": "Teslimat 14:30'dan itibaren", "location.sat": "Cumartesi", "location.sun": "Pazar", "location.closed": "Kapalı", "location.today": "Bugün", "cookie.title": "🍪 Çerezler & gizlilik", "cookie.text": "Web sitemizi çalıştırmak ve deneyimini iyileştirmek için çerez kullanıyoruz. Zorunlu çerezler sipariş için gereklidir. İsteğe bağlı olanlar siteyi geliştirmemize yardımcı olur.", "cookie.more": "Ayrıntılar gizlilik politikamızda", "cookie.needed": "Zorunlu", "cookie.needed_desc": "Sipariş, sepet, güvenlik", "cookie.stats": "İstatistik", "cookie.stats_desc": "Anonim kullanım analizi", "cookie.marketing": "Pazarlama", "cookie.marketing_desc": "Kişiselleştirilmiş içerik & harita yerleştirme", "cookie.details": "Ayrıntılar", "cookie.reject": "Sadece zorunlu", "cookie.accept": "Tümünü kabul et",
     "live.title": "Canlı takip", "live.badge": "Canlı", "live.eta": "Tahmini varış {time}", "live.soon": "Neredeyse kapında", "live.moving": "Kubi sana doğru yolda", "live.updated": "Konum: {time}", "live.no_pos": "Canlı konum şu an kullanılamıyor. Varış saati geçerli.", "live.map_label": "Kubi'nin konumu ve teslimat adresinle harita", "live.driver": "Kubi", "live.dest": "Adresin", "live.osm": "© OpenStreetMap katkıda bulunanlar",
-    "location.zones_title": "🛵 Şu semtlere teslimat yapıyoruz",
+    "location.zones_title": "Şu semtlere teslimat yapıyoruz",
     "location.zones_show": "Teslimat bölgelerini göster", "location.zones_hide": "Teslimat bölgelerini gizle",
 
     "catering.eyebrow": "Foodtruck Catering", "catering.h2": "Izgarayı etkinliğine getiriyoruz",
@@ -277,7 +277,7 @@ I18N.tr = {
     "grp.firma_banner": "{firma} için şirket öğle yemeği: saat {schluss}’e kadar seç, teslimat {day}, saat {time}.",
     "grp.firma_schluss": "Son saat {time} idi. Bu grup artık sipariş almıyor.",
     "grp.firma_share": "Grill'n Chill’de şirket öğle yemeği ({host}). Yemeğini saat {time}’e kadar seç:",
-    "faq.a7": "Lieferando ve Uber Eats sipariş başına bizden %14 ile %30 arasında komisyon alır. Doğrudan sipariş verirsen bu komisyon ortadan kalkar, biz de sana GRILL5 koduyla 5 € indirim veririz (20 € sipariş tutarından itibaren, yalnızca online). Para Bielefeld'de kalır.",
+    "faq.a7": "Lieferando ve Uber Eats gibi teslimat platformları her siparişten komisyon alır. Doğrudan sipariş verirsen komisyon olmaz, biz de sana GRILL5 koduyla 5 € indirim veririz (20 € sipariş tutarından itibaren, yalnızca online). Para Bielefeld'de kalır.",
     "faq.q8": "Teslimat ücreti nasıl hesaplanır?",
     "faq.a8_intro": "Teslimat ücreti, adresinle Gütersloher Straße 122'deki konumumuz arasındaki kuş uçuşu mesafeye bağlıdır:",
     "faq.a8_z1": "3 km'ye kadar (Brackwede, Quelle): 15 € minimum sipariş · 2,50 € teslimat ücreti",

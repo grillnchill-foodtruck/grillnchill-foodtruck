@@ -434,7 +434,7 @@ main .btn-ghost { border-width: 2px; }
 /* Ein Hover-System wie auf der Startseite (Jury R5): Haupt-Knopf wird heller,
    hebt sich, glüht und bekommt den Lichtstreif; Zweit-Knopf füllt sich creme.
    Vorher hoben sich die Knöpfe der Unterseiten nur um 2 px. */
-main .btn { position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(232, 90, 36, 0.35); }
+main .btn { position: relative; overflow: hidden; box-shadow: none; }   /* Glühen nur beim Hover, nicht in Ruhe (Unslop) */
 main .btn, main .btn-ghost {
   transition: transform 0.22s var(--sk-ease), box-shadow 0.22s var(--sk-ease),
     background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
@@ -560,3 +560,23 @@ main input[type="checkbox"]:focus-visible { outline: 3px solid var(--sk-orange-h
 }
 /* Fehlerzustand (Gutschein: AGB nicht bestätigt) auch am Kästchen zeigen */
 main .gs-check.bad input[type="checkbox"] { border-color: #E04848; }
+
+/* =====================================================================
+   UNSLOP-POLISH (16.11.2026), wie auf der Startseite: Labels in normaler
+   Schreibweise, kein Strich unter jeder Überschrift, keine Farbwolken und
+   kein farbiges Glühen in Ruhe. Das Hover-System bleibt.
+   ===================================================================== */
+main h2::after { content: none; display: none; }
+body .hero::before { content: none; display: none; }
+main .eyebrow { text-transform: none; letter-spacing: 0.01em; font-size: 0.875rem; font-weight: 600; color: var(--sk-cream-dim); }
+main dt { text-transform: none; letter-spacing: 0.01em; }
+main .card.hi { box-shadow: none; }
+main .badge { background: var(--sk-bg); color: var(--sk-cream); border: 1px solid rgba(232, 90, 36, 0.55); font-weight: 600; letter-spacing: 0.01em; text-transform: none; }
+main .pr-badge { text-transform: none; letter-spacing: 0.01em; }
+.sf-fuss .sf-titel { font-family: 'Inter', -apple-system, sans-serif; font-weight: 600; font-size: 0.95rem; text-transform: none; letter-spacing: 0.01em; }
+/* Akzente ohne Funktion: Paketpreise (außer dem empfohlenen Paket) und
+   Listenpunkte ruhig; Grün bleibt für „ohne Fleisch“ (Bedeutung) */
+main .price { color: var(--sk-cream); }
+main .card.hi .price { color: var(--sk-orange-hell); }
+main .card ul li::before, main .gruppe li::before { background: var(--sk-muted); }
+main .gruppe.ohne li::before { background: #6DBE45; }

@@ -9,7 +9,7 @@ I18N.nl = {
     "nav.catering": "Catering", "nav.faq": "FAQ", "nav.cart": "Winkelwagen",
     "nav.rent": "Foodtruck boeken", "nav.contact": "Contact", "nav.claim": "Streetfood met karakter",
 
-    "hero.h1a": "Halal burgers in Bielefeld", "hero.h1b": "Streetfood met karakter.",
+    "hero.h1a": "Halal burgers in Bielefeld", "hero.h1b": "Streetfood met karakter",
     "hero.lead": "Sappige halal burgers en krokante friet, vers gegrild in Bielefeld-Brackwede. Bestel hier en bespaar €5 met code GRILL5 (vanaf €20 bestelwaarde).",
     "hero.cta_order": "Bestel nu", "hero.cta_catering": "Foodtruck boeken",
     "hero.reviews": "{count} reviews op Google", "hero.badge_code": "Code GRILL5", "hero.badge_discount": "€5 korting",
@@ -22,12 +22,12 @@ I18N.nl = {
     "ticker.rating": "{rating} uit {count} reviews", "ticker.delivery": "Bezorging in heel Bielefeld",
 
     "comparison.eyebrow": "Jouw voordeel bij direct bestellen", "comparison.h2": "Waarom direct bij ons bestellen?",
-    "comparison.lead": "Bezorgplatforms rekenen tot 30% commissie per bestelling. Bestel je direct bij ons, dan bespaar je geld en blijft het in Bielefeld.",
-    "comparison.recommended": "★ AANBEVOLEN ★", "comparison.direct": "Direct bij ons", "comparison.fee_lieferando": "+ €1.99 bezorgkosten",
+    "comparison.lead": "Bezorgplatforms houden bij elke bestelling commissie in. Bestel je direct bij ons, dan bespaar je geld en blijft het in Bielefeld.",
+    "comparison.recommended": "Aanbevolen", "comparison.direct": "Direct bij ons", "comparison.fee_lieferando": "+ €1.99 bezorgkosten",
     "comparison.fee_direct": "+ €2.50 bezorgkosten (Brackwede)", "comparison.fee_uber": "+ €2.49 bezorgkosten",
     "comparison.min15": "Minimale bestelling €15", "comparison.min18": "Minimale bestelling €18",
-    "comparison.savings": "✓ Bespaar €5 met code GRILL5",
-    "comparison.note": "Rekenvoorbeeld met Classic Cheeseburger vanaf €20 bestelwaarde. Met code GRILL5 bespaar je €5, alleen online en max. 3× per klant.",
+    "comparison.savings": "Bespaar €5 met code GRILL5",
+    "comparison.note": "Rekenvoorbeeld met Classic Cheeseburger vanaf €20 bestelwaarde, stand november 2026. Prijzen en kosten van de platforms kunnen afwijken. Met code GRILL5 bespaar je €5, alleen online en max. 3× per klant.",
 
     "menu.eyebrow": "Onze menukaart", "menu.h2": "Bestelterminal",
     "menu.lead": "Doe je burgers in de winkelwagen en kies daarna of je afhaalt of laat bezorgen. Met code GRILL5 bespaar je €5 vanaf €20 bestelwaarde.",
@@ -54,7 +54,7 @@ I18N.nl = {
     "location.mon": "Maandag", "location.tue": "Dinsdag", "location.wed": "Woensdag", "location.thu": "Donderdag",
     "location.fri": "Vrijdag", "location.fri_delivery": "Bezorging vanaf 14:30", "location.sat": "Zaterdag", "location.sun": "Zondag", "location.closed": "Gesloten", "location.today": "Vandaag", "cookie.title": "🍪 Cookies & privacy", "cookie.text": "We gebruiken cookies om onze website te laten werken en je ervaring te verbeteren. Noodzakelijke cookies zijn nodig om te bestellen. Optionele helpen ons de site te verbeteren.", "cookie.more": "Meer in ons privacybeleid", "cookie.needed": "Noodzakelijk", "cookie.needed_desc": "Bestellen, winkelwagen, beveiliging", "cookie.stats": "Statistieken", "cookie.stats_desc": "Anonieme gebruiksanalyse", "cookie.marketing": "Marketing", "cookie.marketing_desc": "Gepersonaliseerde inhoud & kaart", "cookie.details": "Details", "cookie.reject": "Alleen noodzakelijke", "cookie.accept": "Alles accepteren",
     "live.title": "Live volgen", "live.badge": "Live", "live.eta": "Aankomst rond {time}", "live.soon": "Bijna bij je", "live.moving": "Kubi is onderweg naar je", "live.updated": "Locatie van {time}", "live.no_pos": "De live-locatie is nu niet beschikbaar. De aankomsttijd blijft gelden.", "live.map_label": "Kaart met de locatie van Kubi en je bezorgadres", "live.driver": "Kubi", "live.dest": "Jouw adres", "live.osm": "© OpenStreetMap-bijdragers",
-    "location.zones_title": "🛵 In deze wijken bezorgen we",
+    "location.zones_title": "In deze wijken bezorgen we",
     "location.zones_show": "Bezorggebieden tonen", "location.zones_hide": "Bezorggebieden verbergen",
 
     "catering.eyebrow": "Foodtruck-catering", "catering.h2": "Wij brengen de grill naar jouw event",
@@ -277,7 +277,7 @@ I18N.nl = {
     "grp.firma_banner": "Bedrijfslunch voor {firma}: kiezen tot {schluss} uur, bezorging {day}, {time} uur.",
     "grp.firma_schluss": "De deadline was {time} uur. Deze groep neemt niets meer aan.",
     "grp.firma_share": "Bedrijfslunch bij Grill'n Chill ({host}). Kies je eten vóór {time} uur:",
-    "faq.a7": "Lieferando en Uber Eats rekenen ons per bestelling 14 tot 30% commissie. Bestel je direct, dan vervalt die commissie en geven we je daarvoor €5 korting met code GRILL5 (vanaf €20 bestelwaarde, alleen online). Het geld blijft in Bielefeld.",
+    "faq.a7": "Bezorgplatforms zoals Lieferando en Uber Eats houden bij elke bestelling commissie in. Bestel je direct, dan is die er niet en geven we je daarvoor €5 korting met code GRILL5 (vanaf €20 bestelwaarde, alleen online). Het geld blijft in Bielefeld.",
     "faq.q8": "Hoe worden de bezorgkosten berekend?",
     "faq.a8_intro": "De bezorgkosten hangen af van de hemelsbrede afstand tussen je adres en onze locatie aan de Gütersloher Straße 122:",
     "faq.a8_z1": "Tot 3 km (Brackwede, Quelle): €15 minimale bestelling · €2.50 bezorgkosten",

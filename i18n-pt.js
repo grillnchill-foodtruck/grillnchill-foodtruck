@@ -9,7 +9,7 @@ I18N.pt = {
     "nav.catering": "Catering", "nav.faq": "FAQ", "nav.cart": "Carrinho",
     "nav.rent": "Reservar foodtruck", "nav.contact": "Contacto", "nav.claim": "Streetfood com carácter",
 
-    "hero.h1a": "Hambúrgueres halal em Bielefeld", "hero.h1b": "Street food com carácter.",
+    "hero.h1a": "Hambúrgueres halal em Bielefeld", "hero.h1b": "Street food com carácter",
     "hero.lead": "Hambúrgueres halal suculentos e batatas fritas crocantes, preparados na hora em Bielefeld-Brackwede. Encomenda aqui e poupa 5 € com o código GRILL5 (a partir de 20 € de encomenda).",
     "hero.cta_order": "Encomendar agora", "hero.cta_catering": "Reservar foodtruck",
     "hero.reviews": "{count} avaliações no Google", "hero.badge_code": "Código GRILL5", "hero.badge_discount": "5 € de desconto",
@@ -22,12 +22,12 @@ I18N.pt = {
     "ticker.rating": "{rating} em {count} avaliações", "ticker.delivery": "Entregas em toda a Bielefeld",
 
     "comparison.eyebrow": "A tua vantagem ao encomendar direto", "comparison.h2": "Porquê encomendar diretamente a nós?",
-    "comparison.lead": "As plataformas de entrega cobram até 30% de comissão por encomenda. Se encomendares diretamente a nós, poupas dinheiro e ele fica em Bielefeld.",
-    "comparison.recommended": "★ RECOMENDADO ★", "comparison.direct": "Diretamente a nós", "comparison.fee_lieferando": "+ 1,99 € de taxa de entrega",
+    "comparison.lead": "As plataformas de entrega ficam com uma comissão em cada encomenda. Se encomendares diretamente a nós, poupas dinheiro e ele fica em Bielefeld.",
+    "comparison.recommended": "Recomendado", "comparison.direct": "Diretamente a nós", "comparison.fee_lieferando": "+ 1,99 € de taxa de entrega",
     "comparison.fee_direct": "+ 2,50 € de taxa de entrega (Brackwede)", "comparison.fee_uber": "+ 2,49 € de taxa de entrega",
     "comparison.min15": "Encomenda mínima 15 €", "comparison.min18": "Encomenda mínima 18 €",
-    "comparison.savings": "✓ Poupa 5 € com o código GRILL5",
-    "comparison.note": "Exemplo com Classic Cheeseburger a partir de 20 € de encomenda. Com o código GRILL5 poupas 5 €, só online e até 3× por cliente.",
+    "comparison.savings": "Poupa 5 € com o código GRILL5",
+    "comparison.note": "Exemplo com Classic Cheeseburger a partir de 20 € de encomenda, em novembro de 2026. Os preços e taxas das plataformas podem variar. Com o código GRILL5 poupas 5 €, só online e até 3× por cliente.",
 
     "menu.eyebrow": "O nosso menu", "menu.h2": "Terminal de encomendas",
     "menu.lead": "Põe os teus hambúrgueres no carrinho e depois decide se levantas ou pedes entrega. Com o código GRILL5 poupas 5 € a partir de 20 € de encomenda.",
@@ -54,7 +54,7 @@ I18N.pt = {
     "location.mon": "Segunda-feira", "location.tue": "Terça-feira", "location.wed": "Quarta-feira", "location.thu": "Quinta-feira",
     "location.fri": "Sexta-feira", "location.fri_delivery": "Entregas a partir das 14:30", "location.sat": "Sábado", "location.sun": "Domingo", "location.closed": "Fechado", "location.today": "Hoje", "cookie.title": "🍪 Cookies e privacidade", "cookie.text": "Usamos cookies para o site funcionar e melhorar a tua experiência. Os necessários são precisos para encomendar. Os opcionais ajudam-nos a melhorar o site.", "cookie.more": "Mais na nossa política de privacidade", "cookie.needed": "Necessários", "cookie.needed_desc": "Encomendas, carrinho, segurança", "cookie.stats": "Estatísticas", "cookie.stats_desc": "Análise de utilização anónima", "cookie.marketing": "Marketing", "cookie.marketing_desc": "Conteúdo personalizado e mapa integrado", "cookie.details": "Detalhes", "cookie.reject": "Apenas os necessários", "cookie.accept": "Aceitar tudo",
     "live.title": "Acompanhar ao vivo", "live.badge": "Ao vivo", "live.eta": "Chegada por volta das {time}", "live.soon": "Quase a chegar", "live.moving": "O Kubi está a caminho", "live.updated": "Localização das {time}", "live.no_pos": "A localização ao vivo não está disponível agora. A hora de chegada mantém-se.", "live.map_label": "Mapa com a localização do Kubi e a tua morada de entrega", "live.driver": "Kubi", "live.dest": "A tua morada", "live.osm": "© Contribuidores do OpenStreetMap",
-    "location.zones_title": "🛵 Entregamos nestes bairros",
+    "location.zones_title": "Entregamos nestes bairros",
     "location.zones_show": "Mostrar zonas de entrega", "location.zones_hide": "Ocultar zonas de entrega",
 
     "catering.eyebrow": "Catering com foodtruck", "catering.h2": "Levamos o grelhador ao teu evento",
@@ -277,7 +277,7 @@ I18N.pt = {
     "grp.firma_banner": "Almoço da empresa para {firma}: escolham até às {schluss}, entrega {day}, às {time}.",
     "grp.firma_schluss": "O prazo acabou às {time}. Este grupo já não aceita encomendas.",
     "grp.firma_share": "Almoço da empresa no Grill'n Chill ({host}). Escolhe a tua comida até às {time}:",
-    "faq.a7": "A Lieferando e a Uber Eats cobram-nos de 14 a 30% de comissão por encomenda. Se encomendares diretamente, essa comissão desaparece e damos-te 5 € de desconto com o código GRILL5 (a partir de 20 € de encomenda, só online). O dinheiro fica em Bielefeld.",
+    "faq.a7": "Plataformas como a Lieferando e a Uber Eats ficam com uma comissão em cada encomenda. Se encomendares diretamente, não há comissão e damos-te 5 € de desconto com o código GRILL5 (a partir de 20 € de encomenda, só online). O dinheiro fica em Bielefeld.",
     "faq.q8": "Como é calculada a taxa de entrega?",
     "faq.a8_intro": "A taxa de entrega depende da distância em linha reta entre a tua morada e a nossa localização na Gütersloher Straße 122:",
     "faq.a8_z1": "Até 3 km (Brackwede, Quelle): encomenda mínima 15 € · taxa de entrega 2,50 €",
