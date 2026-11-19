@@ -8,6 +8,7 @@
  */
 const { getStore } = require('@netlify/blobs');
 const { aufraeumen } = require('./lib/aufraeumen');
+const { idempotenzAufraeumen } = require('./lib/idempotenz');
 
 function holeStore(name) {
   const opts = { name, consistency: 'strong' };
@@ -22,6 +23,8 @@ exports.handler = async () => {
   try {
     const r = await aufraeumen(holeStore, { budgetMs: 22000 });
     console.log('aufraeumen:', JSON.stringify(r));
+    // Idempotenz-Schlüssel gelten 24 h
+    try { console.log('aufraeumen idempotenz:', await idempotenzAufraeumen()); } catch (e) { console.error('aufraeumen idempotenz:', e.message); }
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };
   } catch (e) {
     console.error('aufraeumen:', e.message);

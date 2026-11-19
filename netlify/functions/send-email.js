@@ -642,7 +642,7 @@ const json = (statusCode, body, extraHeaders = {}) => ({
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Idempotency-Key',
     ...extraHeaders,
   },
   body: JSON.stringify(body),
@@ -1278,7 +1278,8 @@ async function addRevenue(s, patch) {
   } catch (e) {}
 }
 
-exports.handler = async (event) => {
+// Idempotenz-Hülle siehe Dateiende (lib/idempotenz.js)
+const mailHandler = async (event) => {
   // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
   const bremseHalt = await schutz(event, { name: 'mail', max: 20, maxKB: 96 });
   if (bremseHalt) return bremseHalt;
@@ -1294,7 +1295,7 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Idempotency-Key',
     }, body: '' };
   }
 
@@ -1713,3 +1714,12 @@ exports.handler = async (event) => {
     { console.error('E-Mail-Versand:', err.message); return json(502, { error: 'E-Mail-Versand fehlgeschlagen' }); }
   }
 };
+
+// Bestellbestätigung, Benachrichtigung und Catering-Anfrage nur einmal, auch
+// wenn der Browser dieselbe Anfrage zweimal schickt (Idempotency-Key)
+const { mitIdempotenz } = require('./lib/idempotenz');
+exports.handler = mitIdempotenz(mailHandler, {
+  bereich: 'mail',
+  // Das Turnstile-Token ist je Versuch neu und gehört nicht zum Inhalt
+  fingerabdruck: (body) => { const o = JSON.parse(body || '{}'); delete o.turnstileToken; return JSON.stringify(o); },
+});

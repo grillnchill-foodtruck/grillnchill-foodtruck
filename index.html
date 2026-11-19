@@ -8006,6 +8006,13 @@ const MAX_DELIVERY_KM = SK.MAX_DELIVERY_KM;
 // SUMUP_ENDPOINT: bei Netlify ist das die serverless Function.
 // Die netlify.toml leitet /sumup-checkout intern an die Funktion weiter.
 const SUMUP_ENDPOINT = '/.netlify/functions/sumup-checkout';
+// Idempotenz-Schlüssel (lib/idempotenz.js): einer je Vorgang, bei jedem
+// Wiederholungsversuch derselbe. So entsteht aus Doppeltipp oder zweitem
+// Versuch nach einem Netzfehler nie ein zweiter Bezahlvorgang.
+function idemSchluessel(art) {
+  try { if (window.crypto && crypto.randomUUID) return art + '-' + crypto.randomUUID(); } catch (e) {}
+  return art + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+}
 
 // TEST_MODE_NO_BACKEND:
 //   true  = simuliert Online-Zahlung, ohne dass Netlify-Function existiert
@@ -13425,12 +13432,16 @@ async function submitOrder(e) {
       // Function-Kaltstart schlägt gelegentlich fehl (bisher half ein manuelles
       // Neuladen). Ein automatischer zweiter Versuch erspart das dem Kunden.
       let res = null, data = null, lastErr = null, kasseAnfrage = null;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 700));
+      // Schlüssel und Referenz einmal je Bezahlvorgang: Der Server erkennt den
+      // zweiten Versuch und gibt die Antwort des ersten zurück (kein Doppel).
+      const kasseSchluessel = idemSchluessel('kasse');
+      const kasseReferenz = 'GNC-' + Date.now();
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, res && res.status === 409 ? 1000 : 700));
         try {
           res = await fetch(SUMUP_ENDPOINT, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Idempotency-Key': kasseSchluessel },
             body: JSON.stringify(kasseAnfrage = {
               // Paket bezahlen: Wunsch nach dem Widget; ob es gilt, entscheidet der Server
               zahlweg: mitApplePay ? 'applepay' : (mitGooglePay ? 'googlepay' : (mitWidget ? 'widget' : 'weiterleitung')),
@@ -13450,7 +13461,7 @@ async function submitOrder(e) {
                 return null;
               })(),
               customer: { name, email, phone },
-              reference: 'GNC-' + Date.now(),
+              reference: kasseReferenz,
               order: orderData,   // fürs Bestell-Archiv + 15-Min-Zahlungsabgleich
             }),
           });
@@ -15515,13 +15526,18 @@ document.getElementById('cateringForm').addEventListener('submit', async (e) => 
 });
 
 // Catering-Anfrage per E-Mail über send-email Function
+// Ein Schlüssel je Anfrage, bis sie durch ist: Ein neuer Versuch nach einem
+// Netzfehler schickt Kubi keine zweite Mail, falls die erste doch ankam
+let cateringSchluessel = '';
 async function sendCateringRequest(data) {
   try {
+    cateringSchluessel = cateringSchluessel || idemSchluessel('catering');
     const res = await fetch('/.netlify/functions/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': cateringSchluessel },
       body: JSON.stringify({ type: 'catering_request', catering: data, turnstileToken: data.turnstileToken || '' }),
     });
+    if (res.ok) cateringSchluessel = '';
     return res.ok;
   } catch (e) {
     console.warn('Catering-Anfrage fehlgeschlagen:', e);
@@ -18683,7 +18699,10 @@ async function sendOrderConfirmationEmails(orderData) {
   try {
     const res = await fetch('/.netlify/functions/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // Gleiche Bestellung = gleicher Schlüssel: Neuladen der Erfolgsseite
+      // oder ein zweiter Aufruf verschickt keine zweite Bestätigung
+      headers: Object.assign({ 'Content-Type': 'application/json' },
+        orderData.reference ? { 'Idempotency-Key': 'bestaetigung-' + orderData.reference } : {}),
       body: JSON.stringify(payload),
     });
     if (res.status === 403) {
@@ -18757,7 +18776,8 @@ async function sendOwnerOrderNotification(orderData) {
     const tmo = setTimeout(() => ctrl.abort(), 5000); // Zahlung nie blockieren
     const res = await fetch('/.netlify/functions/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' },
+        orderData.reference ? { 'Idempotency-Key': 'kubi-' + orderData.reference } : {}),
       body: JSON.stringify(payload),
       signal: ctrl.signal,
     });

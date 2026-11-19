@@ -66,7 +66,7 @@ const json = (statusCode, body, extraHeaders = {}) => ({
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Idempotency-Key',
     ...extraHeaders,
   },
   body: JSON.stringify(body),
@@ -79,7 +79,8 @@ const html = (statusCode, htmlBody) => ({
   body: htmlBody,
 });
 
-exports.handler = async (event) => {
+// Idempotenz-Hülle siehe Dateiende (lib/idempotenz.js)
+const kasseHandler = async (event) => {
   // Grundschutz: Anfragen je Absender und Größe begrenzen (lib/bremse.js)
   const bremseHalt = await schutz(event, { name: 'kasse', max: 20, maxKB: 96 });
   if (bremseHalt) return bremseHalt;
@@ -95,7 +96,7 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Idempotency-Key',
     }, body: '' };
   }
 
@@ -436,3 +437,9 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// Doppelte Anfrage mit demselben Idempotency-Key (Doppeltipp, zweiter Versuch
+// nach Netzfehler) legt keinen zweiten Bezahlvorgang an, sondern bekommt die
+// Antwort des ersten zurück.
+const { mitIdempotenz } = require('./lib/idempotenz');
+exports.handler = mitIdempotenz(kasseHandler, { bereich: 'kasse' });
