@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- SPRACHE-VORAB:START (werkzeug/seiten-bauen.js) -->
 <script>(function(){try{var d=document.documentElement;if((d.getAttribute('data-seite')||'de')!=='de'||/bot\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}if(!l||!P[l])return;window.gncI18nZiel=l;var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);var s=document.createElement('style');s.textContent='html.i18n-wartet :is(main,footer,.promo-bar>*,.nav-links,.nav-actions,.sk-links,.sk-aktionen){visibility:hidden}html.i18n-wartet :is(.hero-bg,.sk-foto){visibility:visible}';document.head.appendChild(s);d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>
 <!-- SPRACHE-VORAB:ENDE -->
@@ -173,6 +173,7 @@
   @media(prefers-reduced-motion:reduce){h2::after{opacity:.9}}
 </style>
 <link rel="stylesheet" href="/seitenkopf.css">
+<link rel="stylesheet" href="/feinschliff.css">
 <script src="/ereignisse.js"></script>
 </head>
 <body>
@@ -247,7 +248,7 @@
             <div data-i18n-html="cat.t08"><b>25 km</b>Anfahrt inklusive</div>
           </div>
       </div>
-        <figure class="sk-foto" style="--fp:50% 62%">
+        <figure class="sk-foto" style="--fp:50% 62%; --vorschau:url('data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAACwAwCdASoQABQAPsFOoUqnpCMhsAgA8BgJZwC2yBu2CBaRpmJvQAD+34WqyALGIeFJJWoVT7Uu5NH8iofX43uCYvRJBhdRvC/gnuYiY3iWDvzQpNp7yNZ4oPtUNMtmoOUylgccBXnTrQYlUiqAqgCQAAA=')">
           <img src="/bilder/seite-catering.webp" alt="Gäste mit Burgern am Truck bei einem Event" width="640" height="800" decoding="async" fetchpriority="high" data-i18n-alt="cat.t09">
         </figure>
       </div>
@@ -457,5 +458,6 @@
 })();
 </script>
 <script src="/seitenkopf.js" defer></script>
+<script src="/befehle.js" defer></script>
 </body>
 </html>

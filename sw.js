@@ -8,11 +8,12 @@
      passen index.html und i18n.js nicht zusammen → Fehler.
    - Bilder/Icons: Stale-While-Revalidate (ändern sich selten, dürfen
      aus dem Cache kommen).
+   - Google-Bewertungen (/google-reviews): Stale-While-Revalidate.
    - Netlify Functions / externe APIs: NIE cachen.
    ==================================================================== */
 
 // Bei jedem Deploy mit Code-Änderung hochzählen!
-const CACHE_VERSION = 'gnc-v222';
+const CACHE_VERSION = 'gnc-v223';
 const CACHE_NAME = `grillnchill-${CACHE_VERSION}`;
 
 // Nur unkritische, statische Assets vorladen (KEIN HTML/JS – die kommen frisch)
@@ -63,6 +64,22 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
+  // Google-Bewertungen: Stale-While-Revalidate. Die letzte Antwort kommt sofort
+  // aus dem Cache, im Hintergrund holt der Worker die frische für das nächste
+  // Mal. Die Funktion cached ohnehin 24 h, die Liste muss nicht warten.
+  if (url.hostname === self.location.hostname && (url.pathname.startsWith('/google-reviews') || url.pathname === '/.netlify/functions/google-reviews')) {
+    event.respondWith(caches.open(CACHE_NAME).then(async (cache) => {
+      const alt = await cache.match(request);
+      const frisch = fetch(request).then((res) => {
+        if (res && res.ok) cache.put(request, res.clone());
+        return res;
+      }).catch(() => alt || Response.error());
+      if (alt) { event.waitUntil(frisch.catch(() => {})); return alt; }
+      return frisch;
+    }));
+    return;
+  }
+
   // NIE cachen: Netlify Functions, SumUp, externe Domains (immer Netzwerk)
   if (
     url.pathname.startsWith('/.netlify/') ||
@@ -70,7 +87,6 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/send-email') ||
     url.pathname.startsWith('/status-update') ||
     url.pathname.startsWith('/shop-status') ||
-    url.pathname.startsWith('/google-reviews') ||
     url.pathname.startsWith('/track') ||
     url.pathname.startsWith('/push-subscribe') ||
     url.pathname.startsWith('/push-send') ||

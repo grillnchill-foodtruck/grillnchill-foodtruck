@@ -1,0 +1,14 @@
+{
+  "prerender": [
+    {
+      "where": {
+        "and": [
+          { "href_matches": "/*" },
+          { "not": { "href_matches": ["/admin*", "/cockpit*", "/fahrer*", "/dienstplan*", "/firmen-admin*", "/status*", "/angebot*", "/g/*", "/.netlify/*", "/*.pdf"] } },
+          { "not": { "selector_matches": "[rel~=nofollow], [target=_blank], [download], [data-no-prerender]" } }
+        ]
+      },
+      "eagerness": "moderate"
+    }
+  ]
+}

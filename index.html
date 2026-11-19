@@ -6494,6 +6494,10 @@ body { background-image: none; }
 /* Gruppenlink ist eine Nebenaktion: ruhig in Ruhe, orange beim Hover */
 #groupEntryBtn { background: var(--color-bg-soft) !important; border: 1px solid var(--color-border-bright) !important; color: var(--color-cream) !important; }   /* ::before = Lade-Shimmer für Fotos, lief bei den Dips endlos */
 </style>
+<link rel="stylesheet" href="/feinschliff.css">
+<script src="/bild-vorschau.js"></script>
+<script src="/befehle.js" defer></script>
+<script src="/feinschliff.js" defer></script>
 <script src="/ereignisse.js"></script>
 </head>
 <body>
@@ -6643,7 +6647,7 @@ body { background-image: none; }
 <main id="main">
 <header class="hero" id="top">
   <!-- full-bleed background video -->
-  <div class="hero-bg" aria-hidden="true">
+  <div class="hero-bg" aria-hidden="true" style="--vorschau:url('data:image/webp;base64,UklGRqgAAABXRUJQVlA4IJwAAAAQBACdASoQABwAPsE0rFInoiUjmADwGAlsAJ0AaGDO1SDpfZHGRmvUAADLT/uUyqOF0FL/U5t9oO919CR1LX+g4QMzNj8nxeihWN0B04CLTXakp6kpR+edoyGGP0Pob0uLY/YRkgYpT/iMUO5GDN3d9o5gwNZMIid2tk6s2C99XESo4lUNdbnrnW3gQ1SWNH6yrzWR71Ce4bqAAAA=')">
     <!-- still shown before the video loads / under reduced-motion -->
     <picture>
       <source srcset="hero/poster-780.webp 780w, hero/poster.webp 1080w" sizes="(min-width: 880px) 420px, 100vw" type="image/webp" />
@@ -9541,11 +9545,17 @@ async function accAddAddress(btn) {
     city: document.getElementById('accAdrCity').value,
   };
   if (!a.street.trim() || !a.zip.trim()) { flashAccMsg(t('acc.adr_incomplete'), btn); return; }
-  const list = [...(ACCOUNT.profile.addresses || []), a].slice(0, 3);
-  const r = await withBusy(btn, () => accountApi('save', { addresses: list }));
-  if (!r) return;   // zweiter Tipp waehrend des Wartens
-  if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); showSavedToast(t('acc.saved')); }
-  else flashAccMsg(accErrText(r), btn);
+  const vorher = [...(ACCOUNT.profile.addresses || [])];
+  const list = [...vorher, a].slice(0, 3);
+  // Optimistisch: Die Adresse steht sofort in der Liste, der Server bestätigt
+  // im Hintergrund. Klappt das nicht, kommt die alte Liste zurück, mit Hinweis.
+  ACCOUNT.profile.addresses = list; saveAccount(); renderAccount(); showSavedToast(t('acc.saved'));
+  const r = await accountApi('save', { addresses: list });
+  if (r.ok) { ACCOUNT.profile = r.d.profile; saveAccount(); renderAccount(); }
+  else {
+    ACCOUNT.profile.addresses = vorher; saveAccount(); renderAccount();
+    flashAccMsg(accErrText(r), document.getElementById('accountBody'));
+  }
 }
 async function accDeleteAddress(i, btn) {
   const row = btn && btn.closest('.acc-adr');
@@ -10063,6 +10073,11 @@ function cardVisual(item) {
   }
   return dipBecher(item) || `<span style="font-size: 4.5rem; position: relative; z-index: 1;">${item.emoji}</span>`;
 }
+// Unscharfe Vorschau (bild-vorschau.js), bis das Foto geladen ist – wie BlurHash
+function vorschauAttr(item) {
+  const v = item && item.image && window.GNC_VORSCHAU && window.GNC_VORSCHAU[item.image];
+  return v ? ` style="--vorschau:url('${v}')"` : '';
+}
 // Dips haben kein Foto: ein in CSS gezeichneter Becher mit Soßenfarbe statt Emoji (Unslop)
 function dipBecher(item) {
   if (!item || item.cat !== 'dips') return '';
@@ -10278,7 +10293,7 @@ function renderMenu(animate = false) {
     if (renderAsMenu) {
       const menuPrice = item.price + MENU_SURCHARGE;
       card.innerHTML = `
-        <div class="menu-card-img"${soldOut ? '' : ` data-on-click="openMenuConfig('${item.id}', false, false, null)"`}>
+        <div class="menu-card-img"${vorschauAttr(item)}${soldOut ? '' : ` data-on-click="openMenuConfig('${item.id}', false, false, null)"`}>
           <span class="menu-card-tag popular">${t('menu.tag_meal')}</span>
           ${soldOut ? `<span class="soldout-overlay">${t('shop.soldout')}</span>` : ''}
           ${cardVisual(item)}
@@ -10399,7 +10414,7 @@ function renderMenu(animate = false) {
         </div>`;
 
     card.innerHTML = `
-      <div class="menu-card-img"${soldOut ? '' : ` data-on-click="addToCart('${item.id}', false, event)"`}>
+      <div class="menu-card-img"${vorschauAttr(item)}${soldOut ? '' : ` data-on-click="addToCart('${item.id}', false, event)"`}>
         ${item.tag ? (item.tag.class === 'veggie'
           ? `<span class="menu-card-tag veggie" role="img" aria-label="${escHtml(t('menu.filter_veggie'))}"><svg class="tag-blatt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg></span>`
           : `<span class="menu-card-tag ${item.tag.class}">${tagLabel(item.tag.label)}</span>`) : ''}
@@ -13763,10 +13778,17 @@ function successNewOrder() {
 })();
 document.getElementById('menuFilters').addEventListener('click', (e) => {
   if (e.target.classList.contains('filter-chip')) {
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-    e.target.classList.add('active');
-    activeCategory = e.target.dataset.cat;
-    renderMenu();
+    const chip = e.target;
+    const wechsel = () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeCategory = chip.dataset.cat;
+      renderMenu();
+    };
+    // Die Karten blenden über statt zu springen (View Transition, nur mit Bewegung)
+    if (document.startViewTransition && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      document.startViewTransition(wechsel);
+    } else wechsel();
   }
 });
 
@@ -15314,9 +15336,11 @@ function updateGroupEntryBtn() {
    beim naechsten Laden sofort wieder bei. */
 function discardGroup() {
   if (!(groupJoin || groupHost)) return;
-  if (!confirm(t('grp.discard_confirm'))) return;
+  // Rückgängig statt Nachfrage (UX-Regel 13): Die Gruppe verschwindet sofort,
+  // der Server schließt sie erst, wenn der Hinweis abläuft oder die Seite geht.
+  const vorher = { host: groupHost, join: groupJoin, note: groupOrderNote, url: location.href };
+  const schliessen = groupHost ? { action: 'close', id: groupHost.id, hostKey: groupHost.hostKey } : null;
   if (groupHost) {
-    groupApi({ action: 'close', id: groupHost.id, hostKey: groupHost.hostKey }).catch(() => {});
     try { localStorage.removeItem(GROUP_HOST_KEY); } catch (e) {}
     groupHost = null;
   }
@@ -15325,7 +15349,7 @@ function discardGroup() {
     try {
       const u = new URL(location.href);
       u.searchParams.delete('g');
-      history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+      history.replaceState(history.state, '', u.pathname + (u.search || '') + u.hash);
     } catch (e) {}
   }
   groupOrderNote = '';
@@ -15333,6 +15357,23 @@ function discardGroup() {
   closeGroupOverlay();
   renderCart();
   updateCartUI();
+  let erledigt = false;
+  const endgueltig = () => {
+    if (erledigt) return; erledigt = true;
+    window.removeEventListener('pagehide', endgueltig);
+    if (schliessen) groupApi(schliessen).catch(() => {});
+  };
+  window.addEventListener('pagehide', endgueltig);
+  zeigeRueckgaengig(t('grp.discarded'), function () {
+    erledigt = true;
+    window.removeEventListener('pagehide', endgueltig);
+    groupHost = vorher.host; groupJoin = vorher.join; groupOrderNote = vorher.note;
+    if (groupHost) { try { localStorage.setItem(GROUP_HOST_KEY, JSON.stringify(groupHost)); } catch (e) {} }
+    if (groupJoin) { try { history.replaceState(history.state, '', vorher.url); } catch (e) {} }
+    updateGroupEntryBtn();
+    renderCart();
+    updateCartUI();
+  }, { danach: endgueltig });
 }
 setTimeout(updateGroupEntryBtn, 400);
 
@@ -16510,8 +16551,12 @@ function gncOverlayZurueck() {
   if (sel('#navMobile.open') && typeof closeMobileMenu === 'function') { closeMobileMenu(true); return; }
   escapeSenden();
 }
+// Zurück-Geste schließt Fenster: in der App und auf Touch-Geräten im Browser
+// (Android-Zurück, iOS-Wischen vom Rand). Am Desktop bleibt „Zurück“ die Seite.
+const ZURUECK_WEB = !APP_FORCED && !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+function zurueckAktiv() { return appViewActive() || ZURUECK_WEB; }
 function ovHistSync() {
-  if (!appViewActive()) return;
+  if (!zurueckAktiv()) return;
   const offen = gncOverlayOpen();
   if (offen && !ovHist.gepusht) {
     ovHist.gepusht = true;
@@ -16525,7 +16570,7 @@ function ovHistSync() {
   }
 }
 window.addEventListener('popstate', (e) => {
-  if (!appViewActive()) return;
+  if (!zurueckAktiv()) return;
   if (ovHist.ignorieren > 0) { ovHist.ignorieren--; e.stopImmediatePropagation(); return; }
   if (ovHist.gepusht) {
     ovHist.gepusht = false;
@@ -16535,7 +16580,7 @@ window.addEventListener('popstate', (e) => {
     setTimeout(ovHistSync, 0);
   }
 });
-if (APP_FORCED) {
+if (APP_FORCED || ZURUECK_WEB) {
   // Nach dem Neuladen (Ziehen zum Aktualisieren) ist kein Fenster mehr offen
   try { if (history.state && history.state.gncOv) history.replaceState(Object.assign({}, history.state, { gncOv: 0 }), ''); } catch (e) {}
   // Der Beobachter bündelt Änderungen schon je Durchlauf; die Prüfung ist billig
@@ -18046,7 +18091,8 @@ function kasseWidgetZeigen(data, anfrage, auftrag, betrag) {
   box.innerHTML = '<div class="kw-kopf"><h3 id="kwTitel" tabindex="-1">' + t('pay.w_title') + '</h3>'
     + '<span class="kw-betrag">' + formatPrice(betrag) + '</span></div>'
     + '<p class="kw-sub">' + t('pay.w_sub') + '</p>'
-    + '<div class="kw-laden" id="kwLaden"><span class="acc-wait-ring"><span class="busy-spin" aria-hidden="true"></span></span><span>' + t('pay.w_loading') + '</span></div>'
+    + '<div class="kw-laden kw-skel" id="kwLaden" role="status"><span class="sr-only">' + t('pay.w_loading') + '</span>'
+    + '<div class="skel" aria-hidden="true"></div><div class="kw-skel-reihe" aria-hidden="true"><div class="skel"></div><div class="skel"></div></div><div class="skel" aria-hidden="true"></div></div>'
     + '<div id="sumupKarte" class="kw-karte"></div>'
     + '<p class="kw-hinweis" id="kwHinweis" role="status" aria-live="polite"></p>'
     + '<p class="kw-sicher">' + KW_SCHLOSS + '<span>' + t('pay.w_secure') + '</span></p>';
@@ -19700,7 +19746,13 @@ window.addEventListener('load', function () {
       }
     } catch (e) {}
   };
-  track('pageview');
+  // Pre-Rendering (Speculation Rules): Eine vorab geladene Seite zählt erst,
+  // wenn sie wirklich angezeigt wird, sonst zählten nur angetippte Links mit
+  if (document.prerendering) {
+    document.addEventListener('prerenderingchange', function () { track('pageview'); }, { once: true });
+  } else {
+    track('pageview');
+  }
 
   /* ---------- Push-Benachrichtigungen (opt-in über den Footer) ---------- */
   function urlBase64ToUint8Array(base64String) {

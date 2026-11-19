@@ -1,0 +1,23 @@
+/* bild-vorschau.js – ERZEUGT von werkzeug/vorschau-bilder.mjs, nicht von Hand ändern.
+   Unscharfe Vorschau je Foto (16 px), bis das echte Bild geladen ist. */
+window.GNC_VORSCHAU = {
+ "produktbilder/cheese.webp": "data:image/webp;base64,UklGRmwAAABXRUJQVlA4IGAAAABwAgCdASoQABAAAsBIJYgCdAYqX2wpAOB1a2IAAP756VKu6INeTF34ON4iCn0qSOsk7I3wjFXD2KU9FY/2hBE5zoeryfjsabqtTtRl+yZpHdlS/PdHBA9aNJ87ZzU0gAA=",
+ "produktbilder/chilicheese.webp": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAAAwAgCdASoQABAAAsBIJQBOgCPt1FmUdd08AAD++elSruiDXfFQrwi+96LOgMv4eH4ScGO+3L8jqtvZgMC+9DUNgqgJbQr97y90LTiCBB60abBeBiWAAA==",
+ "produktbilder/classic.webp": "data:image/webp;base64,UklGRmoAAABXRUJQVlA4IF4AAABwAgCdASoQABAAAsBIJYgCdAYqD2wpGccx+lBAAP756VKu6INe5twC8LU9Ewn7rb2UUj+UXhUfNw7gNIQFU1Eokv3o84er4WLOUQlrhxGCpdxBERssE/zfnf7LAAAA",
+ "produktbilder/crispy.webp": "data:image/webp;base64,UklGRnIAAABXRUJQVlA4IGYAAACQAgCdASoQABAAAsBIJZgCdFQAFOyX/EyIA2rR4AD++ekiXFq4yW5BffKzfOGOMHgcpJBEsn3UDDKS36lawaFnsQFBWjiRigsf4lLSPVX8UvcbWT1dRs7drVJ9W4xbCBLv5bGAAAA=",
+ "produktbilder/fritz-kola.webp": "data:image/webp;base64,UklGRl4AAABXRUJQVlA4IFIAAABQAgCdASoQABAAAsBIJYwCdAERHz7O9XRycAAA/vnpU79hKWFfk1BjWRGlsfYdYbVwMgm1nYuy4EPA9ioUQkDSJWUrLT2eivpBN2LBPP7K4AAA",
+ "produktbilder/fritz-or.webp": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAAAQAgCdASoQABAAAsBIJYgCdAD0ia6pyxoAAP756auR+A4h03vzL0zMD4eBbGVA997wyoSpkg7AbKJB6SWNkQ9vo8xIeBdU/0S6oA9aNNl3rAx7C+AAAA==",
+ "produktbilder/fritz-zero.webp": "data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAAAQAgCdASoQABAAAsBIJYwCdADHW5GwB4UAAP756auSFtJkbfbsNKK7t2jxDq32krDKlxYZUIFwYQ+og/h18fnIldXkNWB7J/CmrwAA",
+ "produktbilder/kubis.webp": "data:image/webp;base64,UklGRm4AAABXRUJQVlA4IGIAAACQAgCdASoQABAAAsBIJYgCdFQAA5XoNILgTFebAAD++ekiXnOmiMHPtQXZpvrqgr+1TE8aYaoYiRrbLLnyvd9vMKQstxXytz6O8qwhe0/lJBx1f0ecCTFtaz/tztTo/QAAAA==",
+ "produktbilder/nuggets.webp": "data:image/webp;base64,UklGRngAAABXRUJQVlA4IGwAAAAwAgCdASoQABAAAsBIJbACdAEfbpsrj/Rr+AD++elSruiDj/w5zoJ6+Yoxq2dl0PRDdKnrESYlXvrvsjGZ28EB7Px7LBkHIYc4bNpMv5nAUeLdW/lURWlAQvGJ68icJgK7m6GMsXcSPqoUAAA=",
+ "produktbilder/pommes.webp": "data:image/webp;base64,UklGRnYAAABXRUJQVlA4IGoAAABQAgCdASoQABAAAsBIJagCdD3/wR/e4T3CNqAA/vnpIl5zpojBz5Y+qsTUPKvZgZMxAMdXspty/cHsosFxymNMmYICMGg/bV2++d207KddezZGdS1tJURWtw8Vo+PQgG1rQDGJPQI9mNgA",
+ "produktbilder/spommes.webp": "data:image/webp;base64,UklGRnAAAABXRUJQVlA4IGQAAAAwAgCdASoQABAAAsBIJbACdAEPDxLPCR/6cAD++ekiXnOmiMHO2KFS1IV/J/EFHM+nzDxz6xBKPK2n79+y5myDDEuqJ9p/Kb/7wLMiCFl3J57mD/Ef6Q2dNxy6/Im9dc/WAAAA",
+ "produktbilder/sucuk.webp": "data:image/webp;base64,UklGRngAAABXRUJQVlA4IGwAAADQAgCdASoQABAAAsBIJZgCdGaA2wAp1y/4gvNGJOAAAP756SJcUrjJbdJ+HAbtrv15v+2d/se+Zv6Y+nYnQBlUtpn8r9qdvgWrEyfPVP5ILnmjpihEhLG+/4o8MtCtAyza1nvS15GSrvHwAAA=",
+ "produktbilder/whitebbq.webp": "data:image/webp;base64,UklGRmYAAABXRUJQVlA4IFoAAAAwAgCdASoQABAAAsBIJYgCdAEPDvyuebDMgAD++ekiXnOX2gLA1h1j/jzk1SGoO4P9T8rHo7t7jwOlk1fxJSVibZdWhjj/2QUeMR4AE4gw3tbWtAHaKx6P0AA=",
+ "bilder/seite-catering.webp": "data:image/webp;base64,UklGRn4AAABXRUJQVlA4IHIAAACwAwCdASoQABQAPsFOoUqnpCMhsAgA8BgJZwC2yBu2CBaRpmJvQAD+34WqyALGIeFJJWoVT7Uu5NH8iofX43uCYvRJBhdRvC/gnuYiY3iWDvzQpNp7yNZ4oPtUNMtmoOUylgccBXnTrQYlUiqAqgCQAAA=",
+ "bilder/seite-firmen.webp": "data:image/webp;base64,UklGRq4AAABXRUJQVlA4IKIAAACwBACdASoQABQAPsFOoEqnpCMhsAgA8BgJZACdMoMYADc94kiGH53LieGdGz7AAP6Wptq6/XbRZ8TWUYgSR2Gnu2zoJaTLySqROkBD2uFd76gM8QnlsVryGDMr94rWQvVgNGauT93kUiFpgeUlW2LNJlLeksY8gGEyPoNCEeBzXVa/FYm/bmhr7Zv948q6MfaKC0hDXMHy+6N1L5WoteE3YAA=",
+ "bilder/seite-gutscheine.webp": "data:image/webp;base64,UklGRqoAAABXRUJQVlA4IJ4AAAAwBACdASoQABQAPsFOoEqnpCMhsAgA8BgJZgCdAYv0rOyjIbjNOrJwfiQAyRKAFknaeriMW26bsXQWvsh7Sn4CusNFocjZiNNG4u4mtTuvg4914NCUd/1ITv9ssagJG67PBk89+wtrj8pN2ErhCmwdyn7ck2zG7gSnqoGFtztBgtxnVGQwwRp76fjuhPL3yph6ru4Sjfh8qXlzIk9wAA==",
+ "bilder/seite-halal-grill.webp": "data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAADwAwCdASoQABQAPsFOoUqnpCMhsAgA8BgJYgCdACIJD8IhN6oC13OYAP7MmIToexUQpEas1yLwQQ5TytkT1J9x3AZNtK0cb539mfvXrNJpKFVkO7bkYglzAxagvntAG63Hv3mGMeAKQja4p8/2vAJJQDzJswAA",
+ "bilder/seite-liefergebiet.webp": "data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAADwAwCdASoQABQAPsFOoEqnpCMhsAgA8BgJQBYdhDwLV7qLZEuuZkSgAP55B5gZYp2nC36H9Lhtp/8u68xWbJJujjHUxL6ESV8KA4h938oQJHvJ/A8s1JDCU7mkWtrnu6upomAh85EyTBPDpr2vVp1f4DIEQAAA",
+ "hero/poster-780.webp": "data:image/webp;base64,UklGRqgAAABXRUJQVlA4IJwAAAAQBACdASoQABwAPsE0rFInoiUjmADwGAlsAJ0AaGDO1SDpfZHGRmvUAADLT/uUyqOF0FL/U5t9oO919CR1LX+g4QMzNj8nxeihWN0B04CLTXakp6kpR+edoyGGP0Pob0uLY/YRkgYpT/iMUO5GDN3d9o5gwNZMIid2tk6s2C99XESo4lUNdbnrnW3gQ1SWNH6yrzWR71Ce4bqAAAA="
+};

@@ -730,6 +730,10 @@ const policy = CSP.replace('%HASHES%', [...hashes].join(' '));
 fs.writeFileSync(path.join(WURZEL, '_headers'),
   '# Entsteht bei jedem Build (werkzeug/seiten-bauen.js). Nicht von Hand ändern.\n'
   + '/*\n  Content-Security-Policy: ' + policy + '\n'
+  // Pre-Rendering: Links zu den eigenen Seiten lädt der Browser beim Zeigen
+  // auf den Link schon vor (Regeln in spekulation.json, ohne Inline-Skript)
+  + '  Speculation-Rules: "/spekulation.json"\n'
+  + '\n/spekulation.json\n  Content-Type: application/speculationrules+json\n'
   // Team-Werkzeuge nie in Suchmaschinen, auch wenn ein Crawler sie findet
   + ['/admin', '/admin.html', '/cockpit', '/cockpit.html', '/fahrer', '/fahrer.html', '/dienstplan', '/dienstplan.html', '/firmen-admin', '/firmen-admin.html']
     .map((pfad) => '\n' + pfad + '\n  X-Robots-Tag: noindex, nofollow\n').join(''));

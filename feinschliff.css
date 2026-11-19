@@ -1,0 +1,155 @@
+/* ==========================================================================
+   feinschliff.css – UI-Details für Startseite und Unterseiten (19.11.2026)
+   Steht nach den Seitenstilen und seitenkopf.css im <head>.
+   ========================================================================== */
+
+/* ---- Tabellenziffern: Preise, Zeiten und Zähler springen nicht, wenn sich
+   eine Ziffer ändert, und stehen in Spalten sauber untereinander ---------- */
+body { font-variant-numeric: tabular-nums; }
+
+/* ---- Ausgewogene Überschriften, keine einzelnen Wörter in der letzten
+   Zeile von Absätzen --------------------------------------------------- */
+h1, h2, h3, h4, .menu-card-title, .faq-question, legend { text-wrap: balance; }
+p, li, dd, figcaption, blockquote, .faq-answer, .menu-card-desc { text-wrap: pretty; }
+
+/* ---- Continuous Corners: Ecken wie bei Apple (Superellipse) statt
+   Kreisbögen, wo der Browser es kann. Pillen bleiben rund. ------------- */
+@supports (corner-shape: squircle) {
+  :where(
+    .menu-card, .review-card, .hours-card, .map-frame, .comparison-card, .cat-card,
+    .catering-form, .faq-item, .partner-band, .story-visual, .signature-media, .story-stat,
+    .cart-drawer, .upsell-modal, .modal, .patty-row, .menu-offer, .deal-kasten,
+    .info-box, .zones-box, .gift-box, .catering-info > *, .team-banner, .grp-entry,
+    #accountOverlay > div, #groupOverlay > div, .befehle-fenster,
+    .sk-foto, .card, .gs-step, .gs-karte, .gs-tile, .zert, .gruppe, .zone, .weiter
+  ) { corner-shape: squircle; }
+}
+
+/* ---- Trefferflächen (Hit slop): kleine Bedienelemente reagieren auch
+   knapp daneben. Das Sichtbare bleibt gleich, nur die Fläche wächst. ----- */
+:where(.lang-dd-list a, .lang-dd-list button, .info-badge-allergens, .upsell-close,
+  .reviews-nav, .sig-arrow, .filter-chip, .footer-bottom-links a, .sf-recht a) { position: relative; }
+:where(.info-badge-allergens, .upsell-close)::after {
+  content: ''; position: absolute; inset: -8px; border-radius: inherit;
+}
+
+/* ---- Safe Areas: Inhalte nicht unter Notch, Dynamic Island oder dem
+   Home-Indikator, auch quer gehalten (Unterseiten mit viewport-fit=cover) */
+.sk-kopf { padding-top: env(safe-area-inset-top, 0px); }
+.sk-innen {
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+}
+body:has(.sk-kopf) main {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* ---- Tastenkürzel als Tasten (Shortcut hints) -------------------------- */
+kbd, .taste {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.6em; height: 1.6em; padding: 0 0.4em;
+  font: 600 0.72rem/1 'Inter', -apple-system, sans-serif; letter-spacing: 0;
+  color: #E6D9BC; background: #252220;
+  border: 1px solid #3A332C; border-bottom-width: 2px; border-radius: 6px;
+}
+
+/* ==========================================================================
+   Schnellsuche (befehle.js): ⌘K / Strg+K oder „/“
+   ========================================================================== */
+.befehle-fenster {
+  width: min(600px, calc(100vw - 32px)); max-height: min(560px, calc(100dvh - 120px));
+  margin: 12vh auto auto; padding: 0; display: none;
+  background: #181614; color: #F5E9D0;
+  border: 1px solid rgba(245, 233, 208, 0.1); border-radius: 18px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.6);
+  overflow: hidden; font-family: 'Inter', -apple-system, sans-serif;
+}
+.befehle-fenster[open] { display: flex; flex-direction: column; }
+.befehle-fenster::backdrop { background: rgba(6, 5, 4, 0.6); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+@media (prefers-reduced-motion: no-preference) {
+  .befehle-fenster[open] { animation: befehleRein 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
+  .befehle-fenster[open]::backdrop { animation: befehleSchleier 0.18s ease; }
+}
+@keyframes befehleRein { from { opacity: 0; transform: translateY(-6px) scale(0.985); } }
+@keyframes befehleSchleier { from { opacity: 0; } }
+.befehle-kopf { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid rgba(245, 233, 208, 0.08); }
+.befehle-kopf > svg { width: 20px; height: 20px; color: #9A8E7A; flex: none; }
+.befehle-feld {
+  flex: 1; min-width: 0; height: 32px; border: 0; outline: 0; background: transparent;
+  color: #F5E9D0; font: 500 1.05rem/1 'Inter', -apple-system, sans-serif;
+}
+.befehle-feld::placeholder { color: #9A8E7A; }
+.befehle-feld::-webkit-search-cancel-button { display: none; }
+.befehle-liste { list-style: none; margin: 0; padding: 8px; overflow-y: auto; overscroll-behavior: contain; flex: 1; }
+.befehle-gruppe { padding: 12px 10px 6px; font-size: 0.75rem; font-weight: 600; color: #9A8E7A; }
+.befehle-eintrag {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 40px; padding: 8px 10px; border-radius: 10px; cursor: pointer;
+  font-size: 0.95rem; color: #E6D9BC;
+}
+.befehle-eintrag[aria-selected="true"] { background: #2A2520; color: #F5E9D0; box-shadow: inset 0 0 0 1px rgba(245, 233, 208, 0.08); }
+.befehle-rechts { color: #9A8E7A; font-size: 0.85rem; }
+.befehle-leer { padding: 28px 10px; text-align: center; color: #9A8E7A; }
+.befehle-fuss { display: flex; gap: 16px; padding: 10px 16px; border-top: 1px solid rgba(245, 233, 208, 0.08); font-size: 0.78rem; color: #9A8E7A; }
+.befehle-fuss span { display: inline-flex; align-items: center; gap: 4px; }
+.befehle-fuss kbd + kbd { margin-left: 2px; }
+/* Lupe im Kopf: nur am Desktop, Tastenkürzel als Hinweis daneben */
+.befehle-knopf { display: none; }
+/* Als <button> ohne Browser-Standardfläche (Hover-Stile der Seite greifen weiter) */
+:where(button.befehle-knopf) { background: transparent; color: inherit; font: inherit; cursor: pointer; }
+@media (min-width: 880px) and (hover: hover) and (pointer: fine) {
+  .befehle-knopf { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: auto !important; padding: 0 10px; }
+  .befehle-hinweis { display: inline-flex; gap: 2px; }
+  .befehle-hinweis kbd { min-width: 1.4em; height: 1.4em; font-size: 0.65rem; }
+}
+/* Ziel eines Sprungs aus der Suche kurz markieren */
+.menu-card.befehle-ziel { outline: 2px solid #FF7A3D; outline-offset: 3px; transition: outline-color 1.2s ease 0.6s; }
+@media (prefers-reduced-motion: no-preference) {
+  .menu-card.befehle-ziel { animation: befehleZiel 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+}
+@keyframes befehleZiel { 40% { transform: scale(1.015); } }
+
+/* ==========================================================================
+   Bottom-Sheets auf dem Handy (feinschliff.js): Menü-Baukasten, Dip-Auswahl,
+   Rechtstexte, Konto und Gruppenbestellung kommen von unten, haben einen
+   Griff und lassen sich nach unten wegziehen.
+   ========================================================================== */
+@media (max-width: 640px) {
+  .upsell-overlay, .modal-overlay { align-items: flex-end; padding: 0; }
+  #accountOverlay, #groupOverlay { align-items: flex-end !important; padding: 0 !important; }
+  .upsell-modal, .modal, #accountOverlay > div, #groupOverlay > div {
+    width: 100%; max-width: none !important;
+    border-radius: 22px 22px 0 0 !important; border-bottom: 0 !important;
+    max-height: 92dvh !important;
+    padding-bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)) !important;
+    overscroll-behavior: contain;
+  }
+  .upsell-modal::before, .modal::before, #accountOverlay > div::before, #groupOverlay > div::before {
+    content: ''; display: block; width: 36px; height: 5px; margin: -0.6rem auto 0.9rem;
+    border-radius: 3px; background: rgba(245, 233, 208, 0.24);
+  }
+  .modal::before { margin: 0.6rem auto 0; }
+  /* Gleicher Weg rein und raus: von unten */
+  .upsell-modal { transform: translateY(100%); transition: transform 0.34s cubic-bezier(0.32, 0.72, 0, 1); }
+  .upsell-overlay.open .upsell-modal { transform: none; }
+  .modal-overlay.open .modal, #accountOverlay > div, #groupOverlay > div { animation: sheetRein 0.34s cubic-bezier(0.32, 0.72, 0, 1); }
+  .sheet-zieht { transition: none !important; animation: none !important; }
+}
+@keyframes sheetRein { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .upsell-modal, .modal-overlay.open .modal, #accountOverlay > div, #groupOverlay > div { animation: none !important; transition: opacity 0.2s ease !important; }
+}
+
+/* Bezahl-Widget lädt: Umriss des Kartenformulars statt Kreisel */
+.kw-laden.kw-skel { display: grid; gap: 10px; min-height: 0; align-items: stretch; justify-content: stretch; }
+.kw-skel .skel { height: 48px; }
+.kw-skel-reihe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ---- Unscharfe Vorschau (BlurHash-Ersatz, bild-vorschau.js): 16 px große
+   Bilder, hochskaliert und damit weich, bis das Foto geladen ist ---------- */
+.menu-card-img[style*="--vorschau"] { background: var(--vorschau) center / 112% no-repeat; }
+.menu-card-img[style*="--vorschau"]::before { display: none; }   /* kein Lade-Shimmer, die Vorschau ist der Platzhalter */
+.sk-foto[style*="--vorschau"], .hero-bg[style*="--vorschau"] {
+  background-image: var(--vorschau); background-size: cover; background-position: var(--fp, 50% 50%);
+}

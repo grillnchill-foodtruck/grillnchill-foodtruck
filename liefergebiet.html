@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- SPRACHE-VORAB:START (werkzeug/seiten-bauen.js) -->
 <script>(function(){try{var d=document.documentElement;if((d.getAttribute('data-seite')||'de')!=='de'||/bot\b|crawler|spider|slurp|lighthouse/i.test(navigator.userAgent||''))return;var P={en:1,tr:1,it:1,es:1,pt:1,fr:1,nl:1},l=null;try{l=localStorage.getItem('gnc_lang')}catch(e){}if(l!=='de'&&!P[l]){l=null;var n=(navigator.language||'de').toLowerCase();for(var k in P)if(n.indexOf(k)===0){l=k;break}}if(!l||!P[l])return;window.gncI18nZiel=l;var a=document.createElement('link');a.rel='preload';a.as='script';a.href='/i18n-'+l+'.js';document.head.appendChild(a);var s=document.createElement('style');s.textContent='html.i18n-wartet :is(main,footer,.promo-bar>*,.nav-links,.nav-actions,.sk-links,.sk-aktionen){visibility:hidden}html.i18n-wartet :is(.hero-bg,.sk-foto){visibility:visible}';document.head.appendChild(s);d.classList.add('i18n-wartet');setTimeout(function(){d.classList.remove('i18n-wartet')},2500)}catch(e){}})();</script>
 <!-- SPRACHE-VORAB:ENDE -->
@@ -189,6 +189,7 @@
   a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--orange-b);outline-offset:3px;border-radius:8px}
 </style>
 <link rel="stylesheet" href="/seitenkopf.css">
+<link rel="stylesheet" href="/feinschliff.css">
 <script src="/ereignisse.js"></script>
 </head>
 <body>
@@ -265,7 +266,7 @@
       </div>
 <!-- FAKTEN:ENDE -->
       </div>
-        <figure class="sk-foto" style="--fp:50% 40%">
+        <figure class="sk-foto" style="--fp:50% 40%; --vorschau:url('data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAADwAwCdASoQABQAPsFOoEqnpCMhsAgA8BgJQBYdhDwLV7qLZEuuZkSgAP55B5gZYp2nC36H9Lhtp/8u68xWbJJujjHUxL6ESV8KA4h938oQJHvJ/A8s1JDCU7mkWtrnu6upomAh85EyTBPDpr2vVp1f4DIEQAAA')">
           <img src="/bilder/seite-liefergebiet.webp" alt="Schild am Truck: Grill'n Chill am Kaufland Bielefeld-Brackwede" width="640" height="800" decoding="async" fetchpriority="high" data-i18n-alt="lg.t06">
         </figure>
       </div>
@@ -538,5 +539,6 @@
 })();
 </script>
 <script src="/seitenkopf.js" defer></script>
+<script src="/befehle.js" defer></script>
 </body>
 </html>
