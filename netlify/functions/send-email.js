@@ -412,7 +412,9 @@ async function afterOrderHooks(order, verified, treueFreigabe) {
           } catch (e) {}
         }
 
-        cust.spent = Math.round(((cust.spent || 0) + Math.max(0, base)) * 100) / 100;
+        // Black Friday 2026: jeder Euro zählt doppelt (speisekarte.js, stempelFaktor)
+        const stempelFaktor = (SK && SK.stempelFaktor) ? SK.stempelFaktor(Date.now()) : 1;
+        cust.spent = Math.round(((cust.spent || 0) + Math.max(0, base) * stempelFaktor) * 100) / 100;
         // (Einlösen eines Bonus/Menüs: eigener Block weiter unten)
         let levelUpTo = 0;
         while (cust.spent >= 100) {
@@ -1002,7 +1004,7 @@ function buildOwnerNotificationEmail(order, statusUpdateBaseUrl, statusToken) {
       ✉️ <a href="mailto:${esc(order.email)}" style="color:#FFC93C;text-decoration:none;">${esc(order.email)}</a>
     </p>
     ${order.customerOrderNo ? `<p style="margin:0 0 16px;"><span style="display:inline-block;background:#0A0A0A;border:1px solid #2A2520;border-radius:6px;padding:6px 12px;color:#FFC93C;font-size:13px;font-weight:700;">Stammkunden-Zähler: ${order.customerOrderNo}. Bestellung <span style="color:#888;font-weight:400;">(geräte-lokal gezählt)</span></span></p>` : ''}
-    ${order.loyaltyProgress ? `<p style="margin:0 0 16px;"><span style="display:inline-block;background:#0A0A0A;border:1px solid #2A2520;border-radius:6px;padding:6px 12px;color:#6DBE45;font-size:13px;font-weight:700;">Treuekarte: ${formatPrice(order.loyaltyProgress.spent)} / ${formatPrice(order.loyaltyProgress.goal)}${order.loyaltyProgress.earned > 0 ? ' &middot; <span style="color:#FFC93C;">★ Menü aufs Haus erreicht!</span>' : ''}${order.loyaltyProgress.applied && order.loyaltyDiscount ? ` &middot; <span style="color:#FFC93C;">${order.loyaltyType === 'menu' ? 'Menü aufs Haus eingelöst' : 'Bonus eingelöst'} (−${formatPrice(order.loyaltyDiscount)})</span>` : ''} <span style="color:#888;font-weight:400;">(geräte-lokal)</span></span></p>` : ''}
+    ${order.loyaltyProgress ? `<p style="margin:0 0 16px;"><span style="display:inline-block;background:#0A0A0A;border:1px solid #2A2520;border-radius:6px;padding:6px 12px;color:#6DBE45;font-size:13px;font-weight:700;">Treuekarte: ${formatPrice(order.loyaltyProgress.spent)} / ${formatPrice(order.loyaltyProgress.goal)}${order.loyaltyProgress.doppelt ? ' &middot; <span style="color:#FFC93C;">Black Friday: doppelt gezählt</span>' : ''}${order.loyaltyProgress.earned > 0 ? ' &middot; <span style="color:#FFC93C;">★ Menü aufs Haus erreicht!</span>' : ''}${order.loyaltyProgress.applied && order.loyaltyDiscount ? ` &middot; <span style="color:#FFC93C;">${order.loyaltyType === 'menu' ? 'Menü aufs Haus eingelöst' : 'Bonus eingelöst'} (−${formatPrice(order.loyaltyDiscount)})</span>` : ''} <span style="color:#888;font-weight:400;">(geräte-lokal)</span></span></p>` : ''}
 
     <div style="background:#0A0A0A;padding:14px 16px;border-radius:8px;margin:16px 0;border-left:4px solid ${order.mode === 'delivery' ? '#E85A24' : '#6DBE45'};">
       <strong style="color:#F5E9D0;">${order.mode === 'delivery' ? '🛵 LIEFERUNG' : '🚶 ABHOLUNG'}</strong>
@@ -1246,6 +1248,7 @@ async function sendTelegram(order) {
   if (order.customerOrderNo) L.push(`Stammkunden-Zähler: ${order.customerOrderNo}. Bestellung`);
   if (order.loyaltyProgress) {
     let lp = `Treuekarte: ${formatPrice(order.loyaltyProgress.spent)} / ${formatPrice(order.loyaltyProgress.goal)}`;
+    if (order.loyaltyProgress.doppelt) lp += ' · Black Friday: doppelt gezählt';
     if (order.loyaltyProgress.earned > 0) lp += ' · Menü aufs Haus erreicht!';
     if (order.loyaltyProgress.applied && order.loyaltyDiscount) lp += ` · ${order.loyaltyType === 'menu' ? 'Menü aufs Haus' : 'Bonus'} eingelöst (−${formatPrice(order.loyaltyDiscount)})`;
     L.push(lp);

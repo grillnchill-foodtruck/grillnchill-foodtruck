@@ -170,6 +170,11 @@ exports.handler = async (event) => {
           const vs = getStore(vopts);
           const v = await vs.get('c:' + rec.code, { type: 'json' });
           if (v) { v.active = false; await vs.setJSON('c:' + rec.code, v); }
+          // Black-Week-Bonus gehört zum Kauf und fällt mit weg
+          if (rec.bonusCode) {
+            const bv = await vs.get('c:' + rec.bonusCode, { type: 'json' });
+            if (bv) { bv.active = false; await vs.setJSON('c:' + rec.bonusCode, bv); }
+          }
         } catch (e) {}
       }
       await auditLog(who, 'Bestellung', '#' + reference + (rec.kind === 'giftcard' ? ' (Gutschein-Kauf) rückerstattet – Code deaktiviert' : ' als rückerstattet markiert'));

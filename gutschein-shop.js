@@ -50,6 +50,19 @@
     return (v % 1 ? v.toFixed(2).replace('.', ',') : String(v)) + ' €';
   }
   function euroHtml(n) { return euro(n).replace(' €', '<span class="eur">€</span>'); }
+
+  /* ---- Black Week (23.–30.11.2026): Zeitraum und Staffel wie BONUS_* in
+     speisekarte.js. Hier nur die Anzeige; den Bonus-Code stellt der Server
+     aus (lib/geschenk.js), maßgeblich ist der Zeitpunkt der Bestellung. */
+  var BONUS_START = Date.UTC(2026, 10, 22, 23, 0, 0), BONUS_ENDE = Date.UTC(2026, 10, 30, 23, 0, 0);
+  var BONUS_STAFFEL = [[50, 10], [25, 5]];
+  function bonusAktiv() { var j = Date.now(); return j >= BONUS_START && j < BONUS_ENDE; }
+  function bonusFuer(betrag) {
+    if (!bonusAktiv()) return 0;
+    for (var i = 0; i < BONUS_STAFFEL.length; i++) if (betrag >= BONUS_STAFFEL[i][0]) return BONUS_STAFFEL[i][1];
+    return 0;
+  }
+  if ($('gs-bw')) $('gs-bw').hidden = !bonusAktiv();
   function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   // lang: mit Wochentag; deutsch: immer de-DE (Kartenvorschau wie das PDF)
   function datum(isoTag, lang, deutsch) {
@@ -277,14 +290,60 @@
     }
     function gueltigerBetrag() { return st.amount >= MIN && st.amount <= MAX && Math.floor(st.amount) === st.amount; }
 
+    // Black Week: was der gewählte Betrag an Bonus bringt
+    function bonusZeile() {
+      var z = $('gs-bw-zeile');
+      if (!z) return;
+      if (!bonusAktiv() || !gueltigerBetrag()) { z.hidden = true; return; }
+      var b = bonusFuer(st.amount), html;
+      if (b >= 10) html = T('gs.bw_z10', '<b>+ 10 € Bonus-Code</b> für dich dazu.');
+      else if (b > 0) html = T('gs.bw_z5', '<b>+ 5 € Bonus-Code</b> für dich dazu. Ab 50 € sind es 10 €.');
+      else html = T('gs.bw_z0', 'Ab 25 € gibt es einen <b>Bonus-Code über 5 €</b> für dich dazu.');
+      z.innerHTML = html;
+      z.hidden = false;
+    }
+    // Nachricht ganz auf die Karte (bis 300 Zeichen): Schrift stufenweise kleiner,
+    // zuletzt ohne Zeilenumbrüche, wie lib/geschenk-pdf.js. Passt sie auch dann
+    // nicht, steht sie gekürzt auf der Karte und vollständig darunter.
+    var N_STUFEN = ['', 'n-2', 'n-3', 'n-4'];
+    function nachrichtEinpassen() {
+      var el = $('gc-nachricht'), innen = el.closest('.gs-in'), voll = $('gs-voll');
+      var text = el.textContent;
+      el.classList.remove('n-2', 'n-3', 'n-4', 'n-kurz');
+      var passt = !text || !innen || !innen.clientHeight;
+      for (var i = 0; !passt && i < N_STUFEN.length; i++) {
+        if (i > 0) { if (N_STUFEN[i - 1]) el.classList.remove(N_STUFEN[i - 1]); el.classList.add(N_STUFEN[i]); }
+        passt = innen.scrollHeight <= innen.clientHeight + 1;
+      }
+      if (!passt) el.classList.add('n-kurz');
+      voll.hidden = passt;
+      $('gs-voll-text').textContent = passt ? '' : text;
+    }
+    // Das PDF druckt nur Latin-1: Emojis fehlen dort, ş, ğ und ı werden zu s, g und i
+    function zeichenHinweis() {
+      var h = $('gs-pdf-hinweis');
+      if (!h) return;
+      var alles = $('gs-msg').value + ' ' + $('gs-rname').value + ' ' + $('gs-bname').value;
+      var fremd = /[^\u0000-\u00ff€‘’‚“”„–—…ŞşĞğİı]/.test(alles);
+      var tuerkisch = /[ŞşĞğİı]/.test(alles);
+      h.hidden = !(fremd || tuerkisch);
+      if (fremd) h.textContent = T('gs.js_pdf_fremd', 'Emojis und manche Sonderzeichen kann das PDF nicht drucken. In der Mail steht deine Nachricht genau so, wie du sie schreibst.');
+      else if (tuerkisch) h.textContent = T('gs.js_pdf_tr', 'Im PDF stehen ş, ğ und ı als s, g und i. In der Mail steht alles genau so, wie du es schreibst.');
+    }
+    var einpassenRaf = 0;
+    window.addEventListener('resize', function () { cancelAnimationFrame(einpassenRaf); einpassenRaf = requestAnimationFrame(nachrichtEinpassen); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(nachrichtEinpassen);
     function karteAktualisieren(pop) {
       betragZeigen(st.amount || 0);
       if (pop) neigung.pop();
       $('gc-gedacht').textContent = st.preset && VORSCHLAG[st.preset] ? 'Gedacht für: ' + VORSCHLAG[st.preset] : '';
       $('gc-nachricht').textContent = $('gs-msg').value.trim();
+      nachrichtEinpassen();
+      zeichenHinweis();
       platzhalter($('gc-fuer'), $('gs-rname').value.trim(), 'Name');
       platzhalter($('gc-von'), $('gs-bname').value.trim(), 'Dein Name');
       $('gs-zahlen-text').textContent = T('gs.js_zahlen', 'Weiter zur Zahlung') + (gueltigerBetrag() ? ' · ' + euro(st.amount) : '');
+      bonusZeile();
       $('gs-zaehler').textContent = $('gs-msg').value.length + ' / 300';
       $('rname-opt').hidden = st.delivery === 'mail';
       var name = $('gs-rname').value.trim();
@@ -552,6 +611,15 @@
       if (d.beleg) { $('dk-beleg').href = d.beleg; $('dk-beleg').hidden = false; }
       var svg = qrSvg(d.code);
       if (svg) { $('dk-qr-bild').textContent = ''; $('dk-qr-bild').appendChild(svg); $('dk-qr').hidden = false; }
+      var bonus = d.bonus;
+      if (bonus && bonus.code) {
+        $('dk-bonus-code').textContent = bonus.code;
+        $('dk-bonus-text').textContent = T('gs.bw_dk_text', '{wert} Rabatt auf eine Bestellung über Website oder App ab {min}, einlösbar vom {von} bis {bis}. Der Code steht auch in deiner Bestätigungsmail.',
+          { wert: euro(bonus.value), min: euro(bonus.minOrder || 20), von: datum(bonus.validFrom), bis: datum(bonus.validUntil) });
+        $('dk-bonus').hidden = false;
+      } else {
+        $('dk-bonus').hidden = true;
+      }
       if (d.pdf) {
         $('dk-pdf').href = d.pdfDownload; $('dk-pdf2').href = d.pdf;
       } else {
@@ -561,6 +629,14 @@
     }
     $('dk-nochmal').addEventListener('click', function () { seit = Date.now(); versuche = 0; zeige('pruefen'); abfragen(); });
     sprachwechsel(function () { if (daten) bezahlt(daten); });
+    $('dk-bonus-kopieren').addEventListener('click', function () {
+      var k = this;
+      if (!daten || !daten.bonus || !navigator.clipboard) return;
+      navigator.clipboard.writeText(daten.bonus.code).then(function () {
+        k.textContent = T('gs.js_kopiert', 'Kopiert');
+        setTimeout(function () { k.textContent = T('gs.t66', 'Code kopieren'); }, 1800);
+      }, function () {});
+    });
     $('dk-kopieren').addEventListener('click', function () {
       var k = this;
       if (!daten || !navigator.clipboard) return;

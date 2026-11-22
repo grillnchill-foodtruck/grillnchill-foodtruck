@@ -224,6 +224,41 @@
   const LOYALTY_REWARD = 5.00;      // € Bonus
   const LOYALTY_MIN_ORDER = 15.00;  // ab diesem Bestellwert ist der 5-€-Bonus einlösbar
 
+  /* ==================================================================
+     BLACK WEEK 2026 (beschlossen 23.11.2026)
+     - Gutschein-Bonus bis Cyber Monday: Wer einen Geschenkgutschein ab 25 €
+       kauft, bekommt einen Bonus-Code für sich dazu (ab 25 € 5 €, ab 50 €
+       10 €). Einlösbar 4.1. bis 31.3.2027 ab 20 € Bestellwert, einmal,
+       nicht mit anderen Codes zusammen. Stichtag ist der Kaufbeginn.
+     - Doppelte Stempel am Black Friday: Jeder Euro zählt doppelt auf der
+       Stempelkarte, online (bezahlte Bestellung) und am Truck (Scan).
+     Zeiten in UTC wie beim Deal oben (Berlin = UTC+1 im November).
+     ================================================================== */
+  const BONUS_START = Date.UTC(2026, 10, 22, 23, 0, 0);   // Mo 23.11. 00:00 Berlin
+  const BONUS_ENDE = Date.UTC(2026, 10, 30, 23, 0, 0);    // Mo 30.11. 23:59:59 Berlin
+  const BONUS_STAFFEL = [[50, 10], [25, 5]];              // [ab Gutscheinwert, Bonus]
+  const BONUS_GUELTIG_AB = '2027-01-04';
+  const BONUS_GUELTIG_BIS = '2027-03-31';
+  const BONUS_MINDEST = 20;
+  const STEMPEL_DOPPELT_START = Date.UTC(2026, 10, 26, 23, 0, 0);   // Fr 27.11. 00:00 Berlin
+  const STEMPEL_DOPPELT_ENDE = Date.UTC(2026, 10, 27, 23, 0, 0);    // Fr 27.11. 23:59:59 Berlin
+  function bonusAktiv(jetzt) {
+    const t = jetzt == null ? Date.now() : jetzt;
+    return t >= BONUS_START && t < BONUS_ENDE;
+  }
+  /** Bonus in € für einen Gutscheinwert (0 außerhalb der Aktion oder unter 25 €) */
+  function gutscheinBonus(betrag, jetzt) {
+    if (!bonusAktiv(jetzt)) return 0;
+    const b = Number(betrag) || 0;
+    for (let i = 0; i < BONUS_STAFFEL.length; i++) if (b >= BONUS_STAFFEL[i][0]) return BONUS_STAFFEL[i][1];
+    return 0;
+  }
+  /** Faktor für die Stempelkarte: 2 am Black Friday, sonst 1 */
+  function stempelFaktor(jetzt) {
+    const t = jetzt == null ? Date.now() : jetzt;
+    return t >= STEMPEL_DOPPELT_START && t < STEMPEL_DOPPELT_ENDE ? 2 : 1;
+  }
+
   // Lieferzonen nach Luftlinien-km
   const DELIVERY_ZONES = [
     { maxKm: 3,  minOrder: 15.00, fee: 2.50, key: 'zone.z1', label: 'Zone 1: bis 3 km' },
@@ -326,6 +361,8 @@
     DEAL_START, DEAL_ENDE, DEAL_PREIS, DEAL_MENUE_GETRAENK, DEAL_AUSGENOMMEN, DEAL_BEILAGE,
     dealAktiv, dealDetails, dealRabatt,
     LOYALTY_GOAL_EUR, LOYALTY_REWARD, LOYALTY_MIN_ORDER, LOYALTY_STAMPS, LOYALTY_MENU_EXCLUDE_IDS,
+    BONUS_START, BONUS_ENDE, BONUS_STAFFEL, BONUS_GUELTIG_AB, BONUS_GUELTIG_BIS, BONUS_MINDEST,
+    STEMPEL_DOPPELT_START, STEMPEL_DOPPELT_ENDE, bonusAktiv, gutscheinBonus, stempelFaktor,
     DELIVERY_ZONES, MAX_DELIVERY_KM, TIP_PERCENTS, TEST_TOTAL,
     einzelpreis, warenwert, trinkgeldBetrag, gesamtbetrag, gratisMenuZeile, gratisMenuWert,
   };

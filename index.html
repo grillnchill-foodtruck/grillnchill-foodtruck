@@ -6207,6 +6207,22 @@ body.onb-lock { overflow: hidden; }
    ==================================================================== */
 html:not(.deal-aktiv) .mit-deal { display: none !important; }
 html.deal-aktiv .ohne-deal { display: none !important; }
+/* Black Week 23.–30.11.2026 (Gutschein-Bonus) und Black Friday 27.11. (doppelte Stempel).
+   In der Aktionsleiste steht immer nur eine Zeile: Black Friday vor Black Week vor GRILL5. */
+html:not(.bw-bonus) .mit-bonus, html:not(.bw-stempel) .mit-stempel { display: none !important; }
+html:is(.bw-bonus, .bw-stempel) .promo-bar > :is(.ohne-deal, .mit-deal),
+html.bw-stempel .promo-bar > .mit-bonus { display: none !important; }
+@media (max-width: 640px) {
+  /* Schmal: eine Zeile wie bei GRILL5, Bedingungen mit … gekürzt, Antippen zeigt sie ganz */
+  .promo-bar > :is(.mit-bonus, .mit-stempel) { flex: 0 1 auto; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+}
+.bw-hinweis {
+  display: block; margin: 0 0 1rem; padding: 0.6rem 0.8rem;
+  max-width: 68ch; border-radius: 10px; background: rgba(255, 201, 60, 0.08);
+  border: 1px solid rgba(255, 201, 60, 0.28); color: var(--color-cream); font-size: 0.9rem; line-height: 1.5;
+}
+.bw-hinweis strong { color: var(--color-yellow); white-space: nowrap; margin-right: 0.3rem; }
+.loyalty-hint.bw-doppelt { color: var(--color-yellow); font-weight: 700; }
 a.hero-badge-discount { text-decoration: none; background: var(--color-orange-solid); color: #fff; }
 .deal-kasten {
   max-width: 720px; margin: 0 auto 1.6rem; position: relative; overflow: hidden;
@@ -6536,6 +6552,8 @@ body { background-image: none; }
    Hier nur, damit die Werbung ohne Aufblitzen umschaltet; die Preise
    rechnet speisekarte.js, und die setzt die Klasse danach noch einmal. */
 (function(){ var j=Date.now(); if (j>=Date.UTC(2026,10,8,23,0,0) && j<Date.UTC(2026,10,14,20,0,0)) document.documentElement.classList.add('deal-aktiv'); })();
+/* Black Week: Zeiträume wie BONUS_* und STEMPEL_DOPPELT_* in speisekarte.js */
+(function(){ var j=Date.now(), c=document.documentElement.classList; if (j>=Date.UTC(2026,10,22,23,0,0) && j<Date.UTC(2026,10,30,23,0,0)) c.add('bw-bonus'); if (j>=Date.UTC(2026,10,26,23,0,0) && j<Date.UTC(2026,10,27,23,0,0)) c.add('bw-stempel'); })();
 </script>
 <a class="skip-link" href="#menu" data-i18n="a11y.skip">Direkt zur Speisekarte</a>
 
@@ -6544,6 +6562,8 @@ body { background-image: none; }
      ============================================ -->
 <div class="promo-bar" id="promoBar" data-on-click="promoUmschalten()" data-on-keydown="promoTaste(event)">
   <span class="ohne-deal"><span data-i18n="promo.bar_main">Spare 5 € mit Code</span> <span class="code-pill">GRILL5</span> <small data-i18n="promo.bar_sub">(ab 20 € Bestellwert · max. 3× pro Kunde · nur online)</small></span>
+  <span class="mit-bonus"><span data-i18n="bw.bar_main">Black Week: bis zu 10 € Bonus auf Gutscheine</span> <small data-i18n="bw.bar_sub">(ab 25 € Gutscheinwert · bis Cyber Monday 30.11. · Bonus einlösbar ab 4.1.)</small></span>
+  <span class="mit-stempel"><span data-i18n="bw.bf_main">Black Friday: Heute zählt jeder Euro doppelt</span> <small data-i18n="bw.bf_sub">(auf der Stempelkarte · online und am Truck · bis 23:59 Uhr)</small></span>
   <span class="mit-deal"><span data-i18n="deal.bar_main">Geburtstags-Deal: Burger + Pommes für 10 €</span> <small data-i18n="deal.bar_sub">(bis Samstag 14.11. · nur bei Abholung · außer Kubis Special)</small></span>
 </div>
 
@@ -7169,6 +7189,7 @@ body { background-image: none; }
         <span class="eyebrow" style="display:block;margin-bottom:0.3rem;" data-i18n="gift.eyebrow">Burger verschenken</span>
         <h2 style="font-size:clamp(1.25rem,3vw,1.6rem);margin:0 0 0.5rem;" data-i18n="gift.h2">Das Geschenk, das nach Burger schmeckt</h2>
         <p style="color:var(--color-cream-dim);font-size:0.95rem;margin:0 0 1rem;line-height:1.6;max-width:68ch;" data-i18n="gift.lead">Du wählst einen Betrag zwischen 10 und 200 € und schreibst eine Nachricht dazu. Wir schicken den Gutschein per Mail, auch an einem Wunschtag, oder du druckst ihn aus. Er gilt 3 Jahre.</p>
+        <p class="bw-hinweis mit-bonus"><strong data-i18n="bw.gift_tag">Black Week</strong> <span data-i18n="bw.gift_hint">Bis Montag, 30.11.: Ab 25 € Gutscheinwert legen wir 5 € Bonus drauf, ab 50 € sind es 10 €.</span></p>
         <a href="/gutscheine" class="btn btn-primary" data-i18n="gift.cta">Gutschein kaufen</a>
       </div>
     </div>
@@ -7944,6 +7965,10 @@ const RESTAURANT_LOCATION = {
 const SK = window.SPEISEKARTE;
 // Geburtstags-Deal: speisekarte.js entscheidet (das Kopf-Skript setzte die Klasse nur vorab)
 document.documentElement.classList.toggle('deal-aktiv', !!(SK && SK.dealAktiv && SK.dealAktiv()));
+// Black Week: Gutschein-Bonus bis Cyber Monday, doppelte Stempel am Black Friday
+document.documentElement.classList.toggle('bw-bonus', !!(SK && SK.bonusAktiv && SK.bonusAktiv()));
+document.documentElement.classList.toggle('bw-stempel', !!(SK && SK.stempelFaktor && SK.stempelFaktor() > 1));
+function stempelFaktorJetzt() { return (SK && SK.stempelFaktor) ? SK.stempelFaktor() : 1; }
 // Promo-Code-Konfiguration
 const PROMO_CODE = SK.PROMO_CODE;
 const PROMO_TIERS = SK.PROMO_TIERS;
@@ -8583,6 +8608,7 @@ function renderAccProfile(el) {
   if ((L.menus || 0) > 0) loyTeile.push(`<div class="loyalty-reward-hint" style="margin-top:0.4rem;">${t('acc.menu_ready').replace('{n}', L.menus)}</div>`);
   if ((L.rewards || 0) > 0) loyTeile.push(`<div class="loyalty-reward-hint" style="margin-top:0.4rem;">${t('acc.reward_ready').replace('{n}', L.rewards).replace('{amount}', formatPrice(5))}</div>`);
   loyTeile.push(`<div class="loyalty-hint" style="margin-top:0.4rem;">${t('loyalty.hint').replace('{n}', formatPrice(Math.max(0, L.goal - L.spent))).replace('{amount}', formatPrice(5))}</div>`);
+  if (stempelFaktorJetzt() > 1) loyTeile.push(`<div class="loyalty-hint bw-doppelt" style="margin-top:0.3rem;">${t('bw.stempel_hint')}</div>`);
   const loyLine = loyTeile.join('');
   const addr = (p.addresses || []).map((a, i) => {
     // Wird diese Adresse gerade umbenannt, steht statt der Zeile ein Eingabefeld
@@ -9724,12 +9750,20 @@ function saveLoyalty(l) {
   try { localStorage.setItem(LOYALTY_KEY, JSON.stringify({ spent: l.spent, menus: l.menus || 0, rewardAvailable: (l.bonus || 0) > 0 })); } catch (e) {}
 }
 function loyaltyRewardAvailable() { const l = getLoyalty(); return l.menus > 0 || (l.pass || 0) > 0 || l.bonus > 0; }
+// „Gilt erst ab 4. Januar 2027“: Startdatum eines Codes in der Seitensprache
+function gutscheinAbText(d) {
+  const iso = d && d.validFrom;
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return t('promo.voucher_not_started');
+  let datum = iso;
+  try { datum = new Date(iso + 'T12:00:00').toLocaleDateString(document.documentElement.lang || 'de', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) {}
+  return t('promo.voucher_from').replace('{datum}', datum);
+}
 // Umsatz einer Bestellung auf den Treue-Fortschritt anrechnen (Warenwert vor Rabatt/Gebühr/Trinkgeld).
 function addLoyaltySpend(amount) {
   const amt = Number(amount);
   if (!amt || amt <= 0) return;
   const l = getLoyalty();
-  l.spent += amt;
+  l.spent += amt * stempelFaktorJetzt();   // Black Friday: jeder Euro zählt doppelt
   while (l.spent >= LOYALTY_GOAL_EUR) {
     l.menus = (l.menus || 0) + 1;   // volle Karte = Menü aufs Haus (einlösbar mit Konto)
     l.spent -= LOYALTY_GOAL_EUR; // Rest auf die nächste Karte übertragen
@@ -10011,6 +10045,7 @@ function loyaltyCardHtml() {
     }
     if (!teile.length) teile.push(`<div class="loyalty-hint">${t('loyalty.hint').replace('{n}', formatPrice(remaining)).replace('{amount}', formatPrice(LOYALTY_REWARD))}</div>`);
   }
+  if (stempelFaktorJetzt() > 1) teile.push(`<div class="loyalty-hint bw-doppelt">${t('bw.stempel_hint')}</div>`);
   const action = teile.join('');
   return `
     <div class="loyalty-card${(l.menus > 0 || (l.pass || 0) > 0 || l.bonus > 0) ? ' has-reward' : ''}">
@@ -11693,7 +11728,7 @@ function quickApplyPromo(chip) {
         renderCart();
         updateCartUI();
       } else if (d && d.reason === 'not_started') {
-        flashCartNotice(t('promo.voucher_not_started'));
+        flashCartNotice(gutscheinAbText(d));
       } else if (d && d.reason === 'app_only') {
         flashCartNotice(t('promo.voucher_app_only'));
       } else if (d && d.reason === 'customer_limit') {
@@ -11796,7 +11831,7 @@ function applyPromo(btn) {
             : reason === 'customer_limit' ? t('promo.voucher_customer_limit').replace('{max}', (d && d.max) || 3)
             : reason === 'ref_self' ? t('promo.ref_self')
             : reason === 'ref_not_first' ? t('promo.ref_not_first')
-            : reason === 'not_started' ? t('promo.voucher_not_started')
+            : reason === 'not_started' ? gutscheinAbText(d)
             : reason === 'app_only' ? t('promo.voucher_app_only')
             : reason === 'wegwerf' ? t('promo.voucher_wegwerf')
             : reason === 'zu_viele' ? t('team.err_wait')
@@ -13393,10 +13428,11 @@ async function submitOrder(e) {
     customerOrderNo: getCustomerOrderCount(email, phone) + 1,
     loyaltyProgress: (() => {
       const l = getLoyalty();
-      let spent = l.spent + sub;            // Stand NACH dieser Bestellung
+      const faktor = stempelFaktorJetzt();
+      let spent = l.spent + sub * faktor;   // Stand NACH dieser Bestellung
       let earned = 0;
       while (spent >= LOYALTY_GOAL_EUR) { earned++; spent -= LOYALTY_GOAL_EUR; }
-      return { spent: Math.round(spent * 100) / 100, goal: LOYALTY_GOAL_EUR, earned, applied: loyDisc > 0 };
+      return { spent: Math.round(spent * 100) / 100, goal: LOYALTY_GOAL_EUR, earned, applied: loyDisc > 0, doppelt: faktor > 1 };
     })(),
   };
 
@@ -14386,6 +14422,25 @@ const LEGAL = {
       nur Bestellungen über die Grill'n&nbsp;Chill App (App&nbsp;Store / Google&nbsp;Play).
       Wird ein Code außerhalb des vorgesehenen Bestellwegs eingegeben, zeigt die Website einen
       entsprechenden Hinweis; ein Anspruch auf den Rabatt besteht in diesem Fall nicht.</p>
+      <p><strong>Black-Week-Aktion 2026, Gutschein-Bonus.</strong> Kaufst du vom 23.11.2026,
+      00:00&nbsp;Uhr, bis zum 30.11.2026, 23:59&nbsp;Uhr (deutsche Zeit, maßgeblich ist der Zeitpunkt
+      der Gutscheinbestellung), über diese Website oder unsere App einen Wertgutschein nach § 8,
+      erhältst du zusätzlich einen Bonus-Code: über 5,00&nbsp;€ ab einem Gutscheinwert von
+      25,00&nbsp;€, über 10,00&nbsp;€ ab einem Gutscheinwert von 50,00&nbsp;€. Es zählt der Wert des
+      einzelnen Gutscheins, mehrere Gutscheine werden nicht zusammengerechnet. Der Bonus-Code steht
+      dir als Käufer zu, nicht der beschenkten Person; wir zeigen ihn nach der Zahlung an und
+      schicken ihn an die E-Mail-Adresse, die du beim Kauf angibst. Du kannst ihn vom 04.01.2027
+      bis zum 31.03.2027 einmal für eine Bestellung über diese Website oder unsere App ab einem
+      Bestellwert von 20,00&nbsp;€ einlösen, nicht am Truck. Er ist nicht mit anderen Rabatten oder
+      Gutscheinen kombinierbar. Barauszahlung, Auszahlung eines Restbetrags und Weiterverkauf sind
+      ausgeschlossen; nach dem 31.03.2027 verfällt der Bonus-Code ohne Ersatz. Widerrufst du den
+      Gutscheinkauf oder erstatten wir ihn, sperren wir den Bonus-Code.</p>
+      <p><strong>Black-Week-Aktion 2026, doppelte Stempel.</strong> Am 27.11.2026 von
+      00:00&nbsp;Uhr bis 23:59&nbsp;Uhr zählt jeder Euro, den wir nach § 9 auf deine Stempelkarte
+      anrechnen, doppelt. Das gilt für Bestellungen über diese Website und unsere App ebenso wie für
+      Einkäufe am Truck. Maßgeblich ist der Zeitpunkt, zu dem wir den Umsatz gutschreiben; bei
+      Online-Zahlung ist das der Abschluss der Zahlung. Alle übrigen Regeln aus § 9 gelten
+      unverändert.</p>
       <h4>§ 8 Persönliche Gutscheine</h4>
       <p>Persönliche Gutschein-Codes (z.&nbsp;B. aus unseren E-Mails) gelten mit dem in der
       jeweiligen E-Mail genannten Wert und Gültigkeitszeitraum (in der Regel 3 Tage ab Versand)
@@ -18853,7 +18908,7 @@ loadCart();
 renderMenu(true);
 loadShopStatus();  // Laden-Status (Pause/Ausverkauft) serverseitig holen + anwenden
 // Promo-Bar bleibt sichtbar, solange eine Aktion beworben wird (WM ODER GRILL5). GRILL5 ist offen -> Bar bleibt.
-if (!promoActive() && !grill5Active()) { const pb = document.querySelector('.promo-bar'); if (pb) pb.remove(); }
+if (!promoActive() && !grill5Active() && !(SK.bonusAktiv && SK.bonusAktiv()) && stempelFaktorJetzt() === 1) { const pb = document.querySelector('.promo-bar'); if (pb) pb.remove(); }
 loadGoogleReviews();  // Google-Bewertungen live holen (serverseitig 24h gecached)
 getRestaurantOrigin();  // Restaurant-Koordinaten vorab per Nominatim auflösen + cachen (Luftlinie)
 renderCart();

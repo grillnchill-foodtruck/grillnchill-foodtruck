@@ -2519,7 +2519,7 @@ async function scanActionRun(action, btn, kind){
     const d=await res.json().catch(()=>({}));
     if(!res.ok){ toast(d.hint||d.error||'Fehler','err'); return; }
     scanCard=d.card; renderScanCard();
-    toast(action==='credit'?('Gutgeschrieben'+(d.earned?' · +'+d.earned+' Menü aufs Haus':'')):(kind==='menu'?'Menü aufs Haus eingelöst':(kind==='pass'?'Pass-Menü eingelöst':'Bonus eingelöst')));
+    toast(action==='credit'?('Gutgeschrieben'+(d.faktor>1?' · Black Friday, doppelt gezählt':'')+(d.earned?' · +'+d.earned+' Menü aufs Haus':'')):(kind==='menu'?'Menü aufs Haus eingelöst':(kind==='pass'?'Pass-Menü eingelöst':'Bonus eingelöst')));
     if(navigator.vibrate) navigator.vibrate(18);
   }catch(e){ toast('Netzwerkfehler','err'); }
   finally{ gncBusy(btn,false); }

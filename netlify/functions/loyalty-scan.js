@@ -22,6 +22,8 @@ const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
 const { mitglied } = require('./lib/team-passwort');
 const burgerPass = require('./lib/burger-pass');
+let SK = null;
+try { SK = require('../../speisekarte.js'); } catch (e) { SK = null; }
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -129,7 +131,9 @@ exports.handler = async (event) => {
     if (!isFinite(amount) || amount < 0.5 || amount > 500) {
       return json(400, { error: 'bad_amount', hint: 'Betrag zwischen 0,50 € und 500 €' });
     }
-    rec.spent = Math.round(((rec.spent || 0) + amount) * 100) / 100;
+    // Black Friday 2026: jeder Euro zählt doppelt (speisekarte.js, stempelFaktor)
+    const faktor = (SK && SK.stempelFaktor) ? SK.stempelFaktor(Date.now()) : 1;
+    rec.spent = Math.round(((rec.spent || 0) + amount * faktor) * 100) / 100;
     let earned = 0;
     let levelUpTo = 0;
     while (rec.spent >= 100) {
@@ -158,8 +162,8 @@ exports.handler = async (event) => {
       const { aktualisiereWallets } = require('./lib/wallet-sync');
       await aktualisiereWallets(idx.key.slice(2), rec);
     } catch (e) {}
-    await auditLog(who, 'Vor-Ort-Umsatz ' + amount.toFixed(2) + ' € für ' + (rec.email || '?') + (earned ? ' (+' + earned + ' Menü aufs Haus)' : ''));
-    return json(200, { ok: true, earned, card: cardView(rec) });
+    await auditLog(who, 'Vor-Ort-Umsatz ' + amount.toFixed(2) + ' € für ' + (rec.email || '?') + (faktor > 1 ? ' (doppelt gezählt, Black Friday)' : '') + (earned ? ' (+' + earned + ' Menü aufs Haus)' : ''));
+    return json(200, { ok: true, earned, faktor, card: cardView(rec) });
   }
 
   // Guthaben direkt korrigieren: Menüs aufs Haus, Boni (je 5 €) und/oder Kartenstand setzen.

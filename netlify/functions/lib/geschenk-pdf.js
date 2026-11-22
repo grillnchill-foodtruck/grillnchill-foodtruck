@@ -127,12 +127,25 @@ function gutscheinPdf(d) {
         doc.font('Helvetica-Bold').fontSize(9).fillColor(FARBE.dim).text(latin1('Gedacht für: ' + vor.titel), KX + P, iy, { width: KW - 2 * P, lineBreak: false });
         iy += 15;
       }
-      if (d.message) {
-        doc.font('Helvetica-Oblique').fontSize(9).fillColor(FARBE.creme)
-          .text(latin1(d.message.replace(/\s*\n\s*/g, ' ')), KX + P, iy, { width: KW - 2 * P, height: 24, ellipsis: true, lineGap: 1 });
-      }
       // Unterer Rand: Für, Von, Code
       const by = KY + KH - P - 22;
+      // Nachricht (bis 300 Zeichen): so groß wie möglich ganz auf die Karte, mit
+      // den Zeilenumbrüchen der Käuferin; passt sie nicht, steht sie gekürzt auf
+      // der Karte und vollständig darunter (Block „Nachricht“)
+      let nachrichtGanz = true;
+      if (d.message) {
+        const kw = KW - 2 * P;                   // der QR-Code endet oberhalb der Nachricht
+        const platz = by - 8 - iy;
+        const mitUmbruch = latin1(d.message);
+        const einzeilig = latin1(d.message.replace(/\s*\n+\s*/g, ' '));
+        const versuche = [[mitUmbruch, 9], [mitUmbruch, 8], [einzeilig, 8], [einzeilig, 7.5]];
+        const hoehe = (t, g) => doc.font('Helvetica-Oblique').fontSize(g).heightOfString(t, { width: kw, lineGap: 1 });
+        const treffer = versuche.find(([t, g]) => hoehe(t, g) <= platz);
+        nachrichtGanz = !!treffer;
+        const [text, groesse] = treffer || [einzeilig, 7.5];
+        doc.font('Helvetica-Oblique').fontSize(groesse).fillColor(FARBE.creme)
+          .text(text, KX + P, iy, { width: kw, height: platz, ellipsis: true, lineGap: 1 });
+      }
       const spalte = (label, wert, x, w) => {
         doc.font('Helvetica-Bold').fontSize(6.5).fillColor(FARBE.muted).text(label, x, by, { width: w, characterSpacing: 1.2, lineBreak: false });
         doc.font('Helvetica-Bold').fontSize(10).fillColor(FARBE.creme).text(latin1(wert || '-'), x, by + 10, { width: w, height: 12, ellipsis: true, lineBreak: false });
@@ -144,22 +157,38 @@ function gutscheinPdf(d) {
 
       y = KY + KH + 44;
 
-      /* ---- Nachricht ausführlich (falls auf der Karte gekürzt) ---- */
-      if (d.message && d.message.length > 90) {
-        doc.font('Helvetica-Bold').fontSize(8).fillColor(FARBE.grau).text('NACHRICHT', L, y, { characterSpacing: 1.2 });
-        doc.font('Helvetica-Oblique').fontSize(11).fillColor(FARBE.text).text(latin1(d.message), L, doc.y + 4, { width: R - L, lineGap: 2 });
-        y = doc.y + 22;
-      }
-
-      /* ---- So löst du ihn ein ---- */
-      doc.font('Helvetica-Bold').fontSize(8).fillColor(FARBE.grau).text('SO LÖST DU IHN EIN', L, y, { characterSpacing: 1.2 });
-      y = doc.y + 8;
       const schritte = [
         'Auf grillnchill-foodtruck.de oder in der App „Grill\'n Chill“ bestellen.',
         'Im Warenkorb den Code ' + d.code + ' eintippen.',
         'Am Truck abholen (Gütersloher Straße 122, Bielefeld) oder liefern lassen.',
       ];
       const amTruck = 'Direkt am Truck: Gutschein oder QR-Code zeigen, wir lösen ihn an der Kasse ein.';
+      const klein = 'Einlösbar online, in der App und am Truck ab einem Bestellwert von ' + euro(d.amount) + ', einmalig, bis zum ' + deDatum(d.validUntil)
+        + '. Keine Barauszahlung. Ob der Gutschein noch gilt, siehst du unter grillnchill-foodtruck.de/gutscheine.'
+        + ' Es gelten unsere AGB (§ 8) unter grillnchill-foodtruck.de/agb.';
+
+      /* ---- Nachricht vollständig (wenn sie auf der Karte nicht ganz Platz hatte).
+         Alles muss auf Seite 1 bleiben: Bei sehr vielen Zeilenumbrüchen wird die
+         Schrift kleiner, zuletzt stehen die Zeilen mit „ / “ hintereinander. ---- */
+      if (d.message && !nachrichtGanz) {
+        let rest = 10 + 8 + 2 + 6 + 10;           // Überschrift und Abstände von „So löst du ihn ein“
+        schritte.forEach((t) => { rest += doc.font('Helvetica').fontSize(11).heightOfString(latin1(t), { width: R - L - 26 }) + 8; });
+        rest += doc.font('Helvetica-Bold').fontSize(10.5).heightOfString(latin1(amTruck), { width: R - L });
+        rest += doc.font('Helvetica').fontSize(8.5).heightOfString(latin1(klein), { width: R - L, lineGap: 1.5 });
+        const platz = 790 - y - rest - 14 - 22;   // bis über den Fuß, abzüglich Überschrift und Abstand
+        const mitUmbruch = latin1(d.message);
+        const verkettet = latin1(d.message.replace(/\s*\n+\s*/g, ' / '));
+        const versuche = [[mitUmbruch, 11], [mitUmbruch, 10], [mitUmbruch, 9], [verkettet, 10], [verkettet, 9]];
+        const hoehe = (t, g) => doc.font('Helvetica-Oblique').fontSize(g).heightOfString(t, { width: R - L, lineGap: 2 });
+        const [text, groesse] = versuche.find(([t, g]) => hoehe(t, g) <= platz) || versuche[versuche.length - 1];
+        doc.font('Helvetica-Bold').fontSize(8).fillColor(FARBE.grau).text('NACHRICHT', L, y, { characterSpacing: 1.2 });
+        doc.font('Helvetica-Oblique').fontSize(groesse).fillColor(FARBE.text).text(text, L, doc.y + 4, { width: R - L, lineGap: 2 });
+        y = doc.y + 22;
+      }
+
+      /* ---- So löst du ihn ein ---- */
+      doc.font('Helvetica-Bold').fontSize(8).fillColor(FARBE.grau).text('SO LÖST DU IHN EIN', L, y, { characterSpacing: 1.2 });
+      y = doc.y + 8;
       schritte.forEach((s, i) => {
         doc.circle(L + 8, y + 7, 8).fill(FARBE.orange);
         doc.font('Helvetica-Bold').fontSize(9).fillColor('#FFFFFF').text(String(i + 1), L, y + 3, { width: 16, align: 'center' });
@@ -170,10 +199,7 @@ function gutscheinPdf(d) {
       y = doc.y + 6;
 
       y += 10;
-      doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.grau).text(latin1(
-        'Einlösbar online, in der App und am Truck ab einem Bestellwert von ' + euro(d.amount) + ', einmalig, bis zum ' + deDatum(d.validUntil)
-        + '. Keine Barauszahlung. Ob der Gutschein noch gilt, siehst du unter grillnchill-foodtruck.de/gutscheine.'
-        + ' Es gelten unsere AGB (§ 8) unter grillnchill-foodtruck.de/agb.'), L, y, { width: R - L, lineGap: 1.5 });
+      doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.grau).text(latin1(klein), L, y, { width: R - L, lineGap: 1.5 });
 
       /* ---- Fuß (unterhalb des Seitenrands, sonst bricht pdfkit auf Seite 2 um) ---- */
       doc.page.margins.bottom = 0;

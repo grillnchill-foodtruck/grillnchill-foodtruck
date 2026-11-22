@@ -13,7 +13,7 @@ I18N.nl = {
     "hero.lead": "Sappige halal burgers en krokante friet, vers gegrild in Bielefeld-Brackwede. Bestel hier en bespaar €5 met code GRILL5 (vanaf €20 bestelwaarde).",
     "hero.cta_order": "Bestel nu", "hero.cta_catering": "Foodtruck boeken",
     "hero.reviews": "{count} reviews op Google", "hero.badge_code": "Code GRILL5", "hero.badge_discount": "€5 korting",
-    "promo.bar_main": "Bespaar €5 met code", "promo.bar_sub": "(vanaf €20 bestelwaarde · max. 3× per klant · alleen online)",
+    "promo.bar_main": "Bespaar €5 met code", "promo.bar_sub": "(vanaf €20 bestelwaarde · max. 3× per klant · alleen online)", "bw.bar_main": "Black Week: tot €10 bonus op cadeaubonnen", "bw.bar_sub": "(vanaf €25 bonwaarde · t/m Cyber Monday 30-11 · bonus geldig vanaf 4-1)", "bw.bf_main": "Black Friday: vandaag telt elke euro dubbel", "bw.bf_sub": "(op je stempelkaart · online en bij de truck · tot 23:59 uur)", "bw.gift_tag": "Black Week", "bw.gift_hint": "Tot maandag 30-11: vanaf €25 bonwaarde doen we er €5 bonus bij, vanaf €50 is het €10.", "bw.stempel_hint": "Black Friday: vandaag telt elke euro dubbel.", "promo.voucher_from": "Deze bon is geldig vanaf {datum}.",
     "deal.bar_main": "Verjaardagsdeal: burger + friet voor 10 €", "deal.bar_sub": "(t/m zaterdag 14-11 · alleen afhalen · behalve Kubis Special)", "deal.hero_small": "Verjaardagsdeal", "deal.hero_big": "Burger + friet 10 €", "deal.eyebrow": "Verjaardagsdeal · t/m zaterdag", "deal.title_a": "Burger", "deal.title_b": "Friet", "deal.price_small": "maar", "deal.text": "Elke burger met friet kost samen 10 €, online bij afhalen en direct bij de truck. Kubis Special uitgezonderd, een dubbele patty kost 2,50 € extra.", "deal.cta": "Kies je burger", "deal.day_past": "klaar", "deal.day_today": "nu", "deal.day_last": "slot", "deal.left_many": "Nog {n} dagen, zaterdag is het voorbij.", "deal.left_one": "Vandaag is de laatste dag.", "deal.upsell_btn": "Alleen met friet voor 10 €", "deal.upsell_sub": "Verjaardagsdeal bij afhalen", "deal.line": "Verjaardagsdeal", "deal.cart_saved": "Verjaardagsdeal: bij afhalen bespaar je {amount}.", "deal.cart_more": "Voeg friet toe: burger en friet samen voor maar 10 €.", "deal.add_fries": "Friet erbij", "deal.delivery": "De verjaardagsdeal geldt alleen bij afhalen. Haal je zelf af, dan bespaar je {amount}.", "deal.no_code": "{code} is niet te combineren met de verjaardagsdeal.",
     "hero.trust_halal": "100% halal", "hero.trust_prep": "Min. bereidingstijd", "hero.trust_delivery": "Bezorging in Bielefeld",
 
@@ -762,5 +762,15 @@ Object.assign(I18N.nl, {
   "gs.ph_msg": "Gefeliciteerd. De dubbele patty is van mij.",
   "gs.ph_mail": "naam@voorbeeld.nl",
   "firmen.ph_domain": "bedrijf.nl",
+  "gs.bw_tag": "Black Week",
+  "gs.bw_text": "Tot Cyber Monday 30-11: bij een bon vanaf €25 krijg je een bonuscode van €5, vanaf €50 een van €10. In te wisselen van 4-1 t/m 31-3-2027 bij bestellingen vanaf €20.",
+  "gs.bw_bed": "Actievoorwaarden",
+  "gs.bw_z10": "<b>+ bonuscode van €10</b> voor jou erbij.",
+  "gs.bw_z5": "<b>+ bonuscode van €5</b> voor jou erbij. Vanaf €50 is het €10.",
+  "gs.bw_z0": "Vanaf €25 krijg je er een <b>bonuscode van €5</b> bij.",
+  "gs.bw_dk_titel": "Je Black Week-bonus",
+  "gs.bw_dk_text": "{wert} korting op een bestelling via de website of app vanaf {min}, in te wisselen van {von} t/m {bis}. De code staat ook in je bevestigingsmail.",
+  "gs.js_pdf_fremd": "Het PDF-bestand kan geen emoji's en sommige speciale tekens afdrukken. In de mail staat je bericht precies zoals je het schrijft.",
+  "gs.js_pdf_tr": "In het PDF-bestand staan ş, ğ en ı als s, g en i. In de mail staat alles precies zoals je het schrijft.",
 });
 /* UNTERSEITEN:ENDE */

@@ -13,7 +13,7 @@ I18N.es = {
     "hero.lead": "Hamburguesas halal jugosas y patatas fritas crujientes, recién hechas a la plancha en Bielefeld-Brackwede. Pide aquí y ahorra 5 € con el código GRILL5 (a partir de 20 € de pedido).",
     "hero.cta_order": "Pedir ahora", "hero.cta_catering": "Reservar foodtruck",
     "hero.reviews": "{count} reseñas en Google", "hero.badge_code": "Código GRILL5", "hero.badge_discount": "5 € de descuento",
-    "promo.bar_main": "Ahorra 5 € con el código", "promo.bar_sub": "(a partir de 20 € de pedido · máx. 3× por cliente · solo online)",
+    "promo.bar_main": "Ahorra 5 € con el código", "promo.bar_sub": "(a partir de 20 € de pedido · máx. 3× por cliente · solo online)", "bw.bar_main": "Black Week: hasta 10 € de bonificación en vales", "bw.bar_sub": "(desde 25 € de valor del vale · hasta el Cyber Monday 30/11 · bonificación válida desde el 4/1)", "bw.bf_main": "Black Friday: hoy cada euro cuenta doble", "bw.bf_sub": "(en la tarjeta de sellos · online y en el food truck · hasta las 23:59)", "bw.gift_tag": "Black Week", "bw.gift_hint": "Hasta el lunes 30/11: desde 25 € de valor añadimos 5 € de bonificación, desde 50 € son 10 €.", "bw.stempel_hint": "Black Friday: hoy cada euro cuenta doble.", "promo.voucher_from": "Este vale es válido a partir del {datum}.",
     "deal.bar_main": "Oferta de cumpleaños: hamburguesa + patatas por 10 €", "deal.bar_sub": "(hasta el sábado 14/11 · solo para recoger · excepto Kubis Special)", "deal.hero_small": "Oferta de cumpleaños", "deal.hero_big": "Hamburguesa + patatas 10 €", "deal.eyebrow": "Oferta de cumpleaños · hasta el sábado", "deal.title_a": "Hamburguesa", "deal.title_b": "Patatas", "deal.price_small": "solo", "deal.text": "Cualquier hamburguesa con patatas cuesta 10 € en total, online para recoger y directamente en el food truck. Kubis Special excluida, la doble carne cuesta 2,50 € más.", "deal.cta": "Elige tu hamburguesa", "deal.day_past": "pasado", "deal.day_today": "hoy", "deal.day_last": "último", "deal.left_many": "Quedan {n} días, termina el sábado.", "deal.left_one": "Hoy es el último día.", "deal.upsell_btn": "Solo con patatas por 10 €", "deal.upsell_sub": "Oferta de cumpleaños para recoger", "deal.line": "Oferta de cumpleaños", "deal.cart_saved": "Oferta de cumpleaños: al recoger ahorras {amount}.", "deal.cart_more": "Añade patatas: hamburguesa y patatas juntas por solo 10 €.", "deal.add_fries": "Añadir patatas", "deal.delivery": "La oferta de cumpleaños es solo para recoger. Si recoges tú, ahorras {amount}.", "deal.no_code": "{code} no se puede combinar con la oferta de cumpleaños.",
     "hero.trust_halal": "100% halal", "hero.trust_prep": "Tiempo mín. de preparación", "hero.trust_delivery": "Entrega en Bielefeld",
 
@@ -762,5 +762,15 @@ Object.assign(I18N.es, {
   "gs.ph_msg": "Feliz cumpleaños. El doble patty corre de mi cuenta.",
   "gs.ph_mail": "nombre@ejemplo.es",
   "firmen.ph_domain": "empresa.es",
+  "gs.bw_tag": "Black Week",
+  "gs.bw_text": "Hasta el Cyber Monday 30/11: con un vale de 25 € o más recibes un código de bonificación de 5 €, desde 50 € uno de 10 €. Canjeable del 4/1 al 31/3/2027 en pedidos desde 20 €.",
+  "gs.bw_bed": "Condiciones de la promoción",
+  "gs.bw_z10": "<b>+ código de bonificación de 10 €</b> para ti.",
+  "gs.bw_z5": "<b>+ código de bonificación de 5 €</b> para ti. Desde 50 € son 10 €.",
+  "gs.bw_z0": "Desde 25 € recibes además un <b>código de bonificación de 5 €</b>.",
+  "gs.bw_dk_titel": "Tu bonificación Black Week",
+  "gs.bw_dk_text": "{wert} de descuento en un pedido por la web o la app desde {min}, canjeable del {von} al {bis}. El código también está en tu correo de confirmación.",
+  "gs.js_pdf_fremd": "El PDF no puede imprimir emojis ni algunos caracteres especiales. En el correo tu mensaje aparece tal como lo escribes.",
+  "gs.js_pdf_tr": "En el PDF, ş, ğ e ı aparecen como s, g e i. En el correo todo aparece tal como lo escribes.",
 });
 /* UNTERSEITEN:ENDE */

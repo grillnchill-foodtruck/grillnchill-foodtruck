@@ -13,7 +13,7 @@ I18N.tr = {
     "hero.lead": "Sulu helal burgerler ve çıtır patates, Bielefeld-Brackwede'de taze ızgarada. Buradan sipariş ver, GRILL5 koduyla 5 € tasarruf et (20 € sipariş tutarından itibaren).",
     "hero.cta_order": "Hemen sipariş ver", "hero.cta_catering": "Foodtruck kirala",
     "hero.reviews": "Google'da {count} değerlendirme", "hero.badge_code": "Kod GRILL5", "hero.badge_discount": "5 € indirim",
-    "promo.bar_main": "Bu kodla 5 € tasarruf et:", "promo.bar_sub": "(20 € sipariş tutarından itibaren · kişi başı en fazla 3 kez · sadece online)",
+    "promo.bar_main": "Bu kodla 5 € tasarruf et:", "promo.bar_sub": "(20 € sipariş tutarından itibaren · kişi başı en fazla 3 kez · sadece online)", "bw.bar_main": "Black Week: Kuponlarda 10 €'ya kadar bonus", "bw.bar_sub": "(25 € kupon değerinden itibaren · Cyber Monday 30.11.'e kadar · bonus 4.1.'den itibaren geçerli)", "bw.bf_main": "Black Friday: Bugün her euro iki kat sayılıyor", "bw.bf_sub": "(damga kartında · online ve truck'ta · saat 23:59'a kadar)", "bw.gift_tag": "Black Week", "bw.gift_hint": "30.11. Pazartesiye kadar: 25 € kupon değerinden itibaren 5 € bonus ekliyoruz, 50 €'dan itibaren 10 €.", "bw.stempel_hint": "Black Friday: Bugün her euro iki kat sayılıyor.", "promo.voucher_from": "Bu kupon {datum} tarihinden itibaren geçerli.",
     "deal.bar_main": "Doğum günü fırsatı: Burger + patates 10 €", "deal.bar_sub": "(14.11. Cumartesiye kadar · sadece gel-al · Kubis Special hariç)", "deal.hero_small": "Doğum günü fırsatı", "deal.hero_big": "Burger + patates 10 €", "deal.eyebrow": "Doğum günü fırsatı · Cumartesiye kadar", "deal.title_a": "Burger", "deal.title_b": "Patates", "deal.price_small": "sadece", "deal.text": "Patatesli her burger birlikte 10 €: online gel-al siparişlerinde ve doğrudan truck'ta. Kubis Special hariç, double patty 2,50 € ekstra.", "deal.cta": "Burgerini seç", "deal.day_past": "geçti", "deal.day_today": "bugün", "deal.day_last": "son gün", "deal.left_many": "{n} gün kaldı, Cumartesi bitiyor.", "deal.left_one": "Bugün son gün.", "deal.upsell_btn": "Sadece patatesle 10 €", "deal.upsell_sub": "Gel-al için doğum günü fırsatı", "deal.line": "Doğum günü fırsatı", "deal.cart_saved": "Doğum günü fırsatı: Gel-al ile {amount} tasarruf edersin.", "deal.cart_more": "Patates ekle: burger ve patates birlikte sadece 10 €.", "deal.add_fries": "Patates ekle", "deal.delivery": "Doğum günü fırsatı sadece gel-al için geçerli. Gelip alırsan {amount} tasarruf edersin.", "deal.no_code": "{code}, doğum günü fırsatıyla birlikte kullanılamaz.",
     "hero.trust_halal": "%100 Helal", "hero.trust_prep": "Dk hazırlık", "hero.trust_delivery": "Bielefeld'de teslimat",
 
@@ -762,5 +762,15 @@ Object.assign(I18N.tr, {
   "gs.ph_msg": "Doğum günün kutlu olsun. Double patty benden.",
   "gs.ph_mail": "isim@ornek.com",
   "firmen.ph_domain": "sirket.com",
+  "gs.bw_tag": "Black Week",
+  "gs.bw_text": "Cyber Monday 30.11.'e kadar: 25 € ve üzeri kuponlarda 5 €'luk, 50 €'dan itibaren 10 €'luk bonus kodu senin. 4.1.–31.3.2027 arasında 20 € sipariş tutarından itibaren kullanılabilir.",
+  "gs.bw_bed": "Kampanya koşulları",
+  "gs.bw_z10": "<b>+ 10 € bonus kodu</b> da senin.",
+  "gs.bw_z5": "<b>+ 5 € bonus kodu</b> da senin. 50 €'dan itibaren 10 €.",
+  "gs.bw_z0": "25 €'dan itibaren <b>5 €'luk bonus kodu</b> da senin.",
+  "gs.bw_dk_titel": "Black Week bonusun",
+  "gs.bw_dk_text": "Web sitesi veya uygulamadan {min} ve üzeri bir siparişte {wert} indirim, {von} ile {bis} arasında geçerli. Kod onay e-postanda da var.",
+  "gs.js_pdf_fremd": "PDF emojileri ve bazı özel karakterleri basamıyor. E-postada mesajın tam yazdığın gibi görünür.",
+  "gs.js_pdf_tr": "PDF'te ş, ğ ve ı harfleri s, g ve i olarak görünür. E-postada her şey tam yazdığın gibi görünür.",
 });
 /* UNTERSEITEN:ENDE */

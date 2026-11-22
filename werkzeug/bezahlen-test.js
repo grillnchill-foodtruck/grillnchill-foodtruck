@@ -387,6 +387,31 @@ const iso = (ms) => new Date(ms).toISOString();
   r = await rufe('scan', { password: anna, action: 'credit', token: QR_B, amount: 120 });
   ok('Umsatz am Truck füllt die Stempelkarte, nicht den Pass', kb().menus === 1 && bp.gueltigePassMenus(kb()) === 0);
 
+  // Black Friday 27.11.2026 (speisekarte.js, stempelFaktor): jeder Euro zählt doppelt, am Truck und online
+  const echteUhr = Date.now;
+  const stand = () => (kb().menus || 0) * 100 + (kb().spent || 0);
+  const bfZeit = Date.UTC(2026, 10, 27, 11, 0, 0);
+  let vor = stand();
+  Date.now = () => bfZeit;
+  r = await rufe('scan', { password: anna, action: 'credit', token: QR_B, amount: 15 });
+  Date.now = echteUhr;
+  ok('Black Friday am Truck: 15 € zählen 30 € (Faktor 2)', r.s === 200 && r.d.faktor === 2 && Math.abs(stand() - (vor + 30)) < 0.01, JSON.stringify({ s: r.s, d: r.d, vor, nach: stand() }));
+  vor = stand();
+  Date.now = () => Date.UTC(2026, 10, 27, 23, 0, 0);   // Samstag 28.11., 00:00 Berlin
+  r = await rufe('scan', { password: anna, action: 'credit', token: QR_B, amount: 15 });
+  Date.now = echteUhr;
+  ok('Samstag 00:00: wieder einfach', r.s === 200 && (r.d.faktor || 1) === 1 && Math.abs(stand() - (vor + 15)) < 0.01, JSON.stringify({ s: r.s, d: r.d, vor, nach: stand() }));
+  const bfBestellung = (ref) => ({
+    reference: ref, name: 'Berna', email: MAIL_B, phone: '0171', mode: 'pickup', payment: 'cash',
+    items: [{ name: 'Cheeseburger-Menü', qty: 1, price: SK.warenwert(korb), total: SK.warenwert(korb) }],
+    cartSnapshot: korb, subtotal: SK.warenwert(korb), discount: 0, kontoToken: TOK_B, deliveryFee: 0, tip: 0, total: SK.warenwert(korb),
+  });
+  vor = stand();
+  Date.now = () => bfZeit;
+  r = await rufe('mail', { type: 'order_confirmation', order: bfBestellung('GNC-BF1'), internalSecret: process.env.INTERNAL_HOOK_SECRET || '' });   // wie nach echtem Zahlungseingang
+  Date.now = echteUhr;
+  ok('Black Friday online: Warenwert zählt doppelt', r.s === 200 && Math.abs(stand() - (vor + 2 * SK.warenwert(korb))) < 0.01, JSON.stringify({ s: r.s, vor, nach: stand(), w: SK.warenwert(korb) }));
+
   // Nur abgelaufener Pass, keine Stempel: online kein Gratis-Menü
   const MAIL_C = 'c@example.org', TOK_C = 'a9'.repeat(24);
   schreib('customers', kundeKey(MAIL_C), { email: MAIL_C, tokens: { [TOK_C]: new Date().toISOString() }, menus: 0, passMenus: [{ pass: 'GNC-BP-X', name: 'Burger-Pass', menus: 2, gesamt: 4, bis: iso(jetzt - 60000) }] });

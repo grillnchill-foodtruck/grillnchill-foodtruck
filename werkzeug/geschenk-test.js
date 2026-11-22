@@ -161,7 +161,7 @@ const basis = (extra) => ({
   /* 3. Doppelte Signale erzeugen keinen zweiten Code */
   MAILS.length = 0;
   const w1b = await zahle(k1.id);
-  ok('Webhook ein zweites Mal: kein neuer Code, keine Mail', w1b.ignored === 'already_completed' && MAILS.length === 0 && schluessel('vouchers', 'c:').length === 1, w1b);
+  ok('Webhook ein zweites Mal: kein neuer Code, keine Mail', w1b.ignored === 'already_completed' && MAILS.length === 0 && schluessel('vouchers', 'c:GNC').length === 1 && schluessel('vouchers', 'c:BONUS').length <= 1, w1b);
   s = await status(k1.reference, k1.id);
   ok('Danke-Ansicht nach der Zahlung: Code, Zustellung, PDF-Links, Kaufbeleg', s.d.state === 'paid' && s.d.code === code1 && s.d.recipientMailed === true && /giftcard-pdf\?c=/.test(s.d.pdf) && /dl=1$/.test(s.d.pdfDownload) && /art=beleg/.test(s.d.beleg) && s.d.beleg.includes(lies('vouchers', 'gd:' + code1).belegToken), s.d);
 
@@ -305,6 +305,41 @@ const basis = (extra) => ({
   ok('Truck: erstatteter (gesperrter) Gutschein lässt sich nicht einlösen', t.code === 409 && t.d.error === 'inactive', t.d);
   const audit = schluessel('audit', 'a:').map((k) => lies('audit', k)).filter((x) => x.action === 'Gutschein');
   ok('Truck: jede Einlösung namentlich im Protokoll', audit.some((x) => /am Truck eingelöst/.test(x.detail) && /in SumUp 4,50/.test(x.detail)) && audit.some((x) => x.name === 'Kubi' && /zurückgenommen/.test(x.detail)), audit.map((x) => x.name + ': ' + x.detail));
+
+  /* 14. Black Week: Bonus-Code für die Käuferin (speisekarte.js, BONUS_*) */
+  const kaufZu = async (extra, zeitpunkt) => {
+    const k = await kaufe(basis({ recipientEmail: 'bw-empf@example.org', ...extra }));
+    const o = lies('orders', 'o:' + k.d.reference); o.createdAt = zeitpunkt; schreib('orders', 'o:' + k.d.reference, o);
+    await zahle(k.d.id);
+    return { ...k.d, rec: lies('orders', 'o:' + k.d.reference) };
+  };
+  const bw30 = await kaufZu({ amount: 30, preset: 'zwei', email: 'bw30@example.org' }, '2026-11-25T12:00:00.000Z');
+  const bc30 = bw30.rec.bonusCode;
+  const bv30 = bc30 && lies('vouchers', 'c:' + bc30);
+  ok('Black Week: 30-€-Gutschein bringt einen 5-€-Bonus-Code', !!bv30 && /^BONUS[A-Z0-9]{5}$/.test(bc30) && bv30.value === 5 && bv30.minOrder === 20 && bv30.maxUses === 1 && bv30.combinable === false && bv30.giftcard === false && bv30.active === true, bv30);
+  ok('Black Week: einlösbar vom 4.1. bis 31.3.2027', bv30 && bv30.validFrom === '2027-01-04' && bv30.validUntil === '2027-03-31', bv30);
+  ok('Black Week: Bonus-Notiz ohne Namen und Adressen', bv30 && !/Kubi|Ayşe|@/.test(bv30.note), bv30 && bv30.note);
+  s = await status(bw30.reference, bw30.id);
+  ok('Black Week: Danke-Ansicht zeigt den Bonus', s.d.bonus && s.d.bonus.code === bc30 && s.d.bonus.value === 5, s.d);
+  const mK = MAILS.find((m) => m.to[0].email === 'bw30@example.org');
+  const mE = MAILS.find((m) => m.to[0].email === 'bw-empf@example.org');
+  ok('Black Week: Bonus-Code steht in der Mail an die Käuferin', !!mK && mK.htmlContent.includes(bc30), mK && mK.subject);
+  ok('Black Week: die Beschenkte bekommt keinen Bonus-Code', !!mE && !mE.htmlContent.includes(bc30), mE && mE.subject);
+  ok('Black Week: Bonus-Code ist kein Geschenkgutschein (Prüfen-Seite kennt ihn nicht)', (await pruefe(bc30)).reason !== 'valid' && (await pruefe(bc30)).valid !== true);
+  const vc = await handler('voucher-check')({ httpMethod: 'POST', headers: ip(), body: JSON.stringify({ code: bc30, email: 'jemand@example.org', subtotal: 30 }), queryStringParameters: {} });
+  const vcd = JSON.parse(vc.body);
+  ok('Black Week: vor dem 4.1.2027 „noch nicht gültig“ mit Startdatum', vcd.valid === false && vcd.reason === 'not_started' && vcd.validFrom === '2027-01-04', vcd);
+  const bw50 = await kaufZu({ amount: 50, preset: 'abend', email: 'bw50@example.org' }, '2026-11-30T22:30:00.000Z');
+  const bv50 = lies('vouchers', 'c:' + bw50.rec.bonusCode);
+  ok('Black Week: 50-€-Gutschein am Cyber Monday 23:30 bringt 10 €', !!bv50 && bv50.value === 10, bv50);
+  const bw20 = await kaufZu({ amount: 20, preset: '', email: 'bw20@example.org' }, '2026-11-25T12:00:00.000Z');
+  ok('Black Week: 20-€-Gutschein ohne Bonus', !bw20.rec.bonusCode && !(await status(bw20.reference, bw20.id)).d.bonus, bw20.rec.bonusCode);
+  const bwNach = await kaufZu({ amount: 100, preset: 'crew', email: 'bwnach@example.org' }, '2026-11-30T23:00:00.000Z');
+  ok('Black Week: ab Dienstag 1.12., 00:00 kein Bonus mehr', !bwNach.rec.bonusCode, bwNach.rec.bonusCode);
+  const bwVor = await kaufZu({ amount: 100, preset: 'crew', email: 'bwvor@example.org' }, '2026-11-22T22:59:00.000Z');
+  ok('Black Week: Sonntag 22.11., 23:59 noch kein Bonus', !bwVor.rec.bonusCode, bwVor.rec.bonusCode);
+  const erst = await handler('orders-action')({ httpMethod: 'POST', headers: ip(), body: JSON.stringify({ password: 'admin-test', reference: bw30.reference, action: 'refund' }), queryStringParameters: {} });
+  ok('Black Week: Erstattung sperrt Gutschein und Bonus-Code', erst.statusCode === 200 && lies('vouchers', 'c:' + bw30.rec.code).active === false && lies('vouchers', 'c:' + bc30).active === false, erst.body);
 
   /* 13. QR-Code */
   const qrAntwort = await handler('giftcard-qr')({ httpMethod: 'GET', headers: ip(), queryStringParameters: { c: codeT } });

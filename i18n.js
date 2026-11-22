@@ -20,7 +20,7 @@ const I18N = {
     "hero.lead": "Saftige Halal-Burger und knusprige Pommes, frisch gegrillt in Bielefeld-Brackwede. Bestell hier und spar 5 € mit dem Code GRILL5 (ab 20 € Bestellwert).",
     "hero.cta_order": "Jetzt bestellen", "hero.cta_catering": "Foodtruck mieten",
     "hero.reviews": "{count} Bewertungen auf Google", "hero.badge_code": "Code GRILL5", "hero.badge_discount": "5 € Rabatt",
-    "promo.bar_main": "Spare 5 € mit Code", "promo.bar_sub": "(ab 20 € Bestellwert · max. 3× pro Kunde · nur online)",
+    "promo.bar_main": "Spare 5 € mit Code", "promo.bar_sub": "(ab 20 € Bestellwert · max. 3× pro Kunde · nur online)", "bw.bar_main": "Black Week: bis zu 10 € Bonus auf Gutscheine", "bw.bar_sub": "(ab 25 € Gutscheinwert · bis Cyber Monday 30.11. · Bonus einlösbar ab 4.1.)", "bw.bf_main": "Black Friday: Heute zählt jeder Euro doppelt", "bw.bf_sub": "(auf der Stempelkarte · online und am Truck · bis 23:59 Uhr)", "bw.gift_tag": "Black Week", "bw.gift_hint": "Bis Montag, 30.11.: Ab 25 € Gutscheinwert legen wir 5 € Bonus drauf, ab 50 € sind es 10 €.", "bw.stempel_hint": "Black Friday: Heute zählt jeder Euro doppelt.", "promo.voucher_from": "Dieser Gutschein gilt erst ab {datum}.",
     "deal.bar_main": "Geburtstags-Deal: Burger + Pommes für 10 €", "deal.bar_sub": "(bis Samstag 14.11. · nur bei Abholung · außer Kubis Special)", "deal.hero_small": "Geburtstags-Deal", "deal.hero_big": "Burger + Pommes 10 €", "deal.eyebrow": "Geburtstags-Deal · bis Samstag", "deal.title_a": "Burger", "deal.title_b": "Pommes", "deal.price_small": "nur", "deal.text": "Jeder Burger mit Pommes kostet zusammen 10 €, online bei Abholung und direkt am Truck. Kubis Special ist ausgenommen, Double Patty kostet 2,50 € extra.", "deal.cta": "Burger aussuchen", "deal.day_past": "vorbei", "deal.day_today": "heute", "deal.day_last": "Finale", "deal.left_many": "Noch {n} Tage, am Samstag ist Schluss.", "deal.left_one": "Heute ist der letzte Tag.", "deal.upsell_btn": "Nur mit Pommes für 10 €", "deal.upsell_sub": "Geburtstags-Deal bei Abholung", "deal.line": "Geburtstags-Deal", "deal.cart_saved": "Geburtstags-Deal: Bei Abholung sparst du {amount}.", "deal.cart_more": "Leg Pommes dazu: Burger und Pommes kosten zusammen nur 10 €.", "deal.add_fries": "Pommes dazu", "deal.delivery": "Der Geburtstags-Deal gilt nur bei Abholung. Holst du ab, sparst du {amount}.", "deal.no_code": "{code} gilt nicht zusammen mit dem Geburtstags-Deal.",
     "hero.trust_halal": "100% Halal", "hero.trust_prep": "Min Zubereitung", "hero.trust_delivery": "Lieferung in Bielefeld",
 
@@ -738,6 +738,16 @@ Object.assign(I18N.de, {
   "gs.ph_msg": "Alles Gute zum Geburtstag. Der Doppel-Patty geht auf mich.",
   "gs.ph_mail": "name@beispiel.de",
   "firmen.ph_domain": "firma.de",
+  "gs.bw_tag": "Black Week",
+  "gs.bw_text": "Bis Cyber Monday, 30.11.: Ab 25 € Gutscheinwert bekommst du einen Bonus-Code über 5 € dazu, ab 50 € über 10 €. Einlösbar vom 4.1. bis 31.3.2027 ab 20 € Bestellwert.",
+  "gs.bw_bed": "Aktionsbedingungen",
+  "gs.bw_z10": "<b>+ 10 € Bonus-Code</b> für dich dazu.",
+  "gs.bw_z5": "<b>+ 5 € Bonus-Code</b> für dich dazu. Ab 50 € sind es 10 €.",
+  "gs.bw_z0": "Ab 25 € gibt es einen <b>Bonus-Code über 5 €</b> für dich dazu.",
+  "gs.bw_dk_titel": "Dein Black-Week-Bonus",
+  "gs.bw_dk_text": "{wert} Rabatt auf eine Bestellung über Website oder App ab {min}, einlösbar vom {von} bis {bis}. Der Code steht auch in deiner Bestätigungsmail.",
+  "gs.js_pdf_fremd": "Emojis und manche Sonderzeichen kann das PDF nicht drucken. In der Mail steht deine Nachricht genau so, wie du sie schreibst.",
+  "gs.js_pdf_tr": "Im PDF stehen ş, ğ und ı als s, g und i. In der Mail steht alles genau so, wie du es schreibst.",
 });
 /* UNTERSEITEN:ENDE */
 

@@ -13,7 +13,7 @@ I18N.it = {
     "hero.lead": "Burger halal succosi e patatine croccanti, freschi dalla griglia a Bielefeld-Brackwede. Ordina qui e risparmia 5 € con il codice GRILL5 (da 20 € di ordine).",
     "hero.cta_order": "Ordina ora", "hero.cta_catering": "Prenota il foodtruck",
     "hero.reviews": "{count} recensioni su Google", "hero.badge_code": "Codice GRILL5", "hero.badge_discount": "5 € di sconto",
-    "promo.bar_main": "Risparmia 5 € con il codice", "promo.bar_sub": "(da 20 € di ordine · max 3× per cliente · solo online)",
+    "promo.bar_main": "Risparmia 5 € con il codice", "promo.bar_sub": "(da 20 € di ordine · max 3× per cliente · solo online)", "bw.bar_main": "Black Week: fino a 10 € di bonus sui buoni", "bw.bar_sub": "(da 25 € di valore del buono · fino al Cyber Monday 30/11 · bonus valido dal 4/1)", "bw.bf_main": "Black Friday: oggi ogni euro conta doppio", "bw.bf_sub": "(sulla tessera fedeltà · online e al truck · fino alle 23:59)", "bw.gift_tag": "Black Week", "bw.gift_hint": "Fino a lunedì 30/11: da 25 € di valore aggiungiamo un bonus di 5 €, da 50 € sono 10 €.", "bw.stempel_hint": "Black Friday: oggi ogni euro conta doppio.", "promo.voucher_from": "Questo buono è valido dal {datum}.",
     "deal.bar_main": "Offerta compleanno: burger + patatine a 10 €", "deal.bar_sub": "(fino a sabato 14/11 · solo con ritiro · escluso Kubis Special)", "deal.hero_small": "Offerta compleanno", "deal.hero_big": "Burger + patatine 10 €", "deal.eyebrow": "Offerta compleanno · fino a sabato", "deal.title_a": "Burger", "deal.title_b": "Patatine", "deal.price_small": "solo", "deal.text": "Ogni burger con patatine costa 10 € in tutto, online con ritiro e direttamente al truck. Escluso Kubis Special, il doppio patty costa 2,50 € in più.", "deal.cta": "Scegli il burger", "deal.day_past": "finito", "deal.day_today": "oggi", "deal.day_last": "ultimo", "deal.left_many": "Ancora {n} giorni, sabato finisce.", "deal.left_one": "Oggi è l'ultimo giorno.", "deal.upsell_btn": "Solo con patatine a 10 €", "deal.upsell_sub": "Offerta compleanno con ritiro", "deal.line": "Offerta compleanno", "deal.cart_saved": "Offerta compleanno: con il ritiro risparmi {amount}.", "deal.cart_more": "Aggiungi le patatine: burger e patatine insieme solo 10 €.", "deal.add_fries": "Aggiungi patatine", "deal.delivery": "L'offerta compleanno vale solo con ritiro. Se ritiri tu, risparmi {amount}.", "deal.no_code": "{code} non è cumulabile con l'offerta compleanno.",
     "hero.trust_halal": "100% Halal", "hero.trust_prep": "Preparazione min.", "hero.trust_delivery": "Consegna a Bielefeld",
 
@@ -762,5 +762,15 @@ Object.assign(I18N.it, {
   "gs.ph_msg": "Buon compleanno. Il doppio patty lo offro io.",
   "gs.ph_mail": "nome@esempio.it",
   "firmen.ph_domain": "azienda.it",
+  "gs.bw_tag": "Black Week",
+  "gs.bw_text": "Fino al Cyber Monday 30/11: con un buono da 25 € o più ricevi un codice bonus da 5 €, da 50 € uno da 10 €. Utilizzabile dal 4/1 al 31/3/2027 su ordini da 20 €.",
+  "gs.bw_bed": "Condizioni della promozione",
+  "gs.bw_z10": "<b>+ codice bonus da 10 €</b> per te.",
+  "gs.bw_z5": "<b>+ codice bonus da 5 €</b> per te. Da 50 € sono 10 €.",
+  "gs.bw_z0": "Da 25 € ricevi anche un <b>codice bonus da 5 €</b>.",
+  "gs.bw_dk_titel": "Il tuo bonus Black Week",
+  "gs.bw_dk_text": "{wert} di sconto su un ordine dal sito o dall'app da {min}, utilizzabile dal {von} al {bis}. Trovi il codice anche nell'e-mail di conferma.",
+  "gs.js_pdf_fremd": "Il PDF non può stampare emoji e alcuni caratteri speciali. Nell'e-mail il messaggio appare esattamente come lo scrivi.",
+  "gs.js_pdf_tr": "Nel PDF ş, ğ e ı diventano s, g e i. Nell'e-mail tutto appare esattamente come lo scrivi.",
 });
 /* UNTERSEITEN:ENDE */

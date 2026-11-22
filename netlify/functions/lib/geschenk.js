@@ -18,6 +18,10 @@
  *
  * Einlöseregel unverändert (AGB § 8): ein Code, einmal einlösbar, ab einem
  * Bestellwert in Höhe des Gutscheinwerts, 3 Jahre gültig.
+ *
+ * Black Week 2026: Fällt der Kaufbeginn in die Aktion (speisekarte.js,
+ * gutscheinBonus), gibt es einen zweiten Code für die Käuferin: c:BONUS…,
+ * 5 bzw. 10 €, gültig 4.1. bis 31.3.2027, ab 20 € Bestellwert, einmal.
  * ----------------------------------------------------------------------------
  */
 
@@ -138,12 +142,13 @@ async function sperren(os, reference) {
   return true;
 }
 
-async function neuerCode(vs) {
+async function neuerCode(vs, praefix, laenge) {
   let code = '';
+  praefix = praefix || 'GNC'; laenge = laenge || 6;
   for (let versuch = 0; versuch < 8; versuch++) {
-    code = 'GNC';
-    const buf = crypto.randomBytes(6);
-    for (let i = 0; i < 6; i++) code += ALPHA[buf[i] % ALPHA.length];
+    code = praefix;
+    const buf = crypto.randomBytes(laenge);
+    for (let i = 0; i < laenge; i++) code += ALPHA[buf[i] % ALPHA.length];
     if (!(await vs.get('c:' + code, { type: 'json' }))) return code;
   }
   return code;
@@ -188,6 +193,25 @@ async function ausstellen(rec, o) {
     belegToken: crypto.randomBytes(18).toString('hex'),   // nur für die Käuferin
     recipientMailedAt: null, tries: 0,
   };
+  // Black Week: Bonus-Code für die Käuferin, wenn der Kauf in der Aktion begann
+  try {
+    const SK = require('../../../speisekarte.js');
+    const kaufbeginn = Date.parse(frisch.createdAt || '') || Date.now();
+    const bonus = SK.gutscheinBonus ? SK.gutscheinBonus(g.amount, kaufbeginn) : 0;
+    if (bonus > 0) {
+      const bcode = await neuerCode(vs, 'BONUS', 5);
+      await vs.setJSON('c:' + bcode, {
+        code: bcode, type: 'fixed', value: bonus, maxDiscount: 0,
+        minOrder: SK.BONUS_MINDEST, validFrom: SK.BONUS_GUELTIG_AB, validUntil: SK.BONUS_GUELTIG_BIS,
+        maxUses: 1, oncePerCustomer: false, combinable: false, mode: 'any', active: true,
+        giftcard: false, kind: 'bonus', bonusZu: code,
+        note: 'Black-Week-Bonus zum Gutschein ' + code,   // ohne Namen: aufraeumen.js leert nur Notizen von Geschenkgutscheinen
+        createdAt: jetzt, createdBy: 'Black Week (Gutschein-Bonus)', uses: 0, usedBy: {},
+      });
+      details.bonus = { code: bcode, value: bonus, minOrder: SK.BONUS_MINDEST, validFrom: SK.BONUS_GUELTIG_AB, validUntil: SK.BONUS_GUELTIG_BIS };
+      frisch.bonusCode = bcode;
+    }
+  } catch (e) { console.error('Black-Week-Bonus:', e.message); }
   await vs.setJSON('gd:' + code, details);
   // Kaufbeleg archivieren (aufbewahrungspflichtig, wie die Rechnungen inv:…)
   try {
@@ -280,6 +304,7 @@ function kaeuferSicht(d) {
     recipientMailed: !!d.recipientMailedAt,
     pdf: pdfLink(d, false), pdfDownload: pdfLink(d, true),
     beleg: d.belegToken ? pdfLink(d, true, 'beleg') : null,
+    bonus: d.bonus || null,   // Black-Week-Bonus (nur für die Käuferin)
   };
 }
 

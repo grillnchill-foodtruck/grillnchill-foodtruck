@@ -13,7 +13,7 @@ I18N.fr = {
     "hero.lead": "Burgers halal juteux et frites croustillantes, préparés minute à Bielefeld-Brackwede. Commande ici et économise 5 € avec le code GRILL5 (dès 20 € de commande).",
     "hero.cta_order": "Commander", "hero.cta_catering": "Réserver le foodtruck",
     "hero.reviews": "{count} avis sur Google", "hero.badge_code": "Code GRILL5", "hero.badge_discount": "5 € de réduction",
-    "promo.bar_main": "Économise 5 € avec le code", "promo.bar_sub": "(dès 20 € de commande · max. 3× par client · en ligne uniquement)",
+    "promo.bar_main": "Économise 5 € avec le code", "promo.bar_sub": "(dès 20 € de commande · max. 3× par client · en ligne uniquement)", "bw.bar_main": "Black Week : jusqu'à 10 € de bonus sur les bons", "bw.bar_sub": "(dès 25 € de valeur du bon · jusqu'au Cyber Monday 30/11 · bonus valable dès le 4/1)", "bw.bf_main": "Black Friday : aujourd'hui, chaque euro compte double", "bw.bf_sub": "(sur la carte de fidélité · en ligne et au food truck · jusqu'à 23 h 59)", "bw.gift_tag": "Black Week", "bw.gift_hint": "Jusqu'au lundi 30/11 : dès 25 € de valeur, on ajoute 5 € de bonus, dès 50 €, c'est 10 €.", "bw.stempel_hint": "Black Friday : aujourd'hui, chaque euro compte double.", "promo.voucher_from": "Ce bon est valable à partir du {datum}.",
     "deal.bar_main": "Offre anniversaire : burger + frites à 10 €", "deal.bar_sub": "(jusqu'au samedi 14/11 · à emporter uniquement · sauf Kubis Special)", "deal.hero_small": "Offre anniversaire", "deal.hero_big": "Burger + frites 10 €", "deal.eyebrow": "Offre anniversaire · jusqu'à samedi", "deal.title_a": "Burger", "deal.title_b": "Frites", "deal.price_small": "seulement", "deal.text": "Chaque burger avec frites coûte 10 € en tout, en ligne à emporter et directement au food truck. Sauf Kubis Special, le double steak coûte 2,50 € de plus.", "deal.cta": "Choisir mon burger", "deal.day_past": "passé", "deal.day_today": "auj.", "deal.day_last": "fin", "deal.left_many": "Encore {n} jours, fin samedi.", "deal.left_one": "Aujourd'hui, c'est le dernier jour.", "deal.upsell_btn": "Juste avec frites à 10 €", "deal.upsell_sub": "Offre anniversaire à emporter", "deal.line": "Offre anniversaire", "deal.cart_saved": "Offre anniversaire : à emporter, tu économises {amount}.", "deal.cart_more": "Ajoute des frites : burger et frites ensemble pour seulement 10 €.", "deal.add_fries": "Ajouter des frites", "deal.delivery": "L'offre anniversaire est valable uniquement à emporter. En venant chercher, tu économises {amount}.", "deal.no_code": "{code} n'est pas cumulable avec l'offre anniversaire.",
     "hero.trust_halal": "100% Halal", "hero.trust_prep": "min de préparation", "hero.trust_delivery": "Livraison à Bielefeld",
 
@@ -762,5 +762,15 @@ Object.assign(I18N.fr, {
   "gs.ph_msg": "Joyeux anniversaire. Le double steak, c'est pour moi.",
   "gs.ph_mail": "nom@exemple.fr",
   "firmen.ph_domain": "entreprise.fr",
+  "gs.bw_tag": "Black Week",
+  "gs.bw_text": "Jusqu'au Cyber Monday 30/11 : pour un bon de 25 € ou plus, tu reçois un code bonus de 5 €, dès 50 €, un code de 10 €. Utilisable du 4/1 au 31/3/2027 dès 20 € de commande.",
+  "gs.bw_bed": "Conditions de l'offre",
+  "gs.bw_z10": "<b>+ code bonus de 10 €</b> pour toi.",
+  "gs.bw_z5": "<b>+ code bonus de 5 €</b> pour toi. Dès 50 €, c'est 10 €.",
+  "gs.bw_z0": "Dès 25 €, tu reçois en plus un <b>code bonus de 5 €</b>.",
+  "gs.bw_dk_titel": "Ton bonus Black Week",
+  "gs.bw_dk_text": "{wert} de réduction sur une commande sur le site ou l'appli dès {min}, utilisable du {von} au {bis}. Le code figure aussi dans ton e-mail de confirmation.",
+  "gs.js_pdf_fremd": "Le PDF ne peut pas imprimer les emojis et certains caractères spéciaux. Dans l'e-mail, ton message apparaît exactement comme tu l'écris.",
+  "gs.js_pdf_tr": "Dans le PDF, ş, ğ et ı s'affichent comme s, g et i. Dans l'e-mail, tout apparaît exactement comme tu l'écris.",
 });
 /* UNTERSEITEN:ENDE */

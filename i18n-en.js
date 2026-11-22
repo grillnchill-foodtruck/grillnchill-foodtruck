@@ -13,7 +13,7 @@ I18N.en = {
     "hero.lead": "Juicy halal burgers and crispy fries, grilled fresh in Bielefeld-Brackwede. Order here and save €5 with code GRILL5 (from €20 order value).",
     "hero.cta_order": "Order now", "hero.cta_catering": "Book foodtruck",
     "hero.reviews": "{count} reviews on Google", "hero.badge_code": "Code GRILL5", "hero.badge_discount": "€5 off",
-    "promo.bar_main": "Save €5 with code", "promo.bar_sub": "(from €20 order value · max. 3× per customer · online only)",
+    "promo.bar_main": "Save €5 with code", "promo.bar_sub": "(from €20 order value · max. 3× per customer · online only)", "bw.bar_main": "Black Week: up to €10 bonus on vouchers", "bw.bar_sub": "(from €25 voucher value · until Cyber Monday 30 Nov · bonus valid from 4 Jan)", "bw.bf_main": "Black Friday: every euro counts double today", "bw.bf_sub": "(on your stamp card · online and at the truck · until 11:59 pm)", "bw.gift_tag": "Black Week", "bw.gift_hint": "Until Monday 30 Nov: buy a voucher from €25 and we add a €5 bonus, from €50 it is €10.", "bw.stempel_hint": "Black Friday: every euro counts double today.", "promo.voucher_from": "This voucher is valid from {datum}.",
     "deal.bar_main": "Birthday deal: burger + fries for 10 €", "deal.bar_sub": "(until Saturday 14 Nov · pickup only · except Kubis Special)", "deal.hero_small": "Birthday deal", "deal.hero_big": "Burger + fries 10 €", "deal.eyebrow": "Birthday deal · until Saturday", "deal.title_a": "Burger", "deal.title_b": "Fries", "deal.price_small": "only", "deal.text": "Any burger with fries costs 10 € together, online for pickup and right at the truck. Kubis Special is excluded, double patty costs 2.50 € extra.", "deal.cta": "Pick your burger", "deal.day_past": "over", "deal.day_today": "today", "deal.day_last": "last", "deal.left_many": "{n} days left, it ends on Saturday.", "deal.left_one": "Today is the last day.", "deal.upsell_btn": "Just add fries for 10 €", "deal.upsell_sub": "Birthday deal for pickup", "deal.line": "Birthday deal", "deal.cart_saved": "Birthday deal: you save {amount} with pickup.", "deal.cart_more": "Add fries: burger and fries together cost just 10 €.", "deal.add_fries": "Add fries", "deal.delivery": "The birthday deal is for pickup only. Pick up yourself and you save {amount}.", "deal.no_code": "{code} can't be combined with the birthday deal.",
     "hero.trust_halal": "100% Halal", "hero.trust_prep": "Min prep time", "hero.trust_delivery": "Delivery in Bielefeld",
 
@@ -762,5 +762,15 @@ Object.assign(I18N.en, {
   "gs.ph_msg": "Happy birthday. The double patty is on me.",
   "gs.ph_mail": "name@example.com",
   "firmen.ph_domain": "company.com",
+  "gs.bw_tag": "Black Week",
+  "gs.bw_text": "Until Cyber Monday 30 Nov: buy a voucher worth €25 or more and you get a €5 bonus code, from €50 a €10 one. Redeemable from 4 Jan to 31 Mar 2027 on orders from €20.",
+  "gs.bw_bed": "Promotion terms",
+  "gs.bw_z10": "<b>+ €10 bonus code</b> for you on top.",
+  "gs.bw_z5": "<b>+ €5 bonus code</b> for you on top. From €50 it is €10.",
+  "gs.bw_z0": "From €25 you get a <b>€5 bonus code</b> on top.",
+  "gs.bw_dk_titel": "Your Black Week bonus",
+  "gs.bw_dk_text": "{wert} off one order on the website or app from {min}, redeemable from {von} to {bis}. The code is also in your confirmation email.",
+  "gs.js_pdf_fremd": "The PDF can't print emojis and some special characters. The email shows your message exactly as you write it.",
+  "gs.js_pdf_tr": "In the PDF, ş, ğ and ı appear as s, g and i. The email shows everything exactly as you write it.",
 });
 /* UNTERSEITEN:ENDE */

@@ -218,7 +218,17 @@
   .gs-betrag{font-family:'Bowlby One',cursive;font-size:clamp(2.3rem,8.6vw,3.4rem);line-height:1;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;text-shadow:0 6px 28px rgba(232,90,36,.35)}
   .gs-betrag .eur{font-size:.62em;margin-left:.1em;color:var(--orange-b)}
   .gs-gedacht{margin-top:8px;font-size:0.76rem;font-weight:700;color:rgba(245,233,208,.72);min-height:1.2em}
-  .gs-nachricht{margin-top:4px;font-size:0.8rem;line-height:1.45;color:rgba(245,233,208,.88);font-style:italic;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:78%}
+  .gs-nachricht{margin-top:4px;font-size:0.8rem;line-height:1.45;color:rgba(245,233,208,.88);font-style:italic;white-space:pre-line;overflow-wrap:anywhere;max-width:calc(100% - 52px)}
+  /* Lange Nachrichten (bis 300 Zeichen): Schrift stufenweise kleiner, bis alles auf
+     die Karte passt, wie im PDF (gutschein-shop.js, nachrichtEinpassen) */
+  .gs-nachricht.n-2{font-size:0.7rem;line-height:1.38}
+  .gs-nachricht.n-3{font-size:0.62rem;line-height:1.32}
+  .gs-nachricht.n-4{font-size:0.56rem;line-height:1.3;white-space:normal}
+  .gs-nachricht.n-kurz{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .gs-voll{margin:0.9rem 0 0;padding:0.75rem 0.9rem;border:1px solid var(--border);border-radius:12px;background:rgba(245,233,208,.03)}
+  .gs-voll[hidden],.gs-pdf-hinweis[hidden]{display:none}
+  .gs-voll p{margin:0.3rem 0 0;font-size:0.86rem;line-height:1.5;font-style:italic;color:var(--cream);white-space:pre-line;overflow-wrap:anywhere}
+  .gs-pdf-hinweis{margin:0.45rem 0 0;font-size:0.78rem;line-height:1.45;color:var(--muted)}
   .gs-unten{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
   .gs-k{font-size:0.56rem;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:rgba(245,233,208,.5)}
   .gs-v{margin-top:3px;font-size:0.82rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -233,7 +243,7 @@
     .gs-in{gap:2px}
     .gs-betrag{font-size:2.15rem}
     .gs-gedacht{margin-top:5px;font-size:0.72rem}
-    .gs-nachricht{-webkit-line-clamp:1;font-size:0.76rem;max-width:74%}
+    .gs-nachricht{font-size:0.76rem;max-width:calc(100% - 44px)}
     .gs-flamme{width:34px;height:44px}
     .gs-v{font-size:0.78rem}
   }
@@ -255,6 +265,17 @@
   .danke-code .c{font-family:var(--mono);font-size:1.5rem;font-weight:800;letter-spacing:0.12em;color:var(--orange-b)}
   .danke-code .b{font-family:'Bowlby One',cursive;font-size:1.6rem;margin-top:0.2rem}
   .danke-code .m{font-size:0.82rem;color:var(--muted);margin-top:0.3rem}
+  /* Black Week 23.–30.11.2026: Bonus-Hinweis, Zeile unter dem Betrag, Bonus nach der Zahlung */
+  .gs-bw{display:flex;flex-wrap:wrap;align-items:baseline;gap:0.35rem 0.6rem;margin:1.1rem 0 0;padding:0.75rem 0.95rem;max-width:58ch;border:1px solid rgba(255,201,60,.3);border-radius:14px;background:rgba(255,201,60,.07);font-size:0.92rem;line-height:1.55;color:var(--cream)}
+  .gs-bw[hidden],.gs-bw-zeile[hidden],.dk-bonus[hidden]{display:none}
+  .gs-bw strong{color:#FFC93C;white-space:nowrap}
+  .gs-bw .mini{min-height:32px;padding:0.25rem 0.75rem;font-size:0.8rem}
+  .gs-bw-zeile{margin:0.8rem 0 0;font-size:0.88rem;line-height:1.5;color:var(--cream)}
+  .gs-bw-zeile b{color:#FFC93C}
+  .dk-bonus{margin:1rem auto 0;max-width:460px;border:1.5px dashed rgba(255,201,60,.55);border-radius:16px;padding:1.1rem 1.2rem;background:rgba(255,201,60,.05)}
+  .dk-bonus .k{margin:0;font-size:0.8rem;font-weight:700;color:#FFC93C}
+  .dk-bonus .c{font-family:var(--mono);font-size:1.3rem;font-weight:800;letter-spacing:0.12em;color:var(--cream);margin-top:0.25rem}
+  .dk-bonus .m{font-size:0.84rem;color:var(--dim);margin:0.35rem 0 0.7rem;line-height:1.5}
   .danke-knoepfe{display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;margin-top:1.3rem}
   .mini{display:inline-flex;align-items:center;gap:0.4rem;border:1px solid var(--border2);border-radius:999px;padding:0.45rem 0.95rem;font-size:0.84rem;font-weight:700;color:var(--cream);background:transparent;text-decoration:none;cursor:pointer;min-height:40px}
   .mini:hover{border-color:var(--orange)}
@@ -381,6 +402,7 @@
             <span class="eyebrow" data-i18n="gs.t01">Burger verschenken</span>
             <h1 data-i18n="gs.t02">Der Gutschein, der nach Burger schmeckt</h1>
             <p class="lead" data-i18n="gs.t03">Betrag wählen, Nachricht dazuschreiben, fertig. Wir schicken den Gutschein direkt an die beschenkte Person, sofort oder an einem Tag deiner Wahl. Oder du druckst ihn selbst aus.</p>
+            <p class="gs-bw" id="gs-bw" hidden><strong data-i18n="gs.bw_tag">Black Week</strong> <span data-i18n="gs.bw_text">Bis Cyber Monday, 30.11.: Ab 25 € Gutscheinwert bekommst du einen Bonus-Code über 5 € dazu, ab 50 € über 10 €. Einlösbar vom 4.1. bis 31.3.2027 ab 20 € Bestellwert.</span> <a class="mini" href="/agb#p7" data-i18n="gs.bw_bed">Aktionsbedingungen</a></p>
             <div class="cta">
               <a class="btn" href="#kaufen" data-i18n="gs.t04">Gutschein gestalten</a>
               <a class="btn-ghost" href="#pruefen" data-i18n="gs.t05">Gutschein prüfen</a>
@@ -420,6 +442,7 @@
               <span class="eur">€</span>
               <span class="gs-err" data-i18n="gs.t27">Wähl einen Betrag zwischen 10 und 200 €.</span>
             </div>
+            <p class="gs-bw-zeile" id="gs-bw-zeile" aria-live="polite" hidden></p>
           </fieldset>
 
           <fieldset class="gs-step">
@@ -432,6 +455,7 @@
               <label class="feld"><span data-i18n-html="gs.t33">Nachricht <span class="opt">(freiwillig)</span></span>
                 <textarea id="gs-msg" maxlength="300" rows="3" placeholder="Alles Gute zum Geburtstag. Der Doppel-Patty geht auf mich." data-i18n-placeholder="gs.ph_msg"></textarea>
                 <span class="gs-zaehler" id="gs-zaehler">0 / 300</span></label>
+              <p class="gs-pdf-hinweis" id="gs-pdf-hinweis" aria-live="polite" hidden></p>
             </div>
           </fieldset>
 
@@ -513,6 +537,7 @@
               </div>
             </div>
           </div>
+          <div class="gs-voll" id="gs-voll" hidden><div class="gs-k">Nachricht</div><p id="gs-voll-text"></p></div>
           <p class="gs-hinweis" id="gs-hinweis">So sieht dein Gutschein aus. Zieh an der Karte.</p>
           <p class="gs-zusammen" aria-live="polite"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span id="gs-zusammen"></span></p>
         </aside>
@@ -536,6 +561,12 @@
           <div class="c" id="dk-code">GNC</div>
           <div class="b" id="dk-betrag"></div>
           <div class="m" id="dk-meta"></div>
+        </div>
+        <div class="dk-bonus" id="dk-bonus" hidden>
+          <p class="k" data-i18n="gs.bw_dk_titel">Dein Black-Week-Bonus</p>
+          <div class="c" id="dk-bonus-code"></div>
+          <p class="m" id="dk-bonus-text"></p>
+          <button type="button" class="mini" id="dk-bonus-kopieren" data-i18n="gs.t66">Code kopieren</button>
         </div>
         <div class="qr-box" id="dk-qr" hidden><div class="qr" id="dk-qr-bild"></div><p data-i18n-html="gs.t63"><strong>Am Truck einlösen</strong>QR-Code oder Code an der Kasse zeigen.</p></div>
         <div class="danke-knoepfe">

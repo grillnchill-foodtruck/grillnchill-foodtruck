@@ -96,7 +96,7 @@ function codeKasten(d) {
 function nachrichtBlock(d) {
   if (!d.message) return '';
   const zeilen = esc(d.message).replace(/\n/g, '<br>');
-  return `<div style="margin:0 0 18px;padding:14px 18px;border-left:3px solid #E85A24;background:#FBF6EC;color:#333;font-size:15px;line-height:1.6;font-style:italic;">${zeilen}${d.buyerName ? `<div style="margin-top:8px;font-style:normal;font-size:13px;color:#777;">${esc(d.buyerName)}</div>` : ''}</div>`;
+  return `<div style="margin:0 0 18px;padding:14px 18px;border-left:3px solid #E85A24;background:#FBF6EC;color:#333;font-size:15px;line-height:1.6;font-style:italic;overflow-wrap:anywhere;word-break:break-word;">${zeilen}${d.buyerName ? `<div style="margin-top:8px;font-style:normal;font-size:13px;color:#777;">${esc(d.buyerName)}</div>` : ''}</div>`;
 }
 
 function einloesen(d) {
@@ -128,6 +128,18 @@ function pdfKnopf(d) {
 }
 
 /* ---- Mails ---------------------------------------------------------------- */
+// Black Week: Bonus-Code für die Käuferin (nicht in der Mail an die beschenkte Person)
+function bonusKasten(d) {
+  const b = d && d.bonus;
+  if (!b || !b.code) return '';
+  return `<div style="margin:0 0 18px;padding:14px 16px;border:1px dashed #E85A24;border-radius:12px;background:#FFF7F2;">
+<div style="font-size:12px;color:#996;letter-spacing:1px;margin-bottom:6px;">DEIN BLACK-WEEK-BONUS</div>
+<div style="font-size:15px;color:#333;line-height:1.55;">Danke, dass du verschenkst. Für dich gibt es <strong>${euro(b.value)}</strong> extra:</div>
+<div style="font:700 20px/1.3 ui-monospace,Menlo,monospace;color:#111;letter-spacing:2px;margin:8px 0;">${esc(b.code)}</div>
+<div style="font-size:13px;color:#666;line-height:1.55;">Einlösbar vom ${esc(deDatum(b.validFrom))} bis ${esc(deDatum(b.validUntil))} bei einer Online-Bestellung ab ${euro(b.minOrder)}, einmal, nicht zusammen mit anderen Codes. Keine Barauszahlung.</div>
+</div>`;
+}
+
 async function kaeuferMail(d) {
   const hallo = d.buyerName ? esc(d.buyerName) : 'Burger-Fan';
   let weg;
@@ -146,6 +158,7 @@ ${codeKasten(d)}
 <p style="margin:0 0 18px;color:#333;font-size:14px;line-height:1.6;">${weg}</p>
 ${pdfKnopf(d)}
 ${einloesen(d)}
+${bonusKasten(d)}
 ${kleingedruckt(d)}
 <p style="margin:10px 0 0;color:#aaa;font-size:11px;">Dein Kaufbeleg ${esc(d.reference)} hängt als PDF an. <a href="${require('./geschenk').pdfLink(d, true, 'beleg')}" style="color:#aaa;">Kaufbeleg herunterladen</a></p>`;
   return senden({ email: d.buyerEmail, name: d.buyerName }, `Dein Grill'n Chill Gutschein über ${euro(d.amount)}`,
@@ -172,7 +185,8 @@ async function betreiberInfo(d) {
     : d.delivery === 'print' ? 'zum Ausdrucken' : 'an den Käufer';
   await telegram('🎁 <b>GUTSCHEIN VERKAUFT</b>\n' + euro(d.amount) + ' · Code ' + tEsc(d.code)
     + '\nKäufer: ' + (tEsc(d.buyerName) || '-') + ' (' + tEsc(d.buyerEmail) + ')'
-    + (d.recipientName ? '\nFür: ' + tEsc(d.recipientName) : '') + '\nZustellung: ' + weg, { html: true });
+    + (d.recipientName ? '\nFür: ' + tEsc(d.recipientName) : '') + '\nZustellung: ' + weg
+    + (d.bonus && d.bonus.code ? '\nBlack-Week-Bonus: ' + euro(d.bonus.value) + ' · Code ' + tEsc(d.bonus.code) : ''), { html: true });
 }
 
 module.exports = { kaeuferMail, empfaengerMail, betreiberInfo, deDatumLang };
