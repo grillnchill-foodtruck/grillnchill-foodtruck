@@ -17,6 +17,7 @@
  * ----------------------------------------------------------------------------
  */
 
+const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { schutz, saeubern } = require('./lib/bremse');
 
@@ -90,7 +91,9 @@ exports.handler = async (event) => {
   const { amount, buyerName } = gift;
 
   const siteUrl = (process.env.SITE_URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
-  const reference = 'GNC-GC-' + Date.now();
+  // Wie beim Burger-Pass: Zeitstempel plus vier Zufallsziffern gegen gleiche
+  // Nummern in derselben Millisekunde (giftcard-status prüft /^GNC-GC-\d+$/)
+  const reference = 'GNC-GC-' + Date.now() + String(crypto.randomInt(10000)).padStart(4, '0');
 
   const payload = {
     checkout_reference: reference,

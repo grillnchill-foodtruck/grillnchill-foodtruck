@@ -21,6 +21,7 @@
  * ----------------------------------------------------------------------------
  */
 
+const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { schutz, saeubern } = require('./lib/bremse');
 const { tokenGueltig } = require('./lib/kunden-token');
@@ -182,7 +183,10 @@ exports.handler = async (event) => {
     if (!apiKey || !merchantCode) return json(500, { error: 'not_configured' });
 
     const siteUrl = (process.env.SITE_URL || process.env.URL || 'https://grillnchill-foodtruck.de').replace(/\/$/, '');
-    const reference = 'GNC-BP-' + Date.now();
+    // Zeitstempel plus vier Zufallsziffern: zwei Käufe in derselben Millisekunde
+    // bekämen sonst dieselbe Nummer und überschrieben sich (o:<Referenz>).
+    // Nur Ziffern, damit alle Prüfungen auf /^GNC-BP-/ weiter greifen.
+    const reference = 'GNC-BP-' + Date.now() + String(crypto.randomInt(10000)).padStart(4, '0');
     const lang = SPRACHEN.includes(input.lang) ? input.lang : 'de';
     const kundeName = String(kunde.name || '').replace(/[<>]/g, '').trim().slice(0, 60);
     const payload = {
