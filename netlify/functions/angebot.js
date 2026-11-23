@@ -9,7 +9,8 @@
  *   GET  ?id=…&t=…              -> { angebot }   (Kundenansicht, ohne Mail/Telefon)
  *   GET  ?id=…&t=…&pruefen=1    -> wie oben, prüft vorher eine offene Zahlung bei SumUp
  *   GET  ?id=…&t=…&pdf=1        -> PDF
- *   POST { id, t, aktion: 'annehmen', haken: true, lang }
+ *   GET  ?id=…&t=…&rechnung=GNC-… -> PDF einer Rechnung zu diesem Angebot
+ *   POST { id, t, aktion: 'annehmen', haken: true, lang, adresse: { name, firma, strasse, plz, ort, ustId } }
  *   POST { id, t, aktion: 'zahlen' }   -> { url }  (nur mit Schalter "Anzahlung online")
  *
  * Bremse: lib/bremse.js je Absender, Annahme und Kasse zusätzlich enger.
@@ -63,6 +64,22 @@ exports.handler = async (event) => {
           isBase64Encoded: true,
         };
       }
+      if (input.rechnung) {
+        const r = await A.kundenRechnung(a, String(input.rechnung));
+        if (!r) return nichtGefunden();
+        const pdf = await require('./lib/catering-rechnung').rechnungPdf(r);
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'inline; filename="Rechnung-' + r.invoiceNo + '.pdf"',
+            'Cache-Control': 'no-store',
+            'X-Robots-Tag': 'noindex',
+          },
+          body: pdf.toString('base64'),
+          isBase64Encoded: true,
+        };
+      }
       if (input.pruefen && a.zahlung && a.zahlung.status === 'PENDING') {
         await A.zahlungPruefen(a, 'rueckkehr');
         a = (await A.laden(s, id)) || a;
@@ -76,7 +93,11 @@ exports.handler = async (event) => {
       if (input.haken !== true) return json(400, { error: 'haken_fehlt' });
       const lang = SPRACHEN.includes(input.lang) ? input.lang : 'de';
       const ip = absender(event);
-      const r = await A.annehmen(id, token, { lang, ipHash: ip ? ip.slice(0, 16) : '' });
+      // Rechnungsadresse (für Anzahlungs- und Schlussrechnung): Pflicht bei der Annahme
+      const ad = input.adresse && typeof input.adresse === 'object' ? input.adresse : null;
+      if (!ad || !String(ad.strasse || '').trim() || !String(ad.plz || '').trim() || !String(ad.ort || '').trim()
+        || !(String(ad.name || '').trim() || String(ad.firma || '').trim())) return json(400, { error: 'adresse_fehlt' });
+      const r = await A.annehmen(id, token, { lang, ipHash: ip ? ip.slice(0, 16) : '', adresse: ad });
       if (r.code === 404) return nichtGefunden();
       const ansicht = r.a ? A.kundenAnsicht(r.a, r.e) : null;
       if (r.code !== 200) return json(r.code, { error: r.fehler, angebot: ansicht });

@@ -108,7 +108,7 @@ I18N.fr = {
     "ang.discount": "Remise",
     "ang.total": "Total",
     "ang.total_short": "Total {amount} TTC",
-    "ang.vat": "Tous les prix sont des prix finaux, TVA légale incluse.",
+    "ang.vat": "Tous les prix sont des prix finaux, TVA légale incluse.", "ang.addr_title": "Adresse de facturation", "ang.addr_hint": "Pour la facture d'acompte et la facture finale.", "ang.addr_name": "Nom", "ang.addr_company": "Entreprise (facultatif)", "ang.addr_street": "Rue et numéro", "ang.addr_zip": "Code postal", "ang.addr_city": "Ville", "ang.addr_vat": "N° de TVA (facultatif, pour les entreprises)", "ang.addr_err": "Indique nom, rue, code postal et ville pour la facture.", "ang.vat_line": "Prix TTC. TVA incluse : {list}.", "ang.invoices": "Factures", "ang.inv_deposit": "Facture d'acompte", "ang.inv_final": "Facture finale",
     "ang.deposit": "Acompte ({p} %)",
     "ang.rest": "Solde après l'événement",
     "ang.note": "Remarque de Kubi",

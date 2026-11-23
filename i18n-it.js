@@ -108,7 +108,7 @@ I18N.it = {
     "ang.discount": "Sconto",
     "ang.total": "Totale",
     "ang.total_short": "Totale {amount} IVA inclusa",
-    "ang.vat": "Tutti i prezzi sono prezzi finali comprensivi di IVA.",
+    "ang.vat": "Tutti i prezzi sono prezzi finali comprensivi di IVA.", "ang.addr_title": "Indirizzo di fatturazione", "ang.addr_hint": "Per la fattura d'acconto e la fattura finale.", "ang.addr_name": "Nome", "ang.addr_company": "Azienda (facoltativo)", "ang.addr_street": "Via e numero civico", "ang.addr_zip": "CAP", "ang.addr_city": "Città", "ang.addr_vat": "Partita IVA (facoltativa, per aziende)", "ang.addr_err": "Inserisci nome, via, CAP e città per la fattura.", "ang.vat_line": "Prezzi finali. IVA inclusa: {list}.", "ang.invoices": "Fatture", "ang.inv_deposit": "Fattura d'acconto", "ang.inv_final": "Fattura finale",
     "ang.deposit": "Acconto ({p} %)",
     "ang.rest": "Saldo dopo l'evento",
     "ang.note": "Nota di Kubi",

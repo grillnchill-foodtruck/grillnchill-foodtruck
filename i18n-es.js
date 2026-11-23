@@ -108,7 +108,7 @@ I18N.es = {
     "ang.discount": "Descuento",
     "ang.total": "Total",
     "ang.total_short": "Total {amount} IVA incluido",
-    "ang.vat": "Todos los precios son finales e incluyen el IVA legal.",
+    "ang.vat": "Todos los precios son finales e incluyen el IVA legal.", "ang.addr_title": "Dirección de facturación", "ang.addr_hint": "Para la factura del anticipo y la factura final.", "ang.addr_name": "Nombre", "ang.addr_company": "Empresa (opcional)", "ang.addr_street": "Calle y número", "ang.addr_zip": "Código postal", "ang.addr_city": "Ciudad", "ang.addr_vat": "NIF-IVA (opcional, para empresas)", "ang.addr_err": "Indica nombre, calle, código postal y ciudad para la factura.", "ang.vat_line": "Precios finales. IVA incluido: {list}.", "ang.invoices": "Facturas", "ang.inv_deposit": "Factura de anticipo", "ang.inv_final": "Factura final",
     "ang.deposit": "Anticipo ({p} %)",
     "ang.rest": "Resto después del evento",
     "ang.note": "Nota de Kubi",

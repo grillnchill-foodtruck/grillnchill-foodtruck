@@ -108,7 +108,7 @@ I18N.en = {
     "ang.discount": "Discount",
     "ang.total": "Total",
     "ang.total_short": "Total {amount} incl. VAT",
-    "ang.vat": "All prices are final prices including statutory VAT.",
+    "ang.vat": "All prices are final prices including statutory VAT.", "ang.addr_title": "Billing address", "ang.addr_hint": "For the deposit invoice and the final invoice.", "ang.addr_name": "Name", "ang.addr_company": "Company (optional)", "ang.addr_street": "Street and number", "ang.addr_zip": "Postcode", "ang.addr_city": "City", "ang.addr_vat": "VAT ID (optional, for companies)", "ang.addr_err": "Please enter name, street, postcode and city for the invoice.", "ang.vat_line": "Final prices. VAT included: {list}.", "ang.invoices": "Invoices", "ang.inv_deposit": "Deposit invoice", "ang.inv_final": "Final invoice",
     "ang.deposit": "Deposit ({p} %)",
     "ang.rest": "Balance after the event",
     "ang.note": "Note from Kubi",

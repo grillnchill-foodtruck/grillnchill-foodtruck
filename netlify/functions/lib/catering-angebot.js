@@ -17,20 +17,29 @@
  * Status: entwurf -> gesendet -> angenommen -> bezahlt
  *                            \-> abgelehnt | abgelaufen
  *
- * Beträge sind Endpreise inklusive gesetzlicher MwSt. Ein Angebot ist keine
- * Rechnung: keine Steueraufteilung, keine Rechnungsnummer. Gerechnet wird in
- * Cent, gespeichert in Euro mit zwei Nachkommastellen.
+ * Beträge sind Endpreise inklusive gesetzlicher MwSt. Jede Position hat einen
+ * Steuersatz (lib/catering-rechnung.js: Pakete 7 %, Pauschale, Anfahrt und
+ * Stunden 19 %, eigene Positionen wählbar). Angebot und Kundenseite weisen
+ * die enthaltene USt. je Satz aus. Gerechnet wird in Cent, gespeichert in
+ * Euro mit zwei Nachkommastellen.
  *
  * Anzahlung online steht hinter dem Schalter einstellungen.anzahlungOnline
- * (Standard AUS). Eine Anzahlung kann eine Anzahlungsrechnung auslösen
- * (§ 14 Abs. 5 UStG); das klärt Kubi mit dem Steuerberater, bevor er den
- * Schalter umlegt.
+ * (Standard AUS). Seit 23.11.2026 entsteht nach jedem Zahlungseingang
+ * (online oder von Hand) eine Anzahlungsrechnung, nach dem Event erstellt
+ * Kubi im Admin die Schlussrechnung, die die Anzahlung je Steuersatz abzieht
+ * (§ 14 Abs. 5 UStG). Wird eine von Hand eingetragene Zahlung zurückgenommen,
+ * hebt eine Stornorechnung die Anzahlungsrechnung auf. Rechnungen brauchen
+ * die Rechnungsadresse (kunde.strasse/plz/ort), die der Kunde bei der Annahme
+ * angibt oder Kubi im Admin einträgt.
+ *   angebot-ar:<id>   Marker: Anzahlungsrechnung ist erstellt (onlyIfNew)
+ *   angebot-sr:<id>   Marker: Schlussrechnung ist erstellt (onlyIfNew)
  * ----------------------------------------------------------------------------
  */
 
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { telegram, esc: tEsc } = require('./telegram');
+const RE = require('./catering-rechnung');
 
 const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
@@ -194,6 +203,22 @@ function rechnen(a) {
   };
 }
 
+/** Rechnungsadresse (für Anzahlungs- und Schlussrechnung) */
+function adresseBereinigen(k) {
+  const x = k || {};
+  return {
+    strasse: einzeilig(x.strasse, 120),
+    plz: einzeilig(x.plz, 12),
+    ort: einzeilig(x.ort, 80),
+    ustId: einzeilig(x.ustId, 20).toUpperCase().replace(/\s+/g, ''),
+  };
+}
+/** Enthaltene USt. je Satz für Angebot, Kundenseite und PDF */
+function steuern(a) {
+  const auf = RE.aufteilung(a.zeilen, a.rabatt);
+  return RE.vatAus(auf.jeSatzC);
+}
+
 /** Eingaben aus dem Editor prüfen und zuschneiden. Unbekanntes fällt weg. */
 function entwurfBereinigen(roh, e) {
   const r = roh && typeof roh === 'object' ? roh : {};
@@ -204,6 +229,7 @@ function entwurfBereinigen(roh, e) {
     firma: einzeilig(k.firma, 80),
     email: einzeilig(k.email, 120).toLowerCase(),
     telefon: einzeilig(k.telefon, 40),
+    ...adresseBereinigen(k),
   };
   const paket = PAKETE.includes(ev.paket) ? ev.paket : '';
   const event = {
@@ -222,6 +248,7 @@ function entwurfBereinigen(roh, e) {
       einzel: zahl(z.einzel, 0, 100000, 0),
     };
     if (art === 'paket') zeile.paket = PAKETE.includes(z.paket) ? z.paket : (paket || 'gnc');
+    if (art === 'extra') zeile.satz = Number(z.satz) === 7 ? 7 : 19;
     const std = standardText(zeile, e);
     if (!zeile.text) zeile.text = std;
     zeile.standard = !!std && zeile.text === std;
@@ -267,7 +294,7 @@ function entwurfAusAnfrage(anf, e) {
   const personen = personenAusText(a.guests) || e.pakete[paket].ab;
   const datum = istTag(a.date) ? a.date : '';
   return {
-    kunde: { name: einzeilig(a.name, 80), firma: '', email: einzeilig(a.email, 120).toLowerCase(), telefon: einzeilig(a.phone, 40) },
+    kunde: { name: einzeilig(a.name, 80), firma: '', email: einzeilig(a.email, 120).toLowerCase(), telefon: einzeilig(a.phone, 40), strasse: '', plz: '', ort: '', ustId: '' },
     event: { datum, zeit: '', ort: einzeilig(a.location, 160), personen, paket },
     zeilen: grundZeilen(paket, personen, datum, e),
     rabatt: { art: 'keiner', wert: 0 },
@@ -283,7 +310,7 @@ function entwurfAusAnfrage(anf, e) {
 }
 function leererEntwurf(e) {
   return {
-    kunde: { name: '', firma: '', email: '', telefon: '' },
+    kunde: { name: '', firma: '', email: '', telefon: '', strasse: '', plz: '', ort: '', ustId: '' },
     event: { datum: '', zeit: '', ort: '', personen: e.pakete.gnc.ab, paket: 'gnc' },
     zeilen: grundZeilen('gnc', e.pakete.gnc.ab, '', e),
     rabatt: { art: 'keiner', wert: 0 },
@@ -491,7 +518,7 @@ async function senden(id, { wer, jetzt, basis } = {}) {
 }
 
 /* ---- Annehmen (Kunde) ----------------------------------------------------- */
-async function annehmen(id, token, { lang, ipHash, jetzt, basis } = {}) {
+async function annehmen(id, token, { lang, ipHash, jetzt, basis, adresse } = {}) {
   const s = store();
   const a = await laden(s, id);
   if (!a || a.status === 'entwurf' || !tokenStimmt(a, token)) return { code: 404, fehler: 'nicht_gefunden' };
@@ -507,6 +534,14 @@ async function annehmen(id, token, { lang, ipHash, jetzt, basis } = {}) {
   if (res && res.modified === false) {
     const neu = await laden(s, id);
     return { code: 409, fehler: 'schon_angenommen', a: neu || a, e };
+  }
+  // Rechnungsadresse aus dem Annahme-Formular (Pflicht auf Rechnungen über 250 €)
+  if (adresse && typeof adresse === 'object') {
+    const ad = adresseBereinigen(adresse);
+    a.kunde = { ...(a.kunde || {}), ...Object.fromEntries(Object.entries(ad).filter(([, v]) => v)) };
+    const name = einzeilig(adresse.name, 80), firma = einzeilig(adresse.firma, 80);
+    if (name) a.kunde.name = name;
+    if (firma) a.kunde.firma = firma;
   }
   a.status = 'angenommen';
   a.angenommenAm = t.toISOString();
@@ -539,10 +574,13 @@ async function statusSetzen(id, ziel, { wer, jetzt } = {}) {
   if (ziel === 'angenommen' && st === 'bezahlt') {
     // Rückgängig: nur eine von Hand eingetragene Zahlung
     if (a.zahlung && a.zahlung.weg === 'online') throw fehler('online_bezahlt', 409);
+    if (a.schlussrechnung) throw fehler('schluss_erstellt', 409);
     a.zahlung = { ...(a.zahlung || {}), status: 'ZURUECK' };
     a.bezahltAm = null;
     try { await s.delete('angebot-zahlung:' + id); } catch (e) {}
     vermerk(a, 'Zahlung zurückgenommen', wer, t);
+    // Ausgestellte Anzahlungsrechnung mit einer Stornorechnung aufheben
+    if (a.anzahlungsrechnung) await stornoErstellen(s, a, wer, t);
   } else if (ziel === 'angenommen') {
     a.angenommenAm = iso;
     a.annahme = { weg: 'telefon', wer: wer || '', gesamt: a.gesamt };
@@ -558,6 +596,7 @@ async function statusSetzen(id, ziel, { wer, jetzt } = {}) {
     a.zahlung = { ...(a.zahlung || {}), status: 'PAID', weg: 'bar', betrag: a.anzahlung, bezahltAm: iso };
     await s.setJSON('angebot-zahlung:' + id, { at: iso, weg: 'bar' }, { onlyIfNew: true });
     vermerk(a, 'Anzahlung von Hand eingetragen (bar)', wer, t);
+    if (a.anzahlung > 0) await anzahlungsrechnungVersuchen(s, a, wer, t);
   } else if (ziel === 'abgelehnt') {
     a.abgelehntAm = iso;
     vermerk(a, 'von Hand abgelehnt', wer, t);
@@ -670,11 +709,20 @@ async function zahlungVerbuchen(data, quelle, jetzt) {
     vermerk(a, 'Anzahlung online bezahlt (' + quelle + ')', 'SumUp', t);
     await sichern(s, a);
     const e = await einstellungenLesen(s);
+    const rechnung = await anzahlungsrechnungVersuchen(s, a, 'SumUp', t);
+    let anhang = null;
+    if (rechnung) {
+      try { anhang = { name: 'Anzahlungsrechnung-' + rechnung.invoiceNo + '.pdf', content: (await RE.rechnungPdf(rechnung)).toString('base64') }; }
+      catch (err) { console.error('angebot anzahlungsrechnung pdf:', err.message); }
+    }
     await Promise.all([
       telegram(telegramZahlung(a, vorher), { html: true }),
       (async () => {
-        try { const mm = mailZahlung(a, e, kundenLink(a)); await brevo({ an: a.kunde.email, name: a.kunde.name, betreff: mm.betreff, html: mm.html }); }
-        catch (err) { console.error('angebot zahlungs-mail:', err.message); }
+        try {
+          const mm = mailZahlung(a, e, kundenLink(a), rechnung);
+          await brevo({ an: a.kunde.email, name: a.kunde.name, betreff: mm.betreff, html: mm.html, anhaenge: anhang ? [anhang] : null });
+          if (rechnung) await rechnungVermerken(s, a.id, rechnung.invoiceNo, { gesendetAm: new Date().toISOString(), gesendetAn: a.kunde.email });
+        } catch (err) { console.error('angebot zahlungs-mail:', err.message); }
       })(),
     ]);
     return { ok: true, aktion: 'bezahlt', nummer: a.nummer };
@@ -686,6 +734,193 @@ async function zahlungVerbuchen(data, quelle, jetzt) {
     return { ok: true, aktion: 'zahlung_' + status.toLowerCase() };
   }
   return { ok: true, status };
+}
+
+/* ---- Rechnungen (Anzahlung, Schluss, Storno) ------------------------------ */
+function rechnungsStore() {
+  const opts = { name: 'invoices', consistency: 'strong' };
+  if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
+    opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
+    opts.token = process.env.NETLIFY_BLOBS_TOKEN;
+  }
+  return getStore(opts);
+}
+const { naechsteRechnungsnummer } = require('./rechnungsnummer');
+
+async function rechnungAblegen(r) {
+  await RE.rechnungPdf(r);                       // Probe: PDF muss sich bauen lassen
+  await rechnungsStore().setJSON('inv:' + r.invoiceNo, r);
+  return r;
+}
+async function rechnungLesen(nummer) {
+  if (!/^GNC-\d{4}-\d{4,}$/.test(String(nummer || ''))) return null;
+  const r = await rechnungsStore().get('inv:' + nummer, { type: 'json' });
+  return r && !r.platzhalter ? r : null;
+}
+function rechnungKurz(r) {
+  return { nr: r.invoiceNo, art: r.art, datum: r.invoiceDate, total: r.total, vat: r.vat, erstelltAm: r.createdAt };
+}
+/** Versand-Vermerk am Angebot (Liste a.rechnungen) */
+async function rechnungVermerken(s, id, nummer, felder) {
+  const a = await laden(s, id);
+  if (!a) return;
+  a.rechnungen = (a.rechnungen || []).map((x) => (x.nr === nummer ? { ...x, ...felder } : x));
+  if (a.anzahlungsrechnung && a.anzahlungsrechnung.nr === nummer) a.anzahlungsrechnung = { ...a.anzahlungsrechnung, ...felder };
+  if (a.schlussrechnung && a.schlussrechnung.nr === nummer) a.schlussrechnung = { ...a.schlussrechnung, ...felder };
+  await sichern(s, a);
+}
+
+/**
+ * Anzahlungsrechnung nach Zahlungseingang. Genau einmal je Zahlung (Marker
+ * angebot-ar:<id>). Ohne Rechnungsadresse entsteht keine Rechnung; das
+ * Admin-Tool zeigt dann „Rechnungsadresse fehlt“ und erstellt sie nach.
+ * Ändert a (anzahlungsrechnung, rechnungen) und sichert. @returns Datensatz oder null
+ */
+async function anzahlungsrechnungVersuchen(s, a, wer, jetzt) {
+  const t = jetzt || new Date();
+  if (!(a.zahlung && a.zahlung.status === 'PAID') || !(Number(a.zahlung.betrag || a.anzahlung) > 0)) return null;
+  if (a.anzahlungsrechnung) return rechnungLesen(a.anzahlungsrechnung.nr);
+  if (RE.adresseFehlt(a)) {
+    a.rechnungHinweis = 'adresse_fehlt';
+    vermerk(a, 'Anzahlungsrechnung wartet auf die Rechnungsadresse', wer, t);
+    await sichern(s, a);
+    try {
+      await telegram('<b>Anzahlungsrechnung fehlt</b>\n' + tEsc(a.nummer) + ' · ' + tEsc(a.kunde && a.kunde.name)
+        + '\nRechnungsadresse eintragen, dann im Admin „Anzahlungsrechnung erstellen“.', { html: true });
+    } catch (e) {}
+    return null;
+  }
+  const marke = await s.setJSON('angebot-ar:' + a.id, { at: t.toISOString(), status: 'in_arbeit' }, { onlyIfNew: true });
+  if (marke && marke.modified === false) {
+    const neu = await laden(s, a.id);
+    return neu && neu.anzahlungsrechnung ? rechnungLesen(neu.anzahlungsrechnung.nr) : null;
+  }
+  try {
+    const nummer = await naechsteRechnungsnummer(rechnungsStore());
+    const r = await rechnungAblegen(RE.anzahlungsrechnung(a, nummer, {
+      betrag: a.zahlung.betrag || a.anzahlung, bezahltAm: a.zahlung.bezahltAm || a.bezahltAm, weg: a.zahlung.weg === 'online' ? 'online' : (a.zahlung.weg || 'bar'),
+    }, t));
+    a.anzahlungsrechnung = rechnungKurz(r);
+    a.rechnungen = (a.rechnungen || []).concat([rechnungKurz(r)]).slice(-20);
+    a.rechnungHinweis = null;
+    vermerk(a, 'Anzahlungsrechnung ' + r.invoiceNo + ' erstellt', wer, t);
+    await s.setJSON('angebot-ar:' + a.id, { at: t.toISOString(), nr: r.invoiceNo });
+    await sichern(s, a);
+    return r;
+  } catch (e) {
+    try { await s.delete('angebot-ar:' + a.id); } catch (x) {}
+    console.error('angebot anzahlungsrechnung:', e.message);
+    try { await telegram('<b>Anzahlungsrechnung nicht erstellt</b>\n' + tEsc(a.nummer) + ': ' + tEsc(e.message), { html: true }); } catch (x) {}
+    return null;
+  }
+}
+
+/** Stornorechnung zur aktiven Anzahlungsrechnung (ändert a, sichert nicht selbst) */
+async function stornoErstellen(s, a, wer, jetzt) {
+  const orig = await rechnungLesen(a.anzahlungsrechnung && a.anzahlungsrechnung.nr);
+  if (!orig) { a.anzahlungsrechnung = null; return null; }
+  const nummer = await naechsteRechnungsnummer(rechnungsStore());
+  const st = await rechnungAblegen(RE.stornorechnung(orig, nummer, jetzt));
+  await rechnungsStore().setJSON('inv:' + orig.invoiceNo, { ...orig, storniertDurch: st.invoiceNo, storniertAm: st.createdAt });
+  a.rechnungen = (a.rechnungen || []).map((x) => (x.nr === orig.invoiceNo ? { ...x, storniertDurch: st.invoiceNo } : x))
+    .concat([rechnungKurz(st)]).slice(-20);
+  a.anzahlungsrechnung = null;
+  try { await s.delete('angebot-ar:' + a.id); } catch (e) {}
+  vermerk(a, 'Anzahlungsrechnung ' + orig.invoiceNo + ' storniert durch ' + st.invoiceNo, wer, jetzt);
+  return st;
+}
+
+/** Admin: Anzahlungsrechnung nachträglich (z. B. nachdem die Adresse da ist) */
+async function anzahlungsrechnungNachholen(id, { wer, jetzt } = {}) {
+  const s = store();
+  const a = await laden(s, id);
+  if (!a) throw fehler('nicht_gefunden', 404);
+  if (!(a.zahlung && a.zahlung.status === 'PAID')) throw fehler('nicht_bezahlt', 409);
+  if (a.anzahlungsrechnung) throw fehler('rechnung_da', 409);
+  if (RE.adresseFehlt(a)) throw fehler('adresse_fehlt', 409);
+  const r = await anzahlungsrechnungVersuchen(s, a, wer, jetzt);
+  if (!r) throw fehler('rechnung_fehlgeschlagen', 500);
+  return laden(s, id);
+}
+
+/** Admin: Rechnungsadresse eintragen oder ändern (in jedem Status) */
+async function adresseSetzen(id, roh, { wer, jetzt } = {}) {
+  const s = store();
+  const a = await laden(s, id);
+  if (!a) throw fehler('nicht_gefunden', 404);
+  const x = roh || {};
+  a.kunde = { ...(a.kunde || {}), ...adresseBereinigen(x) };
+  if (einzeilig(x.name, 80)) a.kunde.name = einzeilig(x.name, 80);
+  a.kunde.firma = einzeilig(x.firma, 80);
+  a.geaendertAm = (jetzt || new Date()).toISOString();
+  vermerk(a, 'Rechnungsadresse geändert', wer, jetzt);
+  await sichern(s, a);
+  return a;
+}
+
+/**
+ * Admin: Schlussrechnung nach dem Event. zeilen/rabatt: Endstand (Standard:
+ * aus dem Angebot). Zieht die aktive Anzahlungsrechnung ab. Genau einmal je
+ * Angebot (Marker angebot-sr:<id>); Korrekturen danach nur per Storno.
+ */
+async function schlussrechnungErstellen(id, { zeilen, rabatt, wer, jetzt } = {}) {
+  const s = store();
+  const a = await laden(s, id);
+  if (!a) throw fehler('nicht_gefunden', 404);
+  const t = jetzt || new Date();
+  const st = wirksamerStatus(a, t);
+  if (!['angenommen', 'bezahlt'].includes(st)) throw fehler('status_nicht_moeglich', 409);
+  if (a.schlussrechnung) throw fehler('schluss_erstellt', 409);
+  if (RE.adresseFehlt(a)) throw fehler('adresse_fehlt', 409);
+  if (a.zahlung && a.zahlung.status === 'PAID' && a.anzahlung > 0 && !a.anzahlungsrechnung) throw fehler('anzahlung_ohne_rechnung', 409);
+  const e = await einstellungenLesen(s);
+  const endZeilen = Array.isArray(zeilen) ? entwurfBereinigen({ zeilen, event: a.event }, e).zeilen : a.zeilen;
+  const endRabatt = rabatt ? entwurfBereinigen({ rabatt }, e).rabatt : a.rabatt;
+  if (!endZeilen.length) throw fehler('betrag_fehlt', 400);
+  const marke = await s.setJSON('angebot-sr:' + a.id, { at: t.toISOString(), status: 'in_arbeit' }, { onlyIfNew: true });
+  if (marke && marke.modified === false) throw fehler('schluss_erstellt', 409);
+  try {
+    const ar = a.anzahlungsrechnung ? await rechnungLesen(a.anzahlungsrechnung.nr) : null;
+    const nummer = await naechsteRechnungsnummer(rechnungsStore());
+    const r = await rechnungAblegen(RE.schlussrechnung(a, nummer, { zeilen: endZeilen, rabatt: endRabatt, abzuege: ar ? [ar] : [], jetzt: t }));
+    a.schlussrechnung = { ...rechnungKurz(r), gesamt: r.schluss.gesamt, faelligAm: r.faelligAm };
+    a.rechnungen = (a.rechnungen || []).concat([rechnungKurz(r)]).slice(-20);
+    a.geaendertAm = t.toISOString();
+    vermerk(a, 'Schlussrechnung ' + r.invoiceNo + ' erstellt (' + eur(r.schluss.gesamt) + ', offen ' + eur(r.total) + ')', wer, t);
+    await s.setJSON('angebot-sr:' + a.id, { at: t.toISOString(), nr: r.invoiceNo });
+    await sichern(s, a);
+    return a;
+  } catch (err) {
+    try { await s.delete('angebot-sr:' + a.id); } catch (x) {}
+    throw err;
+  }
+}
+
+/** Admin: Rechnung (Anzahlung oder Schluss) per Mail an den Kunden */
+async function rechnungSenden(id, nummer, { wer, jetzt } = {}) {
+  const s = store();
+  const a = await laden(s, id);
+  if (!a) throw fehler('nicht_gefunden', 404);
+  if (!(a.rechnungen || []).some((x) => x.nr === nummer)) throw fehler('nicht_gefunden', 404);
+  const r = await rechnungLesen(nummer);
+  if (!r) throw fehler('nicht_gefunden', 404);
+  if (!a.kunde || !a.kunde.email) throw fehler('email_fehlt', 400);
+  const pdf = await RE.rechnungPdf(r);
+  const m = mailRechnung(a, r);
+  await brevo({ an: a.kunde.email, name: a.kunde.name, betreff: m.betreff, html: m.html,
+    anhaenge: [{ name: RE.TITEL[r.art] + '-' + r.invoiceNo + '.pdf', content: pdf.toString('base64') }] });
+  const t = jetzt || new Date();
+  await rechnungVermerken(s, id, nummer, { gesendetAm: t.toISOString(), gesendetAn: a.kunde.email });
+  const neu = await laden(s, id);
+  vermerk(neu, RE.TITEL[r.art] + ' ' + nummer + ' an ' + a.kunde.email + ' gesendet', wer, t);
+  await sichern(s, neu);
+  return neu;
+}
+
+/** Kundenseite: PDF einer Rechnung zu diesem Angebot (nur mit gültigem Token) */
+async function kundenRechnung(a, nummer) {
+  if (!a || !(a.rechnungen || []).some((x) => x.nr === nummer)) return null;
+  return rechnungLesen(nummer);
 }
 
 /** Rückkehr des Kunden: offenen Checkout bei SumUp nachsehen. */
@@ -826,6 +1061,10 @@ function kundenAnsicht(a, e, jetzt) {
     summe: a.summe, rabatt: { art: a.rabatt && a.rabatt.art || 'keiner', wert: a.rabatt && a.rabatt.wert || 0, betrag: a.rabattBetrag || 0 },
     gesamt: a.gesamt, anzahlungProzent: a.anzahlungProzent, anzahlung: a.anzahlung, rest: a.rest,
     gueltigBis: a.gueltigBis || '', hinweis: a.hinweis || '',
+    steuern: steuern(a),
+    adresse: { name: a.kunde && a.kunde.name || '', firma: a.kunde && a.kunde.firma || '', strasse: a.kunde && a.kunde.strasse || '',
+      plz: a.kunde && a.kunde.plz || '', ort: a.kunde && a.kunde.ort || '', ustId: a.kunde && a.kunde.ustId || '' },
+    rechnungen: (a.rechnungen || []).filter((x) => !x.storniertDurch && x.art !== 'catering_storno').map((x) => ({ nr: x.nr, art: x.art, datum: x.datum, total: x.total })),
     angenommenAm: a.angenommenAm || null, bezahltAm: a.bezahltAm || null,
     ersetzt: !!a.ersetztDurch,
     anzahlungOnline: !!e.anzahlungOnline && st === 'angenommen' && a.anzahlung > 0,
@@ -946,13 +1185,27 @@ function mailAnnahme(a, e, link) {
     + '<p style="margin:18px 0 0;">Wir freuen uns auf dein Event.<br><strong>Kubi und das Grill\'n Chill Team</strong></p>';
   return { betreff: 'Danke für deine Zusage: Catering ' + (a.event && a.event.datum ? 'am ' + deDatum(a.event.datum) : a.nummer), html: rahmen('ZUSAGE ERHALTEN', inhalt) };
 }
-function mailZahlung(a, e, link) {
+function mailZahlung(a, e, link, rechnung) {
   const inhalt = '<p style="margin:0 0 14px;font-size:18px;font-weight:700;color:#111;">Danke, ' + h(vorname(a)) + '.</p>'
     + '<p style="margin:0 0 6px;">Deine Anzahlung von ' + h(eur(a.zahlung && a.zahlung.betrag || a.anzahlung)) + ' für Angebot ' + h(a.nummer) + ' ist da. Dein Termin ist fest reserviert.</p>'
+    + (rechnung ? '<p style="margin:0 0 6px;">Die Anzahlungsrechnung ' + h(rechnung.invoiceNo) + ' hängt als PDF an. Nach dem Event bekommst du die Schlussrechnung, darin ziehen wir die Anzahlung ab.</p>' : '')
     + tabelle(eckdaten(a).concat([['Rest nach dem Event', eur(a.rest)]]))
     + '<p style="margin:0;">Dein Angebot: <a href="' + h(link) + '" style="color:#CC4715;font-weight:600;text-decoration:none;">Angebot ansehen</a></p>'
     + '<p style="margin:18px 0 0;">Bis bald<br><strong>Kubi und das Grill\'n Chill Team</strong></p>';
   return { betreff: 'Anzahlung erhalten: Catering ' + (a.event && a.event.datum ? 'am ' + deDatum(a.event.datum) : a.nummer), html: rahmen('ANZAHLUNG ERHALTEN', inhalt) };
+}
+
+function mailRechnung(a, r) {
+  const titel = RE.TITEL[r.art] || 'Rechnung';
+  let satz = '';
+  if (r.art === 'catering_anzahlung') satz = 'anbei die Anzahlungsrechnung ' + h(r.invoiceNo) + ' über ' + h(eur(r.total)) + '. Sie ist bereits bezahlt.';
+  else if (r.art === 'catering_schluss') satz = 'danke für dein Event. Anbei die Schlussrechnung ' + h(r.invoiceNo) + '. '
+    + (Number(r.total) > 0 ? 'Offen sind noch ' + h(eur(r.total)) + ', zahlbar bis ' + h(r.faelligAm) + '.' : (Number(r.total) < 0 ? 'Wir erstatten dir ' + h(eur(-r.total)) + '.' : 'Mit der Anzahlung ist alles bezahlt.'));
+  else satz = 'anbei die Stornorechnung ' + h(r.invoiceNo) + ' zur Rechnung ' + h(r.stornoZu) + '.';
+  const inhalt = '<p style="margin:0 0 14px;font-size:18px;font-weight:700;color:#111;">Hallo ' + h(vorname(a)) + ',</p>'
+    + '<p style="margin:0 0 14px;">' + satz + '</p>'
+    + '<p style="margin:18px 0 0;">Viele Grüße<br><strong>Kubi und das Grill\'n Chill Team</strong></p>';
+  return { betreff: titel + ' ' + r.invoiceNo + ' · Catering ' + a.nummer, html: rahmen(titel.toUpperCase(), inhalt) };
 }
 
 /* ---- Telegram ------------------------------------------------------------- */
@@ -975,6 +1228,8 @@ function telegramAnnahme(a, e) {
 function telegramZahlung(a, vorher) {
   const z = ['<b>Catering-Anzahlung bezahlt</b>'].concat(telegramKopf(a));
   z.push('Anzahlung ' + tEsc(eur(a.zahlung && a.zahlung.betrag || a.anzahlung)) + ' online über SumUp');
+  if (a.anzahlungsrechnung) z.push('Anzahlungsrechnung ' + tEsc(a.anzahlungsrechnung.nr) + ' ist raus.');
+  else if (a.rechnungHinweis === 'adresse_fehlt') z.push('Anzahlungsrechnung fehlt: Rechnungsadresse eintragen.');
   if (vorher && vorher !== 'angenommen') z.push('Hinweis: Status vorher ' + tEsc(STATUS_NAME[vorher] || vorher) + '. Bitte prüfen.');
   return z.join('\n');
 }
@@ -991,5 +1246,7 @@ module.exports = {
   anlegen, speichern, loeschen, duplizieren, senden, annehmen, statusSetzen,
   zahlungStarten, zahlungVerbuchen, zahlungPruefen, sumupCheckout, taeglicherLauf,
   alle, kurz, summen, adminAnsicht, kundenAnsicht, bedingungen,
-  mailAngebot, mailErinnerung, mailAnnahme, mailZahlung,
+  mailAngebot, mailErinnerung, mailAnnahme, mailZahlung, mailRechnung,
+  steuern, adresseBereinigen, adresseSetzen, anzahlungsrechnungNachholen, schlussrechnungErstellen, rechnungSenden,
+  kundenRechnung, rechnungLesen,
 };

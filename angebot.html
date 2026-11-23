@@ -106,6 +106,15 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,6vw,2.5rem)
 .haken input{flex:none;width:24px;height:24px;margin:.1rem 0 0;accent-color:var(--orange);cursor:pointer}
 .haken.fehler input{outline:2px solid var(--err);outline-offset:2px}
 .fehltext{color:var(--err);font-size:.88rem;font-weight:600;margin:.3rem 0 0}
+/* Rechnungsadresse bei der Annahme */
+.adr{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin:.2rem 0 1rem}
+.adr .ganz{grid-column:1/-1}
+.adr label{display:flex;flex-direction:column;gap:.3rem;font-size:.85rem;font-weight:600;color:var(--dim)}
+.adr input{width:100%;min-height:46px;padding:.65rem .8rem;border-radius:12px;border:1px solid var(--border, rgba(245,233,208,.14));background:rgba(245,233,208,.04);color:inherit;font:inherit;font-size:1rem}
+.adr input:focus{outline:2px solid var(--orange);outline-offset:1px}
+.adr input[aria-invalid="true"]{border-color:var(--err)}
+@media(max-width:420px){.adr{grid-template-columns:1fr}}
+.adr-hint{color:var(--dim);font-size:.88rem;margin:-.2rem 0 .7rem}
 .fehltext:empty{display:none}
 .btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;min-height:52px;margin-top:.9rem;padding:.9rem 1.2rem;
   border:none;border-radius:14px;background:var(--orange-s);color:#fff;font:800 1.02rem/1.25 var(--body);cursor:pointer;text-decoration:none;text-align:center;
@@ -350,7 +359,7 @@ function zeichnen() {
     html += '<div><span>' + h(t('ang.subtotal')) + '</span><span>' + geld(a.summe) + '</span></div>'
       + '<div class="rab"><span>' + h(t('ang.discount')) + (a.rabatt.art === 'prozent' ? ' ' + zahl(a.rabatt.wert) + ' %' : '') + '</span><span>- ' + geld(a.rabatt.betrag) + '</span></div>';
   }
-  html += '</div><div class="gesamt"><span>' + h(t('ang.total')) + '</span><b>' + geld(a.gesamt) + '</b></div><p class="mwst">' + h(t('ang.vat')) + '</p>';
+  html += '</div><div class="gesamt"><span>' + h(t('ang.total')) + '</span><b>' + geld(a.gesamt) + '</b></div><p class="mwst">' + h(vatZeile(a)) + '</p>';
   if (a.anzahlung > 0) {
     html += '<div class="anz"><div><span>' + h(f('ang.deposit', { p: zahl(a.anzahlungProzent) })) + '</span><span>' + geld(a.anzahlung) + '</span></div>'
       + '<div><span>' + h(t('ang.rest')) + '</span><span>' + geld(a.rest) + '</span></div></div>';
@@ -371,9 +380,33 @@ function zeichnen() {
     + '<li>' + h(t('ang.term_agb')) + ' <a href="/#agb">' + h(t('ang.agb_read')) + '</a></li></ul></section>';
   html += '</div>';
 
+  // Rechnungen zum Angebot (Anzahlung, Schluss)
+  if (a.rechnungen && a.rechnungen.length) {
+    html += '<section class="karte" aria-labelledby="hRech"><h2 id="hRech">' + h(t('ang.invoices')) + '</h2><div class="reihe">'
+      + a.rechnungen.map(function (r) {
+        var name = t(r.art === 'catering_schluss' ? 'ang.inv_final' : 'ang.inv_deposit');
+        return '<a class="mini" ' + hrefAttr(API + '?id=' + encodeURIComponent(ANG_ID) + '&t=' + encodeURIComponent(ANG_T) + '&rechnung=' + encodeURIComponent(r.nr))
+          + ' target="_blank" rel="noopener">' + ICON.pdf + '<span>' + h(name + ' ' + r.nr) + '</span></a>';
+      }).join('') + '</div></section>';
+  }
+
   // Annehmen
   if (st === 'gesendet') {
+    var ad = ADRESSE || a.adresse || {};
+    var feld = function (id, key, wert, ac, klasse, pflicht) {
+      return '<label class="' + (klasse || '') + '"><span>' + h(t(key)) + '</span><input type="text" id="' + id + '" value="' + h(wert || '') + '" autocomplete="' + ac + '"'
+        + (pflicht ? ' required aria-required="true"' : '') + ' data-on-input="adresseMerken()"></label>';
+    };
     html += '<section class="karte annehmen" aria-labelledby="hAnn"><h2 id="hAnn">' + h(t('ang.accept_title')) + '</h2>'
+      + '<h3 style="font-size:1rem;margin:.2rem 0 .3rem">' + h(t('ang.addr_title')) + '</h3><p class="adr-hint">' + h(t('ang.addr_hint')) + '</p>'
+      + '<div class="adr" id="adr">'
+      + feld('adName', 'ang.addr_name', ad.name, 'name', '', true)
+      + feld('adFirma', 'ang.addr_company', ad.firma, 'organization', '', false)
+      + feld('adStrasse', 'ang.addr_street', ad.strasse, 'street-address', 'ganz', true)
+      + feld('adPlz', 'ang.addr_zip', ad.plz, 'postal-code', '', true)
+      + feld('adOrt', 'ang.addr_city', ad.ort, 'address-level2', '', true)
+      + feld('adUst', 'ang.addr_vat', ad.ustId, 'off', 'ganz', false)
+      + '</div><p class="fehltext" id="adrFehler" role="alert"></p>'
       + '<label class="haken" id="hakenZeile"><input type="checkbox" id="haken" aria-describedby="hakenFehler"><span>' + h(t('ang.check')) + '</span></label>'
       + '<p class="fehltext" id="hakenFehler" role="alert"></p>'
       + '<button type="button" class="btn" id="annehmenKnopf" data-on-click="angebotAnnehmen(this)">' + ICON.ok + '<span>' + h(t('ang.accept')) + '</span></button>'
@@ -418,7 +451,31 @@ async function zahlungAbwarten() {
 function ansagen(text) { var el = document.getElementById('ansage'); if (el) { el.textContent = ''; setTimeout(function () { el.textContent = text; }, 50); } }
 
 /* ---- Annehmen ---- */
+/* Rechnungsadresse: Eingaben über ein Neuzeichnen (Sprachwechsel) hinweg behalten */
+var ADRESSE = null;
+function adresseLesen() {
+  var v = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  return { name: v('adName'), firma: v('adFirma'), strasse: v('adStrasse'), plz: v('adPlz'), ort: v('adOrt'), ustId: v('adUst') };
+}
+function adresseMerken() { ADRESSE = adresseLesen(); }
+function vatZeile(a) {
+  if (!a.steuern || !a.steuern.length) return t('ang.vat');
+  return f('ang.vat_line', { list: a.steuern.map(function (v) { return zahl(v.satz) + ' %: ' + geld(v.steuer); }).join(', ') });
+}
+
 async function angebotAnnehmen(btn) {
+  var adr = adresseLesen();
+  var fehlt = ['adName', 'adStrasse', 'adPlz', 'adOrt'].filter(function (id) {
+    var el = document.getElementById(id); var leer = !el || !el.value.trim();
+    if (el) { if (leer) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); }
+    return leer;
+  });
+  if (fehlt.length) {
+    document.getElementById('adrFehler').textContent = t('ang.addr_err');
+    var erstes = document.getElementById(fehlt[0]); if (erstes) erstes.focus();
+    return;
+  }
+  document.getElementById('adrFehler').textContent = '';
   var cb = document.getElementById('haken');
   if (!cb || !cb.checked) {
     var z = document.getElementById('hakenZeile'); if (z) z.classList.add('fehler');
@@ -430,10 +487,11 @@ async function angebotAnnehmen(btn) {
   gncBusy(btn, true);
   try {
     var r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: ANG_ID, t: ANG_T, aktion: 'annehmen', haken: true, lang: currentLang }) });
+      body: JSON.stringify({ id: ANG_ID, t: ANG_T, aktion: 'annehmen', haken: true, lang: currentLang, adresse: adr }) });
     var d = await r.json().catch(function () { return {}; });
     if (r.status === 429) { gncBusy(btn, false); document.getElementById('hakenFehler').textContent = t('ang.busy'); return; }
     if (r.status === 404) { ZUSTAND = 'fehlt'; zeichnen(); return; }
+    if (d && d.error === 'adresse_fehlt') { gncBusy(btn, false); document.getElementById('adrFehler').textContent = t('ang.addr_err'); return; }
     if (d && d.angebot) {
       ANGEBOT = d.angebot; MELDUNG = '';
       zeichnen();

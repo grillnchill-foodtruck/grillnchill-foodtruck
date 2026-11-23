@@ -108,7 +108,7 @@ I18N.nl = {
     "ang.discount": "Korting",
     "ang.total": "Totaal",
     "ang.total_short": "Totaal {amount} incl. btw",
-    "ang.vat": "Alle prijzen zijn eindprijzen inclusief wettelijke btw.",
+    "ang.vat": "Alle prijzen zijn eindprijzen inclusief wettelijke btw.", "ang.addr_title": "Factuuradres", "ang.addr_hint": "Voor de aanbetalingsfactuur en de eindfactuur.", "ang.addr_name": "Naam", "ang.addr_company": "Bedrijf (optioneel)", "ang.addr_street": "Straat en huisnummer", "ang.addr_zip": "Postcode", "ang.addr_city": "Plaats", "ang.addr_vat": "Btw-nummer (optioneel, voor bedrijven)", "ang.addr_err": "Vul naam, straat, postcode en plaats in voor de factuur.", "ang.vat_line": "Eindprijzen. Inclusief btw: {list}.", "ang.invoices": "Facturen", "ang.inv_deposit": "Aanbetalingsfactuur", "ang.inv_final": "Eindfactuur",
     "ang.deposit": "Aanbetaling ({p} %)",
     "ang.rest": "Rest na het evenement",
     "ang.note": "Opmerking van Kubi",

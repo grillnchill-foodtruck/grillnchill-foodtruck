@@ -60,7 +60,8 @@ async function authRole(pw) {
 
 // Fehlercodes, die das Admin-Tool in Klartext übersetzt
 const BEKANNT = ['bad_key', 'anfrage_fehlt', 'nicht_gefunden', 'nur_entwurf', 'status', 'email_fehlt', 'name_fehlt',
-  'betrag_fehlt', 'datum_vorbei', 'status_nicht_moeglich', 'online_bezahlt'];
+  'betrag_fehlt', 'datum_vorbei', 'status_nicht_moeglich', 'online_bezahlt',
+  'schluss_erstellt', 'nicht_bezahlt', 'rechnung_da', 'adresse_fehlt', 'rechnung_fehlgeschlagen', 'anzahlung_ohne_rechnung'];
 
 async function pdfAntwort(id, herunterladen) {
   const s = A.store();
@@ -151,6 +152,23 @@ exports.handler = async (event) => {
         if (!(await A.laden(A.store(), id))) return json(404, { error: 'nicht_gefunden' });
         return json(200, { ok: true, url: A.pdfLink(id) });
       }
+      // Rechnungen zum Angebot (lib/catering-rechnung.js)
+      case 'adresse': {
+        const a = await A.adresseSetzen(id, input.adresse, { wer });
+        return json(200, { ok: true, angebot: A.adminAnsicht(a) });
+      }
+      case 'anzahlungsrechnung': {
+        const a = await A.anzahlungsrechnungNachholen(id, { wer });
+        return json(200, { ok: true, angebot: A.adminAnsicht(a) });
+      }
+      case 'schlussrechnung': {
+        const a = await A.schlussrechnungErstellen(id, { zeilen: input.zeilen, rabatt: input.rabatt, wer });
+        return json(200, { ok: true, angebot: A.adminAnsicht(a) });
+      }
+      case 'rechnungSenden': {
+        const a = await A.rechnungSenden(id, String(input.nr || ''), { wer });
+        return json(200, { ok: true, angebot: A.adminAnsicht(a) });
+      }
       case 'einstellungen': {
         const e = await A.einstellungenSpeichern(input.einstellungen, wer);
         return json(200, { ok: true, einstellungen: e });
@@ -162,7 +180,7 @@ exports.handler = async (event) => {
     if (err && BEKANNT.includes(err.code)) return json(err.status || 400, { error: err.code });
     console.error('catering-angebot:', (err && err.stack) || err);
     // Mailfehler beim Senden: Angebot bleibt Entwurf, Kubi kann es erneut versuchen
-    if (input.action === 'senden') return json(502, { error: 'mail_fehlgeschlagen' });
+    if (input.action === 'senden' || input.action === 'rechnungSenden') return json(502, { error: 'mail_fehlgeschlagen' });
     return json(500, { error: 'server_error' });
   }
 };

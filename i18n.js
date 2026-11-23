@@ -115,7 +115,7 @@ const I18N = {
     "ang.discount": "Rabatt",
     "ang.total": "Gesamt",
     "ang.total_short": "Gesamt {amount} inkl. MwSt.",
-    "ang.vat": "Alle Preise sind Endpreise inklusive gesetzlicher MwSt.",
+    "ang.vat": "Alle Preise sind Endpreise inklusive gesetzlicher MwSt.", "ang.addr_title": "Rechnungsadresse", "ang.addr_hint": "Für die Anzahlungs- und die Schlussrechnung.", "ang.addr_name": "Name", "ang.addr_company": "Firma (freiwillig)", "ang.addr_street": "Straße und Hausnummer", "ang.addr_zip": "PLZ", "ang.addr_city": "Ort", "ang.addr_vat": "USt-IdNr. (freiwillig, für Firmen)", "ang.addr_err": "Bitte gib Name, Straße, PLZ und Ort für die Rechnung an.", "ang.vat_line": "Endpreise. Enthaltene USt.: {list}.", "ang.invoices": "Rechnungen", "ang.inv_deposit": "Anzahlungsrechnung", "ang.inv_final": "Schlussrechnung",
     "ang.deposit": "Anzahlung ({p} %)",
     "ang.rest": "Rest nach dem Event",
     "ang.note": "Hinweis von Kubi",

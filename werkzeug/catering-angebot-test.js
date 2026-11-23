@@ -99,6 +99,9 @@ const kundePost = async (body, ip) => antwort(await kunde.handler({ httpMethod: 
 const angebotRoh = (id) => JSON.parse(daten.get('catering|angebot:' + id));
 const tokenVon = (id) => angebotRoh(id).token;
 const TAG = 864e5;
+const ADR = { name: 'Ayşe Yılmaz', firma: 'Şahin Events GmbH', strasse: 'Teststraße 1', plz: '33602', ort: 'Bielefeld' };
+const rechnungen = () => [...daten.keys()].filter((k) => k.startsWith('invoices|inv:')).map((k) => JSON.parse(daten.get(k))).filter((r) => !r.platzhalter);
+const cent = (x) => Math.round(x * 100);
 
 (async () => {
   const jetzt = new Date();
@@ -232,7 +235,7 @@ const TAG = 864e5;
   ok('Token in falscher Form -> 404', (await kundeGet({ id: a1.id, t: 'abc' })).s === 404);
   ok('Unbekannte ID -> 404 (gleiche Antwort wie falscher Token)', (await kundeGet({ id: '0123456789ab', t: t1 })).s === 404);
   ok('ID in falscher Form -> 404', (await kundeGet({ id: '../angebot', t: t1 })).s === 404);
-  ok('Annehmen mit falschem Token -> 404', (await kundePost({ id: a1.id, t: falsch, aktion: 'annehmen', haken: true })).s === 404);
+  ok('Annehmen mit falschem Token -> 404', (await kundePost({ id: a1.id, t: falsch, aktion: 'annehmen', haken: true, adresse: ADR })).s === 404);
   r = await kundeGet({ id: a1.id, t: t1, pdf: '1' });
   ok('Kunden-PDF mit Token -> gültiges PDF', r.s === 200 && Buffer.from(r.r.body, 'base64').slice(0, 5).toString() === '%PDF-');
   let gebremst = false;
@@ -240,15 +243,15 @@ const TAG = 864e5;
   ok('Bremse: Durchprobieren von einer Adresse endet mit 429', gebremst);
 
   /* ---- Annahme nur einmal -------------------------------------------------- */
-  ok('Ohne Haken -> 400', (await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: false })).s === 400);
+  ok('Ohne Haken -> 400', (await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: false, adresse: ADR })).s === 400);
   telegramm.length = 0; mails.length = 0;
-  r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true, lang: 'tr' });
+  r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true, adresse: ADR, lang: 'tr' });
   ok('Annehmen -> 200, Status angenommen', r.s === 200 && r.d.angebot.status === 'angenommen' && angebotRoh(a1.id).annahme.lang === 'tr', r.d);
   ok('Telegram an Kubi: angenommen, Hinweis Anzahlung online aus', telegramm.length === 1 && telegramm[0].includes('Catering-Angebot angenommen')
     && telegramm[0].includes('A-' + jahr + '-0001') && telegramm[0].includes('Anzahlung online ist aus'), telegramm);
   ok('Bestätigungsmail an den Kunden (ohne Zahlknopf)', mails.length === 1 && mails[0].to[0].email === 'ayse@example.com'
     && mails[0].subject.startsWith('Danke für deine Zusage') && !mails[0].htmlContent.includes('Anzahlung zahlen'));
-  r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true });
+  r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true, adresse: ADR });
   ok('Zweites Annehmen -> 409 schon_angenommen, kein zweites Telegram', r.s === 409 && r.d.error === 'schon_angenommen' && telegramm.length === 1);
 
   // Gleichzeitig: zweites Angebot senden und fünfmal parallel annehmen
@@ -256,7 +259,7 @@ const TAG = 864e5;
   await adminPost({ action: 'senden', id: b.id });
   const tb = tokenVon(b.id);
   telegramm.length = 0;
-  const parallel = await Promise.all([1, 2, 3, 4, 5].map(() => kundePost({ id: b.id, t: tb, aktion: 'annehmen', haken: true })));
+  const parallel = await Promise.all([1, 2, 3, 4, 5].map(() => kundePost({ id: b.id, t: tb, aktion: 'annehmen', haken: true, adresse: ADR })));
   ok('5 gleichzeitige Annahmen: genau eine 200, vier 409, ein Telegram',
     parallel.filter((x) => x.s === 200).length === 1 && parallel.filter((x) => x.s === 409).length === 4 && telegramm.length === 1,
     parallel.map((x) => x.s));
@@ -305,7 +308,86 @@ const TAG = 864e5;
   // Bestellungen bleiben unberührt
   ok('Webhook für normale Bestellungen unverändert (unbekannte Bestellung)', antwort(await webhook.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({ id: 'chk_fremd' }) })).s === 200);
 
+  /* ---- Rechnungen: Anzahlung, Schluss, Storno ------------------------------ */
+  const RE = require(F + '/lib/catering-rechnung.js');
+  const auf = RE.aufteilung([{ art: 'paket', menge: 1, einzel: 100 }, { art: 'pauschale', menge: 1, einzel: 300 }], { art: 'prozent', wert: 10 });
+  const vt = RE.vatAus(auf.jeSatzC);
+  ok('Steuer: 10 % Rabatt anteilig, Speisen 7 %, Pauschale 19 %',
+    auf.gesamtC === 36000 && vt[0].satz === 7 && vt[0].brutto === 90 && vt[0].netto === 84.11 && vt[0].steuer === 5.89
+    && vt[1].satz === 19 && vt[1].brutto === 270 && vt[1].netto === 226.89 && vt[1].steuer === 43.11, vt);
+  ok('Steuer: eigene Position wählbar (7 % oder 19 %)', RE.satzVon({ art: 'extra', satz: 7 }) === 7 && RE.satzVon({ art: 'extra' }) === 19 && RE.satzVon({ art: 'stunde' }) === 19);
+  const ra1 = angebotRoh(a1.id);
+  const ar1 = rechnungen().find((x) => x.art === 'catering_anzahlung' && x.angebotId === a1.id);
+  ok('Online bezahlt: Anzahlungsrechnung im gemeinsamen Nummernkreis', !!ar1 && /^GNC-\d{4}-\d{4}$/.test(ar1.invoiceNo) && ra1.anzahlungsrechnung && ra1.anzahlungsrechnung.nr === ar1.invoiceNo, ra1.anzahlungsrechnung);
+  ok('… Betrag = Anzahlung, USt je Satz anteilig, Netto + USt = Brutto',
+    ar1 && ar1.total === ra1.anzahlung && cent(ar1.vat.reduce((n2, v) => n2 + v.brutto, 0)) === cent(ar1.total)
+    && ar1.vat.every((v) => cent(v.netto) + cent(v.steuer) === cent(v.brutto)) && ar1.vat.some((v) => v.satz === 7), ar1 && ar1.vat);
+  ok('… Rechnungsadresse aus der Annahme, türkische Buchstaben bleiben', ar1 && ar1.company === 'Şahin Events GmbH' && ar1.invoiceAddress.street === 'Teststraße 1' && ar1.kundeName === 'Ayşe Yılmaz');
+  const mailAr = mails.find((m) => m.subject.startsWith('Anzahlung erhalten'));
+  ok('… hängt als PDF an der Zahlungsmail', mailAr && mailAr.attachment && /^Anzahlungsrechnung-GNC-/.test(mailAr.attachment[0].name)
+    && Buffer.from(mailAr.attachment[0].content, 'base64').slice(0, 4).toString() === '%PDF', mailAr && mailAr.attachment && mailAr.attachment[0].name);
+  ok('… Webhook doppelt: keine zweite Anzahlungsrechnung', rechnungen().filter((x) => x.art === 'catering_anzahlung' && x.angebotId === a1.id).length === 1);
+  r = await kundeGet({ id: a1.id, t: t1, rechnung: ar1.invoiceNo });
+  ok('Kunde lädt die Anzahlungsrechnung als PDF', r.s === 200 && r.r.headers['Content-Type'] === 'application/pdf' && Buffer.from(r.r.body, 'base64').slice(0, 4).toString() === '%PDF');
+  ok('… fremde Rechnungsnummer: 404', (await kundeGet({ id: a1.id, t: t1, rechnung: 'GNC-2026-9999' })).s === 404);
+  r = await kundeGet({ id: a1.id, t: t1 });
+  ok('Kundenseite: enthaltene USt. je Satz und Rechnungsliste', r.d.angebot.steuern.length >= 1 && r.d.angebot.rechnungen.length === 1 && r.d.angebot.adresse.ort === 'Bielefeld');
+  ok('Annahme ohne Rechnungsadresse: 400', (await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true })).s === 400);
+
+  const inv = require(F + '/lib/invoice.js');
+  ok('Rechnungs-Archiv: PDF über lib/invoice.js, keine XRechnung', (await inv.buildInvoicePdf(ar1)).slice(0, 4).toString() === '%PDF' && inv.buildInvoiceXml(ar1) === null);
+
+  r = await adminPost({ action: 'schlussrechnung', id: a1.id });
+  const sr1 = rechnungen().find((x) => x.art === 'catering_schluss' && x.angebotId === a1.id);
+  ok('Schlussrechnung: Gesamt aus dem Angebot, Anzahlung abgezogen, Rest offen', r.s === 200 && sr1 && sr1.schluss.gesamt === ra1.gesamt
+    && cent(sr1.total) === cent(ra1.gesamt) - cent(ar1.total) && sr1.schluss.abzuege[0].invoiceNo === ar1.invoiceNo, r.d);
+  ok('… USt je Satz = Gesamt minus Anzahlung', sr1 && sr1.vat.every((v) => {
+    const g = sr1.schluss.gesamtVat.find((x) => x.satz === v.satz), ab = ar1.vat.find((x) => x.satz === v.satz) || { netto: 0, steuer: 0 };
+    return cent(v.netto) === cent(g.netto) - cent(ab.netto) && cent(v.steuer) === cent(g.steuer) - cent(ab.steuer);
+  }), sr1 && sr1.vat);
+  ok('… Archiv: Anzahlung + Schluss = Auftrag', sr1 && cent(sr1.total) + cent(ar1.total) === cent(ra1.gesamt));
+  ok('… nur einmal', (await adminPost({ action: 'schlussrechnung', id: a1.id })).d.error === 'schluss_erstellt');
+  mails.length = 0;
+  r = await adminPost({ action: 'rechnungSenden', id: a1.id, nr: sr1.invoiceNo });
+  ok('Schlussrechnung per Mail mit PDF, Versand vermerkt', r.s === 200 && mails.length === 1 && /^Schlussrechnung-GNC-/.test(mails[0].attachment[0].name)
+    && angebotRoh(a1.id).schlussrechnung.gesendetAm, mails[0] && mails[0].subject);
+
+  // Schluss mit geändertem Endstand: Getränke dazu (19 %)
+  const zb = angebotRoh(b.id).zeilen.concat([{ art: 'extra', text: 'Softdrinks', menge: 40, einzel: 2.5, satz: 19 }]);
+  r = await adminPost({ action: 'schlussrechnung', id: b.id, zeilen: zb });
+  const srb = rechnungen().find((x) => x.art === 'catering_schluss' && x.angebotId === b.id);
+  ok('Schluss mit geändertem Endstand: Getränke 19 % kommen dazu', r.s === 200 && srb && cent(srb.schluss.gesamt) === cent(angebotRoh(b.id).gesamt) + 10000
+    && srb.items.some((i) => i.name === 'Softdrinks' && i.satz === 19), srb && srb.schluss);
+
+  // Von Hand: ohne Adresse keine Rechnung, dann nachholen, Rücknahme storniert
+  const h1 = (await adminPost({ action: 'neu' })).d.angebot;
+  await adminPost({ action: 'speichern', id: h1.id, angebot: { kunde: { name: 'Max Bar', email: 'bar@example.org' }, event: { datum: inTagen(40), ort: 'Halle', personen: 50, paket: 'gnc' },
+    zeilen: [{ art: 'paket', paket: 'gnc', menge: 50, einzel: 26 }, { art: 'pauschale', menge: 1, einzel: 300 }], anzahlungProzent: 50 } });
+  await adminPost({ action: 'senden', id: h1.id });
+  telegramm.length = 0;
+  r = await adminPost({ action: 'status', id: h1.id, status: 'bezahlt' });
+  ok('Von Hand bezahlt ohne Adresse: keine Rechnung, Hinweis an Kubi', r.s === 200 && !angebotRoh(h1.id).anzahlungsrechnung && angebotRoh(h1.id).rechnungHinweis === 'adresse_fehlt'
+    && telegramm.some((x) => x.includes('Anzahlungsrechnung fehlt')), r.d);
+  ok('… Nachholen ohne Adresse: 409', (await adminPost({ action: 'anzahlungsrechnung', id: h1.id })).d.error === 'adresse_fehlt');
+  ok('… Schluss geht erst mit Anzahlungsrechnung', (await adminPost({ action: 'adresse', id: h1.id, adresse: { name: 'Max Bar', strasse: 'Weg 2', plz: '33602', ort: 'Bielefeld' } })).s === 200
+    && (await adminPost({ action: 'schlussrechnung', id: h1.id })).d.error === 'anzahlung_ohne_rechnung');
+  r = await adminPost({ action: 'anzahlungsrechnung', id: h1.id });
+  const arH = rechnungen().find((x) => x.art === 'catering_anzahlung' && x.angebotId === h1.id);
+  ok('… Adresse eingetragen, Anzahlungsrechnung nachgeholt (bar)', r.s === 200 && arH && arH.zahlungsweg === 'bar' && arH.total === angebotRoh(h1.id).anzahlung, r.d);
+  r = await adminPost({ action: 'status', id: h1.id, status: 'angenommen' });
+  const stH = rechnungen().find((x) => x.art === 'catering_storno' && x.stornoZu === arH.invoiceNo);
+  ok('Zahlung zurückgenommen: Stornorechnung mit Minusbeträgen, Original markiert', r.s === 200 && stH && cent(stH.total) === -cent(arH.total)
+    && stH.vat.every((v) => v.brutto < 0) && JSON.parse(daten.get('invoices|inv:' + arH.invoiceNo)).storniertDurch === stH.invoiceNo
+    && !angebotRoh(h1.id).anzahlungsrechnung, r.d);
+  r = await adminPost({ action: 'status', id: h1.id, status: 'bezahlt' });
+  const arH2 = rechnungen().filter((x) => x.art === 'catering_anzahlung' && x.angebotId === h1.id);
+  ok('… erneut bezahlt: neue Anzahlungsrechnung mit neuer Nummer', arH2.length === 2 && arH2[0].invoiceNo !== arH2[1].invoiceNo);
+  const rNummern = rechnungen().map((x) => x.invoiceNo).sort();
+  const lfd = rNummern.map((x) => parseInt(x.split('-')[2], 10));
+  ok('Rechnungsnummern eindeutig und lückenlos', new Set(rNummern).size === rNummern.length && lfd.every((x, i) => i === 0 || x === lfd[i - 1] + 1), rNummern);
+
   /* ---- Erinnerung genau einmal nach 3 Tagen, Ablauf ------------------------ */
+
   await adminPost({ action: 'einstellungen', einstellungen: { anzahlungOnline: false } });
   const c = (await adminPost({ action: 'neu', anfrage: 'c:1700000000000-abc123' })).d.angebot;
   await adminPost({ action: 'senden', id: c.id });
@@ -347,11 +429,11 @@ const TAG = 864e5;
   lauf = await L.taeglicherLauf(new Date(gesendetAm.getTime() + 15 * TAG));
   ok('Tag danach: abgelaufen, Telegram-Zeile', lauf.abgelaufen.includes(c.nummer) && angebotRoh(c.id).status === 'abgelaufen'
     && telegramm.some((x) => x.includes('Abgelaufen: ' + c.nummer)));
-  r = await kundePost({ id: c.id, t: tokenVon(c.id), aktion: 'annehmen', haken: true });
+  r = await kundePost({ id: c.id, t: tokenVon(c.id), aktion: 'annehmen', haken: true, adresse: ADR });
   ok('Abgelaufenes Angebot lässt sich nicht annehmen (409 abgelaufen)', r.s === 409 && r.d.error === 'abgelaufen');
   // Ablauf ohne Zeitplan: Kunde klickt nach Ablauf, Zeitplan lief noch nicht
   const roh2 = angebotRoh(d.id); roh2.gueltigBis = L.plusTage(L.heute(), -1); daten.set('catering|angebot:' + d.id, JSON.stringify(roh2));
-  r = await kundePost({ id: d.id, t: tokenVon(d.id), aktion: 'annehmen', haken: true });
+  r = await kundePost({ id: d.id, t: tokenVon(d.id), aktion: 'annehmen', haken: true, adresse: ADR });
   ok('Gültigkeit vorbei, Zeitplan noch nicht gelaufen: trotzdem 409 abgelaufen', r.s === 409 && r.d.error === 'abgelaufen');
   ok('Erinnerung nicht für abgelaufene Angebote', !(await L.taeglicherLauf(new Date(Date.now() + 30 * TAG))).erinnert.length);
 

@@ -172,9 +172,16 @@ function angebotPdf(a, e) {
       const gesamt = eur(a.gesamt);
       doc.font('Helvetica-Bold').fontSize(15).fillColor(FARBE.creme).text(gesamt, 400, y + 9, { width: R - 400 - 8, align: 'right' });
       y += 40;
+      // Enthaltene USt. je Satz (Pakete 7 %, übrige Leistungen 19 %, lib/catering-rechnung.js)
+      let steuerText = 'Alle Preise sind Endpreise inklusive gesetzlicher MwSt.';
+      try {
+        const RE = require('./catering-rechnung');
+        const vat = RE.vatAus(RE.aufteilung(a.zeilen, a.rabatt).jeSatzC);
+        if (vat.length) steuerText = 'Endpreise. Enthaltene USt.: ' + vat.map((v) => v.satz + ' % ' + eur(v.steuer) + ' (netto ' + eur(v.netto) + ')').join(', ') + '.';
+      } catch (e) {}
       doc.font('Helvetica').fontSize(8).fillColor(FARBE.grau)
-        .text('Alle Preise sind Endpreise inklusive gesetzlicher MwSt.', sx - 8, y, { width: R - sx + 8, align: 'right' });
-      y += 16;
+        .text(latin1(steuerText), sx - 8, y, { width: R - sx + 8, align: 'right' });
+      y = doc.y + 6;
       if (Number(a.anzahlung) > 0) {
         doc.font('Helvetica-Bold').fontSize(9.5).fillColor(FARBE.orangeDunkel)
           .text('Anzahlung ' + a.anzahlungProzent + ' %', sx, y, { width: 135 });

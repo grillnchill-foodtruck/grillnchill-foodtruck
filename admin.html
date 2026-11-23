@@ -719,6 +719,12 @@
   .ang-sum .rab span:last-child{color:var(--live)}
   .ang-sum small{display:block;font-size:.72rem;color:var(--faint);margin-top:.35rem}
   .ang-tab{width:100%;border-collapse:collapse;font-family:inherit;font-size:.82rem;white-space:normal}
+  .ang-sum .ust{font-size:.78rem;color:var(--dim)}
+  .ang-re{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;padding:.6rem 0;border-bottom:1px solid var(--border)}
+  .ang-re small{display:block;color:var(--dim);font-size:.76rem;margin-top:.15rem}
+  .ang-re.storniert b,.ang-re.storniert{opacity:.6}
+  .ang-re-akt{display:flex;gap:.4rem;flex-wrap:wrap}
+  .btn-ghost.primary{background:var(--ember-solid);border-color:var(--ember-solid);color:#fff}
   .ang-tab td{padding:.45rem .3rem;border-bottom:1px solid #201B14;color:var(--dim);text-align:right;vertical-align:top}
   .ang-tab td:first-child{text-align:left;color:var(--cream)}
   .ang-tab td.m{white-space:nowrap;font-family:var(--mono)}
@@ -3637,7 +3643,26 @@ const ANG_FEHLER={
   status_nicht_moeglich:'Dieser Status passt hier nicht.', online_bezahlt:'Online bezahlt. Eine Erstattung geht nur in SumUp.',
   mail_fehlgeschlagen:'Die Mail ging nicht raus. Das Angebot ist noch ein Entwurf, bitte gleich noch einmal senden.',
   anfrage_fehlt:'Die Anfrage gibt es nicht mehr.', nicht_gefunden:'Das Angebot gibt es nicht mehr.', forbidden:'Angebote sind nur für Admins.',
+  schluss_erstellt:'Die Schlussrechnung ist schon erstellt. Ändern geht nur noch per Storno.', nicht_bezahlt:'Es ist noch keine Anzahlung eingegangen.',
+  rechnung_da:'Die Anzahlungsrechnung gibt es schon.', adresse_fehlt:'Rechnungsadresse fehlt: Name, Straße, PLZ und Ort eintragen.',
+  rechnung_fehlgeschlagen:'Die Rechnung ließ sich nicht erstellen. Bitte noch einmal versuchen.',
+  anzahlung_ohne_rechnung:'Erst die Anzahlungsrechnung erstellen, dann die Schlussrechnung.',
 };
+/* Steuersätze wie lib/catering-rechnung.js: Pakete 7 %, Pauschale, Anfahrt, Stunden 19 %, freie Positionen wählbar */
+const angSatz=z=>z.art==='paket'?7:(z.art==='extra'?(Number(z.satz)===7?7:19):19);
+function angSteuer(zeilen, rabatt){
+  const cent=x=>Math.round((Number(x)||0)*100);
+  const je={7:0,19:0}; let summe=0;
+  (zeilen||[]).forEach(z=>{ const b=Math.round(cent(z.einzel)*(Number(z.menge)||0)); je[angSatz(z)]+=b; summe+=b; });
+  const r=rabatt||{};
+  let rab=r.art==='prozent'?Math.round(summe*(Number(r.wert)||0)/100):r.art==='betrag'?Math.min(cent(r.wert),summe):0;
+  rab=Math.max(0,Math.min(rab,summe));
+  // Rabatt anteilig, Restcent nach dem größten Rest (wie der Server)
+  const roh=[7,19].map(s=>summe?rab*je[s]/summe:0), teil=roh.map(Math.floor);
+  let rest=rab-teil[0]-teil[1];
+  [0,1].sort((x,y)=>(roh[y]-teil[y])-(roh[x]-teil[x])).forEach(i=>{ if(rest>0){ teil[i]++; rest--; } });
+  return [7,19].map((s,i)=>{ const b=je[s]-teil[i]; const n=Math.round(b/(1+s/100)); return {satz:s, brutto:b/100, netto:n/100, steuer:(b-n)/100}; }).filter(v=>v.brutto);
+}
 const angEur=n=>Number(n||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
 const angDatum=ymd=>/^\d{4}-\d{2}-\d{2}$/.test(ymd||'')?ymd.split('-').reverse().join('.'):'';
 const angZeit=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); };
@@ -3805,14 +3830,18 @@ function angZeilenHtml(){
   const z=ANG.a.zeilen||[];
   if(!z.length) return '<p class="empty" style="padding:.6rem 0">Noch keine Position.</p>';
   return z.map((r,i)=>'<div class="ang-zl">'
-    +'<span class="art">'+esc2(ANG_ART[r.art]||'Position')+(r.art==='pauschale'?' (Fr, Sa, Feiertag '+angEur(ANG_EINST.pauschaleWochenende)+')':'')+'</span>'
+    +'<span class="art">'+esc2(ANG_ART[r.art]||'Position')+(r.art==='pauschale'?' (Fr, Sa, Feiertag '+angEur(ANG_EINST.pauschaleWochenende)+')':'')
+    +(r.art==='extra'?'':' · '+angSatz(r)+' % USt.')+'</span>'
     +'<div class="ang-zl-top"><div class="field"><label class="sr-only" for="angZ'+i+'t">Text der Position</label>'
     +'<input id="angZ'+i+'t" type="text" maxlength="200" data-z="'+i+'" data-zf="text" value="'+esc2(r.text)+'"></div>'
     +'<button type="button" class="ang-x" aria-label="Position entfernen" data-on-click="angZeileWeg('+i+')">'+ANG_ICON.x+'</button></div>'
     +'<div class="ang-zl-zahlen">'
     +'<div class="field"><label for="angZ'+i+'m">'+esc2(angMengeLabel(r))+'</label><input id="angZ'+i+'m" type="number" min="0" step="any" inputmode="decimal" data-z="'+i+'" data-zf="menge" value="'+esc2(r.menge)+'"></div>'
     +'<div class="field"><label for="angZ'+i+'e">Einzelpreis €</label><input id="angZ'+i+'e" type="number" min="0" step="0.01" inputmode="decimal" data-z="'+i+'" data-zf="einzel" value="'+esc2(r.einzel)+'"></div>'
-    +'<div class="betrag" id="angZ'+i+'b"></div></div></div>').join('');
+    +'<div class="betrag" id="angZ'+i+'b"></div></div>'
+    +(r.art==='extra'?'<div class="field" style="margin-top:.45rem;max-width:17rem"><label for="angZ'+i+'s">Umsatzsteuer</label><select id="angZ'+i+'s" data-z="'+i+'" data-zf="satz">'
+      +'<option value="19"'+(angSatz(r)===19?' selected':'')+'>19 % (Getränke, Leistungen)</option><option value="7"'+(angSatz(r)===7?' selected':'')+'>7 % (Speisen)</option></select></div>':'')
+    +'</div>').join('');
 }
 function angFormHtml(a){
   const e=ANG_EINST, ai=a.anfrageInfo;
@@ -3824,7 +3853,12 @@ function angFormHtml(a){
     +angFeld('Name *','kunde.name',a.kunde.name,'text',' maxlength="80" autocomplete="off"')
     +angFeld('Firma (optional)','kunde.firma',a.kunde.firma,'text',' maxlength="80" autocomplete="off"')
     +angFeld('E-Mail *','kunde.email',a.kunde.email,'email',' maxlength="120" autocomplete="off"')
-    +angFeld('Telefon','kunde.telefon',a.kunde.telefon,'tel',' maxlength="40" autocomplete="off"')+'</div>';
+    +angFeld('Telefon','kunde.telefon',a.kunde.telefon,'tel',' maxlength="40" autocomplete="off"')+'</div>'
+    +'<p class="hint" style="margin:.7rem 0 .4rem">Rechnungsadresse (optional; sonst gibt der Kunde sie bei der Annahme an)</p><div class="ang-grid zwei">'
+    +'<div class="ang-voll">'+angFeld('Straße und Hausnummer','kunde.strasse',a.kunde.strasse,'text',' maxlength="120" autocomplete="off"')+'</div>'
+    +angFeld('PLZ','kunde.plz',a.kunde.plz,'text',' maxlength="12" inputmode="numeric" autocomplete="off"')
+    +angFeld('Ort','kunde.ort',a.kunde.ort,'text',' maxlength="80" autocomplete="off"')
+    +angFeld('USt-IdNr. (Firmen, optional)','kunde.ustId',a.kunde.ustId,'text',' maxlength="20" autocomplete="off"')+'</div>';
   h+='<div class="ang-sec">Event</div><div class="ang-grid zwei">'
     +angFeld('Datum','event.datum',a.event.datum,'date')
     +angFeld('Uhrzeit (optional)','event.zeit',a.event.zeit,'text',' maxlength="60" placeholder="z. B. 18 bis 21 Uhr"')
@@ -3867,6 +3901,7 @@ function angSummeHtml(a, r){
   return '<div><span>Zwischensumme</span><span>'+angEur(r.summe)+'</span></div>'
     +(r.rabatt>0?'<div class="rab"><span>Rabatt'+(a.rabatt.art==='prozent'?' '+String(a.rabatt.wert).replace('.',',')+' %':'')+'</span><span>- '+angEur(r.rabatt)+'</span></div>':'')
     +'<div class="gesamt"><span>Gesamt inkl. MwSt.</span><span>'+angEur(r.gesamt)+'</span></div>'
+    +angSteuer(a.zeilen,a.rabatt).map(v=>'<div class="ust"><span>darin '+v.satz+' % USt. (netto '+angEur(v.netto)+')</span><span>'+angEur(v.steuer)+'</span></div>').join('')
     +(r.anzahlung>0?'<div><span>Anzahlung '+(a.anzahlungProzent||0)+' %</span><span>'+angEur(r.anzahlung)+'</span></div><div><span>Rest nach dem Event</span><span>'+angEur(r.rest)+'</span></div>':'')
     +'<small>Endpreise inklusive gesetzlicher MwSt., ohne eigene Steueraufteilung. Positionen mit Menge 0 stehen nicht im Angebot.</small>';
 }
@@ -3886,6 +3921,11 @@ function angEingabe(e){
   const t=e.target;
   if(!ANG) return;
   if(ANG.art==='einst'){ if(t.dataset.e) ANG.dirty=true; return; }
+  if(ANG.schluss && t.dataset.sz!==undefined){
+    const z=ANG.schluss.zeilen[+t.dataset.sz]; if(!z) return;
+    if(t.dataset.szf==='text') z.text=t.value; else z[t.dataset.szf]=t.value===''?0:Number(t.value);
+    angSchlussRechnen(); return;
+  }
   const a=ANG.a;
   if(!a || a.status!=='entwurf') return;
   if(t.dataset.f){
@@ -4009,6 +4049,142 @@ async function angStatus(ziel, btn){
     angNeuZeichnen();
   });
 }
+/* ---- Rechnungen zum Angebot (lib/catering-rechnung.js) ----
+   Anzahlungsrechnung entsteht nach Zahlungseingang von selbst, Schlussrechnung
+   erstellt Kubi hier nach dem Event; sie zieht die Anzahlung je Steuersatz ab. */
+const ANG_RE_ART={catering_anzahlung:'Anzahlungsrechnung',catering_schluss:'Schlussrechnung',catering_storno:'Stornorechnung'};
+function angAdresseFehlt(k){ return !((k.firma||k.name)&&k.strasse&&k.plz&&k.ort); }
+function angRechnungsHtml(a){
+  const k=a.kunde||{};
+  let h='<div class="ang-sec">Rechnungsadresse</div>';
+  if(ANG.adresseOffen){
+    h+='<div class="ang-grid zwei">'
+      +['name:Name *','firma:Firma (optional)','strasse:Straße und Hausnummer *','plz:PLZ *','ort:Ort *','ustId:USt-IdNr. (optional)'].map(x=>{
+        const [f,l]=x.split(':');
+        return '<div class="field'+(f==='strasse'?' ang-voll':'')+'"><label for="angAd_'+f+'">'+l+'</label><input id="angAd_'+f+'" type="text" value="'+esc2(k[f]||'')+'" maxlength="120" autocomplete="off"></div>';
+      }).join('')+'</div><div class="ang-add"><button type="button" class="btn-ghost primary" data-on-click="angAdresseSichern(this)">Adresse speichern</button>'
+      +'<button type="button" class="btn-ghost" data-on-click="angAdresseUmschalten(false)">Abbrechen</button></div>';
+  } else {
+    const zeilen=[k.firma, k.firma&&k.name?k.name:(!k.firma?k.name:''), k.strasse, [k.plz,k.ort].filter(Boolean).join(' '), k.ustId?'USt-IdNr. '+k.ustId:''].filter(Boolean);
+    h+='<p class="cat-info" style="margin:0">'+(angAdresseFehlt(k)?'<span style="color:var(--amber)">Fehlt noch. Ohne Adresse entsteht keine Rechnung.</span>':zeilen.map(esc2).join('<br>'))+'</p>'
+      +'<div class="ang-add"><button type="button" class="btn-ghost" data-on-click="angAdresseUmschalten(true)">'+(angAdresseFehlt(k)?'Adresse eintragen':'Adresse ändern')+'</button></div>';
+  }
+  const liste=a.rechnungen||[];
+  const paid=a.zahlung&&a.zahlung.status==='PAID'&&a.anzahlung>0;
+  const knoepfe=[];
+  if(paid && !a.anzahlungsrechnung) knoepfe.push('<button type="button" class="btn-ghost" data-on-click="angAnzahlungsrechnung(this)">Anzahlungsrechnung erstellen</button>');
+  if(['angenommen','bezahlt'].includes(a.status) && !a.schlussrechnung) knoepfe.push('<button type="button" class="btn-ghost primary" data-on-click="angSchlussOeffnen()">Schlussrechnung erstellen</button>');
+  if(!liste.length && !knoepfe.length) return h;
+  h+='<div class="ang-sec">Rechnungen</div>';
+  if(a.rechnungHinweis==='adresse_fehlt' && !a.anzahlungsrechnung) h+='<p class="hint" style="color:var(--amber);margin:0 0 .4rem">Anzahlung ist da, die Anzahlungsrechnung wartet auf die Rechnungsadresse.</p>';
+  h+=liste.slice().reverse().map(r=>'<div class="ang-re'+(r.storniertDurch?' storniert':'')+'"><div><b>'+esc2(ANG_RE_ART[r.art]||'Rechnung')+'</b> '+esc2(r.nr)
+    +'<small>'+esc2(r.datum||'')+' · '+angEur(r.total)+(r.storniertDurch?' · storniert durch '+esc2(r.storniertDurch):'')+(r.gesendetAm?' · gesendet '+esc2(angZeit(r.gesendetAm)):'')+'</small></div>'
+    +'<div class="ang-re-akt"><button type="button" class="btn-ghost" data-inv-pdf="'+esc2(r.nr)+'">PDF</button>'
+    +(r.storniertDurch||r.art==='catering_storno'?'':'<button type="button" class="btn-ghost" data-on-click="angRechnungSenden(\''+esc2(r.nr)+'\',this)">'+(r.gesendetAm?'Erneut senden':'Per Mail senden')+'</button>')
+    +'</div></div>').join('');
+  if(knoepfe.length) h+='<div class="ang-add">'+knoepfe.join('')+'</div>';
+  return h;
+}
+function angAdresseUmschalten(an){ if(!ANG) return; ANG.adresseOffen=!!an; angBodyNeu(an?'angAd_strasse':null); }
+async function angAdresseSichern(btn){
+  if(!ANG||!ANG.a) return;
+  const v=f=>($('angAd_'+f)||{}).value||'';
+  const adresse={name:v('name').trim(),firma:v('firma').trim(),strasse:v('strasse').trim(),plz:v('plz').trim(),ort:v('ort').trim(),ustId:v('ustId').trim()};
+  if(!(adresse.name||adresse.firma)||!adresse.strasse||!adresse.plz||!adresse.ort){ toast(ANG_FEHLER.adresse_fehlt,'err'); return; }
+  await withBusy(btn, async()=>{
+    const d=await angPost({action:'adresse', id:ANG.a.id, adresse});
+    if(!d||!ANG) return;
+    ANG.a=d.angebot; ANG.adresseOffen=false; angBodyNeu();
+    toast('Rechnungsadresse gespeichert','ok');
+  });
+}
+async function angAnzahlungsrechnung(btn){
+  if(!ANG||!ANG.a) return;
+  await withBusy(btn, async()=>{
+    const d=await angPost({action:'anzahlungsrechnung', id:ANG.a.id});
+    if(!d||!ANG) return;
+    ANG.a=d.angebot; angBodyNeu();
+    toast('Anzahlungsrechnung '+(d.angebot.anzahlungsrechnung&&d.angebot.anzahlungsrechnung.nr||'')+' erstellt','ok');
+    angNeuZeichnen();
+  });
+}
+async function angRechnungSenden(nr, btn){
+  if(!ANG||!ANG.a) return;
+  const ok=await confirmBooking({ title:'Rechnung per Mail senden?', customer:(ANG.a.kunde.name||'')+' · '+(ANG.a.kunde.email||''), amount:nr, note:'Die Rechnung geht als PDF an den Kunden.', okLabel:'Senden' });
+  if(!ok) return;
+  await withBusy(btn, async()=>{
+    const d=await angPost({action:'rechnungSenden', id:ANG.a.id, nr});
+    if(!d||!ANG) return;
+    ANG.a=d.angebot; angBodyNeu();
+    toast('Rechnung '+nr+' gesendet','ok');
+  });
+}
+/* Schlussrechnung: Endstand nach dem Event (Menge, Preise, freie Positionen) */
+function angSchlussOeffnen(){
+  if(!ANG||!ANG.a) return;
+  if(angAdresseFehlt(ANG.a.kunde||{})){ toast(ANG_FEHLER.adresse_fehlt,'err'); angAdresseUmschalten(true); return; }
+  ANG.schluss={zeilen:JSON.parse(JSON.stringify(ANG.a.zeilen||[])), rabatt:JSON.parse(JSON.stringify(ANG.a.rabatt||{art:'keiner',wert:0}))};
+  angSchlussZeichnen();
+}
+function angSchlussZu(){ if(!ANG) return; ANG.schluss=null; angBodyNeu(); }
+function angSchlussZeichnen(){
+  const S=ANG.schluss, a=ANG.a, b=$('angBody');
+  const ar=a.anzahlungsrechnung;
+  const zeilen=S.zeilen.map((z,i)=>'<div class="ang-zl"><span class="art">'+esc2(ANG_ART[z.art]||'Position')+(z.art==='extra'?'':' · '+angSatz(z)+' % USt.')+'</span>'
+    +'<div class="ang-zl-top"><div class="field"><label class="sr-only" for="angS'+i+'t">Text</label><input id="angS'+i+'t" type="text" maxlength="200" data-sz="'+i+'" data-szf="text" value="'+esc2(z.text)+'"></div>'
+    +'<button type="button" class="ang-x" aria-label="Position entfernen" data-on-click="angSchlussWeg('+i+')">'+ANG_ICON.x+'</button></div>'
+    +'<div class="ang-zl-zahlen"><div class="field"><label for="angS'+i+'m">'+esc2(angMengeLabel(z))+'</label><input id="angS'+i+'m" type="number" min="0" step="any" inputmode="decimal" data-sz="'+i+'" data-szf="menge" value="'+esc2(z.menge)+'"></div>'
+    +'<div class="field"><label for="angS'+i+'e">Einzelpreis €</label><input id="angS'+i+'e" type="number" min="0" step="0.01" inputmode="decimal" data-sz="'+i+'" data-szf="einzel" value="'+esc2(z.einzel)+'"></div>'
+    +'<div class="betrag" id="angS'+i+'b"></div></div>'
+    +(z.art==='extra'?'<div class="field" style="margin-top:.45rem;max-width:17rem"><label for="angS'+i+'s">Umsatzsteuer</label><select id="angS'+i+'s" data-sz="'+i+'" data-szf="satz"><option value="19"'+(angSatz(z)===19?' selected':'')+'>19 % (Getränke, Leistungen)</option><option value="7"'+(angSatz(z)===7?' selected':'')+'>7 % (Speisen)</option></select></div>':'')
+    +'</div>').join('');
+  b.innerHTML='<p class="hint" style="margin:0 0 .6rem">Endstand nach dem Event. Ändere Mengen und Preise oder ergänze Positionen. Nach dem Erstellen ist die Rechnungsnummer vergeben; Korrekturen gehen dann nur noch per Storno.</p>'
+    +(a.event&&a.event.datum&&a.event.datum>angHeute()?'<p class="hint" style="color:var(--amber);margin:0 0 .6rem">Das Event ist erst am '+angDatum(a.event.datum)+'. Eine Schlussrechnung schreibst du normalerweise danach.</p>':'')
+    +'<div class="ang-sec">Positionen</div><div id="angSZeilen">'+zeilen+'</div><div class="ang-add">'
+    +'<button type="button" class="btn-ghost" data-on-click="angSchlussNeu(\'extra\')">'+ANG_ICON.plus+'Freie Position</button>'
+    +'<button type="button" class="btn-ghost" data-on-click="angSchlussNeu(\'stunde\')">'+ANG_ICON.plus+'Zusatzstunde</button>'
+    +'<button type="button" class="btn-ghost" data-on-click="angSchlussNeu(\'anfahrt\')">'+ANG_ICON.plus+'Anfahrt in km</button></div>'
+    +'<div class="ang-sum" id="angSSumme" aria-live="polite"></div>';
+  $('angFuss').innerHTML=angKnopf('angSchlussZu()','Zurück')+angKnopf('angSchlussErstellen(this)','Schlussrechnung erstellen','primary','angSErstellen');
+  angSchlussRechnen();
+}
+function angSchlussRechnen(){
+  const S=ANG&&ANG.schluss; if(!S||!$('angSSumme')) return;
+  const r=angRechnen({zeilen:S.zeilen, rabatt:S.rabatt, anzahlungProzent:0});
+  r.betraege.forEach((x,i)=>{ const el=$('angS'+i+'b'); if(el) el.textContent=angEur(x/100); });
+  const vat=angSteuer(S.zeilen,S.rabatt), ar=ANG.a.anzahlungsrechnung;
+  const abzug=ar?Number(ar.total)||0:0, offen=Math.round((r.gesamt-abzug)*100)/100;
+  $('angSSumme').innerHTML=(r.rabatt>0?'<div><span>Zwischensumme</span><span>'+angEur(r.summe)+'</span></div><div class="rab"><span>Rabatt</span><span>- '+angEur(r.rabatt)+'</span></div>':'')
+    +'<div class="gesamt"><span>Gesamt inkl. MwSt.</span><span>'+angEur(r.gesamt)+'</span></div>'
+    +vat.map(v=>'<div class="ust"><span>darin '+v.satz+' % USt. (netto '+angEur(v.netto)+')</span><span>'+angEur(v.steuer)+'</span></div>').join('')
+    +(ar?'<div><span>abzüglich Anzahlung '+esc2(ar.nr)+'</span><span>- '+angEur(abzug)+'</span></div>':'')
+    +'<div class="gesamt"><span>'+(offen<0?'Erstattung an den Kunden':'Noch zu zahlen')+'</span><span>'+angEur(Math.abs(offen))+'</span></div>';
+  const k=$('angSErstellen'); if(k) setBtnLabel(k,'Schlussrechnung erstellen: '+angEur(r.gesamt));
+}
+function angSchlussNeu(art){
+  const S=ANG&&ANG.schluss; if(!S) return;
+  const e=ANG_EINST;
+  const z={art, menge:art==='anfahrt'?10:1, einzel:art==='stunde'?e.stundenPreis:art==='anfahrt'?e.kmPreis:0, text:''};
+  z.text=angStdText(z); if(art==='extra') z.satz=19;
+  S.zeilen.push(z); angSchlussZeichnen();
+  const el=$('angS'+(S.zeilen.length-1)+(art==='extra'?'t':'m')); if(el) el.focus();
+}
+function angSchlussWeg(i){ const S=ANG&&ANG.schluss; if(!S) return; S.zeilen.splice(i,1); angSchlussZeichnen(); }
+async function angSchlussErstellen(btn){
+  const S=ANG&&ANG.schluss; if(!S) return;
+  const r=angRechnen({zeilen:S.zeilen, rabatt:S.rabatt, anzahlungProzent:0});
+  if(!(r.gesamt>0)){ toast(ANG_FEHLER.betrag_fehlt,'err'); return; }
+  const ok=await confirmBooking({ title:'Schlussrechnung erstellen?', customer:(ANG.a.kunde.firma||ANG.a.kunde.name||'')+' · '+ANG.a.nummer,
+    amount:angEur(r.gesamt), note:'Die Rechnungsnummer wird vergeben. Danach lässt sich die Rechnung nur noch per Storno ändern. Senden musst du sie danach selbst.', okLabel:'Erstellen' });
+  if(!ok) return;
+  await withBusy(btn, async()=>{
+    const d=await angPost({action:'schlussrechnung', id:ANG.a.id, zeilen:S.zeilen, rabatt:S.rabatt});
+    if(!d||!ANG) return;
+    ANG.a=d.angebot; ANG.schluss=null; angBodyNeu();
+    toast('Schlussrechnung '+(d.angebot.schlussrechnung&&d.angebot.schlussrechnung.nr||'')+' erstellt','ok');
+    angNeuZeichnen();
+  });
+}
 async function angDuplizieren(btn){
   if(!ANG||!ANG.a) return;
   await withBusy(btn, async()=>{
@@ -4069,6 +4245,7 @@ function angAnsichtHtml(a){
   const k=a.kunde||{}, ev=a.event||{};
   h+='<div class="ang-sec">Kunde</div><p class="cat-info" style="margin:0">'+esc2(k.name)+(k.firma?' · '+esc2(k.firma):'')+'<br>'
     +(k.email?'<a href="mailto:'+esc2(k.email)+'">'+esc2(k.email)+'</a>':'')+(k.telefon?' · <a href="tel:'+esc2(k.telefon)+'">'+esc2(k.telefon)+'</a>':'')+'</p>';
+  h+=angRechnungsHtml(a);
   const evz=[ev.datum?angDatum(ev.datum):'', ev.zeit, ev.ort, ev.personen?ev.personen+' Personen':''].filter(Boolean);
   if(evz.length) h+='<div class="ang-sec">Event</div><p class="cat-info" style="margin:0">'+esc2(evz.join(' · '))+'</p>';
   h+='<div class="ang-sec">Positionen</div><table class="ang-tab"><tbody>'

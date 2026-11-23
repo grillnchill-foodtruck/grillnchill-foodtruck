@@ -96,6 +96,8 @@ function zahlungsText(order) {
    PDF
    -------------------------------------------------------------------------- */
 function buildInvoicePdf(order) {
+  // Catering-Rechnungen (Anzahlung, Schluss, Storno) haben ein eigenes Layout
+  if (order && /^catering_/.test(String(order.art || ''))) return require('./catering-rechnung').rechnungPdf(order);
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -404,6 +406,8 @@ function rechneXml(order) {
 }
 
 function buildInvoiceXml(order) {
+  // Für Catering-Rechnungen gibt es (noch) keine XRechnung, siehe lib/catering-rechnung.js
+  if (order && /^catering_/.test(String(order.art || ''))) return null;
   const a = order.invoiceAddress || {};
   const b = rechneXml(order);
   // Firmen-Sammelrechnung: Überweisung mit Fälligkeit und Abrechnungszeitraum

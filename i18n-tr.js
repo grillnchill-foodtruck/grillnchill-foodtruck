@@ -108,7 +108,7 @@ I18N.tr = {
     "ang.discount": "İndirim",
     "ang.total": "Toplam",
     "ang.total_short": "Toplam {amount}, KDV dahil",
-    "ang.vat": "Tüm fiyatlar yasal KDV dahil nihai fiyatlardır.",
+    "ang.vat": "Tüm fiyatlar yasal KDV dahil nihai fiyatlardır.", "ang.addr_title": "Fatura adresi", "ang.addr_hint": "Ön ödeme faturası ve kapanış faturası için.", "ang.addr_name": "Ad soyad", "ang.addr_company": "Firma (isteğe bağlı)", "ang.addr_street": "Sokak ve numara", "ang.addr_zip": "Posta kodu", "ang.addr_city": "Şehir", "ang.addr_vat": "KDV numarası (isteğe bağlı, firmalar için)", "ang.addr_err": "Fatura için lütfen ad, sokak, posta kodu ve şehir gir.", "ang.vat_line": "Son fiyatlar. Dahil KDV: {list}.", "ang.invoices": "Faturalar", "ang.inv_deposit": "Ön ödeme faturası", "ang.inv_final": "Kapanış faturası",
     "ang.deposit": "Kapora (%{p})",
     "ang.rest": "Etkinlikten sonra kalan tutar",
     "ang.note": "Kubi'den not",
