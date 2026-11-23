@@ -1188,9 +1188,9 @@
           </div>
           <div class="push-zeit" id="pushZeit" hidden>
             <div><label for="pushDatum">Datum</label><input type="date" id="pushDatum"></div>
-            <div><label for="pushUhr">Uhrzeit</label><input type="time" id="pushUhr" step="300"></div>
+            <div><label for="pushUhr">Uhrzeit</label><input type="time" id="pushUhr" step="900"></div>
           </div>
-          <p class="hint" id="pushZeitHint" style="margin-top:.5rem;" hidden>Geht zur gewählten Zeit raus, in 5-Minuten-Schritten. Bis dahin kannst du sie unten ändern, sofort senden oder streichen.</p>
+          <p class="hint" id="pushZeitHint" style="margin-top:.5rem;" hidden>Geht zur gewählten Zeit raus, in 15-Minuten-Schritten (:00, :15, :30, :45). Bis dahin kannst du sie unten ändern, sofort senden oder streichen.</p>
         </div>
         <button class="btn" id="pushSendBtn">An alle senden</button>
         <p class="hint" id="pushNote" aria-live="polite"></p>
@@ -2239,7 +2239,7 @@ $('pushSendBtn').addEventListener('click',sendPush);
 
 /* ---------------- Push planen und bis zum Versand ändern (lib/push-plan.js) ----------------
    Geplante Nachrichten liegen im Store push-plan; der Zeitplan push-plan-lauf.js
-   verschickt alle 5 Minuten, was fällig ist. Bis dahin: ändern, sofort senden,
+   verschickt alle 15 Minuten, was fällig ist. Bis dahin: ändern, sofort senden,
    streichen (in „Zuletzt“ rückgängig, solange der Zeitpunkt nicht vorbei ist). */
 let pushEditId=null, pushEditStand='', pushPlanDaten=null;
 const ZIEL_TEXT={alle:'Alle', app:'Nur App', web:'Nur Browser'};
@@ -2261,14 +2261,20 @@ function ppRelativ(ms){
   if(h<24) return 'in '+h+' Std.'+(m?' '+m+' Min.':'');
   const t=Math.round(min/1440); return 'in '+t+(t===1?' Tag':' Tagen');
 }
+/* Der Zeitplan läuft alle 15 Minuten: gewählte Zeit auf die nächste
+   Viertelstunde aufrunden (iOS ignoriert step am Uhrzeitfeld). */
 function pushZeitpunkt(){
   const d=$('pushDatum').value, u=$('pushUhr').value;
   if(!d||!u) return null;
   const t=new Date(d+'T'+u);
-  return isNaN(t.getTime()) ? null : t;
+  if(isNaN(t.getTime())) return null;
+  t.setSeconds(0,0);
+  const m=t.getMinutes();
+  if(m%15) t.setMinutes(m+(15-m%15));
+  return t;
 }
 function pushZeitSetzen(t){ $('pushDatum').value=isoTagLokal(t); $('pushUhr').value=zwei(t.getHours())+':'+zwei(t.getMinutes()); }
-function pushZeitVorschlag(){ const t=new Date(Date.now()+60*60000); t.setSeconds(0,0); t.setMinutes(Math.ceil(t.getMinutes()/5)*5); return t; }
+function pushZeitVorschlag(){ const t=new Date(Date.now()+60*60000); t.setSeconds(0,0); t.setMinutes(Math.ceil(t.getMinutes()/15)*15); return t; }
 function pushWannSetzen(w){
   document.querySelectorAll('#pushWann .chip').forEach(c=>c.setAttribute('aria-pressed', c.dataset.wann===w?'true':'false'));
   const spaeter=w==='spaeter';
@@ -2285,6 +2291,8 @@ document.addEventListener('click',(e)=>{
   pushWannSetzen(c.dataset.wann);
 });
 ['pushDatum','pushUhr'].forEach(id=>$(id).addEventListener('input',()=>setBtnLabel($('pushSendBtn'), pushBtnLabel())));
+// Nach der Auswahl die gerundete Zeit ins Feld schreiben, damit Feld und Knopf dasselbe zeigen
+$('pushUhr').addEventListener('change',()=>{ const t=pushZeitpunkt(); if(t) pushZeitSetzen(t); setBtnLabel($('pushSendBtn'), pushBtnLabel()); });
 
 async function pushPlanAnfrage(nutzlast){
   try{

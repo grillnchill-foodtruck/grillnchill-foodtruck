@@ -408,9 +408,9 @@
 [functions."giftcard-zustellung"]
   schedule = "2 * * * *"
 
-# Geplante Push-Nachrichten aus dem Admin-Tool (lib/push-plan.js): alle 5 Minuten
+# Geplante Push-Nachrichten aus dem Admin-Tool (lib/push-plan.js): alle 15 Minuten
 [functions."push-plan-lauf"]
-  schedule = "*/5 * * * *"
+  schedule = "*/15 * * * *"
 
 # AGB als eigene Seite (Nutzungsbedingungen-URL für Google Play), Text aus
 # LEGAL.agb in index.html (werkzeug/seiten-bauen.js)

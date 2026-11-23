@@ -13,7 +13,7 @@
  *           sendet  → fehler (nichts raus, z. B. VAPID fehlt) | unklar (Abbruch mitten im Versand)
  *
  * Doppelversand ist ausgeschlossen: Bevor der Zeitplan (push-plan-lauf.js,
- * alle 5 Minuten) oder „Jetzt senden“ eine Nachricht verschickt, setzt er
+ * alle 15 Minuten) oder „Jetzt senden“ eine Nachricht verschickt, setzt er
  * status „sendet“ mit onlyIfMatch auf den gelesenen Stand. Ändert jemand die
  * Nachricht in derselben Sekunde, gewinnt genau einer; danach lässt sich eine
  * Nachricht im Status „sendet“ nicht mehr ändern.
