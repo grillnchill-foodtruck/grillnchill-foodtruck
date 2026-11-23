@@ -746,8 +746,7 @@ Object.assign(I18N.de, {
   "gs.bw_z0": "Ab 25 € gibt es einen <b>Bonus-Code über 5 €</b> für dich dazu.",
   "gs.bw_dk_titel": "Dein Black-Week-Bonus",
   "gs.bw_dk_text": "{wert} Rabatt auf eine Bestellung über Website oder App ab {min}, einlösbar vom {von} bis {bis}. Der Code steht auch in deiner Bestätigungsmail.",
-  "gs.js_pdf_fremd": "Emojis und manche Sonderzeichen kann das PDF nicht drucken. In der Mail steht deine Nachricht genau so, wie du sie schreibst.",
-  "gs.js_pdf_tr": "Im PDF stehen ş, ğ und ı als s, g und i. In der Mail steht alles genau so, wie du es schreibst.",
+  "gs.js_pdf_fremd": "Emojis und manche Schriften, etwa Arabisch, kann das PDF nicht drucken. In der Mail steht deine Nachricht genau so, wie du sie schreibst.",
 });
 /* UNTERSEITEN:ENDE */
 

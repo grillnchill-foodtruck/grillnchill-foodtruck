@@ -2,8 +2,9 @@
  * lib/geschenk-pdf.js
  * ----------------------------------------------------------------------------
  * Geschenkgutschein als PDF (A4), mit Karte zum Ausschneiden. pdfkit wie
- * lib/angebot-pdf.js; nur Helvetica, weil eingebettete Schriften in der
- * macOS- und iOS-Vorschau nicht erscheinen (siehe dort). Das CI kommt über
+ * lib/angebot-pdf.js. Schrift: Inter, eingebettet über lib/pdf-schrift.js
+ * (seit 23.11.2026), damit ş, ğ, ı und İ in Namen und Nachricht stimmen;
+ * ohne die Schriftdateien fällt sie auf Helvetica zurück. Das CI kommt über
  * Logo, Farben, die dunkle Karte und die Grillstreifen.
  * ----------------------------------------------------------------------------
  */
@@ -25,14 +26,7 @@ function datei(name) {
   return null;
 }
 
-// Standardschriften können nur Latin-1 (gleiche Regeln wie lib/angebot-pdf.js)
-function latin1(s) {
-  return String(s == null ? '' : s)
-    .replace(/[Ş]/g, 'S').replace(/[ş]/g, 's').replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
-    .replace(/İ/g, 'I').replace(/ı/g, 'i')
-    .replace(/[‘’‚]/g, "'").replace(/[“”„]/g, '"').replace(/[–—]/g, '-').replace(/…/g, '...')
-    .replace(/[^\u0000-ÿ€]/g, '');
-}
+const schrift = require('./pdf-schrift');
 const euro = (n) => {
   const v = Number(n || 0);
   return (v % 1 ? v.toFixed(2).replace('.', ',') : String(v)) + ' €';
@@ -54,23 +48,25 @@ function gutscheinPdf(d) {
 
       const W = 595.28, L = 50, R = W - 50;
       const logo = datei('logo.png');
+      const S = schrift.einrichten(doc);
+      const F = S.normal, FB = S.fett, T = S.text;
 
       /* ---- Kopf ---- */
       doc.rect(0, 0, W, 110).fill(FARBE.grund);
       doc.rect(0, 110, W, 4).fill(FARBE.orange);
       let x0 = L;
       if (logo) { try { doc.image(logo, L, 26, { fit: [58, 58] }); x0 = L + 72; } catch (e) {} }
-      doc.font('Helvetica-Bold').fontSize(20).fillColor(FARBE.creme).text("GRILL'N CHILL", x0, 36, { characterSpacing: 0.6, lineBreak: false });
-      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(FARBE.orange).text('FOODTRUCK · BIELEFELD · 100 % HALAL', x0, 63, { characterSpacing: 1.6, lineBreak: false });
-      doc.font('Helvetica-Bold').fontSize(22).fillColor(FARBE.creme).text('GUTSCHEIN', 300, 40, { width: R - 300, align: 'right', characterSpacing: 1.5 });
+      doc.font(FB).fontSize(20).fillColor(FARBE.creme).text("GRILL'N CHILL", x0, 36, { characterSpacing: 0.6, lineBreak: false });
+      doc.font(FB).fontSize(7.5).fillColor(FARBE.orange).text('FOODTRUCK · BIELEFELD · 100 % HALAL', x0, 63, { characterSpacing: 1.6, lineBreak: false });
+      doc.font(FB).fontSize(22).fillColor(FARBE.creme).text('GUTSCHEIN', 300, 40, { width: R - 300, align: 'right', characterSpacing: 1.5 });
 
       /* ---- Überschrift ---- */
       let y = 146;
       const titel = d.recipientName ? 'Für ' + d.recipientName : 'Dein Gutschein';
-      doc.font('Helvetica-Bold').fontSize(24).fillColor(FARBE.text).text(latin1(titel), L, y, { width: R - L });
+      doc.font(FB).fontSize(24).fillColor(FARBE.text).text(T(titel), L, y, { width: R - L });
       y = doc.y + 4;
       const unter = d.buyerName ? 'Von ' + d.buyerName + ', mit Burger-Grüßen' : 'Guten Appetit';
-      doc.font('Helvetica').fontSize(11).fillColor(FARBE.grau).text(latin1(unter), L, y, { width: R - L });
+      doc.font(F).fontSize(11).fillColor(FARBE.grau).text(T(unter), L, y, { width: R - L });
       y = doc.y + 26;
 
       /* ---- Karte zum Ausschneiden ---- */
@@ -78,7 +74,7 @@ function gutscheinPdf(d) {
       // Schnittlinie mit Abstand
       doc.save().lineWidth(0.8).dash(4, { space: 4 }).strokeColor(FARBE.linie)
         .roundedRect(KX - 12, KY - 12, KW + 24, KH + 24, 22).stroke().undash().restore();
-      doc.font('Helvetica').fontSize(7).fillColor(FARBE.muted)
+      doc.font(F).fontSize(7).fillColor(FARBE.muted)
         .text('ENTLANG DER LINIE AUSSCHNEIDEN', KX - 12, KY - 26, { width: KW + 24, align: 'right', characterSpacing: 1.2 });
 
       doc.save();
@@ -100,8 +96,8 @@ function gutscheinPdf(d) {
 
       const P = 22;
       if (logo) { try { doc.image(logo, KX + P, KY + P - 2, { fit: [30, 30] }); } catch (e) {} }
-      doc.font('Helvetica-Bold').fontSize(10).fillColor(FARBE.creme).text("GRILL'N CHILL", KX + P + 38, KY + P + 2, { lineBreak: false, characterSpacing: 0.6 });
-      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(FARBE.orangeHell).text('GUTSCHEIN', KX + P + 38, KY + P + 15, { lineBreak: false, characterSpacing: 1.6 });
+      doc.font(FB).fontSize(10).fillColor(FARBE.creme).text("GRILL'N CHILL", KX + P + 38, KY + P + 2, { lineBreak: false, characterSpacing: 0.6 });
+      doc.font(FB).fontSize(7.5).fillColor(FARBE.orangeHell).text('GUTSCHEIN', KX + P + 38, KY + P + 15, { lineBreak: false, characterSpacing: 1.6 });
 
       // QR-Code oben rechts: Handykamera öffnet „Gutschein prüfen“, der Scanner im
       // Admin-Tool löst ihn am Truck ein (lib/qr.js)
@@ -120,11 +116,11 @@ function gutscheinPdf(d) {
         doc.restore();
       } catch (e) { /* ohne QR bleibt der Code zum Eintippen */ }
 
-      doc.font('Helvetica-Bold').fontSize(46).fillColor(FARBE.creme).text(euro(d.amount), KX + P, KY + 66, { lineBreak: false });
+      doc.font(FB).fontSize(46).fillColor(FARBE.creme).text(euro(d.amount), KX + P, KY + 66, { lineBreak: false });
       let iy = KY + 120;
       const vor = d.preset && VORSCHLAEGE[d.preset];
       if (vor) {
-        doc.font('Helvetica-Bold').fontSize(9).fillColor(FARBE.dim).text(latin1('Gedacht für: ' + vor.titel), KX + P, iy, { width: KW - 2 * P, lineBreak: false });
+        doc.font(FB).fontSize(9).fillColor(FARBE.dim).text(T('Gedacht für: ' + vor.titel), KX + P, iy, { width: KW - 2 * P, lineBreak: false });
         iy += 15;
       }
       // Unterer Rand: Für, Von, Code
@@ -134,26 +130,24 @@ function gutscheinPdf(d) {
       // der Karte und vollständig darunter (Block „Nachricht“)
       let nachrichtGanz = true;
       if (d.message) {
-        const kw = KW - 2 * P;                   // der QR-Code endet oberhalb der Nachricht
+        const kw = KW - 2 * P - 4;               // der QR-Code endet oberhalb der Nachricht; 4 pt für die Neigung
         const platz = by - 8 - iy;
-        const mitUmbruch = latin1(d.message);
-        const einzeilig = latin1(d.message.replace(/\s*\n+\s*/g, ' '));
+        const mitUmbruch = T(d.message);
+        const einzeilig = T(d.message.replace(/\s*\n+\s*/g, ' '));
         const versuche = [[mitUmbruch, 9], [mitUmbruch, 8], [einzeilig, 8], [einzeilig, 7.5]];
-        const hoehe = (t, g) => doc.font('Helvetica-Oblique').fontSize(g).heightOfString(t, { width: kw, lineGap: 1 });
-        const treffer = versuche.find(([t, g]) => hoehe(t, g) <= platz);
+        const treffer = versuche.find(([t, g]) => S.schraeg.hoehe(t, { breite: kw, groesse: g, zeilenabstand: 1 }) <= platz);
         nachrichtGanz = !!treffer;
         const [text, groesse] = treffer || [einzeilig, 7.5];
-        doc.font('Helvetica-Oblique').fontSize(groesse).fillColor(FARBE.creme)
-          .text(text, KX + P, iy, { width: kw, height: platz, ellipsis: true, lineGap: 1 });
+        S.schraeg.zeichnen(text, KX + P, iy, { breite: kw, groesse, zeilenabstand: 1, farbe: FARBE.creme, maxHoehe: platz });
       }
       const spalte = (label, wert, x, w) => {
-        doc.font('Helvetica-Bold').fontSize(6.5).fillColor(FARBE.muted).text(label, x, by, { width: w, characterSpacing: 1.2, lineBreak: false });
-        doc.font('Helvetica-Bold').fontSize(10).fillColor(FARBE.creme).text(latin1(wert || '-'), x, by + 10, { width: w, height: 12, ellipsis: true, lineBreak: false });
+        doc.font(FB).fontSize(6.5).fillColor(FARBE.muted).text(label, x, by, { width: w, characterSpacing: 1.2, lineBreak: false });
+        doc.font(FB).fontSize(10).fillColor(FARBE.creme).text(T(wert || '-'), x, by + 10, { width: w, height: 12, ellipsis: true, lineBreak: false });
       };
       spalte('FÜR', d.recipientName, KX + P, 110);
       spalte('VON', d.buyerName, KX + P + 118, 110);
       doc.font('Courier-Bold').fontSize(11).fillColor(FARBE.orangeHell).text(d.code, KX + KW - P - 140, by + 1, { width: 140, align: 'right', characterSpacing: 1 });
-      doc.font('Helvetica').fontSize(7).fillColor(FARBE.dim).text('gültig bis ' + deDatum(d.validUntil), KX + KW - P - 140, by + 15, { width: 140, align: 'right' });
+      doc.font(F).fontSize(7).fillColor(FARBE.dim).text('gültig bis ' + deDatum(d.validUntil), KX + KW - P - 140, by + 15, { width: 140, align: 'right' });
 
       y = KY + KH + 44;
 
@@ -172,40 +166,43 @@ function gutscheinPdf(d) {
          Schrift kleiner, zuletzt stehen die Zeilen mit „ / “ hintereinander. ---- */
       if (d.message && !nachrichtGanz) {
         let rest = 10 + 8 + 2 + 6 + 10;           // Überschrift und Abstände von „So löst du ihn ein“
-        schritte.forEach((t) => { rest += doc.font('Helvetica').fontSize(11).heightOfString(latin1(t), { width: R - L - 26 }) + 8; });
-        rest += doc.font('Helvetica-Bold').fontSize(10.5).heightOfString(latin1(amTruck), { width: R - L });
-        rest += doc.font('Helvetica').fontSize(8.5).heightOfString(latin1(klein), { width: R - L, lineGap: 1.5 });
+        schritte.forEach((t) => { rest += doc.font(F).fontSize(11).heightOfString(T(t), { width: R - L - 26 }) + 8; });
+        rest += doc.font(FB).fontSize(10.5).heightOfString(T(amTruck), { width: R - L });
+        rest += doc.font(F).fontSize(8.5).heightOfString(T(klein), { width: R - L, lineGap: 1.5 });
         const platz = 790 - y - rest - 14 - 22;   // bis über den Fuß, abzüglich Überschrift und Abstand
-        const mitUmbruch = latin1(d.message);
-        const verkettet = latin1(d.message.replace(/\s*\n+\s*/g, ' / '));
+        const mitUmbruch = T(d.message);
+        const verkettet = T(d.message.replace(/\s*\n+\s*/g, ' / '));
         const versuche = [[mitUmbruch, 11], [mitUmbruch, 10], [mitUmbruch, 9], [verkettet, 10], [verkettet, 9]];
-        const hoehe = (t, g) => doc.font('Helvetica-Oblique').fontSize(g).heightOfString(t, { width: R - L, lineGap: 2 });
-        const [text, groesse] = versuche.find(([t, g]) => hoehe(t, g) <= platz) || versuche[versuche.length - 1];
-        doc.font('Helvetica-Bold').fontSize(8).fillColor(FARBE.grau).text('NACHRICHT', L, y, { characterSpacing: 1.2 });
-        doc.font('Helvetica-Oblique').fontSize(groesse).fillColor(FARBE.text).text(text, L, doc.y + 4, { width: R - L, lineGap: 2 });
-        y = doc.y + 22;
+        const mass = (g) => ({ breite: R - L - 4, groesse: g, zeilenabstand: 2 });
+        const [text, groesse] = versuche.find(([t, g]) => S.schraeg.hoehe(t, mass(g)) <= platz) || versuche[versuche.length - 1];
+        doc.font(FB).fontSize(8).fillColor(FARBE.grau).text('NACHRICHT', L, y, { characterSpacing: 1.2 });
+        const y0 = doc.y + 4;
+        const block = S.schraeg.zeichnen(text, L, y0, { ...mass(groesse), farbe: FARBE.text, maxHoehe: Math.max(platz, 40) });
+        y = y0 + block.hoehe + 22;
       }
 
       /* ---- So löst du ihn ein ---- */
-      doc.font('Helvetica-Bold').fontSize(8).fillColor(FARBE.grau).text('SO LÖST DU IHN EIN', L, y, { characterSpacing: 1.2 });
+      doc.font(FB).fontSize(8).fillColor(FARBE.grau).text('SO LÖST DU IHN EIN', L, y, { characterSpacing: 1.2 });
       y = doc.y + 8;
       schritte.forEach((s, i) => {
         doc.circle(L + 8, y + 7, 8).fill(FARBE.orange);
-        doc.font('Helvetica-Bold').fontSize(9).fillColor('#FFFFFF').text(String(i + 1), L, y + 3, { width: 16, align: 'center' });
-        doc.font('Helvetica').fontSize(11).fillColor(FARBE.text).text(latin1(s), L + 26, y + 1, { width: R - L - 26 });
+        doc.font(FB).fontSize(9).fillColor('#FFFFFF').text(String(i + 1), L, y + 3, { width: 16, align: 'center' });
+        doc.font(F).fontSize(11).fillColor(FARBE.text).text(T(s), L + 26, y + 1, { width: R - L - 26 });
         y = doc.y + 8;
       });
-      doc.font('Helvetica-Bold').fontSize(10.5).fillColor(FARBE.text).text(latin1(amTruck), L, y + 2, { width: R - L });
+      doc.font(FB).fontSize(10.5).fillColor(FARBE.text).text(T(amTruck), L, y + 2, { width: R - L });
       y = doc.y + 6;
 
       y += 10;
-      doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.grau).text(latin1(klein), L, y, { width: R - L, lineGap: 1.5 });
+      doc.font(F).fontSize(8.5).fillColor(FARBE.grau).text(T(klein), L, y, { width: R - L, lineGap: 1.5 });
 
       /* ---- Fuß (unterhalb des Seitenrands, sonst bricht pdfkit auf Seite 2 um) ---- */
       doc.page.margins.bottom = 0;
-      doc.font('Helvetica').fontSize(7.5).fillColor(FARBE.muted).text(latin1(
-        "Grill'n Chill Yildiz und Öztas GbR · Im Teich 9, 49152 Bad Essen · Truck: Gütersloher Straße 122, 33649 Bielefeld · info@grillnchill-foodtruck.de"),
-      L, 800, { width: R - L, align: 'center' });
+      // Eine Zeile: Inter läuft breiter als Helvetica, die Größe passt sich an
+      const fuss = T("Grill'n Chill Yildiz und Öztas GbR · Im Teich 9, 49152 Bad Essen · Truck: Gütersloher Straße 122, 33649 Bielefeld · info@grillnchill-foodtruck.de");
+      let fg = 7.5;
+      while (fg > 6 && doc.font(F).fontSize(fg).widthOfString(fuss) > R - L) fg -= 0.25;
+      doc.font(F).fontSize(fg).fillColor(FARBE.muted).text(fuss, L, 800, { width: R - L, align: 'center', lineBreak: false });
 
       doc.end();
     } catch (e) { reject(e); }

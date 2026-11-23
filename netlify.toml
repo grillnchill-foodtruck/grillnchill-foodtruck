@@ -149,6 +149,7 @@
   # Die .pem-Dateien braucht die Apple-Wallet-Signatur - der Bundler packt
   # von sich aus nur JavaScript ein.
   included_files = ["logo.png", "speisekarte.js", "vendor/qrcode.js",
+                    "fonts/pdf/Inter-Regular.ttf", "fonts/pdf/Inter-Bold.ttf",
                     "netlify/functions/lib/apple-pass-cert.pem",
                     "netlify/functions/lib/apple-wwdr-g4.pem"]
 

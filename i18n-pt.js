@@ -770,7 +770,6 @@ Object.assign(I18N.pt, {
   "gs.bw_z0": "A partir de 25 € recebes também um <b>código de bónus de 5 €</b>.",
   "gs.bw_dk_titel": "O teu bónus Black Week",
   "gs.bw_dk_text": "{wert} de desconto numa encomenda pelo site ou pela app a partir de {min}, válido de {von} a {bis}. O código também está no teu e-mail de confirmação.",
-  "gs.js_pdf_fremd": "O PDF não consegue imprimir emojis e alguns caracteres especiais. No e-mail a tua mensagem aparece tal como a escreves.",
-  "gs.js_pdf_tr": "No PDF, ş, ğ e ı aparecem como s, g e i. No e-mail tudo aparece tal como o escreves.",
+  "gs.js_pdf_fremd": "O PDF não consegue imprimir emojis e algumas escritas, como o árabe. No e-mail a tua mensagem aparece tal como a escreves.",
 });
 /* UNTERSEITEN:ENDE */

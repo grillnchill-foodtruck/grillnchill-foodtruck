@@ -319,16 +319,19 @@
       voll.hidden = passt;
       $('gs-voll-text').textContent = passt ? '' : text;
     }
-    // Das PDF druckt nur Latin-1: Emojis fehlen dort, ş, ğ und ı werden zu s, g und i
+    // Das PDF druckt mit Inter (lib/pdf-schrift.js): Lateinisch, Griechisch und
+    // Kyrillisch erscheinen, Emojis und andere Schriften (etwa Arabisch) fehlen dort
+    var PDF_FREMD = (function () {
+      try { return new RegExp('(?![\\u00A9\\u00AE\\u2122])\\p{Extended_Pictographic}|[^\\p{Script=Latin}\\p{Script=Greek}\\p{Script=Cyrillic}\\p{Script=Common}\\p{Script=Inherited}]', 'u'); }
+      catch (e) { return /[\uD800-\uDFFF]/; }
+    })();
     function zeichenHinweis() {
       var h = $('gs-pdf-hinweis');
       if (!h) return;
       var alles = $('gs-msg').value + ' ' + $('gs-rname').value + ' ' + $('gs-bname').value;
-      var fremd = /[^\u0000-\u00ff€‘’‚“”„–—…ŞşĞğİı]/.test(alles);
-      var tuerkisch = /[ŞşĞğİı]/.test(alles);
-      h.hidden = !(fremd || tuerkisch);
-      if (fremd) h.textContent = T('gs.js_pdf_fremd', 'Emojis und manche Sonderzeichen kann das PDF nicht drucken. In der Mail steht deine Nachricht genau so, wie du sie schreibst.');
-      else if (tuerkisch) h.textContent = T('gs.js_pdf_tr', 'Im PDF stehen ş, ğ und ı als s, g und i. In der Mail steht alles genau so, wie du es schreibst.');
+      var fremd = PDF_FREMD.test(alles);
+      h.hidden = !fremd;
+      if (fremd) h.textContent = T('gs.js_pdf_fremd', 'Emojis und manche Schriften, etwa Arabisch, kann das PDF nicht drucken. In der Mail steht deine Nachricht genau so, wie du sie schreibst.');
     }
     var einpassenRaf = 0;
     window.addEventListener('resize', function () { cancelAnimationFrame(einpassenRaf); einpassenRaf = requestAnimationFrame(nachrichtEinpassen); });

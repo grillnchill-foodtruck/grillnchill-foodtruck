@@ -770,7 +770,6 @@ Object.assign(I18N.fr, {
   "gs.bw_z0": "Dès 25 €, tu reçois en plus un <b>code bonus de 5 €</b>.",
   "gs.bw_dk_titel": "Ton bonus Black Week",
   "gs.bw_dk_text": "{wert} de réduction sur une commande sur le site ou l'appli dès {min}, utilisable du {von} au {bis}. Le code figure aussi dans ton e-mail de confirmation.",
-  "gs.js_pdf_fremd": "Le PDF ne peut pas imprimer les emojis et certains caractères spéciaux. Dans l'e-mail, ton message apparaît exactement comme tu l'écris.",
-  "gs.js_pdf_tr": "Dans le PDF, ş, ğ et ı s'affichent comme s, g et i. Dans l'e-mail, tout apparaît exactement comme tu l'écris.",
+  "gs.js_pdf_fremd": "Le PDF ne peut pas imprimer les emojis et certaines écritures, comme l'arabe. Dans l'e-mail, ton message apparaît exactement comme tu l'écris.",
 });
 /* UNTERSEITEN:ENDE */

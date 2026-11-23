@@ -36,13 +36,7 @@ function datei(name) {
   }
   return null;
 }
-function latin1(s) {
-  return String(s == null ? '' : s)
-    .replace(/[Ş]/g, 'S').replace(/[ş]/g, 's').replace(/Ğ/g, 'G').replace(/ğ/g, 'g')
-    .replace(/İ/g, 'I').replace(/ı/g, 'i')
-    .replace(/[‘’‚]/g, "'").replace(/[“”„]/g, '"').replace(/[–—]/g, '-').replace(/…/g, '...')
-    .replace(/[^\u0000-ÿ€]/g, '');
-}
+const schrift = require('./pdf-schrift');   // Inter, damit Käufernamen mit ş, ğ, ı stimmen
 const eur = (n) => (Number(n) || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 const deDatum = (iso) => (/^\d{4}-\d{2}-\d{2}/.test(iso || '') ? iso.slice(0, 10).split('-').reverse().join('.') : '');
 
@@ -66,6 +60,8 @@ function belegPdf(b) {
       doc.on('end', () => resolve(Buffer.concat(teile)));
       doc.on('error', reject);
       const W = 595.28, L = 50, R = W - 50;
+      const S = schrift.einrichten(doc);
+      const F = S.normal, FB = S.fett, T = S.text;
 
       /* Kopf */
       doc.rect(0, 0, W, 104).fill(FARBE.grund);
@@ -73,62 +69,65 @@ function belegPdf(b) {
       const logo = datei('logo.png');
       let x0 = L;
       if (logo) { try { doc.image(logo, L, 24, { fit: [56, 56] }); x0 = L + 70; } catch (e) {} }
-      doc.font('Helvetica-Bold').fontSize(19).fillColor(FARBE.creme).text("GRILL'N CHILL", x0, 34, { characterSpacing: 0.6, lineBreak: false });
-      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(FARBE.orange).text('FOODTRUCK · BIELEFELD', x0, 60, { characterSpacing: 1.6, lineBreak: false });
-      doc.font('Helvetica-Bold').fontSize(20).fillColor(FARBE.creme).text('KAUFBELEG', 300, 34, { width: R - 300, align: 'right', characterSpacing: 1.4 });
-      doc.font('Helvetica-Bold').fontSize(9.5).fillColor(FARBE.orange).text(latin1(b.nr), 300, 62, { width: R - 300, align: 'right' });
+      doc.font(FB).fontSize(19).fillColor(FARBE.creme).text("GRILL'N CHILL", x0, 34, { characterSpacing: 0.6, lineBreak: false });
+      doc.font(FB).fontSize(7.5).fillColor(FARBE.orange).text('FOODTRUCK · BIELEFELD', x0, 60, { characterSpacing: 1.6, lineBreak: false });
+      doc.font(FB).fontSize(20).fillColor(FARBE.creme).text('KAUFBELEG', 300, 34, { width: R - 300, align: 'right', characterSpacing: 1.4 });
+      doc.font(FB).fontSize(9.5).fillColor(FARBE.orange).text(T(b.nr), 300, 62, { width: R - 300, align: 'right' });
 
       /* Verkäufer klein, Käufer, Eckdaten */
       let y = 132;
-      doc.font('Helvetica').fontSize(7.5).fillColor(FARBE.grau)
-        .text(latin1(VERKAEUFER.name + ' · ' + VERKAEUFER.strasse + ' · ' + VERKAEUFER.ort), L, y, { width: 260 });
+      doc.font(F).fontSize(7.5).fillColor(FARBE.grau)
+        .text(T(VERKAEUFER.name + ' · ' + VERKAEUFER.strasse + ' · ' + VERKAEUFER.ort), L, y, { width: 260 });
       y += 18;
-      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(FARBE.grau).text('KÄUFER', L, y, { characterSpacing: 1.2 });
-      doc.font('Helvetica-Bold').fontSize(11).fillColor(FARBE.text).text(latin1(b.kaeufer.name || '-'), L, y + 12, { width: 250 });
-      doc.font('Helvetica').fontSize(9).fillColor(FARBE.grau).text(latin1(b.kaeufer.email), L, doc.y + 1, { width: 250 });
+      doc.font(FB).fontSize(7.5).fillColor(FARBE.grau).text('KÄUFER', L, y, { characterSpacing: 1.2 });
+      doc.font(FB).fontSize(11).fillColor(FARBE.text).text(T(b.kaeufer.name || '-'), L, y + 12, { width: 250 });
+      doc.font(F).fontSize(9).fillColor(FARBE.grau).text(T(b.kaeufer.email), L, doc.y + 1, { width: 250 });
 
       const eck = [['Belegnummer', b.nr], ['Belegdatum', deDatum(b.datum)], ['Leistungsdatum', deDatum(b.datum)], ['USt-IdNr.', VERKAEUFER.ustId]];
       let ry = 150;
       eck.forEach(([l, w]) => {
-        doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.grau).text(latin1(l), 330, ry, { width: 90 });
-        doc.font('Helvetica-Bold').fontSize(8.5).fillColor(FARBE.text).text(latin1(w), 420, ry, { width: R - 420, align: 'right' });
+        doc.font(F).fontSize(8.5).fillColor(FARBE.grau).text(T(l), 330, ry, { width: 90 });
+        // Immer eine Zeile: lange Belegnummern (GNC-GC-<Zeit><Zufall>) werden etwas kleiner
+        let wg = 8.5;
+        while (wg > 6.5 && doc.font(FB).fontSize(wg).widthOfString(T(w)) > R - 405) wg -= 0.25;
+        doc.font(FB).fontSize(wg).fillColor(FARBE.text).text(T(w), 405, ry + (8.5 - wg) / 2, { width: R - 405, align: 'right', lineBreak: false });
         ry += 14;
       });
 
       /* Position */
       y = Math.max(doc.y, ry) + 30;
       doc.rect(L, y, R - L, 22).fill(FARBE.zart);
-      doc.font('Helvetica-Bold').fontSize(8).fillColor(FARBE.grau);
+      doc.font(FB).fontSize(8).fillColor(FARBE.grau);
       doc.text('POSITION', L + 10, y + 8, { characterSpacing: 1 });
       doc.text('MENGE', 380, y + 8, { width: 50, align: 'right', characterSpacing: 1 });
       doc.text('BETRAG', 440, y + 8, { width: R - 450, align: 'right', characterSpacing: 1 });
       y += 32;
-      doc.font('Helvetica-Bold').fontSize(10.5).fillColor(FARBE.text).text('Geschenkgutschein ' + latin1(b.code), L + 10, y, { width: 310 });
-      doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.grau)
-        .text(latin1('Wertgutschein für Speisen und Getränke bei Grill\'n Chill, gültig bis ' + deDatum(b.gueltigBis) + ', einlösbar online und in der App'), L + 10, doc.y + 2, { width: 310 });
-      doc.font('Helvetica').fontSize(10).fillColor(FARBE.text).text('1', 380, y, { width: 50, align: 'right' });
-      doc.font('Helvetica-Bold').fontSize(10).fillColor(FARBE.text).text(eur(b.betrag), 440, y, { width: R - 450, align: 'right' });
+      doc.font(FB).fontSize(10.5).fillColor(FARBE.text).text('Geschenkgutschein ' + T(b.code), L + 10, y, { width: 310 });
+      doc.font(F).fontSize(8.5).fillColor(FARBE.grau)
+        .text(T('Wertgutschein für Speisen und Getränke bei Grill\'n Chill, gültig bis ' + deDatum(b.gueltigBis) + ', einlösbar online und in der App'), L + 10, doc.y + 2, { width: 310 });
+      doc.font(F).fontSize(10).fillColor(FARBE.text).text('1', 380, y, { width: 50, align: 'right' });
+      doc.font(FB).fontSize(10).fillColor(FARBE.text).text(eur(b.betrag), 440, y, { width: R - 450, align: 'right' });
       y = doc.y + 18;
       doc.moveTo(300, y).lineTo(R, y).strokeColor(FARBE.linie).stroke();
       y += 10;
-      doc.font('Helvetica-Bold').fontSize(12).fillColor(FARBE.text).text('Gesamtbetrag', 300, y, { width: 140 });
+      doc.font(FB).fontSize(12).fillColor(FARBE.text).text('Gesamtbetrag', 300, y, { width: 140 });
       doc.text(eur(b.betrag), 440, y, { width: R - 450, align: 'right' });
       y = doc.y + 4;
-      doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.grau).text('bezahlt am ' + deDatum(b.datum), 300, y, { width: R - 310, align: 'right' });
+      doc.font(F).fontSize(8.5).fillColor(FARBE.grau).text('bezahlt am ' + deDatum(b.datum), 300, y, { width: R - 310, align: 'right' });
 
       /* Steuerhinweis und Zahlung */
       y = doc.y + 30;
       doc.rect(L, y, R - L, 58).fill(FARBE.zart);
-      doc.font('Helvetica-Bold').fontSize(9).fillColor(FARBE.text).text('Hinweis zur Umsatzsteuer', L + 12, y + 10);
-      doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.grau).text(latin1(
+      doc.font(FB).fontSize(9).fillColor(FARBE.text).text('Hinweis zur Umsatzsteuer', L + 12, y + 10);
+      doc.font(F).fontSize(8.5).fillColor(FARBE.grau).text(T(
         'Mehrzweck-Gutschein nach § 3 Abs. 15 UStG. Der Verkauf ist nicht umsatzsteuerbar, deshalb weist dieser Beleg keine Umsatzsteuer aus. '
         + 'Die Umsatzsteuer entsteht bei der Einlösung, mit dem Steuersatz der dann bestellten Speisen und Getränke.'), L + 12, y + 24, { width: R - L - 24, lineGap: 1 });
       y += 76;
-      doc.font('Helvetica').fontSize(9).fillColor(FARBE.grau).text(latin1('Zahlung: ' + b.zahlung), L, y, { width: R - L });
+      doc.font(F).fontSize(9).fillColor(FARBE.grau).text(T('Zahlung: ' + b.zahlung), L, y, { width: R - L });
 
       /* Fuß */
       doc.page.margins.bottom = 0;
-      doc.font('Helvetica').fontSize(7.5).fillColor(FARBE.grau).text(latin1(
+      doc.font(F).fontSize(7.5).fillColor(FARBE.grau).text(T(
         VERKAEUFER.name + ' · ' + VERKAEUFER.strasse + ', ' + VERKAEUFER.ort + ' · USt-IdNr. ' + VERKAEUFER.ustId
         + '\nTruck: ' + VERKAEUFER.truck + ' · ' + VERKAEUFER.mail + ' · ' + VERKAEUFER.tel + ' · ' + VERKAEUFER.web),
       L, 790, { width: R - L, align: 'center', lineGap: 2 });

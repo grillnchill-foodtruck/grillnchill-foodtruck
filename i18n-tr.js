@@ -770,7 +770,6 @@ Object.assign(I18N.tr, {
   "gs.bw_z0": "25 €'dan itibaren <b>5 €'luk bonus kodu</b> da senin.",
   "gs.bw_dk_titel": "Black Week bonusun",
   "gs.bw_dk_text": "Web sitesi veya uygulamadan {min} ve üzeri bir siparişte {wert} indirim, {von} ile {bis} arasında geçerli. Kod onay e-postanda da var.",
-  "gs.js_pdf_fremd": "PDF emojileri ve bazı özel karakterleri basamıyor. E-postada mesajın tam yazdığın gibi görünür.",
-  "gs.js_pdf_tr": "PDF'te ş, ğ ve ı harfleri s, g ve i olarak görünür. E-postada her şey tam yazdığın gibi görünür.",
+  "gs.js_pdf_fremd": "PDF emojileri ve Arapça gibi bazı yazı sistemlerini basamıyor. E-postada mesajın tam yazdığın gibi görünür.",
 });
 /* UNTERSEITEN:ENDE */

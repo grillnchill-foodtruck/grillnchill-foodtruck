@@ -770,7 +770,6 @@ Object.assign(I18N.en, {
   "gs.bw_z0": "From €25 you get a <b>€5 bonus code</b> on top.",
   "gs.bw_dk_titel": "Your Black Week bonus",
   "gs.bw_dk_text": "{wert} off one order on the website or app from {min}, redeemable from {von} to {bis}. The code is also in your confirmation email.",
-  "gs.js_pdf_fremd": "The PDF can't print emojis and some special characters. The email shows your message exactly as you write it.",
-  "gs.js_pdf_tr": "In the PDF, ş, ğ and ı appear as s, g and i. The email shows everything exactly as you write it.",
+  "gs.js_pdf_fremd": "The PDF can't print emojis and some scripts, such as Arabic. The email shows your message exactly as you write it.",
 });
 /* UNTERSEITEN:ENDE */

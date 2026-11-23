@@ -770,7 +770,6 @@ Object.assign(I18N.nl, {
   "gs.bw_z0": "Vanaf €25 krijg je er een <b>bonuscode van €5</b> bij.",
   "gs.bw_dk_titel": "Je Black Week-bonus",
   "gs.bw_dk_text": "{wert} korting op een bestelling via de website of app vanaf {min}, in te wisselen van {von} t/m {bis}. De code staat ook in je bevestigingsmail.",
-  "gs.js_pdf_fremd": "Het PDF-bestand kan geen emoji's en sommige speciale tekens afdrukken. In de mail staat je bericht precies zoals je het schrijft.",
-  "gs.js_pdf_tr": "In het PDF-bestand staan ş, ğ en ı als s, g en i. In de mail staat alles precies zoals je het schrijft.",
+  "gs.js_pdf_fremd": "Het PDF-bestand kan geen emoji's en sommige schriften, zoals Arabisch, afdrukken. In de mail staat je bericht precies zoals je het schrijft.",
 });
 /* UNTERSEITEN:ENDE */
