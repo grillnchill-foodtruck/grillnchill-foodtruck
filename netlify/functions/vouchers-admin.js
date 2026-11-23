@@ -36,6 +36,7 @@ const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung } = require('./lib/admin-sitzung');
 const { mitglied } = require('./lib/team-passwort');
 const { codeNormalisieren } = require('./lib/gutschein-code');
+const gutscheinNutzung = require('./lib/gutschein-nutzung');
 
 /* Reservierte Codes: die Aktion und der Code für Testbestellungen. Letzterer
    kommt aus TEST_ORDER_CODE – stünde er hier fest, liesse sich nach einer
@@ -225,6 +226,26 @@ exports.handler = async (event) => {
         purchases.sort((a, b3) => new Date(b3.createdAt || 0) - new Date(a.createdAt || 0));
       } catch (e) {}
       return json(200, { ok: true, vouchers: [...system, ...out], purchases: purchases.slice(0, 100) });
+    }
+
+    // Auswertung je Kunde (GRILL5 & Co.): Kunden, Verteilung, am Limit. Nur
+    // Hash-Zähler, keine Adressen. Zwischengespeichert, bis sich die Zahl der
+    // Einlösungen ändert, höchstens 10 Minuten (input.frisch: neu rechnen).
+    if (action === 'auswertung') {
+      const code = cleanCode(input.code);
+      if (!code) return json(400, { error: 'bad_code' });
+      const c = await s.get('c:' + code, { type: 'json' });
+      if (!c) return json(404, { error: 'not_found' });
+      const ck = 'stat:' + code;
+      if (!input.frisch) {
+        const alt = await s.get(ck, { type: 'json' });
+        if (alt && alt.einloesungen === (c.uses || 0) && Date.now() - Date.parse(alt.stand) < 10 * 60000) {
+          return json(200, { ok: true, auswertung: alt, zwischengespeichert: true });
+        }
+      }
+      const a = await gutscheinNutzung.auswertung(s, code, c);
+      try { await s.setJSON(ck, a); } catch (e) {}
+      return json(200, { ok: true, auswertung: a });
     }
 
     if (action === 'create') {

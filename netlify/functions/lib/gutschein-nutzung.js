@@ -175,7 +175,55 @@ function wegwerfGesperrt(c, email) {
   return limitProKunde(c) > 0 && istWegwerf(email);
 }
 
+/**
+ * Auswertung fürs Admin-Tool (Gutscheine): Wie viele Kunden haben einen Code
+ * eingelöst, wie oft, wie viele sind am Limit? Liest nur die Hash-Datensätze
+ * (n: je E-Mail, t: je Telefonnummer) und den alten Sammel-Datensatz usedBy,
+ * nie eine Adresse.
+ *
+ * Kunden = E-Mail-Hashes aus n: plus Einträge aus usedBy, für die es noch
+ * keinen eigenen Datensatz gibt (Einlösungen vor Ende Oktober 2026, seitdem
+ * nicht wieder). Beide Hashes stimmen für fast alle Adressen überein; nur
+ * Gmail-Adressen mit Punkt oder +Zusatz könnten doppelt zählen.
+ */
+async function auswertung(vs, code, c) {
+  const norm = codeNormalisieren(code);
+  const limit = limitProKunde(c);
+  async function lesen(prefix) {
+    const { blobs } = await vs.list({ prefix });
+    const aus = [];
+    for (let i = 0; i < blobs.length; i += 25) {
+      const teil = await Promise.all(blobs.slice(i, i + 25).map((b) => vs.get(b.key, { type: 'json' })
+        .then((r) => ({ hash: b.key.slice(prefix.length), r }))
+        .catch(() => null)));
+      for (const x of teil) {
+        if (x && x.r && x.r.seit === (c.createdAt || null) && (x.r.n || 0) > 0) aus.push(x);
+      }
+    }
+    return aus;
+  }
+  const mails = await lesen('n:' + norm + ':');
+  const tels = await lesen('t:' + norm + ':');
+  const je = new Map(mails.map((x) => [x.hash, x.r.n]));
+  for (const [h, v] of Object.entries((c && c.usedBy) || {})) {
+    const n = typeof v === 'number' ? v : (v ? 1 : 0);
+    if (n > 0 && !je.has(h)) je.set(h, n);
+  }
+  const verteilung = {};
+  let amLimit = 0;
+  for (const n of je.values()) {
+    const stufe = limit > 0 ? Math.min(n, limit) : Math.min(n, 5);
+    verteilung[stufe] = (verteilung[stufe] || 0) + 1;
+    if (limit > 0 && n >= limit) amLimit++;
+  }
+  const zuletzt = mails.concat(tels).reduce((m, x) => (x.r.zuletzt && x.r.zuletzt > m ? x.r.zuletzt : m), '') || null;
+  return {
+    code: norm, einloesungen: (c && c.uses) || 0, kunden: je.size, telefone: tels.length,
+    limit, amLimit, verteilung, zuletzt, stand: new Date().toISOString(),
+  };
+}
+
 module.exports = {
   mailVereinheitlichen, telefonVereinheitlichen, limitProKunde, zeitraum,
-  einloesungenLesen, einloesungZaehlen, wegwerfGesperrt,
+  einloesungenLesen, einloesungZaehlen, wegwerfGesperrt, auswertung,
 };

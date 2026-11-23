@@ -487,6 +487,12 @@
     .skel{background:linear-gradient(90deg,var(--card2) 0%,var(--border) 50%,var(--card2) 100%);background-size:260% 100%;animation:shimmer 1.4s linear infinite}
   }
   @keyframes shimmer{from{background-position:130% 0}to{background-position:-130% 0}}
+  /* ============ GUTSCHEINE: AUSWERTUNG JE KUNDE ============ */
+  .v-stat-hint{font-size:.78rem;color:var(--dim)}
+  .v-stat-zeile{font-size:.78rem;color:var(--dim);margin-top:.45rem;line-height:1.6}
+  .v-stat-zeile b{color:var(--cream);font-variant-numeric:tabular-nums}
+  .v-stat-neu{background:none;border:1px solid var(--border);border-radius:999px;color:var(--dim);font:inherit;font-size:.74rem;font-weight:700;padding:.2rem .65rem;margin-left:.35rem;cursor:pointer;min-height:28px}
+  .v-stat-neu:disabled{opacity:.6;cursor:default}
   /* ============ PUSH: PLANEN ============ */
   input[type=time]{width:100%;padding:.8rem .95rem;background:#0E0C0A;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-size:1rem;font-family:inherit;color-scheme:dark}
   .push-zeit{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.7rem}
@@ -4251,6 +4257,7 @@ function renderVouchers(){
       +'</div>'
       +(v.note?('<div class="ord-ref" style="margin-top:.25rem;color:var(--dim);">'+esc2(v.note)+'</div>'):'')
       +(v.referral&&v.ownerEmail?('<div class="ord-ref" style="margin-top:.25rem;color:var(--ember-hi);">Konto: '+esc2(v.ownerEmail)+(v.ownerName?(' · '+esc2(v.ownerName)):'')+'</div>'):'')
+      +(V_STAT_CODES.includes(v.code)?('<div class="v-stat" data-v-stat="'+esc2(v.code)+'">'+vStatHtml(v.code)+'</div>'):'')
       +'</div>'
       +'<div style="display:flex;flex-direction:column;gap:.35rem;flex:none;">'
       +(v.system
@@ -4569,6 +4576,44 @@ function invoiceCsv(nummer){
    Ein Netzfehler loeste bisher eine unbehandelte Ausnahme aus, die Listen
    blieben dann ohne Hinweis stehen. */
 let vSeq=0;
+/* ---- Auswertung je Kunde (GRILL5): Kunden, Verteilung, am Limit ----
+   vouchers-admin action 'auswertung' liest nur die Hash-Zähler je Kunde
+   (lib/gutschein-nutzung.js), keine Adressen. */
+const V_STAT_CODES=['GRILL5'];
+const V_STATS={};
+function vStatHtml(code){
+  const st=V_STATS[code];
+  if(!st || st.laedt && !st.a) return '<span class="v-stat-hint">Kundenzahlen werden gezählt …</span>';
+  if(st.fehler && !st.a) return '<span class="v-stat-hint">Kundenzahlen nicht geladen.</span> <button type="button" class="v-stat-neu" data-v-stat-neu="'+esc2(code)+'">Erneut versuchen</button>';
+  const a=st.a, lim=a.limit||0;
+  const stufen=Object.keys(a.verteilung||{}).map(Number).sort((x,y)=>x-y);
+  const vert=stufen.map(k=>(lim>0&&k===lim?k+'× (Limit)':(k>=5&&!lim?'5× und mehr':k+'×'))+': <b>'+a.verteilung[k]+'</b>').join(' · ');
+  const zuletzt=a.zuletzt?(' · zuletzt '+a.zuletzt.split('-').reverse().join('.')):'';
+  return '<div class="stat-chips" style="margin-top:.55rem;">'
+    +'<span class="schip">Einlösungen <b>'+a.einloesungen+'</b></span>'
+    +'<span class="schip">Kunden <b>'+a.kunden+'</b></span>'
+    +(lim>0?'<span class="schip'+(a.amLimit?' warn':'')+'">Am Limit ('+lim+'×) <b>'+a.amLimit+'</b></span>':'')
+    +'</div>'
+    +'<div class="v-stat-zeile">'+(vert||'Noch keine Einlösung')+zuletzt
+    +' <button type="button" class="v-stat-neu" data-v-stat-neu="'+esc2(code)+'"'+(st.laedt?' disabled':'')+'>'+(st.laedt?'Zählt …':'Neu zählen')+'</button></div>';
+}
+function vStatZeichnen(code){
+  document.querySelectorAll('#vList [data-v-stat="'+CSS.escape(code)+'"]').forEach(el=>{ el.innerHTML=vStatHtml(code); });
+}
+async function vStatLaden(code, frisch){
+  const st=V_STATS[code]=V_STATS[code]||{};
+  if(st.laedt) return;
+  st.laedt=true; st.fehler=false; vStatZeichnen(code);
+  try{
+    const r=await vApi({action:'auswertung', code, frisch:!!frisch});
+    if(r.ok && r.d.auswertung) st.a=r.d.auswertung; else st.fehler=true;
+  }catch(e){ st.fehler=true; }
+  st.laedt=false; vStatZeichnen(code);
+}
+$('vList').addEventListener('click',(e)=>{
+  const b=e.target.closest('[data-v-stat-neu]'); if(!b) return;
+  vStatLaden(b.dataset.vStatNeu, true);
+});
 async function loadVouchers(){
   const seq=++vSeq;
   if(!vouchersLoaded){
@@ -4590,6 +4635,8 @@ async function loadVouchers(){
   VOUCHERS=r.d.vouchers||[];
   renderVouchers();
   renderPurchases(r.d.purchases||[]);
+  // Kundenzahlen nachladen (der Server rechnet nur neu, wenn sich etwas geändert hat)
+  V_STAT_CODES.forEach(code=>{ if(VOUCHERS.some(v=>v.code===code)) vStatLaden(code); });
 }
 $('vReload').addEventListener('click',()=>withBusy($('vReload'),loadVouchers));
 /* Gutschein-Aktion: Knopf busy, bis die Liste neu da ist (der Knopf wird dabei
