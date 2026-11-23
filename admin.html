@@ -487,6 +487,33 @@
     .skel{background:linear-gradient(90deg,var(--card2) 0%,var(--border) 50%,var(--card2) 100%);background-size:260% 100%;animation:shimmer 1.4s linear infinite}
   }
   @keyframes shimmer{from{background-position:130% 0}to{background-position:-130% 0}}
+  /* ============ PUSH: PLANEN ============ */
+  input[type=time]{width:100%;padding:.8rem .95rem;background:#0E0C0A;border:1px solid var(--border);border-radius:var(--r-sm);color:var(--cream);font-size:1rem;font-family:inherit;color-scheme:dark}
+  .push-zeit{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.7rem}
+  .push-zeit[hidden],.push-edit[hidden],#pushZuletztKopf[hidden]{display:none}
+  .push-zeit label{font-size:.78rem;color:var(--dim);font-weight:600}
+  .push-edit{display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap;margin:0 0 1rem;padding:.7rem .85rem;border-radius:12px;border:1px solid rgba(255,176,32,.45);background:rgba(255,176,32,.08);font-size:.84rem}
+  #pushCard.bearbeitet{border-color:rgba(255,176,32,.5)}
+  .pp-leer{color:var(--dim);font-size:.85rem;padding:.9rem 0 .2rem}
+  .pp-row{display:grid;grid-template-columns:auto 1fr;gap:.35rem .9rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
+  .pp-row:last-child{border-bottom:0}
+  .pp-zeit{min-width:5.6rem;font-variant-numeric:tabular-nums}
+  .pp-zeit b{display:block;font-size:.86rem}
+  .pp-zeit .uhr{display:block;font-family:var(--mono);font-size:1.05rem;font-weight:700;color:var(--cream)}
+  .pp-zeit small{display:block;font-size:.72rem;color:var(--dim);margin-top:.15rem}
+  .pp-titel{font-weight:800;font-size:.92rem;overflow-wrap:anywhere}
+  .pp-body{color:var(--dim);font-size:.84rem;line-height:1.45;margin-top:.15rem;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .pp-meta{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.45rem}
+  .pp-akt{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.2rem}
+  .pp-akt .btn-ghost{flex:none}
+  .pp-akt .btn-ghost.confirm{border-color:var(--amber);color:var(--amber)}
+  .pp-row.sendet .pp-zeit .uhr{color:var(--amber)}
+  .pp-status{font-size:.78rem;color:var(--dim);margin-top:.35rem}
+  .pp-status.warn{color:var(--amber)}
+  .pp-status.err{color:var(--red)}
+  .pp-row.erledigt .pp-titel{color:var(--dim)}
+  .pp-row.markiert{background:linear-gradient(90deg,rgba(232,90,36,.10),transparent 70%)}
+  @media (prefers-reduced-motion: no-preference){ .pp-row.markiert{transition:background 1.2s ease .8s} }
   .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
   /* Status-Ticket, solange noch kein Stand vom Server da ist: grauer Punkt, kein Puls */
   .ticket.loading .dot{background:var(--faint)}
@@ -1110,8 +1137,12 @@
         <p class="hint" id="alertState" style="margin-top:.6rem;"></p>
       </div>
       <div class="card" id="pushCard">
-        <h2>Nachricht an alle Abonnenten</h2>
+        <h2 id="pushKopf">Nachricht an alle Abonnenten</h2>
         <p class="hint" style="margin-bottom:1rem;">Erscheint als Benachrichtigung auf Handy &amp; Desktop. Faustregel: höchstens 1–2 pro Woche.</p>
+        <div class="push-edit" id="pushEditBar" hidden>
+          <span>Du bearbeitest eine geplante Nachricht. Sie geht erst zum gewählten Zeitpunkt raus.</span>
+          <button type="button" class="btn-ghost" id="pushEditCancel">Abbrechen</button>
+        </div>
         <div class="tpl-row" id="tplRow">
           <button class="tpl" type="button" data-t="Der Grill ist heiß" data-b="Ab jetzt frisch für dich am Start – bestell dir dein Mittagessen online.">Grill ist heiß</button>
           <button class="tpl" type="button" data-t="Special der Woche" data-b="Diese Woche neu im Best-of: Jetzt probieren, solange es da ist.">Special der Woche</button>
@@ -1137,9 +1168,28 @@
           <textarea id="pushBody" maxlength="200" placeholder="Heute Mittag: Special der Woche frisch vom Grill. Jetzt online bestellen."></textarea>
           <div class="counter"><span id="cntBody">0</span>/200</div>
         </div>
+        <div class="field">
+          <label id="pushWannLabel">Zeitpunkt</label>
+          <div class="chip-grid" id="pushWann" role="group" aria-labelledby="pushWannLabel">
+            <button type="button" class="chip" data-wann="jetzt" aria-pressed="true">Sofort</button>
+            <button type="button" class="chip" data-wann="spaeter" aria-pressed="false">Später</button>
+          </div>
+          <div class="push-zeit" id="pushZeit" hidden>
+            <div><label for="pushDatum">Datum</label><input type="date" id="pushDatum"></div>
+            <div><label for="pushUhr">Uhrzeit</label><input type="time" id="pushUhr" step="300"></div>
+          </div>
+          <p class="hint" id="pushZeitHint" style="margin-top:.5rem;" hidden>Geht zur gewählten Zeit raus, in 5-Minuten-Schritten. Bis dahin kannst du sie unten ändern, sofort senden oder streichen.</p>
+        </div>
         <button class="btn" id="pushSendBtn">An alle senden</button>
         <p class="hint" id="pushNote" aria-live="polite"></p>
         <div class="stat-chips" id="pushMeta"></div>
+      </div>
+      <div class="card" id="pushPlanCard">
+        <h2>Geplant</h2>
+        <p class="hint">Bis zum Versand kannst du jede geplante Nachricht ändern, sofort senden oder streichen.</p>
+        <div id="pushPlanListe" aria-live="polite"></div>
+        <div class="sec" id="pushZuletztKopf" hidden><h3>Zuletzt</h3></div>
+        <div id="pushZuletztListe"></div>
       </div>
     </section>
 
@@ -2039,6 +2089,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
     if(tab.dataset.tab==='vouchers' && !vouchersLoaded) loadVouchers();
     if(tab.dataset.tab==='vouchers' && !zahlGeladen) zahlLaden();   // Paket bezahlen
     if(tab.dataset.tab==='invoices' && !invoicesLoaded){ loadInvoices(); loadBackups(); }
+    if(tab.dataset.tab==='push') pushPlanLaden();   // geplante Push-Nachrichten
   });
 });
 
@@ -2082,7 +2133,14 @@ document.querySelectorAll('.tpl').forEach(b=>b.addEventListener('click',()=>{
 
 let pushArmed=false, pushArmTimer=null, pushSending=false;
 function pushZiel(){ const c=document.querySelector('#pushZiel .chip[aria-pressed="true"]'); return c?c.dataset.ziel:'alle'; }
-function pushBtnLabel(){ return {alle:'An alle senden', app:'Nur an App-Nutzer senden', web:'Nur an Browser-Nutzer senden'}[pushZiel()]; }
+function pushBtnLabel(){
+  if(pushEditId) return 'Änderungen sichern';
+  if(pushWann()==='spaeter'){
+    const t=pushZeitpunkt();
+    return t ? 'Planen für '+ppTag(t)+', '+ppUhrFmt.format(t)+' Uhr' : 'Planen';
+  }
+  return {alle:'An alle senden', app:'Nur an App-Nutzer senden', web:'Nur an Browser-Nutzer senden'}[pushZiel()];
+}
 document.addEventListener('click',(e)=>{
   const z=e.target.closest('#pushZiel .chip'); if(!z) return;
   // Waehrend des Sendens weder Ziel noch Beschriftung aendern.
@@ -2095,8 +2153,10 @@ function pushLock(on){
   pushSending=on;
   const card=$('pushCard');
   if(on) card.setAttribute('aria-busy','true'); else card.removeAttribute('aria-busy');
-  card.querySelectorAll('.tpl, #pushZiel .chip').forEach(b=>{ b.disabled=on; });
+  card.querySelectorAll('.tpl, #pushZiel .chip, #pushWann .chip').forEach(b=>{ b.disabled=on; });
   $('pushTitle').disabled=on; $('pushBody').disabled=on;
+  $('pushDatum').disabled=on; $('pushUhr').disabled=on;
+  if(!on && pushEditId) document.querySelector('#pushWann .chip[data-wann="jetzt"]').disabled=true;
 }
 function pushNote(text, unklar){
   const n=$('pushNote');
@@ -2105,6 +2165,7 @@ function pushNote(text, unklar){
 }
 async function sendPush(){
   if(pushSending) return;
+  if(pushEditId || pushWann()==='spaeter') return pushPlanen();   // planen oder geplante Nachricht ändern
   const btn=$('pushSendBtn');
   const title=$('pushTitle').value.trim();
   const body=$('pushBody').value.trim();
@@ -2163,6 +2224,224 @@ async function sendPush(){
   finally{ pushLock(false); gncBusy(btn,false); }
 }
 $('pushSendBtn').addEventListener('click',sendPush);
+
+/* ---------------- Push planen und bis zum Versand ändern (lib/push-plan.js) ----------------
+   Geplante Nachrichten liegen im Store push-plan; der Zeitplan push-plan-lauf.js
+   verschickt alle 5 Minuten, was fällig ist. Bis dahin: ändern, sofort senden,
+   streichen (in „Zuletzt“ rückgängig, solange der Zeitpunkt nicht vorbei ist). */
+let pushEditId=null, pushEditStand='', pushPlanDaten=null;
+const ZIEL_TEXT={alle:'Alle', app:'Nur App', web:'Nur Browser'};
+const ppUhrFmt=new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit'});
+const ppDatumFmt=new Intl.DateTimeFormat('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'});
+const ppEsc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const zwei=n=>String(n).padStart(2,'0');
+const isoTagLokal=d=>d.getFullYear()+'-'+zwei(d.getMonth()+1)+'-'+zwei(d.getDate());
+function pushWann(){ const c=document.querySelector('#pushWann .chip[aria-pressed="true"]'); return c?c.dataset.wann:'jetzt'; }
+function ppTag(d){
+  const heute=isoTagLokal(new Date()), morgen=isoTagLokal(new Date(Date.now()+86400000)), tag=isoTagLokal(d);
+  return tag===heute ? 'Heute' : tag===morgen ? 'Morgen' : ppDatumFmt.format(d).replace(',', '');
+}
+function ppRelativ(ms){
+  const min=Math.ceil((ms-Date.now())/60000);
+  if(min<=0) return 'jetzt fällig';
+  if(min<60) return 'in '+min+' Min.';
+  const h=Math.floor(min/60), m=min%60;
+  if(h<24) return 'in '+h+' Std.'+(m?' '+m+' Min.':'');
+  const t=Math.round(min/1440); return 'in '+t+(t===1?' Tag':' Tagen');
+}
+function pushZeitpunkt(){
+  const d=$('pushDatum').value, u=$('pushUhr').value;
+  if(!d||!u) return null;
+  const t=new Date(d+'T'+u);
+  return isNaN(t.getTime()) ? null : t;
+}
+function pushZeitSetzen(t){ $('pushDatum').value=isoTagLokal(t); $('pushUhr').value=zwei(t.getHours())+':'+zwei(t.getMinutes()); }
+function pushZeitVorschlag(){ const t=new Date(Date.now()+60*60000); t.setSeconds(0,0); t.setMinutes(Math.ceil(t.getMinutes()/5)*5); return t; }
+function pushWannSetzen(w){
+  document.querySelectorAll('#pushWann .chip').forEach(c=>c.setAttribute('aria-pressed', c.dataset.wann===w?'true':'false'));
+  const spaeter=w==='spaeter';
+  $('pushZeit').hidden=!spaeter; $('pushZeitHint').hidden=!spaeter;
+  if(spaeter){
+    $('pushDatum').min=isoTagLokal(new Date()); $('pushDatum').max=isoTagLokal(new Date(Date.now()+59*86400000));
+    if(!pushZeitpunkt()) pushZeitSetzen(pushZeitVorschlag());
+  }
+  pushArmed=false; clearTimeout(pushArmTimer); $('pushSendBtn').classList.remove('confirm');
+  setBtnLabel($('pushSendBtn'), pushBtnLabel());
+}
+document.addEventListener('click',(e)=>{
+  const c=e.target.closest('#pushWann .chip'); if(!c || c.disabled || pushSending) return;
+  pushWannSetzen(c.dataset.wann);
+});
+['pushDatum','pushUhr'].forEach(id=>$(id).addEventListener('input',()=>setBtnLabel($('pushSendBtn'), pushBtnLabel())));
+
+async function pushPlanAnfrage(nutzlast){
+  try{
+    const res=await fetch('/push-send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:currentPw,...nutzlast})});
+    const d=await res.json().catch(()=>({}));
+    if(sperreGemeldet(res)) return null;
+    if(res.status===401){ toast('Falsches Passwort','err'); return null; }
+    return { ok:res.ok, status:res.status, d };
+  }catch(e){ toast('Keine Verbindung. Nichts geändert.','err'); return null; }
+}
+
+function pushEditStarten(x){
+  pushEditId=x.id; pushEditStand=x.updatedAt||'';
+  $('pushTitle').value=x.title; $('pushBody').value=x.body;
+  $('cntTitle').textContent=x.title.length; $('cntBody').textContent=x.body.length;
+  document.querySelectorAll('#pushZiel .chip').forEach(c=>c.setAttribute('aria-pressed', c.dataset.ziel===x.ziel?'true':'false'));
+  pushZeitSetzen(new Date(x.sendAt));
+  pushWannSetzen('spaeter');
+  document.querySelector('#pushWann .chip[data-wann="jetzt"]').disabled=true;
+  $('pushEditBar').hidden=false; $('pushCard').classList.add('bearbeitet');
+  $('pushKopf').textContent='Geplante Nachricht bearbeiten';
+  setBtnLabel($('pushSendBtn'), pushBtnLabel());
+  pushPlanZeichnen();
+  $('pushCard').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start'});
+}
+function pushEditBeenden(leeren){
+  pushEditId=null; pushEditStand='';
+  document.querySelector('#pushWann .chip[data-wann="jetzt"]').disabled=false;
+  $('pushEditBar').hidden=true; $('pushCard').classList.remove('bearbeitet');
+  $('pushKopf').textContent='Nachricht an alle Abonnenten';
+  if(leeren){ $('pushTitle').value=''; $('pushBody').value=''; $('cntTitle').textContent='0'; $('cntBody').textContent='0'; pushWannSetzen('jetzt'); }
+  setBtnLabel($('pushSendBtn'), pushBtnLabel());
+  pushPlanZeichnen();
+}
+$('pushEditCancel').addEventListener('click',()=>pushEditBeenden(true));
+
+async function pushPlanen(){
+  const btn=$('pushSendBtn');
+  const title=$('pushTitle').value.trim(), body=$('pushBody').value.trim();
+  if(!title||!body){ toast('Titel und Nachricht ausfüllen','err'); return; }
+  const t=pushZeitpunkt();
+  if(!t){ toast('Datum und Uhrzeit wählen','err'); return; }
+  if(t.getTime()<Date.now()+60000){ toast('Der Zeitpunkt ist vorbei. Wähl eine spätere Uhrzeit.','err'); return; }
+  const aendern=!!pushEditId;
+  await withBusy(btn, async ()=>{
+    const r=await pushPlanAnfrage({action: aendern?'aendern':'planen', id:pushEditId||undefined, stand:pushEditStand, title, body, url:'/', ziel:pushZiel(), sendAt:t.toISOString()});
+    if(!r) return;
+    if(r.ok){
+      toast(aendern ? 'Änderung gesichert' : 'Geplant: '+ppTag(t)+', '+ppUhrFmt.format(t)+' Uhr','ok');
+      const id=r.d.eintrag && r.d.eintrag.id;
+      pushEditBeenden(true);
+      await pushPlanLaden(id);
+      return;
+    }
+    const e=r.d||{};
+    toast(e.hint||e.error||'Planen fehlgeschlagen','err');
+    // Inzwischen gesendet, gestrichen oder von jemand anderem geändert: Bearbeiten beenden, Text bleibt stehen
+    if(aendern && ['geaendert','nicht_mehr_offen','nicht_gefunden'].includes(e.error)){ pushEditBeenden(false); pushPlanLaden(); }
+  });
+}
+
+let pushPlanLaedt=false;
+async function pushPlanLaden(markieren){
+  if(!istAdmin() || pushPlanLaedt) return;
+  pushPlanLaedt=true;
+  if(!pushPlanDaten) pushPlanZeichnen();
+  try{
+    const r=await pushPlanAnfrage({action:'liste'});
+    if(!r) return;
+    if(!r.ok){ $('pushPlanListe').innerHTML='<p class="pp-leer">Liste nicht geladen. '+ppEsc((r.d&&r.d.error)||'')+'</p>'; return; }
+    pushPlanDaten={ geplant:r.d.geplant||[], zuletzt:r.d.zuletzt||[] };
+    // Wird gerade bearbeitet, ist aber nicht mehr geplant (raus, gestrichen)? Bearbeiten beenden, Text bleibt.
+    if(pushEditId && !pushPlanDaten.geplant.some(x=>x.id===pushEditId && x.status==='geplant')){
+      pushEditBeenden(false);
+      toast('Die Nachricht, die du bearbeitest, ist nicht mehr geplant. Dein Text steht noch im Formular.','err');
+    }
+    pushPlanZeichnen(markieren);
+  } finally { pushPlanLaedt=false; }
+}
+function ppZeile(x){
+  const t=new Date(x.sendAt), sendet=x.status==='sendet';
+  return '<div class="pp-row'+(sendet?' sendet':'')+(x.id===pushEditId?' markiert':'')+'" data-id="'+ppEsc(x.id)+'">'
+    +'<div class="pp-zeit"><b>'+ppTag(t)+'</b><span class="uhr">'+ppUhrFmt.format(t)+'</span><small data-rel="'+t.getTime()+'">'+(sendet?'wird gesendet':ppRelativ(t.getTime()))+'</small></div>'
+    +'<div><div class="pp-titel">'+ppEsc(x.title)+'</div><div class="pp-body">'+ppEsc(x.body)+'</div>'
+    +'<div class="pp-meta"><span class="schip">'+(ZIEL_TEXT[x.ziel]||ppEsc(x.ziel))+'</span>'+(x.updatedBy?'<span class="schip">von '+ppEsc(x.updatedBy)+'</span>':'')+'</div></div>'
+    +(sendet||x.id===pushEditId ? '' : '<div class="pp-akt"><button type="button" class="btn-ghost" data-pp="bearbeiten">Bearbeiten</button><button type="button" class="btn-ghost" data-pp="jetzt">Jetzt senden</button><button type="button" class="btn-ghost" data-pp="streichen">Streichen</button></div>')
+    +'</div>';
+}
+function ppErledigt(x){
+  const t=new Date(x.sendAt);
+  let status='', klasse='', extra='';
+  if(x.status==='gesendet'){
+    const g=x.ergebnis||{}, s=x.sentAt?new Date(x.sentAt):t;
+    status='Gesendet '+ppTag(s)+', '+ppUhrFmt.format(s)+' Uhr an '+(g.sent||0)+' Abos'+(g.ios==='gesendet'?' und die iOS-App':'');
+  } else if(x.status==='gestrichen'){
+    status='Gestrichen, war für '+ppTag(t)+', '+ppUhrFmt.format(t)+' Uhr geplant';
+    if(t.getTime()>Date.now()+60000) extra='<button type="button" class="btn-ghost" data-pp="zurueckholen">Rückgängig</button>';
+  } else if(x.status==='fehler'){ status=x.fehler||'Nicht gesendet'; klasse=' err'; }
+  else { status=x.fehler||'Status unklar. Bitte erst im Protokoll prüfen.'; klasse=' warn'; }
+  return '<div class="pp-row erledigt" data-id="'+ppEsc(x.id)+'">'
+    +'<div class="pp-zeit"><b>'+ppTag(t)+'</b><span class="uhr">'+ppUhrFmt.format(t)+'</span></div>'
+    +'<div><div class="pp-titel">'+ppEsc(x.title)+'</div><div class="pp-body">'+ppEsc(x.body)+'</div>'
+    +'<div class="pp-status'+klasse+'">'+ppEsc(status)+'</div></div>'
+    +'<div class="pp-akt">'+extra+'<button type="button" class="btn-ghost" data-pp="vorlage">Als Vorlage</button></div>'
+    +'</div>';
+}
+function pushPlanZeichnen(markieren){
+  const d=pushPlanDaten;
+  if(!d){ $('pushPlanListe').innerHTML=skelRows(2,64,'Geplante Nachrichten laden'); return; }
+  $('pushPlanListe').innerHTML = d.geplant.length ? d.geplant.map(ppZeile).join('')
+    : '<p class="pp-leer">Nichts geplant. Wähl oben „Später“, um eine Nachricht vorzubereiten.</p>';
+  $('pushZuletztKopf').hidden=!d.zuletzt.length;
+  $('pushZuletztListe').innerHTML=d.zuletzt.map(ppErledigt).join('');
+  if(markieren){
+    const z=document.querySelector('#pushPlanCard .pp-row[data-id="'+CSS.escape(markieren)+'"]');
+    if(z){ z.classList.add('markiert'); setTimeout(()=>z.classList.remove('markiert'),60); }
+  }
+}
+$('pushPlanCard').addEventListener('click', async (e)=>{
+  const btn=e.target.closest('button[data-pp]'); if(!btn || btn.classList.contains('is-busy')) return;
+  const row=btn.closest('.pp-row'); const id=row && row.dataset.id;
+  const x=pushPlanDaten && [...pushPlanDaten.geplant, ...pushPlanDaten.zuletzt].find(v=>v.id===id);
+  if(!x) return;
+  const was=btn.dataset.pp;
+  if(was==='bearbeiten'){ pushEditStarten(x); return; }
+  if(was==='vorlage'){
+    if(pushEditId) pushEditBeenden(false);
+    $('pushTitle').value=x.title; $('pushBody').value=x.body;
+    $('cntTitle').textContent=x.title.length; $('cntBody').textContent=x.body.length;
+    document.querySelectorAll('#pushZiel .chip').forEach(c=>c.setAttribute('aria-pressed', c.dataset.ziel===x.ziel?'true':'false'));
+    setBtnLabel($('pushSendBtn'), pushBtnLabel());
+    $('pushCard').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start'});
+    toast('Text übernommen. Wähl Sofort oder Später.');
+    return;
+  }
+  if(was==='jetzt' && !btn.classList.contains('confirm')){
+    // Zwei Tipps wie beim Senden an alle
+    btn.classList.add('confirm'); btn.textContent='Wirklich jetzt? Erneut tippen';
+    clearTimeout(btn._t); btn._t=setTimeout(()=>{ btn.classList.remove('confirm'); btn.textContent='Jetzt senden'; },3500);
+    return;
+  }
+  clearTimeout(btn._t);
+  await withBusy(btn, async ()=>{
+    const r=await pushPlanAnfrage({action: was==='jetzt'?'jetzt':was, id});
+    if(!r) return;
+    if(!r.ok){ toast((r.d&&r.d.hint)||(r.d&&r.d.error)||'Hat nicht geklappt','err'); pushPlanLaden(); return; }
+    const ein=r.d.eintrag||{};
+    if(was==='jetzt'){
+      const g=ein.ergebnis||{};
+      toast(ein.status==='gesendet' ? 'Gesendet an '+(g.sent||0)+' Abos'+(g.ios==='gesendet'?' und die iOS-App':'') : (ein.fehler||'Status unklar'), ein.status==='gesendet'?'ok':'err');
+    } else if(was==='streichen'){
+      toast('Gestrichen. Unter „Zuletzt“ kannst du es rückgängig machen.');
+      if(pushEditId===id) pushEditBeenden(true);
+    } else if(was==='zurueckholen'){
+      toast('Wieder geplant','ok');
+    }
+    await pushPlanLaden(was==='zurueckholen'?id:null);
+  });
+});
+// Liste frisch halten, solange der Push-Reiter offen ist; Restzeit alle 30 s
+setInterval(()=>{
+  if(document.visibilityState!=='visible' || $('pane-push').classList.contains('hidden')) return;
+  pushPlanLaden();
+},60000);
+setInterval(()=>{
+  document.querySelectorAll('#pushPlanListe small[data-rel]').forEach(el=>{
+    if(!el.closest('.sendet')) el.textContent=ppRelativ(Number(el.dataset.rel));
+  });
+},30000);
 
 /* ---------------- Zahlen ---------------- */
 const STAT_LABELS={pageview:'Aufrufe',add_to_cart:'In den Warenkorb',checkout_details:'Checkout gestartet',order_success:'Bestellungen',sig_add:'Best-of-3-Klicks',fab_open:'Warenkorb-Pill',push_enabled:'Push aktiviert',voucher_sent:'Gutschein versendet',voucher_redeemed:'Gutschein eingelöst'};

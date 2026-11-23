@@ -1,9 +1,15 @@
 /**
  * push-send.js
  * ----------------------------------------------------------------------------
- * Versendet eine Push-Benachrichtigung an ALLE Abonnenten (nur Admin).
+ * Push-Benachrichtigungen an alle Abonnenten (nur Admin): sofort senden oder
+ * planen. Geplante Nachrichten lassen sich bis zum Versand ändern (lib/push-plan.js,
+ * Versand durch den Zeitplan push-plan-lauf.js alle 5 Minuten).
  *
- *   POST /push-send   Body: { password, title, body, url? }
+ *   POST /push-send   Body: { password, title, body, url?, ziel? }        sofort senden
+ *                     { password, action: 'planen', title, body, ziel, sendAt }
+ *                     { password, action: 'liste' }
+ *                     { password, action: 'aendern', id, stand, title, body, ziel, sendAt }
+ *                     { password, action: 'streichen' | 'zurueckholen' | 'jetzt', id }
  *
  * Benötigte Environment Variablen:
  *   ADMIN_PASSWORD        (wie shop-status.js)
@@ -15,11 +21,9 @@
  * ----------------------------------------------------------------------------
  */
 
-const webpush = require('web-push');
-const { sendeAnIOS } = require('./lib/fcm');
 const { getStore } = require('@netlify/blobs');
-
-const STORE_NAME = 'push-subs';
+const versand = require('./lib/push-versand');
+const plan = require('./lib/push-plan');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -29,15 +33,6 @@ const CORS = {
 
 function json(statusCode, data) {
   return { statusCode, headers: { 'Content-Type': 'application/json', ...CORS }, body: JSON.stringify(data) };
-}
-
-function store() {
-  const opts = { name: STORE_NAME, consistency: 'strong' };
-  if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) {
-    opts.siteID = process.env.NETLIFY_BLOBS_SITE_ID;
-    opts.token = process.env.NETLIFY_BLOBS_TOKEN;
-  }
-  return getStore(opts);
 }
 
 
@@ -100,54 +95,37 @@ exports.handler = async (event) => {
   await meldeErgebnis(event, !!who);
   if (!who) return json(401, { error: 'unauthorized' });
 
-  const pub = process.env.VAPID_PUBLIC_KEY;
-  const priv = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || 'mailto:info@grillnchill-foodtruck.de';
-  if (!pub || !priv) return json(500, { error: 'vapid_not_configured' });
-  webpush.setVapidDetails(subject, pub, priv);
-
-  // Empfaenger: 'alle' (Standard), 'app' (iOS-App + Android-App), 'web' (nur Browser)
-  const ziel = ['alle', 'app', 'web'].includes(body.ziel) ? body.ziel : 'alle';
-
-  const payload = JSON.stringify({
-    title: (body.title || 'Grilln Chill').toString().slice(0, 80),
-    body: (body.body || '').toString().slice(0, 200),
-    url: (body.url || '/').toString().slice(0, 200),
-  });
-
+  // ---- Geplante Nachrichten ------------------------------------------------
+  const antwort = (r) => (r.status === 200
+    ? json(200, { ok: true, eintrag: r.eintrag })
+    : json(r.status, { error: r.fehler, hint: r.hint, eintrag: r.eintrag || null }));
+  const id = String(body.id || '');
   try {
-    const s = store();
-    const { blobs } = await s.list({ prefix: 'sub:' });
-    let sent = 0, removed = 0, failed = 0, uebersprungen = 0;
-    for (const b of blobs) {
-      const sub = await s.get(b.key, { type: 'json' });
-      if (!sub) continue;
-      const istApp = !!sub.app;
-      if ((ziel === 'app' && !istApp) || (ziel === 'web' && istApp)) { uebersprungen++; continue; }
-      try {
-        await webpush.sendNotification(sub, payload, { TTL: 3600 });
-        sent++;
-      } catch (err) {
-        const code = err && err.statusCode;
-        if (code === 404 || code === 410) { await s.delete(b.key); removed++; }
-        else failed++;
-      }
+    switch (body.action) {
+      case 'liste': return json(200, { ok: true, jetzt: new Date().toISOString(), ...(await plan.liste()) });
+      case 'planen': return antwort(await plan.anlegen(body, who));
+      case 'aendern': return antwort(await plan.aendern(id, body, who, String(body.stand || '')));
+      case 'streichen': return antwort(await plan.streichen(id, who));
+      case 'zurueckholen': return antwort(await plan.zurueckholen(id, who));
+      case 'jetzt': return antwort(await plan.jetztSenden(id, who));
+      default: break;
     }
-    // Zusaetzlich an die iOS-App (FCM-Thema "alle") – EIN Knopf fuer alle
-    // Kanaele. Ohne eingerichtetes Dienstkonto bleibt es beim Web-Push.
-    const ios = ziel === 'web'
-      ? { ok: false, grund: 'übersprungen (nur Browser)' }
-      : await sendeAnIOS(
-          (body.title || 'Grilln Chill').toString().slice(0, 80),
-          (body.body || '').toString().slice(0, 200),
-          (body.url || '/').toString().slice(0, 200));
-
-    const zielText = { alle: 'alle', app: 'nur App', web: 'nur Browser' }[ziel];
-    await auditLog(who, 'Push', '„' + String(body.title || '').slice(0, 60) + '“ (' + zielText + ') an ' + sent + ' Abonnenten gesendet'
-      + (ios.ok ? ' + iOS-App' : ''));
-    return json(200, { ok: true, ziel, sent, removed, failed, uebersprungen, total: blobs.length,
-                       ios: ios.ok ? 'gesendet' : ios.grund });
   } catch (e) {
+    console.error('push-plan:', (e && e.message) || e);
+    return json(500, { error: 'plan_failed', detail: String((e && e.message) || e).slice(0, 200) });
+  }
+  if (body.action && body.action !== 'senden') return json(400, { error: 'bad_action' });
+
+  // ---- Sofort senden -------------------------------------------------------
+  const n = versand.nachricht(body);
+  try {
+    const d = await versand.versenden(n);
+    const zielText = { alle: 'alle', app: 'nur App', web: 'nur Browser' }[d.ziel];
+    await auditLog(who, 'Push', '„' + String(n.title).slice(0, 60) + '“ (' + zielText + ') an ' + d.sent + ' Abonnenten gesendet'
+      + (d.ios === 'gesendet' ? ' + iOS-App' : ''));
+    return json(200, { ok: true, ...d });
+  } catch (e) {
+    if (e && e.code === 'vapid_not_configured') return json(500, { error: 'vapid_not_configured' });
     return json(500, { error: 'send_failed', detail: String((e && e.message) || e) });
   }
 };
