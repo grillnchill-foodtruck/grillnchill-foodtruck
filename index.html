@@ -1318,7 +1318,9 @@ section { padding: clamp(3rem, 8vw, 5.5rem) 0; position: relative; }
 /* Mobil: Badge kleiner + Hero-Inhalt darunter beginnen, damit der Badge die
    Google-Bewertung nicht überdeckt */
 @media (max-width: 600px) {
-  .hero { align-items: flex-start; padding-top: 2.2rem; }
+  /* Ohne Mindesthöhe: Der Hero endet nach dem Inhalt, der erste Burger ist
+     schon im ersten Bild angeschnitten (vorher bis zu 209 px leeres Video) */
+  .hero { align-items: flex-start; padding-top: 2.2rem; min-height: 0; padding-bottom: 2.25rem; }
   .hero-badge-discount {
     top: 0.8rem;
     right: 0.8rem;
