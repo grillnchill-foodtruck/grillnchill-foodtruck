@@ -926,6 +926,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M15 9h4a1 1 0 0 1 1 1v11"/><path d="M9 7h2M9 11h2M9 15h2"/></svg>
           <span><b>Firmen-Mittag</b><small>Anträge, Firmen, Sammelrechnungen</small></span><svg class="amenu-pfeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </a>
+        <button class="amenu-zeile" id="menuOffice" type="button" data-on-click="officeOeffnen(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 15h3"/></svg>
+          <span><b>Office</b><small>Buchhaltung, Belege, Zeiterfassung</small></span><svg class="amenu-pfeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
         <a class="amenu-zeile" href="/dienstplan">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
           <span><b>Dienstplan</b><small>Schichten der Woche</small></span><svg class="amenu-pfeil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
@@ -2040,6 +2044,8 @@ function applyRole(){
   $('tabStats').classList.toggle('hidden',staff);
   // Firmen-Mittag: Anschriften, Umsätze, Rechnungen, nur für Admins
   if($('hdrFirmen')) $('hdrFirmen').classList.toggle('hidden',staff);
+  // GNC Office: Buchhaltung nur für Admins (office-ticket.js lehnt Mitarbeiter ohnehin ab)
+  if($('menuOffice')) $('menuOffice').classList.toggle('hidden',staff);
   $('tabTeam').classList.toggle('hidden',staff);
   // Rechnungen enthalten Kunden- und Umsatzdaten – nur Admins
   $('tabInvoices').classList.toggle('hidden',staff);
@@ -4513,6 +4519,19 @@ function invPw(){ return currentPw || sessionStorage.getItem(PW_KEY) || ''; }
 /* btn: der Aktualisieren-Knopf (busy); die Jahresauswahl ruft ohne Knopf auf.
    Liste bleibt beim Neuladen gedimmt stehen, nur die juengste Antwort zeichnet. */
 let invSeq=0;
+/* GNC Office: Einmal-Ticket holen und öffnen (60 Sekunden gültig) */
+async function officeOeffnen(btn){
+  await withBusy(btn, async()=>{
+    try{
+      const res=await fetch('/.netlify/functions/office-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:currentPw})});
+      const d=await res.json().catch(()=>({}));
+      if(sperreGemeldet(res)) return;
+      if(res.ok && d.url){ location.href=d.url; return; }
+      toast(d.error==='zwei_faktor_noetig'?'Fürs Office bitte mit Zwei-Faktor-Code neu anmelden.':d.error==='rolle'?'Das Office ist nur für Admins.':'Office gerade nicht erreichbar.','err');
+    }catch(e){ toast('Keine Verbindung.','err'); }
+  });
+}
+
 function loadInvoices(btn){ return withBusy(btn, loadInvoicesRun); }
 async function loadInvoicesRun(){
   const seq=++invSeq;

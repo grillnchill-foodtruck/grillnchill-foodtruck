@@ -166,4 +166,16 @@ async function beende(eingabe) {
   try { await store().delete('s:' + sha(eingabe)); return true; } catch (e) { return false; }
 }
 
-module.exports = { erstelle, passwortAusSitzung, beende, istToken, nachweis, GUELTIG_MS };
+/**
+ * Ist das eine gültige Sitzung MIT Zwei-Faktor-Code? Fürs GNC Office, das
+ * unabhängig vom Notschalter ZWEI_FAKTOR immer 2FA verlangt.
+ */
+async function sitzungMitZweiFaktor(eingabe) {
+  if (!istToken(eingabe)) return false;
+  try {
+    const rec = await store().get('s:' + sha(eingabe), { type: 'json' });
+    return !!(rec && rec.zf && (!rec.exp || Date.now() <= new Date(rec.exp).getTime()));
+  } catch (e) { return false; }
+}
+
+module.exports = { erstelle, passwortAusSitzung, beende, istToken, nachweis, sitzungMitZweiFaktor, GUELTIG_MS };
