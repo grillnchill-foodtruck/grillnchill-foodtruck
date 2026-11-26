@@ -78,6 +78,18 @@ const VEKTOR = 'eyJ2IjoxLCJhdWQiOiJnbmMtb2ZmaWNlIiwic3ViIjoia3ViaSIsIm5hbWUiOiJL
   r = await ruf({ password: kubi.token });
   ok('Ohne Geheimnis: 500 nicht_eingerichtet', r.s === 500 && r.d.error === 'nicht_eingerichtet', r);
 
+  // Geheimnis aus den Netlify Blobs (Store geheimnisse): Umgebungsvariablen dürfen im Lambda-Modus zusammen nur 4 KB groß sein
+  DATEN.set('geheimnisse|office-ticket-secret', GEHEIMNIS + '\n');
+  r = await ruf({ password: kubi.token });
+  const ausBlob = (r.d.url || '').split('#t=')[1] || '.';
+  const [teilB, sigB] = ausBlob.split('.');
+  const erwartetB = require('crypto').createHmac('sha256', GEHEIMNIS).update(teilB).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  ok('Geheimnis aus den Blobs (ohne Umgebungsvariable): Ticket damit signiert', r.s === 200 && sigB === erwartetB, r);
+  DATEN.set('geheimnisse|office-ticket-secret', 'kurz');
+  r = await ruf({ password: kubi.token });
+  ok('Zu kurzes Geheimnis in den Blobs: 500 nicht_eingerichtet', r.s === 500 && r.d.error === 'nicht_eingerichtet', r);
+  DATEN.delete('geheimnisse|office-ticket-secret');
+
   console.log('\n' + (n - fehler) + '/' + n + ' bestanden');
   process.exit(fehler ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
