@@ -23,7 +23,9 @@ async function wer(pw) {
   if (process.env.ADMIN_PASSWORD && pw === process.env.ADMIN_PASSWORD) return { sub: 'kubi', name: 'Kubi', role: 'superadmin' };
   try {
     const { key, u } = (await mitglied(teamStore(), pw)) || {};
-    if (u) return { sub: key.slice(2), name: u.name || key.slice(2), role: u.role === 'admin' ? 'admin' : 'staff' };
+    // Eigene Kennung mit Präfix t-: Ein Team-Zugang namens „Kubi“ (Slug kubi) fiele sonst im Office
+    // mit dem Inhaber (sub kubi) zusammen und erbte dessen Rolle.
+    if (u) return { sub: 't-' + key.slice(2), name: u.name || key.slice(2), role: u.role === 'admin' ? 'admin' : 'staff' };
   } catch (e) {}
   return null;
 }
@@ -42,7 +44,7 @@ exports.handler = async (event) => {
   if (w.role !== 'superadmin' && w.role !== 'admin') return json(403, { error: 'rolle' });
   if (!(await sitzungMitZweiFaktor(token))) return json(403, { error: 'zwei_faktor_noetig' });
   const geheimnis = process.env.OFFICE_TICKET_SECRET || '';
-  if (geheimnis.length < 32 && geheimnis !== 'testgeheimnis') return json(500, { error: 'nicht_eingerichtet' });
+  if (geheimnis.length < 32) return json(500, { error: 'nicht_eingerichtet' });
   const basis = (process.env.OFFICE_URL || 'https://office.grillnchill-foodtruck.de').replace(/\/$/, '');
   return json(200, { ok: true, url: basis + '/anmelden#t=' + ticketFuer(w, geheimnis) });
 };

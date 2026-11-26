@@ -16,7 +16,8 @@ const store = (name) => ({
 });
 const orig = Module._load;
 Module._load = function (r, ...a) { if (r === '@netlify/blobs') return { getStore: (o) => store(typeof o === 'string' ? o : o.name) }; return orig.call(this, r, ...a); };
-Object.assign(process.env, { ADMIN_PASSWORD: 'admin-test', OFFICE_TICKET_SECRET: 'testgeheimnis', OFFICE_URL: 'https://office.test' });
+const GEHEIMNIS = 'office-ticket-testgeheimnis-0123456789';   // mindestens 32 Zeichen wie im Betrieb
+Object.assign(process.env, { ADMIN_PASSWORD: 'admin-test', OFFICE_TICKET_SECRET: GEHEIMNIS, OFFICE_URL: 'https://office.test' });
 delete process.env.ZWEI_FAKTOR;
 
 const F = path.join(__dirname, '..', 'netlify', 'functions');
@@ -45,16 +46,37 @@ const VEKTOR = 'eyJ2IjoxLCJhdWQiOiJnbmMtb2ZmaWNlIiwic3ViIjoia3ViaSIsIm5hbWUiOiJL
   const lena = await sitzung.erstelle('lena-pw-1234', { role: 'admin', name: 'Lena' }, { zweiFaktor: true });
   r = await ruf({ password: lena.token });
   const dl = JSON.parse(Buffer.from(r.d.url.split('#t=')[1].split('.')[0], 'base64url').toString());
-  ok('Team-Admin Lena bekommt Rolle admin und ihren Slug', r.s === 200 && dl.sub === 'lena' && dl.rolle === 'admin', dl);
+  ok('Team-Admin Lena bekommt Rolle admin und ihren Slug mit Präfix t-', r.s === 200 && dl.sub === 't-lena' && dl.rolle === 'admin', dl);
+
+  // Ein Team-Zugang namens „Kubi“ darf im Office nicht mit dem Inhaber zusammenfallen
+  DATEN.set('team|u:kubi', JSON.stringify({ name: 'Kubi', role: 'admin', pwHash: await hashen('kubi-team-pw-1234') }));
+  const teamKubi = await sitzung.erstelle('kubi-team-pw-1234', { role: 'admin', name: 'Kubi' }, { zweiFaktor: true });
+  r = await ruf({ password: teamKubi.token });
+  const dk = r.d.url && JSON.parse(Buffer.from(r.d.url.split('#t=')[1].split('.')[0], 'base64url').toString());
+  ok('Team-Admin mit Slug kubi bekommt sub t-kubi, nicht kubi', r.s === 200 && dk && dk.sub === 't-kubi' && dk.rolle === 'admin', dk || r);
 
   const tom = await sitzung.erstelle('tom-pw-1234', { role: 'staff', name: 'Tom' }, { zweiFaktor: true });
-  ok('Team ohne Admin-Rolle: 403', (await ruf({ password: tom.token })).s === 403);
+  r = await ruf({ password: tom.token });
+  ok('Team ohne Admin-Rolle: 403 rolle', r.s === 403 && r.d.error === 'rolle', r);
   const ohne = await sitzung.erstelle('admin-test', { role: 'admin', name: 'Kubi' }, { zweiFaktor: false });
-  ok('Sitzung ohne 2FA: kein Ticket', (await ruf({ password: ohne.token })).s !== 200);
+  // Mit 2FA-Pflicht löst admin-sitzung eine Sitzung ohne Code gar nicht erst auf: 401.
+  r = await ruf({ password: ohne.token });
+  ok('Sitzung ohne 2FA (Pflicht an): 401 sitzung_noetig', r.s === 401 && r.d.error === 'sitzung_noetig', r);
+  // Mit Notschalter ZWEI_FAKTOR=aus gilt die Sitzung im Admin, das Office verlangt den Code trotzdem: 403.
+  process.env.ZWEI_FAKTOR = 'aus';
+  r = await ruf({ password: ohne.token });
+  delete process.env.ZWEI_FAKTOR;
+  ok('Sitzung ohne 2FA (Notschalter aus): 403 zwei_faktor_noetig', r.s === 403 && r.d.error === 'zwei_faktor_noetig', r);
   ok('Rohes Passwort statt Sitzung: 401', (await ruf({ password: 'admin-test' })).s === 401);
 
+  for (const kurz of ['kurz', 'testgeheimnis']) {
+    process.env.OFFICE_TICKET_SECRET = kurz;
+    r = await ruf({ password: kubi.token });
+    ok('Geheimnis „' + kurz + '“ unter 32 Zeichen: 500 nicht_eingerichtet', r.s === 500 && r.d.error === 'nicht_eingerichtet' && !r.d.url, r);
+  }
   delete process.env.OFFICE_TICKET_SECRET;
-  ok('Ohne Geheimnis: 500 nicht_eingerichtet', (await ruf({ password: kubi.token })).d.error === 'nicht_eingerichtet');
+  r = await ruf({ password: kubi.token });
+  ok('Ohne Geheimnis: 500 nicht_eingerichtet', r.s === 500 && r.d.error === 'nicht_eingerichtet', r);
 
   console.log('\n' + (n - fehler) + '/' + n + ' bestanden');
   process.exit(fehler ? 1 : 0);
