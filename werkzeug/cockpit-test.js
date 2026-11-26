@@ -251,6 +251,7 @@ const mittag = (d) => tw.berlinMitternacht(d) + 12 * 3600000;
   bestellung(mittag(tw.plusTage(heute, -60)), { korb: { a: { menuId: 'sucuk', qty: 9 } } });                     // alt
   bestellung(mittag(heute) - 6 * 3600000, { korb: { a: { menuId: 'kubis', qty: 5 } } });                      // heute zählt noch nicht
   lesen.length = 0;
+  const vorAufruf = Date.now();
   r = await call(inhaber, { action: 'speisekarte', password: tokenKubi });
   const art = (id) => (r.d.artikel || []).find((a) => a.id === id) || {};
   ok('Speisekarte: 200 mit Zeitraum 30 Tage bis gestern', r.s === 200 && r.d.zeitraum.bis === gestern && r.d.zeitraum.tage === 30);
@@ -259,7 +260,13 @@ const mittag = (d) => tw.berlinMitternacht(d) + 12 * 3600000;
   ok('Speisekarte: Tag 31, Tag 60 und heute zählen nicht', !art('sucuk').qty && !art('kubis').qty);
   ok('Speisekarte: 60 Tage alte Bestellung wird gar nicht gelesen', !lesen.some((x) => x === 'orders|o:GNC-' + mittag(tw.plusTage(heute, -60))));
   ok('Speisekarte: alle Artikel ohne Wareneinsatz grau (Hinweis)', r.d.tafeln.burger.punkte.classic.feld === null && r.d.tafeln.burger.punkte.classic.hinweis === 'Wareneinsatz fehlt.');
-  ok('Tageswerte im Store cockpit zwischengespeichert', daten.has('cockpit|tag:v1:' + gestern) && JSON.parse(daten.get('cockpit|tag:v1:' + gestern)).final === true);
+  // Ein Tag gilt erst drei Stunden nach Berliner Mitternacht als fertig (lib/tageswerte.js, FERTIG_NACH_MS):
+  // Zwischen 00:00 und 03:00 Uhr ist gestern noch vorläufig. So läuft der Test zu jeder Uhrzeit.
+  const gesternFertig = vorAufruf >= tw.berlinMitternacht(heute) + 3 * 3600000;
+  const gemerkt = (tag) => (daten.has('cockpit|tag:v1:' + tag) ? JSON.parse(daten.get('cockpit|tag:v1:' + tag)) : null);
+  ok('Tageswerte im Store cockpit zwischengespeichert (gestern fertig erst ab 03:00 Uhr)', !!gemerkt(gestern) && gemerkt(gestern).final === gesternFertig,
+    JSON.stringify({ final: gemerkt(gestern) && gemerkt(gestern).final, erwartet: gesternFertig }));
+  ok('Tageswerte von vor fünf Tagen sind fertig gemerkt', !!gemerkt(tw.plusTage(heute, -5)) && gemerkt(tw.plusTage(heute, -5)).final === true);
   tw._leereZwischenspeicher();
   lesen.length = 0;
   r = await call(inhaber, { action: 'speisekarte', password: tokenKubi });
