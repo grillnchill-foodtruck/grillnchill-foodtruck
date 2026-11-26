@@ -48,6 +48,14 @@ function tagAus(x) {
 
 const istOnline = (rec) => rec.quelle == null || rec.quelle === 'online';
 
+// Warum eine Bestellung nicht gemeldet werden kann: fehlende Bestelldaten (abgeschnittener Datensatz) oder eine Zahlart,
+// die das Office nicht kennt. null heißt: meldbar ('sumup', 'cash') oder bewusst still (Test, 'firma' über die Sammelrechnung).
+function zahlartProblem(o) {
+  if (!o || typeof o !== 'object') return 'Bestelldaten fehlen';
+  if (o.isTest || o.payment === 'firma' || ['sumup', 'cash'].includes(o.payment)) return null;
+  return o.payment ? `Zahlart „${String(o.payment).slice(0, 20)}“ unbekannt` : 'ohne Zahlart';
+}
+
 // Eingelöster Geschenkgutschein in Cent. Aktionscodes wie GRILL5 sind echte Rabatte und zählen nicht.
 function geschenkCent(order, geschenkCodes) {
   const code = String(order.voucherCode || '').trim().toUpperCase();
@@ -75,6 +83,18 @@ function rechnungPruefen(inv) {
     const was = art === 'storno' ? 'Stornorechnung' : 'Schlussrechnung';
     return { hinweis: { tag: datum, text: `${was} ${nr} ergibt keinen offenen Betrag (Anzahlung höher als Endstand). Bitte im Office von Hand buchen.` } };
   }
+  // Sammelrechnung: Die Satzzeilen sind Summen gerundeter Einzelbestellungen, total die Summe der Bestellbeträge. Den Unterschied
+  // in die größere Zeile legen, dann sind Posten, total und die Zahlung (office-sammeln: cent(total)) gleich.
+  let hinweis;
+  if (art === 'sammelrechnung' && inv.total != null && inv.total !== '' && Number.isFinite(Number(inv.total))) {
+    const diff = cent(inv.total) - summe;
+    if (diff) {
+      const groesste = posten.reduce((g, p) => (p.brutto_cent >= g.brutto_cent ? p : g));
+      groesste.brutto_cent += diff;
+      if (groesste.brutto_cent <= 0) return { hinweis: { tag: datum, text: `Sammelrechnung ${nr}: Satzzeilen passen nicht zum Rechnungsbetrag, nicht gemeldet.` } };
+      if (Math.abs(diff) > 2) hinweis = { tag: datum, text: `Sammelrechnung ${nr}: Satzzeilen weichen um ${Math.abs(diff)} Cent vom Rechnungsbetrag ab, ausgeglichen in der ${groesste.satz}-%-Zeile.` };
+    }
+  }
   const daten = { nummer: nr, art, datum, kunde, posten };
   const faellig = tagAus(inv.faelligAm);
   if (faellig) daten.faellig = faellig;
@@ -84,7 +104,7 @@ function rechnungPruefen(inv) {
     if (!zahltag) return { hinweis: { tag: datum, text: `Rechnung ${nr}: Zahlungsdatum unlesbar, nicht gemeldet.` } };
     daten.zahlung = { datum: zahltag, zahlart: ZAHLWEG[inv.zahlungsweg] || 'bar' };
   }
-  return { meldung: { schluessel: 'rechnung:' + nr, art: 'rechnung', daten } };
+  return { meldung: { schluessel: 'rechnung:' + nr, art: 'rechnung', daten }, ...(hinweis ? { hinweis } : {}) };
 }
 
 const rechnungsMeldung = (inv) => rechnungPruefen(inv || {}).meldung || null;
@@ -121,8 +141,10 @@ function baueMeldungen({ von, bis, bestellungen = [], erstattungen = [], geschen
       continue;
     }
     if (rec.kind) continue;
-    const o = rec.order || {};
-    if (o.isTest || !['sumup', 'cash'].includes(o.payment)) continue;
+    const o = rec.order;
+    const problem = zahlartProblem(o);
+    if (problem && im(abgeschlossen)) hinweis(abgeschlossen, `Bestellung ${nummerVon(rec)}: ${problem}, nicht gemeldet.`);
+    if (problem || o.isTest || o.payment === 'firma') continue;
     const tag = o.payment === 'cash' ? (tagAus(o.abholTag) || tagAus(rec.abholTag) || abgeschlossen) : abgeschlossen;
     if (!im(tag)) continue;
     const a = aufteilung(o, { gutscheinCent: geschenkCent(o, geschenkCodes) });
@@ -136,11 +158,15 @@ function baueMeldungen({ von, bis, bestellungen = [], erstattungen = [], geschen
   }
 
   for (const e of erstattungen) {
-    const rec = e && e.rec;
-    if (!rec || !istOnline(rec)) continue;
+    if (!e) continue;
+    const rec = e.rec;
+    if (rec && !istOnline(rec)) continue;
+    const nr = rec ? nummerVon(rec) : String(e.referenz || '').slice(0, 40);
     const tag = tagAus(e.tag);
-    if (!tag) { hinweis(null, `Erstattung zu ${nummerVon(rec)}: Datum unlesbar, nicht gemeldet.`); continue; }
+    if (!tag) { hinweis(null, `Erstattung zu ${nr}: Datum unlesbar, nicht gemeldet.`); continue; }
     if (!im(tag)) continue;
+    // Ereignis ohne Bestellung im Speicher (gelöscht oder nie gespeichert)
+    if (!rec) { hinweis(tag, `Erstattung zu ${nr}: Bestellung nicht gefunden, nicht gemeldet.`); continue; }
     if (!zaehlt(rec)) { hinweis(tag, `Erstattung zu ${nummerVon(rec)} ohne vorherigen Umsatz, nicht gemeldet.`); continue; }
     if (rec.kind === 'giftcard') {
       if (rec.gift) add(tag, 'gutschein_erstattung', 'sumup', null, cent(rec.gift.amount));
@@ -149,8 +175,10 @@ function baueMeldungen({ von, bis, bestellungen = [], erstattungen = [], geschen
     }
     if (rec.kind === 'burgerpass') { hinweis(tag, 'Eine Burger-Pass-Erstattung ist nicht im Office gebucht.'); continue; }
     if (rec.kind) continue;
-    const o = rec.order || {};
-    if (o.isTest || !['sumup', 'cash'].includes(o.payment)) continue;
+    const o = rec.order;
+    const problem = zahlartProblem(o);
+    if (problem) { hinweis(tag, `Erstattung zu ${nr}: ${problem}, nicht gemeldet.`); continue; }
+    if (o.isTest || o.payment === 'firma') continue;
     const a = aufteilung(o, { gutscheinCent: geschenkCent(o, geschenkCodes) });
     for (const satz of [7, 19]) {
       if (o.payment === 'sumup') add(tag, 'erstattung', 'sumup', satz, a.bezahlt[satz]);
@@ -159,9 +187,14 @@ function baueMeldungen({ von, bis, bestellungen = [], erstattungen = [], geschen
   }
 
   // Am Truck: Das Team kassiert nur die Differenz. Liegt der Bestellwert unter dem Gutschein, verfällt der Rest (AGB § 8).
+  // Hinweise ohne Tag gehen je Text einmal raus: Die letzten 4 Zeichen des Codes machen jeden Fall eigen, ohne den Code zu verraten.
   for (const t of truck) {
     const tag = tagAus(t && t.tag);
-    if (!tag) { hinweis(null, 'Ein Gutschein am Truck hat ein unlesbares Datum und ist nicht gemeldet.'); continue; }
+    if (!tag) {
+      const endung = String((t && t.kennung) || '').slice(-4);
+      hinweis(null, endung ? `Gutschein mit Endung ${endung} am Truck: Datum unlesbar, nicht gemeldet.` : 'Ein Gutschein am Truck hat ein unlesbares Datum und ist nicht gemeldet.');
+      continue;
+    }
     add(tag, 'gutschein_truck', null, null, Math.min(t.wert_cent, t.bestellwert_cent));
     add(tag, 'gutschein_verfall', null, null, t.wert_cent - t.bestellwert_cent);
   }

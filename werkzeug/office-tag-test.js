@@ -187,5 +187,38 @@ ok('… unabhängig von der Eingabereihenfolge', q.meldungen.length === 1 && q.m
 q = bau({ von: '2027-02-05', bis: '2027-02-28', firmenZahlungen: [{ tag: '2027-02-03', nummer: 'GNC-2027-0040', betrag_cent: 100 }] });
 ok('Zahlung vor dem Zeitraum: keine Meldung', q.meldungen.length === 0);
 
+// ---- Schluss-Review ----
+// Sammelrechnung: Unterschied zwischen Satzzeilen und Rechnungsbetrag (Rundung je Bestellung) in die größere Zeile
+const sammel = (nr, vat, total) => ({ invoiceNo: nr, mode: 'sammel', invoiceDay: '2027-03-01', company: 'Muster GmbH', vat, total });
+q = bau({ rechnungen: [sammel('GNC-2027-0050', [{ satz: 7, brutto: 10.7 }, { satz: 19, brutto: 23.81 }], 34.5)] });
+ok('Sammelrechnung: 1 Cent Rundung in der größeren Zeile, Posten gleich total, kein Hinweis', gleich(q.meldungen[0].daten.posten, [{ satz: 7, brutto_cent: 1070 }, { satz: 19, brutto_cent: 2380 }])
+  && q.hinweise.length === 0, q);
+q = bau({ rechnungen: [sammel('GNC-2027-0051', [{ satz: 7, brutto: 40 }, { satz: 19, brutto: 23.8 }], 63.85)] });
+ok('… 5 Cent: ausgeglichen in der 7-%-Zeile, mit Hinweis', gleich(q.meldungen[0].daten.posten, [{ satz: 7, brutto_cent: 4005 }, { satz: 19, brutto_cent: 2380 }])
+  && hat(q, /GNC-2027-0051.*5 Cent/), q);
+q = bau({ rechnungen: [sammel('GNC-2027-0052', [{ satz: 7, brutto: 10 }, { satz: 19, brutto: 5 }], 15)] });
+ok('… stimmt schon: unverändert, kein Hinweis', gleich(q.meldungen[0].daten.posten, [{ satz: 7, brutto_cent: 1000 }, { satz: 19, brutto_cent: 500 }]) && q.hinweise.length === 0, q);
+q = bau({ rechnungen: [sammel('GNC-2027-0053', [{ satz: 7, brutto: 1 }], 0)] });
+ok('… Zeile würde 0: keine Meldung, Hinweis', q.meldungen.length === 0 && hat(q, /GNC-2027-0053/), q);
+q = bau({ rechnungen: [{ ...sammel('GNC-2027-0054', [{ satz: 7, brutto: 2 }], 99), mode: undefined, art: 'catering_anzahlung', kundeName: 'Frau Meier' }] });
+ok('… nur bei Sammelrechnungen: Anzahlung bleibt wie gestellt', gleich(q.meldungen[0].daten.posten, [{ satz: 7, brutto_cent: 200 }]), q);
+
+// Truck-Gutscheine mit kaputtem Datum: Hinweis mit den letzten 4 Zeichen, damit zwei Fälle zwei Hinweise sind
+q = bau({ truck: [{ tag: 'kaputt', wert_cent: 100, bestellwert_cent: 100, kennung: 'AB12' }, { tag: '2027-02-30', wert_cent: 100, bestellwert_cent: 100, kennung: 'CD34' }] });
+ok('Truck: zwei kaputte Gutscheine ergeben zwei verschiedene Hinweise mit Endung', q.hinweise.length === 2 && new Set(q.hinweise.map((h) => h.text)).size === 2
+  && hat(q, /AB12/) && hat(q, /CD34/), q.hinweise);
+
+// Unbekannte Zahlart, fehlende Zahlart, fehlende Bestelldaten: Hinweis mit Nummer statt still wegfallen
+q = bau({ bestellungen: [rec({ reference: 'GNC-Z1', payment: 'paypal' }), rec({ reference: 'GNC-Z2', payment: undefined }),
+  { status: 'completed', quelle: 'online', completedAt: '2027-01-03T11:00:00.000Z', reference: 'GNC-Z3' },
+  rec({ reference: 'GNC-Z4', payment: 'firma' }), rec({ reference: 'GNC-Z5', isTest: true })] });
+ok('Unbekannte oder fehlende Zahlart und fehlende Bestelldaten: Hinweis mit Nummer, keine Meldung', q.meldungen.length === 0
+  && ['GNC-Z1', 'GNC-Z2', 'GNC-Z3'].every((nr) => hat(q, new RegExp(nr + ':'))) && hat(q, /paypal/), q.hinweise);
+ok('… Firmen- und Testbestellungen bleiben still', !hat(q, /GNC-Z4|GNC-Z5/), q.hinweise);
+q = erst('2027-02-01', rec({ reference: 'GNC-Z6', payment: 'paypal' }, { status: 'refunded' }));
+ok('Erstattung mit unbekannter Zahlart: Hinweis mit Nummer', q.meldungen.length === 0 && hat(q, /GNC-Z6/), q.hinweise);
+q = bau({ erstattungen: [{ tag: '2027-02-01', rec: null, referenz: 'GNC-Z7' }] });
+ok('Erstattung, deren Bestellung fehlt: Hinweis mit Nummer', q.meldungen.length === 0 && hat(q, /GNC-Z7.*nicht gefunden/), q.hinweise);
+
 console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));
 process.exit(fehler ? 1 : 0);
