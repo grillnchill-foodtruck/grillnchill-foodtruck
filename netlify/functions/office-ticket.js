@@ -9,6 +9,7 @@ const { pruefeSperre, meldeErgebnis } = require('./lib/auth-guard');
 const { passwortAusSitzung, istToken, sitzungMitZweiFaktor } = require('./lib/admin-sitzung');
 const { mitglied } = require('./lib/team-passwort');
 const { ticketFuer } = require('./lib/office-ticket');
+const { geheimnisHolen } = require('./lib/geheimnisse');
 
 const json = (statusCode, d) => ({ statusCode, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, body: JSON.stringify(d) });
 
@@ -16,25 +17,6 @@ function teamStore() {
   const o = { name: 'team', consistency: 'strong' };
   if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) { o.siteID = process.env.NETLIFY_BLOBS_SITE_ID; o.token = process.env.NETLIFY_BLOBS_TOKEN; }
   return getStore(o);
-}
-
-/**
- * Gemeinsames Geheimnis mit dem Office. Es liegt in den Netlify Blobs (Store
- * geheimnisse, Schlüssel office-ticket-secret), nicht als Umgebungsvariable:
- * Im Lambda-Modus dürfen alle Umgebungsvariablen zusammen nur 4 KB groß sein,
- * und die Seite lag schon knapp darunter. OFFICE_TICKET_SECRET als Variable
- * geht weiterhin vor (lokale Tests).
- */
-async function geheimnisHolen() {
-  if (process.env.OFFICE_TICKET_SECRET) return process.env.OFFICE_TICKET_SECRET;
-  try {
-    const o = { name: 'geheimnisse', consistency: 'strong' };
-    if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) { o.siteID = process.env.NETLIFY_BLOBS_SITE_ID; o.token = process.env.NETLIFY_BLOBS_TOKEN; }
-    return String((await getStore(o).get('office-ticket-secret')) || '').trim();
-  } catch (e) {
-    console.error('office-ticket: Geheimnis nicht lesbar', e && e.message);
-    return '';
-  }
 }
 
 async function wer(pw) {
@@ -62,7 +44,7 @@ exports.handler = async (event) => {
   if (!w) return json(401, { error: 'sitzung_noetig' });
   if (w.role !== 'superadmin' && w.role !== 'admin') return json(403, { error: 'rolle' });
   if (!(await sitzungMitZweiFaktor(token))) return json(403, { error: 'zwei_faktor_noetig' });
-  const geheimnis = await geheimnisHolen();
+  const geheimnis = await geheimnisHolen('office-ticket-secret', 'OFFICE_TICKET_SECRET');
   if (geheimnis.length < 32) return json(500, { error: 'nicht_eingerichtet' });
   const basis = (process.env.OFFICE_URL || 'https://office.grillnchill-foodtruck.de').replace(/\/$/, '');
   return json(200, { ok: true, url: basis + '/anmelden#t=' + ticketFuer(w, geheimnis) });
