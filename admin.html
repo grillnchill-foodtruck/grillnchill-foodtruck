@@ -2056,6 +2056,8 @@ function applyRole(){
   if(b) b.textContent = currentName ? ('Angemeldet: '+currentName+(staff?' · Mitarbeiter':(currentRole==='superadmin'?' · Superadmin':' · Admin'))) : "Grill'n Chill · Bielefeld";
   // Catering-Angebote nur für Admins: Liste nach dem Rollenwechsel neu zeichnen
   if(cateringLoaded) renderCatering();
+  // Nach Anmeldung oder geprüfter gemerkter Sitzung: wer vom Office kam, geht zurück ins Office
+  if(currentPw) officeRuecksprung();
 }
 function logout(){
   /* Die gemerkte Sitzung auch serverseitig entwerten – sonst bliebe ein
@@ -4534,6 +4536,17 @@ async function officeOeffnen(btn){
       toast(d.error==='zwei_faktor_noetig'?'Fürs Office bitte mit Zwei-Faktor-Code neu anmelden.':d.error==='rolle'?'Das Office ist nur für Admins.':'Office gerade nicht erreichbar.','err');
     }catch(e){ toast('Keine Verbindung.','err'); }
   });
+}
+// Rücksprung ins GNC Office: office.grillnchill-foodtruck.de schickt nicht angemeldete Besucher mit ?office=1 hierher.
+// Nur dieser feste Parameter, keine Ziel-Adresse aus der URL. Läuft einmal, danach ist der Parameter weg.
+function officeRuecksprung(){
+  try{
+    const u=new URL(location.href);
+    if(u.searchParams.get('office')!=='1') return;
+    u.searchParams.delete('office');
+    history.replaceState(history.state,'',u.pathname+u.search+u.hash);
+    officeOeffnen(null);
+  }catch(e){}
 }
 
 function loadInvoices(btn){ return withBusy(btn, loadInvoicesRun); }
