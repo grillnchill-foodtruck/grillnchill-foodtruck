@@ -40,6 +40,7 @@ const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { telegram, esc: tEsc } = require('./telegram');
 const RE = require('./catering-rechnung');
+const U = require('./unterschrift');
 
 const SUMUP_API_BASE = 'https://api.sumup.com/v0.1';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
@@ -518,7 +519,7 @@ async function senden(id, { wer, jetzt, basis } = {}) {
 }
 
 /* ---- Annehmen (Kunde) ----------------------------------------------------- */
-async function annehmen(id, token, { lang, ipHash, jetzt, basis, adresse } = {}) {
+async function annehmen(id, token, { lang, ipHash, jetzt, basis, adresse, unterschrift } = {}) {
   const s = store();
   const a = await laden(s, id);
   if (!a || a.status === 'entwurf' || !tokenStimmt(a, token)) return { code: 404, fehler: 'nicht_gefunden' };
@@ -528,6 +529,8 @@ async function annehmen(id, token, { lang, ipHash, jetzt, basis, adresse } = {})
   if (st === 'angenommen' || st === 'bezahlt') return { code: 409, fehler: 'schon_angenommen', a, e };
   if (st !== 'gesendet') return { code: 409, fehler: st, a, e };
 
+  // Ohne gültige Unterschrift keine Online-Annahme (angebot.js prüft sie vorher mit U.pruefen)
+  if (!unterschrift) return { code: 400, fehler: 'unterschrift_fehlt', a, e };
   // Nur einmal: wer den Marker zuerst anlegt, nimmt an. Ein zweiter Klick,
   // ein zweiter Tab oder ein Doppel-Request scheitert hier.
   const res = await s.setJSON('angebot-annahme:' + id, { at: t.toISOString(), lang: lang || '', ipHash: ipHash || '' }, { onlyIfNew: true });
@@ -545,7 +548,11 @@ async function annehmen(id, token, { lang, ipHash, jetzt, basis, adresse } = {})
   }
   a.status = 'angenommen';
   a.angenommenAm = t.toISOString();
-  a.annahme = { weg: 'online', lang: lang || '', ipHash: ipHash || '', gesamt: a.gesamt };
+  a.annahme = {
+    weg: 'online', lang: lang || '', ipHash: ipHash || '', gesamt: a.gesamt,
+    // Name aus der Rechnungsadresse, Zeitpunkt vom Server, Prüfsumme über genau die angenommene Fassung
+    unterschrift: { ...unterschrift, name: String(a.kunde.name || a.kunde.firma || '').slice(0, 80), am: t.toISOString(), angebotHash: U.angebotHash(a) },
+  };
   a.geaendertAm = t.toISOString();
   vermerk(a, 'vom Kunden online angenommen', 'Kunde', t);
   await sichern(s, a);
@@ -554,8 +561,17 @@ async function annehmen(id, token, { lang, ipHash, jetzt, basis, adresse } = {})
   await Promise.all([
     telegram(telegramAnnahme(a, e), { html: true }),
     (async () => {
-      try { const m = mailAnnahme(a, e, link); await brevo({ an: a.kunde.email, name: a.kunde.name, betreff: m.betreff, html: m.html }); }
+      const anhaenge = await signiertesPdf(a, e);
+      try { const m = mailAnnahme(a, e, link); await brevo({ an: a.kunde.email, name: a.kunde.name, betreff: m.betreff, html: m.html, anhaenge }); }
       catch (err) { console.error('angebot annahme-mail:', err.message); }
+      // Kopie an Kubi mit dem unterschriebenen PDF
+      if (process.env.OWNER_EMAIL) {
+        try {
+          const u = a.annahme.unterschrift;
+          await brevo({ an: process.env.OWNER_EMAIL, name: "Grill'n Chill", betreff: 'Angebot ' + a.nummer + ' unterschrieben: ' + u.name,
+            html: '<p>' + h(u.name) + ' hat Angebot ' + h(a.nummer) + ' am ' + h(U.zeitText(u.am)) + ' online angenommen und unterschrieben. Das PDF mit Unterschrift hängt an.</p>', anhaenge });
+        } catch (err) { console.error('angebot annahme-kopie:', err.message); }
+      }
     })(),
   ]);
   return { code: 200, a, e };
@@ -1066,6 +1082,7 @@ function kundenAnsicht(a, e, jetzt) {
       plz: a.kunde && a.kunde.plz || '', ort: a.kunde && a.kunde.ort || '', ustId: a.kunde && a.kunde.ustId || '' },
     rechnungen: (a.rechnungen || []).filter((x) => !x.storniertDurch && x.art !== 'catering_storno').map((x) => ({ nr: x.nr, art: x.art, datum: x.datum, total: x.total })),
     angenommenAm: a.angenommenAm || null, bezahltAm: a.bezahltAm || null,
+    unterschrift: kundenUnterschrift(a),
     ersetzt: !!a.ersetztDurch,
     anzahlungOnline: !!e.anzahlungOnline && st === 'angenommen' && a.anzahlung > 0,
     zahlungLaeuft: !!(a.zahlung && a.zahlung.status === 'PENDING'),
@@ -1169,6 +1186,24 @@ function mailErinnerung(a, e, link) {
     + '<p style="margin:18px 0 0;">Viele Grüße<br><strong>Kubi und das Grill\'n Chill Team</strong></p>';
   return { betreff: 'Kurze Erinnerung: dein Catering-Angebot ' + a.nummer, html: rahmen('CATERING-ANGEBOT', inhalt) };
 }
+// Angebots-PDF mit Unterschrift als Mail-Anhang. Scheitert das PDF, gehen die Mails ohne Anhang raus.
+async function signiertesPdf(a, e) {
+  try {
+    const pdf = await require('./angebot-pdf').angebotPdf(a, e);
+    return [{ name: 'Angebot-' + a.nummer + '-unterschrieben.pdf', content: pdf.toString('base64') }];
+  } catch (err) {
+    console.error('angebot pdf für mail:', err.message);
+    return [];
+  }
+}
+
+// Für die Kundenseite: Linienzug oder Name, wer, wann. Die Prüfsumme bleibt im Admin.
+function kundenUnterschrift(a) {
+  const u = a.annahme && a.annahme.unterschrift;
+  if (!u) return null;
+  return { ...(u.striche ? { striche: u.striche } : { getippt: u.getippt }), name: u.name || '', am: u.am };
+}
+
 function mailAnnahme(a, e, link) {
   const online = e.anzahlungOnline && a.anzahlung > 0;
   const anz = a.anzahlung > 0
@@ -1181,6 +1216,7 @@ function mailAnnahme(a, e, link) {
     + tabelle(eckdaten(a))
     + anz
     + '<p style="margin:14px 0 6px;">Vor dem Event klären wir mit dir Stellplatz, Strom und wie viele Gäste vegetarisch oder vegan essen.</p>'
+    + (a.annahme && a.annahme.unterschrift ? '<p style="margin:0 0 6px;">Im Anhang findest du das Angebot mit deiner Unterschrift vom ' + h(U.zeitText(a.annahme.unterschrift.am)) + '.</p>' : '')
     + '<p style="margin:0;">Dein Angebot findest du jederzeit hier: <a href="' + h(link) + '" style="color:#CC4715;font-weight:600;text-decoration:none;">Angebot ansehen</a></p>'
     + '<p style="margin:18px 0 0;">Wir freuen uns auf dein Event.<br><strong>Kubi und das Grill\'n Chill Team</strong></p>';
   return { betreff: 'Danke für deine Zusage: Catering ' + (a.event && a.event.datum ? 'am ' + deDatum(a.event.datum) : a.nummer), html: rahmen('ZUSAGE ERHALTEN', inhalt) };
@@ -1221,6 +1257,8 @@ function telegramKopf(a) {
 function telegramAnnahme(a, e) {
   const z = ['<b>Catering-Angebot angenommen</b>'].concat(telegramKopf(a));
   z.push('Gesamt ' + tEsc(eur(a.gesamt)) + (a.anzahlung > 0 ? ' · Anzahlung ' + tEsc(eur(a.anzahlung)) : ''));
+  const u = a.annahme && a.annahme.unterschrift;
+  if (u) z.push('Unterschrieben von ' + tEsc(u.name) + (u.getippt ? ' (Name getippt)' : '') + '.');
   if (a.anzahlung > 0) z.push(e.anzahlungOnline ? 'Der Kunde kann die Anzahlung jetzt online zahlen.' : 'Anzahlung online ist aus: bitte wie gewohnt einfordern.');
   if (a.kunde && a.kunde.telefon) z.push('Tel: ' + tEsc(a.kunde.telefon));
   return z.join('\n');

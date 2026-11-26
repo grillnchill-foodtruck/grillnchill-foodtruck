@@ -10,7 +10,7 @@
  *   GET  ?id=…&t=…&pruefen=1    -> wie oben, prüft vorher eine offene Zahlung bei SumUp
  *   GET  ?id=…&t=…&pdf=1        -> PDF
  *   GET  ?id=…&t=…&rechnung=GNC-… -> PDF einer Rechnung zu diesem Angebot
- *   POST { id, t, aktion: 'annehmen', haken: true, lang, adresse: { name, firma, strasse, plz, ort, ustId } }
+ *   POST { id, t, aktion: 'annehmen', haken: true, lang, adresse: { name, firma, strasse, plz, ort, ustId }, unterschrift: { striche } | { getippt } }
  *   POST { id, t, aktion: 'zahlen' }   -> { url }  (nur mit Schalter "Anzahlung online")
  *
  * Bremse: lib/bremse.js je Absender, Annahme und Kasse zusätzlich enger.
@@ -19,6 +19,7 @@
 
 const { schutz, saeubern, absender } = require('./lib/bremse');
 const A = require('./lib/catering-angebot');
+const U = require('./lib/unterschrift');
 
 const json = (statusCode, data) => ({
   statusCode,
@@ -29,14 +30,14 @@ const nichtGefunden = () => json(404, { error: 'nicht_gefunden' });
 const SPRACHEN = ['de', 'en', 'tr', 'it', 'es', 'pt', 'fr', 'nl'];
 
 exports.handler = async (event) => {
-  const halt = await schutz(event, { name: 'angebot', max: 60, maxKB: 8 });
+  const halt = await schutz(event, { name: 'angebot', max: 60, maxKB: 16 });
   if (halt) return halt;
   const methode = event.httpMethod;
   if (methode !== 'GET' && methode !== 'POST') return json(405, { error: 'method_not_allowed' });
 
   let input = {};
   if (methode === 'POST') {
-    try { input = saeubern(JSON.parse(event.body || '{}'), { maxText: 200 }); } catch (e) { return json(400, { error: 'bad_json' }); }
+    try { input = saeubern(JSON.parse(event.body || '{}'), { maxText: 200, maxListe: 2400 }); } catch (e) { return json(400, { error: 'bad_json' }); }
   } else {
     input = event.queryStringParameters || {};
   }
@@ -88,7 +89,7 @@ exports.handler = async (event) => {
     }
 
     if (input.aktion === 'annehmen') {
-      const enger = await schutz(event, { name: 'angebot-annahme', max: 10, maxKB: 8 });
+      const enger = await schutz(event, { name: 'angebot-annahme', max: 10, maxKB: 16 });
       if (enger) return enger;
       if (input.haken !== true) return json(400, { error: 'haken_fehlt' });
       const lang = SPRACHEN.includes(input.lang) ? input.lang : 'de';
@@ -97,7 +98,10 @@ exports.handler = async (event) => {
       const ad = input.adresse && typeof input.adresse === 'object' ? input.adresse : null;
       if (!ad || !String(ad.strasse || '').trim() || !String(ad.plz || '').trim() || !String(ad.ort || '').trim()
         || !(String(ad.name || '').trim() || String(ad.firma || '').trim())) return json(400, { error: 'adresse_fehlt' });
-      const r = await A.annehmen(id, token, { lang, ipHash: ip ? ip.slice(0, 16) : '', adresse: ad });
+      // Unterschrift: Linienzug oder getippter Name, Grenzen in lib/unterschrift.js
+      const unterschrift = U.pruefen(input.unterschrift);
+      if (!unterschrift) return json(400, { error: 'unterschrift_fehlt' });
+      const r = await A.annehmen(id, token, { lang, ipHash: ip ? ip.slice(0, 16) : '', adresse: ad, unterschrift });
       if (r.code === 404) return nichtGefunden();
       const ansicht = r.a ? A.kundenAnsicht(r.a, r.e) : null;
       if (r.code !== 200) return json(r.code, { error: r.fehler, angebot: ansicht });

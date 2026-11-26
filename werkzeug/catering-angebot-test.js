@@ -100,6 +100,7 @@ const angebotRoh = (id) => JSON.parse(daten.get('catering|angebot:' + id));
 const tokenVon = (id) => angebotRoh(id).token;
 const TAG = 864e5;
 const ADR = { name: 'Ayşe Yılmaz', firma: 'Şahin Events GmbH', strasse: 'Teststraße 1', plz: '33602', ort: 'Bielefeld' };
+const SIG = { striche: [[100, 200, 130, 150, 160, 210, 190, 120, 220, 200, 250, 110, 280, 190, 310, 130, 340, 200]] };
 const rechnungen = () => [...daten.keys()].filter((k) => k.startsWith('invoices|inv:')).map((k) => JSON.parse(daten.get(k))).filter((r) => !r.platzhalter);
 const cent = (x) => Math.round(x * 100);
 
@@ -235,7 +236,7 @@ const cent = (x) => Math.round(x * 100);
   ok('Token in falscher Form -> 404', (await kundeGet({ id: a1.id, t: 'abc' })).s === 404);
   ok('Unbekannte ID -> 404 (gleiche Antwort wie falscher Token)', (await kundeGet({ id: '0123456789ab', t: t1 })).s === 404);
   ok('ID in falscher Form -> 404', (await kundeGet({ id: '../angebot', t: t1 })).s === 404);
-  ok('Annehmen mit falschem Token -> 404', (await kundePost({ id: a1.id, t: falsch, aktion: 'annehmen', haken: true, adresse: ADR })).s === 404);
+  ok('Annehmen mit falschem Token -> 404', (await kundePost({ id: a1.id, t: falsch, aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: SIG })).s === 404);
   r = await kundeGet({ id: a1.id, t: t1, pdf: '1' });
   ok('Kunden-PDF mit Token -> gültiges PDF', r.s === 200 && Buffer.from(r.r.body, 'base64').slice(0, 5).toString() === '%PDF-');
   let gebremst = false;
@@ -245,21 +246,51 @@ const cent = (x) => Math.round(x * 100);
   /* ---- Annahme nur einmal -------------------------------------------------- */
   ok('Ohne Haken -> 400', (await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: false, adresse: ADR })).s === 400);
   telegramm.length = 0; mails.length = 0;
-  r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true, adresse: ADR, lang: 'tr' });
+  r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: SIG, lang: 'tr' });
   ok('Annehmen -> 200, Status angenommen', r.s === 200 && r.d.angebot.status === 'angenommen' && angebotRoh(a1.id).annahme.lang === 'tr', r.d);
   ok('Telegram an Kubi: angenommen, Hinweis Anzahlung online aus', telegramm.length === 1 && telegramm[0].includes('Catering-Angebot angenommen')
     && telegramm[0].includes('A-' + jahr + '-0001') && telegramm[0].includes('Anzahlung online ist aus'), telegramm);
-  ok('Bestätigungsmail an den Kunden (ohne Zahlknopf)', mails.length === 1 && mails[0].to[0].email === 'ayse@example.com'
-    && mails[0].subject.startsWith('Danke für deine Zusage') && !mails[0].htmlContent.includes('Anzahlung zahlen'));
-  r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true, adresse: ADR });
+  const anKunde = mails.filter((m) => m.to[0].email === 'ayse@example.com');
+  const anKubi = mails.filter((m) => m.to[0].email === 'inhaber@example.com');
+  ok('Bestätigungsmail an den Kunden (ohne Zahlknopf) mit unterschriebenem PDF', anKunde.length === 1
+    && anKunde[0].subject.startsWith('Danke für deine Zusage') && !anKunde[0].htmlContent.includes('Anzahlung zahlen')
+    && anKunde[0].htmlContent.includes('mit deiner Unterschrift')
+    && anKunde[0].attachment && anKunde[0].attachment[0].name.endsWith('-unterschrieben.pdf')
+    && Buffer.from(anKunde[0].attachment[0].content, 'base64').slice(0, 5).toString() === '%PDF-', anKunde.map((m) => m.subject));
+  ok('Kopie an Kubi mit PDF', anKubi.length === 1 && anKubi[0].subject.includes('unterschrieben: Ayşe Yılmaz') && anKubi[0].attachment.length === 1, anKubi.map((m) => m.subject));
+  const gespeichert = angebotRoh(a1.id).annahme.unterschrift;
+  ok('Unterschrift gespeichert: Linienzug, Name aus der Adresse, Zeitpunkt, Prüfsumme', JSON.stringify(gespeichert.striche) === JSON.stringify(SIG.striche)
+    && gespeichert.name === 'Ayşe Yılmaz' && !isNaN(Date.parse(gespeichert.am)) && /^[0-9a-f]{64}$/.test(gespeichert.angebotHash), gespeichert);
+  ok('Kundenansicht zeigt die Unterschrift ohne Prüfsumme', r.d.angebot.unterschrift && r.d.angebot.unterschrift.name === 'Ayşe Yılmaz'
+    && Array.isArray(r.d.angebot.unterschrift.striche) && !('angebotHash' in r.d.angebot.unterschrift), r.d.angebot.unterschrift);
+  ok('Telegram nennt die Unterschrift', telegramm[0].includes('Unterschrieben von Ayşe Yılmaz'), telegramm);
+  r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: SIG });
   ok('Zweites Annehmen -> 409 schon_angenommen, kein zweites Telegram', r.s === 409 && r.d.error === 'schon_angenommen' && telegramm.length === 1);
+
+  /* ---- Unterschrift ---------------------------------------------------------- */
+  const u1 = (await adminPost({ action: 'neu', anfrage: 'c:1700000000000-abc123' })).d.angebot;
+  await adminPost({ action: 'senden', id: u1.id });
+  const tu1 = tokenVon(u1.id);
+  r = await kundePost({ id: u1.id, t: tu1, aktion: 'annehmen', haken: true, adresse: ADR });
+  ok('Ohne Unterschrift: 400 unterschrift_fehlt, Angebot bleibt offen', r.s === 400 && r.d.error === 'unterschrift_fehlt' && angebotRoh(u1.id).status === 'gesendet', r.d);
+  r = await kundePost({ id: u1.id, t: tu1, aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: { striche: [[500, 150]] } });
+  ok('Ein Punkt ist keine Unterschrift: 400', r.s === 400 && r.d.error === 'unterschrift_fehlt', r.d);
+  r = await kundePost({ id: u1.id, t: tu1, aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: { getippt: 'Ayşe Yılmaz' } });
+  ok('Getippter Name als Unterschrift: angenommen', r.s === 200 && angebotRoh(u1.id).annahme.unterschrift.getippt === 'Ayşe Yılmaz', r.d);
+  r = await kundeGet({ id: u1.id, t: tu1, pdf: '1' });
+  ok('PDF nach der Annahme bleibt gültig', r.s === 200 && Buffer.from(r.r.body, 'base64').slice(0, 5).toString() === '%PDF-');
+  const viel = { striche: [Array.from({ length: 1600 }, (_, i) => (i % 2 ? 100 + (i % 150) : (i * 3) % 1000))] };
+  const u2 = (await adminPost({ action: 'neu', anfrage: 'c:1700000000000-abc123' })).d.angebot;
+  await adminPost({ action: 'senden', id: u2.id });
+  r = await kundePost({ id: u2.id, t: tokenVon(u2.id), aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: viel });
+  ok('Lange Unterschrift (800 Punkte) passt durch die Anfragegrenze', r.s === 200, { s: r.s, d: r.d });
 
   // Gleichzeitig: zweites Angebot senden und fünfmal parallel annehmen
   const b = (await adminPost({ action: 'neu', anfrage: 'c:1700000000000-abc123' })).d.angebot;
   await adminPost({ action: 'senden', id: b.id });
   const tb = tokenVon(b.id);
   telegramm.length = 0;
-  const parallel = await Promise.all([1, 2, 3, 4, 5].map(() => kundePost({ id: b.id, t: tb, aktion: 'annehmen', haken: true, adresse: ADR })));
+  const parallel = await Promise.all([1, 2, 3, 4, 5].map(() => kundePost({ id: b.id, t: tb, aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: SIG })));
   ok('5 gleichzeitige Annahmen: genau eine 200, vier 409, ein Telegram',
     parallel.filter((x) => x.s === 200).length === 1 && parallel.filter((x) => x.s === 409).length === 4 && telegramm.length === 1,
     parallel.map((x) => x.s));
@@ -429,11 +460,11 @@ const cent = (x) => Math.round(x * 100);
   lauf = await L.taeglicherLauf(new Date(gesendetAm.getTime() + 15 * TAG));
   ok('Tag danach: abgelaufen, Telegram-Zeile', lauf.abgelaufen.includes(c.nummer) && angebotRoh(c.id).status === 'abgelaufen'
     && telegramm.some((x) => x.includes('Abgelaufen: ' + c.nummer)));
-  r = await kundePost({ id: c.id, t: tokenVon(c.id), aktion: 'annehmen', haken: true, adresse: ADR });
+  r = await kundePost({ id: c.id, t: tokenVon(c.id), aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: SIG });
   ok('Abgelaufenes Angebot lässt sich nicht annehmen (409 abgelaufen)', r.s === 409 && r.d.error === 'abgelaufen');
   // Ablauf ohne Zeitplan: Kunde klickt nach Ablauf, Zeitplan lief noch nicht
   const roh2 = angebotRoh(d.id); roh2.gueltigBis = L.plusTage(L.heute(), -1); daten.set('catering|angebot:' + d.id, JSON.stringify(roh2));
-  r = await kundePost({ id: d.id, t: tokenVon(d.id), aktion: 'annehmen', haken: true, adresse: ADR });
+  r = await kundePost({ id: d.id, t: tokenVon(d.id), aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: SIG });
   ok('Gültigkeit vorbei, Zeitplan noch nicht gelaufen: trotzdem 409 abgelaufen', r.s === 409 && r.d.error === 'abgelaufen');
   ok('Erinnerung nicht für abgelaufene Angebote', !(await L.taeglicherLauf(new Date(Date.now() + 30 * TAG))).erinnert.length);
 

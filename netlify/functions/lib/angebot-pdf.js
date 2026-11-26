@@ -208,7 +208,8 @@ function angebotPdf(a, e) {
       /* ---- Bedingungen und Annahme ---- */
       const liste = bedingungen(a, e);
       doc.font('Helvetica').fontSize(8.5);
-      const hoehe = liste.reduce((n, l) => n + doc.heightOfString(latin1(l), { width: B - 14 }) + 3, 0) + 70;
+      const unterschrift = a.annahme && a.annahme.unterschrift;
+      const hoehe = liste.reduce((n, l) => n + doc.heightOfString(latin1(l), { width: B - 14 }) + 3, 0) + (unterschrift ? 150 : 70);
       if (y + hoehe > UNTEN) { doc.addPage(); y = 60; }
       y += 8;
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor(FARBE.grau).text('BEDINGUNGEN', L, y, { characterSpacing: 1.2 });
@@ -219,10 +220,24 @@ function angebotPdf(a, e) {
         y = doc.y + 3;
       });
       y += 8;
-      doc.font('Helvetica-Bold').fontSize(9).fillColor(FARBE.text).text('So nimmst du an', L, y);
-      y = doc.y + 2;
-      doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.text)
-        .text(latin1('Öffne den Link in unserer E-Mail und tippe auf „Angebot annehmen“. Oder ruf uns an: ' + VERKAEUFER.tel + '.'), L, y, { width: B });
+      if (unterschrift) {
+        const U = require('./unterschrift');
+        doc.font('Helvetica-Bold').fontSize(7.5).fillColor(FARBE.grau).text('ANGENOMMEN UND UNTERSCHRIEBEN', L, y, { characterSpacing: 1.2 });
+        y += 13;
+        doc.font('Helvetica').fontSize(9).fillColor(FARBE.text)
+          .text(latin1('Online angenommen am ' + U.zeitText(unterschrift.am) + ' von ' + (unterschrift.name || '') + (unterschrift.getippt ? ' (Name getippt)' : '') + '.'), L, y, { width: B });
+        y = doc.y + 6;
+        doc.rect(L, y, 250, 80).lineWidth(0.6).strokeColor(FARBE.linie).stroke();
+        U.zeichnenPdf(doc, unterschrift, L + 8, y + 6, 234, 68, { latin1 });
+        y += 88;
+        doc.font('Helvetica').fontSize(7.5).fillColor(FARBE.grau)
+          .text(latin1('Prüfsumme des angenommenen Angebots (SHA-256): ' + U.hashKurz(unterschrift.angebotHash)), L, y, { width: B });
+      } else {
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(FARBE.text).text('So nimmst du an', L, y);
+        y = doc.y + 2;
+        doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.text)
+          .text(latin1('Öffne den Link in unserer E-Mail und tippe auf „Angebot annehmen“. Oder ruf uns an: ' + VERKAEUFER.tel + '.'), L, y, { width: B });
+      }
 
       /* ---- Fuß auf jeder Seite ---- */
       const seiten = doc.bufferedPageRange();
