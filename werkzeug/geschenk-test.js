@@ -340,6 +340,9 @@ const basis = (extra) => ({
   ok('Black Week: Sonntag 22.11., 23:59 noch kein Bonus', !bwVor.rec.bonusCode, bwVor.rec.bonusCode);
   const erst = await handler('orders-action')({ httpMethod: 'POST', headers: ip(), body: JSON.stringify({ password: 'admin-test', reference: bw30.reference, action: 'refund' }), queryStringParameters: {} });
   ok('Black Week: Erstattung sperrt Gutschein und Bonus-Code', erst.statusCode === 200 && lies('vouchers', 'c:' + bw30.rec.code).active === false && lies('vouchers', 'c:' + bc30).active === false, erst.body);
+  const erstattet = lies('orders', 'o:' + bw30.reference);
+  const ereignisTag = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(new Date(erstattet.refundedAt));
+  ok('Erstattung als Ereignis fürs Office vermerkt', !!lies('office-ereignisse', 'erstattung:' + ereignisTag + ':' + bw30.reference));
 
   /* 13. QR-Code */
   const qrAntwort = await handler('giftcard-qr')({ httpMethod: 'GET', headers: ip(), queryStringParameters: { c: codeT } });

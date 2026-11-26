@@ -159,6 +159,13 @@ exports.handler = async (event) => {
       rec.status = 'refunded';
       rec.refundedAt = new Date().toISOString();
       await s.setJSON(key, rec);
+      // Fürs GNC Office: Erstattung als Ereignis vermerken, office-meldungen.js meldet sie in der Nacht
+      try {
+        const eo = { name: 'office-ereignisse', consistency: 'strong' };
+        if (process.env.NETLIFY_BLOBS_SITE_ID && process.env.NETLIFY_BLOBS_TOKEN) { eo.siteID = process.env.NETLIFY_BLOBS_SITE_ID; eo.token = process.env.NETLIFY_BLOBS_TOKEN; }
+        const tag = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(new Date(rec.refundedAt));
+        await getStore(eo).setJSON('erstattung:' + tag + ':' + reference, { reference, refundedAt: rec.refundedAt });
+      } catch (e) { console.error('orders-action: Ereignis fürs Office nicht gespeichert', e && e.message); }
       // Geschenkgutschein: zugehörigen Code deaktivieren, damit er nicht mehr einlösbar ist
       if (rec.kind === 'giftcard' && rec.code) {
         try {

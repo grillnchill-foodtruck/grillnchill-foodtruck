@@ -188,6 +188,10 @@
 [functions."orders-reconcile"]
   schedule = "*/5 * * * *"
 
+# GNC Office: Meldungen der letzten 14 Tage, einmal je Nacht ab 01:00 Uhr Berlin (stündlicher Versuch)
+[functions."office-meldungen"]
+  schedule = "20 * * * *"
+
 [[redirects]]
   from   = "/catering"
   to     = "/catering.html"
