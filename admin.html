@@ -850,6 +850,7 @@
   @media (prefers-reduced-motion:reduce){ .bf-ov,.bf-sheet{animation:none} .bf-kachel:active{transform:none} }
   </style>
 <script src="/ereignisse.js"></script>
+<script src="/unterschrift.js"></script>
 </head>
 <body>
 <div id="toast" class="toast" role="status"></div>
@@ -4253,6 +4254,9 @@ function angAnsichtHtml(a){
   if(a.ersetztDurch) info.push('ersetzt durch '+a.ersetztDurch);
   if(a.zahlung&&a.zahlung.doppelt&&a.zahlung.doppelt.length) info.push('Achtung: doppelt bezahlt, bitte in SumUp erstatten');
   let h='<p class="hint" style="margin:0 0 .4rem">'+esc2(info.join(' · '))+'</p>';
+  const u=a.annahme&&a.annahme.unterschrift;
+  if(u) h+='<div class="ang-sec">Unterschrift</div><div style="max-width:320px;color:inherit">'+(window.GNCUnterschrift?GNCUnterschrift.svg(u,'Unterschrift von '+(u.name||'')):'')+'</div>'
+    +'<p class="hint" style="margin:.2rem 0 .4rem">'+esc2((u.getippt?'Name getippt':'Gezeichnet')+' von '+(u.name||'')+', '+angZeit(u.am)+' · Prüfsumme '+String(u.angebotHash||'').slice(0,16))+'</p>';
   if(a.link) h+='<div class="ang-sec">Kundenlink</div><div class="ang-link"><code>'+esc2(a.link)+'</code>'
     +'<button type="button" class="ang-pille-btn" data-on-click="angLinkKopieren()">'+ANG_ICON.kopie+'Kopieren</button>'
     +'<a class="ang-pille-btn" '+hrefAttr(a.link)+' target="_blank" rel="noopener">'+ANG_ICON.extern+'Ansehen</a></div>';

@@ -115,6 +115,18 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,6vw,2.5rem)
 .adr input[aria-invalid="true"]{border-color:var(--err)}
 @media(max-width:420px){.adr{grid-template-columns:1fr}}
 .adr-hint{color:var(--dim);font-size:.88rem;margin:-.2rem 0 .7rem}
+/* Unterschrift bei der Annahme */
+.sig{position:relative;aspect-ratio:10/3;margin:.2rem 0 .5rem;border:1px solid var(--border-hi);border-radius:14px;background:rgba(245,233,208,.04);color:var(--cream);overflow:hidden}
+.sig canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.sig-linie{position:absolute;left:7%;right:7%;bottom:27%;border-bottom:1px dashed var(--border-hi);pointer-events:none}
+.sig-linie::before{content:"\00D7";position:absolute;left:-.1rem;bottom:.15rem;color:var(--muted);font-size:1.1rem;line-height:1}
+.sig.fehler{border-color:var(--err)}
+.sig-getippt input{width:100%;min-height:52px;padding:.65rem .8rem;border-radius:12px;border:1px solid var(--border-hi);background:rgba(245,233,208,.04);color:inherit;font:italic 1.35rem/1.2 Georgia,'Times New Roman',serif}
+.sig-getippt input:focus{outline:2px solid var(--orange);outline-offset:1px}
+.sig-getippt input[aria-invalid="true"]{border-color:var(--err)}
+.sig-knoepfe{margin:.1rem 0 .4rem}
+.sig-datum{margin-left:auto;color:var(--dim);font-size:.88rem;font-variant-numeric:tabular-nums}
+.sig-anzeige{max-width:420px;color:var(--cream);margin:.3rem 0 .4rem}
 .fehltext:empty{display:none}
 .btn{display:flex;align-items:center;justify-content:center;gap:.5rem;width:100%;min-height:52px;margin-top:.9rem;padding:.9rem 1.2rem;
   border:none;border-radius:14px;background:var(--orange-s);color:#fff;font:800 1.02rem/1.25 var(--body);cursor:pointer;text-decoration:none;text-align:center;
@@ -200,6 +212,7 @@ footer .reihe{margin-top:.7rem}
   </footer>
 </div>
 
+<script src="/unterschrift.js"></script>
 <script src="/i18n.js"></script>
 <script>
 /* Kundenseite eines Catering-Angebots (/angebot?id=…&t=…).
@@ -407,15 +420,18 @@ function zeichnen() {
       + feld('adOrt', 'ang.addr_city', ad.ort, 'address-level2', '', true)
       + feld('adUst', 'ang.addr_vat', ad.ustId, 'off', 'ganz', false)
       + '</div><p class="fehltext" id="adrFehler" role="alert"></p>'
+      + sigHtml()
       + '<label class="haken" id="hakenZeile"><input type="checkbox" id="haken" aria-describedby="hakenFehler"><span>' + h(t('ang.check')) + '</span></label>'
       + '<p class="fehltext" id="hakenFehler" role="alert"></p>'
       + '<button type="button" class="btn" id="annehmenKnopf" data-on-click="angebotAnnehmen(this)">' + ICON.ok + '<span>' + h(t('ang.accept')) + '</span></button>'
       + '<p class="klein">' + h(f('ang.total_short', { amount: geld(a.gesamt) })) + '</p></section>';
   }
+  if (a.unterschrift) html += signiertHtml(a.unterschrift);
   html += '<div class="reihe" style="margin:0 0 1rem"><a class="mini" ' + hrefAttr(API + '?id=' + encodeURIComponent(ANG_ID) + '&t=' + encodeURIComponent(ANG_T) + '&pdf=1')
     + ' target="_blank" rel="noopener">' + ICON.pdf + '<span>' + h(t('ang.pdf')) + '</span></a></div>';
   html += kontaktHtml();
   app.innerHTML = html;
+  sigEinrichten();
   var cb = document.getElementById('haken');
   if (cb) cb.addEventListener('change', function () {
     if (cb.checked) { document.getElementById('hakenZeile').classList.remove('fehler'); cb.removeAttribute('aria-invalid'); document.getElementById('hakenFehler').textContent = ''; }
@@ -453,6 +469,55 @@ function ansagen(text) { var el = document.getElementById('ansage'); if (el) { e
 /* ---- Annehmen ---- */
 /* Rechnungsadresse: Eingaben über ein Neuzeichnen (Sprachwechsel) hinweg behalten */
 var ADRESSE = null;
+/* Unterschrift: Linienzug oder getippter Name. Bleibt über ein Neuzeichnen (Sprachwechsel) erhalten.
+   SIG_GETIPPT null = Zeichnen, Text = Name tippen */
+var SIG_FELD = null, SIG_STRICHE = [], SIG_GETIPPT = null;
+function sigHtml() {
+  var tippen = SIG_GETIPPT !== null;
+  return '<h3 style="font-size:1rem;margin:1rem 0 .3rem">' + h(t('ang.sign_title')) + '</h3>'
+    + '<p class="adr-hint">' + h(t(tippen ? 'ang.sign_name' : 'ang.sign_hint')) + '</p>'
+    + (tippen
+      ? '<label class="sig-getippt"><input type="text" id="sigName" maxlength="80" autocomplete="off" aria-label="' + h(t('ang.sign_name')) + '" aria-describedby="sigFehler" value="' + h(SIG_GETIPPT) + '" data-on-input="sigNameMerken()"></label>'
+      : '<div class="sig" id="sigFeld"><canvas id="sigCanvas" role="img" aria-label="' + h(t('ang.sign_canvas')) + '"></canvas><span class="sig-linie" aria-hidden="true"></span></div>')
+    + '<div class="reihe sig-knoepfe">'
+    + (tippen ? '' : '<button type="button" class="mini" data-on-click="sigLeeren()">' + h(t('ang.sign_clear')) + '</button>')
+    + '<button type="button" class="mini" data-on-click="sigModusWechseln()">' + h(t(tippen ? 'ang.sign_draw' : 'ang.sign_type')) + '</button>'
+    + '<span class="sig-datum">' + h(f('ang.sign_date', { date: tagVon(new Date().toISOString()) })) + '</span></div>'
+    + '<p class="fehltext" id="sigFehler" role="alert"></p>';
+}
+function sigFehlerWeg() {
+  var fe = document.getElementById('sigFehler'); if (fe) fe.textContent = '';
+  var fd = document.getElementById('sigFeld'); if (fd) fd.classList.remove('fehler');
+  var n = document.getElementById('sigName'); if (n) n.removeAttribute('aria-invalid');
+}
+function sigEinrichten() {
+  if (SIG_FELD) { SIG_FELD.abbauen(); SIG_FELD = null; }
+  var c = document.getElementById('sigCanvas');
+  if (!c || !window.GNCUnterschrift) return;
+  SIG_FELD = GNCUnterschrift.feld(c, { beiAenderung: function () { SIG_STRICHE = SIG_FELD ? SIG_FELD.striche() : []; sigFehlerWeg(); } });
+  if (SIG_STRICHE.length) SIG_FELD.setzen(SIG_STRICHE);
+  SIG_STRICHE = SIG_FELD.striche();
+}
+function sigLeeren() { if (SIG_FELD) SIG_FELD.leeren(); SIG_STRICHE = []; }
+function sigModusWechseln() {
+  SIG_GETIPPT = SIG_GETIPPT === null ? '' : null;
+  adresseMerken();
+  zeichnen();
+  var ziel = document.getElementById(SIG_GETIPPT === null ? 'sigFeld' : 'sigName');
+  if (ziel && SIG_GETIPPT !== null) ziel.focus();
+}
+function sigNameMerken() { var el = document.getElementById('sigName'); SIG_GETIPPT = el ? el.value : ''; sigFehlerWeg(); }
+function sigDaten() {
+  if (SIG_GETIPPT !== null) { var n = SIG_GETIPPT.replace(/\s+/g, ' ').trim(); return n.length >= 2 ? { getippt: n } : null; }
+  return SIG_FELD ? SIG_FELD.daten() : null;
+}
+function signiertHtml(u) {
+  var d = new Date(u.am);
+  var zeit = isNaN(d) ? '' : new Intl.DateTimeFormat(locale(), { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' }).format(d);
+  return '<section class="karte"><h2>' + h(t('ang.signed_title')) + '</h2>'
+    + '<div class="sig-anzeige">' + (window.GNCUnterschrift ? GNCUnterschrift.svg(u, t('ang.signed_title')) : '') + '</div>'
+    + '<p class="klein" style="text-align:left">' + h(f('ang.signed', { date: tagVon(u.am), time: zeit, name: u.name || '' })) + '</p></section>';
+}
 function adresseLesen() {
   var v = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
   return { name: v('adName'), firma: v('adFirma'), strasse: v('adStrasse'), plz: v('adPlz'), ort: v('adOrt'), ustId: v('adUst') };
@@ -476,6 +541,18 @@ async function angebotAnnehmen(btn) {
     return;
   }
   document.getElementById('adrFehler').textContent = '';
+  var sig = sigDaten();
+  if (!sig) {
+    var tippen = SIG_GETIPPT !== null;
+    var feldEl = document.getElementById(tippen ? 'sigName' : 'sigFeld');
+    if (feldEl) { if (tippen) feldEl.setAttribute('aria-invalid', 'true'); else feldEl.classList.add('fehler'); }
+    document.getElementById('sigFehler').textContent = t(tippen ? 'ang.sign_err_name' : 'ang.sign_err');
+    if (feldEl) {
+      feldEl.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      if (tippen) feldEl.focus();
+    }
+    return;
+  }
   var cb = document.getElementById('haken');
   if (!cb || !cb.checked) {
     var z = document.getElementById('hakenZeile'); if (z) z.classList.add('fehler');
@@ -487,12 +564,14 @@ async function angebotAnnehmen(btn) {
   gncBusy(btn, true);
   try {
     var r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: ANG_ID, t: ANG_T, aktion: 'annehmen', haken: true, lang: currentLang, adresse: adr }) });
+      body: JSON.stringify({ id: ANG_ID, t: ANG_T, aktion: 'annehmen', haken: true, lang: currentLang, adresse: adr, unterschrift: sig }) });
     var d = await r.json().catch(function () { return {}; });
     if (r.status === 429) { gncBusy(btn, false); document.getElementById('hakenFehler').textContent = t('ang.busy'); return; }
     if (r.status === 404) { ZUSTAND = 'fehlt'; zeichnen(); return; }
     if (d && d.error === 'adresse_fehlt') { gncBusy(btn, false); document.getElementById('adrFehler').textContent = t('ang.addr_err'); return; }
+    if (d && d.error === 'unterschrift_fehlt') { gncBusy(btn, false); document.getElementById('sigFehler').textContent = t('ang.sign_err'); return; }
     if (d && d.angebot) {
+      SIG_STRICHE = []; SIG_GETIPPT = null;
       ANGEBOT = d.angebot; MELDUNG = '';
       zeichnen();
       window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
