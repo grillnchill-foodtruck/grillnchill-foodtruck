@@ -343,6 +343,18 @@ const guard = () => [...daten.keys()].filter((k) => k.startsWith('authguard|'));
   ok('Entkoppeln: Token gilt sofort nicht mehr', (await call(geraetFn, { action: 'revoke', password: tokenKubi, id: eintrag.id }, '10.190.0.8')).s === 200
     && (await geraetLib.pruefeStempeluhr(uhrToken)) === null);
 
+  /* ---- Zeiterfassung (zeit.js): nur die eigene Person, entkoppelt 401 --------- */
+  const zeitFn = require(F + '/zeit.js');
+  daten.set('dienstplan|personal', JSON.stringify([{ id: 'p-k', name: 'Kutluay', farbe: '#E85A24', login: 'kutluay-test' }, { id: 'p-x', name: 'Fremd', farbe: '#6DBE45' }]));
+  const zk = { schluessel: crypto.randomUUID(), zeit: new Date().toISOString() };
+  ok('Zeit: Team-Sitzung stempelt für eine fremde Person: 403', (await call(zeitFn, { password: tokenStaff, aktion: 'stempeln', person_id: 'p-x', art: 'beginn', ...zk }, '10.192.0.1')).d.fehler === 'fremde_person');
+  ok('Zeit: Team-Sitzung nimmt für eine fremde Person zurück: 403', (await call(zeitFn, { password: tokenStaff, aktion: 'zuruecknehmen', person_id: 'p-x', bezug_schluessel: crypto.randomUUID(), ...zk }, '10.192.0.2')).s === 403);
+  ok('Zeit: Team-Sitzung liest eine fremde Woche: 403', (await call(zeitFn, { password: tokenStaff, aktion: 'woche', person_id: 'p-x', montag: '2027-01-04' }, '10.192.0.3')).s === 403);
+  ok('Zeit: entkoppeltes iPad: 401', (await call(zeitFn, { stempeluhr: uhrToken, aktion: 'stand' }, '10.192.0.4')).s === 401);
+  ok('Zeit: ein normales Team-Gerät ist keine Stempeluhr: 401', (await call(zeitFn, { stempeluhr: normal.d.token, aktion: 'stand' }, '10.192.0.5')).s === 401);
+  for (let i = 0; i < 6; i++) await call(zeitFn, { stempeluhr: 'x'.repeat(43), aktion: 'stand' }, '10.192.0.6');
+  ok('Zeit: falsche Stempeluhr-Token sperren das Truck-WLAN nicht', (await call(team, { action: 'whoami', password: tokenKubi }, '10.192.0.6')).s === 200);
+
   /* ---- Störungsfall: durchlassen -------------------------------------------- */
   stoerung = true;
   ok('Störung: Bremse, Kennung und Notbremse lassen durch',
