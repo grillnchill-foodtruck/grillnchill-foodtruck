@@ -156,6 +156,8 @@ exports.handler = async (event) => {
     // ---------- Rückerstattet markieren (nur Admin) ----------
     if (action === 'refund') {
       if (who.role !== 'admin') return json(403, { error: 'forbidden', hint: 'Rückerstattungen kann nur der Admin markieren' });
+      // Zweiter Aufruf: weder erneut markieren noch ein zweites Ereignis fürs Office schreiben
+      if (rec.status === 'refunded') return json(409, { error: 'schon_erstattet', hint: 'Diese Bestellung ist schon als rückerstattet markiert.' });
       rec.status = 'refunded';
       rec.refundedAt = new Date().toISOString();
       await s.setJSON(key, rec);

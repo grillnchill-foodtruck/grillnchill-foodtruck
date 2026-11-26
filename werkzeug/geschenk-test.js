@@ -344,6 +344,26 @@ const basis = (extra) => ({
   const ereignisTag = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(new Date(erstattet.refundedAt));
   ok('Erstattung als Ereignis fürs Office vermerkt', !!lies('office-ereignisse', 'erstattung:' + ereignisTag + ':' + bw30.reference));
 
+  // Ereignisse fürs Office nur bei einer echten ersten Erstattung durch den Admin
+  const aktion = async (pw, reference, action) => {
+    const r = await handler('orders-action')({ httpMethod: 'POST', headers: ip(), body: JSON.stringify({ password: pw, reference, action }), queryStringParameters: {} });
+    return { code: r.statusCode, d: JSON.parse(r.body) };
+  };
+  const anzahlEreignisse = () => schluessel('office-ereignisse', 'erstattung:').length;
+  const n0 = anzahlEreignisse();
+  let ea = await aktion('lena-test', bw50.reference, 'refund');
+  ok('Erstattung durch Minijobber: 403, kein Ereignis, Status unverändert', ea.code === 403 && anzahlEreignisse() === n0 && lies('orders', 'o:' + bw50.reference).status === 'completed', ea);
+  ea = await aktion('admin-test', bw50.reference, 'check');
+  ok('Zahlung prüfen: kein Ereignis', ea.code === 200 && anzahlEreignisse() === n0, ea);
+  ea = await aktion('admin-test', bw50.reference, 'complete');
+  ok('Manuell abschließen einer fertigen Bestellung: kein Ereignis', ea.code === 200 && anzahlEreignisse() === n0, ea);
+  ea = await aktion('admin-test', bw50.reference, 'refund');
+  ok('Erste Erstattung: genau ein Ereignis', ea.code === 200 && anzahlEreignisse() === n0 + 1, ea);
+  const ersterStempel = lies('orders', 'o:' + bw50.reference).refundedAt;
+  ea = await aktion('admin-test', bw50.reference, 'refund');
+  ok('Zweite Erstattung: 409 schon_erstattet, kein zweites Ereignis, Zeitstempel bleibt', ea.code === 409 && ea.d.error === 'schon_erstattet' && !!ea.d.hint
+    && anzahlEreignisse() === n0 + 1 && lies('orders', 'o:' + bw50.reference).refundedAt === ersterStempel, ea);
+
   /* 13. QR-Code */
   const qrAntwort = await handler('giftcard-qr')({ httpMethod: 'GET', headers: ip(), queryStringParameters: { c: codeT } });
   ok('QR für die Mail: GIF', qrAntwort.statusCode === 200 && Buffer.from(qrAntwort.body, 'base64').slice(0, 3).toString() === 'GIF', qrAntwort.statusCode);
