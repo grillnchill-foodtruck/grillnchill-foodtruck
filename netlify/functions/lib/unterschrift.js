@@ -138,7 +138,11 @@ function zeichnenPdf(doc, u, x, y, w, h, { latin1 = (s) => s, S = null } = {}) {
   for (const s of u.striche) {
     if (s.length === 2) { doc.circle(x + s[0] * f, y + s[1] * f, 0.7).fill(); continue; }
     doc.moveTo(x + s[0] * f, y + s[1] * f);
-    for (let i = 2; i < s.length; i += 2) doc.lineTo(x + s[i] * f, y + s[i + 1] * f);
+    // Weiche Bögen über die Mittelpunkte, wie im Zeichenfeld und in der Anzeige
+    for (let i = 2; i < s.length - 2; i += 2) {
+      doc.quadraticCurveTo(x + s[i] * f, y + s[i + 1] * f, x + (s[i] + s[i + 2]) / 2 * f, y + (s[i + 1] + s[i + 3]) / 2 * f);
+    }
+    doc.lineTo(x + s[s.length - 2] * f, y + s[s.length - 1] * f);
     doc.stroke();
   }
   doc.restore();

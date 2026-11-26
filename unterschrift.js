@@ -41,8 +41,9 @@
       if (z.length < 2 || z.length % 2 || !z.every(isFinite)) return '';
       var p = 'M' + z[0] + ' ' + z[1];
       if (z.length === 2) return p + 'L' + z[0] + ' ' + z[1];
-      for (var i = 2; i < z.length; i += 2) p += 'L' + z[i] + ' ' + z[i + 1];
-      return p;
+      // Weiche Bögen über die Mittelpunkte, wie im Zeichenfeld
+      for (var i = 2; i < z.length - 2; i += 2) p += 'Q' + z[i] + ' ' + z[i + 1] + ' ' + (z[i] + z[i + 2]) / 2 + ' ' + (z[i + 1] + z[i + 3]) / 2;
+      return p + 'L' + z[z.length - 2] + ' ' + z[z.length - 1];
     }).join('');
     return kopf + '<path d="' + d + '" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
