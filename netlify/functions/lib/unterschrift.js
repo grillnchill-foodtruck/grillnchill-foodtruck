@@ -20,6 +20,8 @@ function pruefen(u) {
   if (u.getippt != null) {
     if (u.striche != null || typeof u.getippt !== 'string') return null;
     const name = u.getippt.replace(/\s+/g, ' ').trim();
+    // Steuer- und Unsichtbarzeichen (Unicode-Kategorie C, z. B. Null-Breite-Leerzeichen, Bidi-Überschreibung) sind kein Name
+    if (/\p{C}/u.test(name) || !/[\p{L}\p{N}]/u.test(name)) return null;
     return name.length >= 2 && name.length <= 80 ? { getippt: name } : null;
   }
   if (!Array.isArray(u.striche) || !u.striche.length || u.striche.length > MAX_STRICHE) return null;
@@ -82,8 +84,9 @@ const hashKurz = (hex) => String(hex || '').slice(0, 16).replace(/(.{4})(?=.)/g,
 function zeichnenPdf(doc, u, x, y, w, h, { latin1 = (s) => s } = {}) {
   const farbe = '#111111';
   if (u.getippt) {
-    doc.font('Helvetica-Oblique').fontSize(Math.min(22, h * 0.45)).fillColor(farbe)
+    doc.save().font('Helvetica-Oblique').fontSize(Math.min(22, h * 0.45)).fillColor(farbe)
       .text(latin1(u.getippt), x, y + h * 0.3, { width: w, lineBreak: false, ellipsis: true });
+    doc.restore();
     return;
   }
   const f = Math.min(w / BREITE, h / HOEHE);

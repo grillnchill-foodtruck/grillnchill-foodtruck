@@ -37,6 +37,7 @@ function pdfMit(u) {
     ['zu viele Striche', { striche: Array.from({ length: 61 }, (_, i) => [i * 10, 100, i * 10 + 5, 200]) }],
     ['zu viele Punkte', { striche: [Array.from({ length: 2402 }, (_, i) => (i % 2 ? 100 + (i % 100) : i % 1000))] }],
     ['Name zu kurz', { getippt: 'A' }], ['Name zu lang', { getippt: 'x'.repeat(81) }], ['Name keine Zeichenkette', { getippt: 42 }],
+    ['Name nur unsichtbare Zeichen', { getippt: '​​' }], ['Name mit Steuerzeichen', { getippt: 'Ay‮se' }],
   ];
   for (const [name, u] of falsch) ok('Abgelehnt: ' + name, U.pruefen(u) === null, U.pruefen(u));
 
