@@ -80,12 +80,21 @@ function zeitText(iso) {
 
 const hashKurz = (hex) => String(hex || '').slice(0, 16).replace(/(.{4})(?=.)/g, '$1 ');
 
+// Schriftgröße für den getippten Namen: höchstens 22 pt, sonst so klein, dass er in die Breite w passt
+function namensGroesse(doc, text, w, h) {
+  const oben = Math.min(22, h * 0.45);
+  doc.font('Helvetica-Oblique').fontSize(oben);
+  const breit = doc.widthOfString(text);
+  return breit > w ? oben * w / breit * 0.98 : oben;
+}
+
 // Zeichnet die Unterschrift in das Rechteck (x, y, w, h) eines pdfkit-Dokuments, Seitenverhältnis bleibt
 function zeichnenPdf(doc, u, x, y, w, h, { latin1 = (s) => s } = {}) {
   const farbe = '#111111';
   if (u.getippt) {
-    doc.save().font('Helvetica-Oblique').fontSize(Math.min(22, h * 0.45)).fillColor(farbe)
-      .text(latin1(u.getippt), x, y + h * 0.3, { width: w, lineBreak: false, ellipsis: true });
+    const text = latin1(u.getippt), groesse = namensGroesse(doc, text, w, h);
+    doc.save().font('Helvetica-Oblique').fontSize(groesse).fillColor(farbe)
+      .text(text, x, y + h * 0.3 + (Math.min(22, h * 0.45) - groesse) / 2, { width: w + 1, lineBreak: false });
     doc.restore();
     return;
   }
@@ -100,4 +109,4 @@ function zeichnenPdf(doc, u, x, y, w, h, { latin1 = (s) => s } = {}) {
   doc.restore();
 }
 
-module.exports = { pruefen, angebotHash, zeitText, hashKurz, zeichnenPdf, BREITE, HOEHE, MAX_STRICHE, MAX_PUNKTE };
+module.exports = { namensGroesse, pruefen, angebotHash, zeitText, hashKurz, zeichnenPdf, BREITE, HOEHE, MAX_STRICHE, MAX_PUNKTE };

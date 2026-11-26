@@ -132,6 +132,7 @@ I18N.nl = {
     "ang.sign_hint": "Teken met je vinger of de muis.",
     "ang.sign_canvas": "Handtekeningvak",
     "ang.sign_clear": "Wissen",
+    "ang.sign_full": "Het veld is vol. Wis het en onderteken opnieuw.",
     "ang.sign_type": "Liever mijn naam typen",
     "ang.sign_draw": "Liever tekenen",
     "ang.sign_name": "Je naam als handtekening",

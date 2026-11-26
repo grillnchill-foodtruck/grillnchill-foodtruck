@@ -10,17 +10,38 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
 
+  // Getippter Name: Schriftgröße so, dass er in 940 Einheiten passt (Obergrenze 110, Untergrenze 12).
+  // Gemessen wird im Browser mit der echten Schrift; ohne Messung gilt eine Schätzung, und ein zu breiter Name wird per textLength gestaucht.
+  var TEXT_BREITE = 940, MAX_GROESSE = 110, MIN_GROESSE = 12;
+  function namensGroesse(name) {
+    var breite = 0;
+    try {
+      var c = document.createElement('canvas').getContext('2d');
+      c.font = 'italic ' + MAX_GROESSE + "px Georgia, 'Times New Roman', serif";
+      breite = c.measureText(name).width;
+    } catch (e) { breite = 0; }
+    if (breite > 0) {
+      return { groesse: Math.max(MIN_GROESSE, Math.min(MAX_GROESSE, Math.floor(MAX_GROESSE * TEXT_BREITE / Math.max(breite, 1)))), eng: false };
+    }
+    var n = Math.max(1, name.length), g = Math.max(MIN_GROESSE, Math.min(MAX_GROESSE, Math.floor(TEXT_BREITE / (n * 0.6))));
+    return { groesse: g, eng: n * g * 0.6 > TEXT_BREITE * 0.9 };
+  }
+
   // Anzeige als SVG, Farbe über currentColor
   function svg(u, label) {
     if (!u) return '';
     var kopf = '<svg viewBox="0 0 ' + BREITE + ' ' + HOEHE + '" width="100%" style="display:block;height:auto" role="img" aria-label="' + esc(label || 'Unterschrift') + '">';
     if (u.getippt) {
-      return kopf + '<text x="30" y="195" font-size="110" font-style="italic" font-family="Georgia, \'Times New Roman\', serif" fill="currentColor">' + esc(u.getippt) + '</text></svg>';
+      var name = String(u.getippt), gr = namensGroesse(name);
+      return kopf + '<text x="30" y="195" font-size="' + gr.groesse + '" font-style="italic" font-family="Georgia, \'Times New Roman\', serif" fill="currentColor"'
+        + (gr.eng ? ' textLength="' + TEXT_BREITE + '" lengthAdjust="spacingAndGlyphs"' : '') + '>' + esc(name) + '</text></svg>';
     }
     var d = (u.striche || []).map(function (s) {
-      var p = 'M' + s[0] + ' ' + s[1];
-      if (s.length === 2) return p + 'L' + s[0] + ' ' + s[1];
-      for (var i = 2; i < s.length; i += 2) p += 'L' + s[i] + ' ' + s[i + 1];
+      var z = (s || []).map(Number);
+      if (z.length < 2 || z.length % 2 || !z.every(isFinite)) return '';
+      var p = 'M' + z[0] + ' ' + z[1];
+      if (z.length === 2) return p + 'L' + z[0] + ' ' + z[1];
+      for (var i = 2; i < z.length; i += 2) p += 'L' + z[i] + ' ' + z[i + 1];
       return p;
     }).join('');
     return kopf + '<path d="' + d + '" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -29,7 +50,7 @@
   // Zeichenfeld: Pointer Events (Finger, Stift, Maus), Linie folgt sofort, Bögen über die Mittelpunkte
   function feld(canvas, opts) {
     opts = opts || {};
-    var striche = [], aktuell = null, punkte = 0;
+    var striche = [], aktuell = null, punkte = 0, zeiger = null;
     var ctx = canvas.getContext('2d');
 
     function zeichneStrich(s, f) {
@@ -64,8 +85,10 @@
     }
     function unten(ev) {
       if (ev.pointerType === 'mouse' && ev.button !== 0) return;
-      if (striche.length >= MAX_STRICHE || punkte >= MAX_PUNKTE) return;
+      if (zeiger !== null) return;
+      if (striche.length >= MAX_STRICHE || punkte >= MAX_PUNKTE) { if (opts.beiVoll) opts.beiVoll(); return; }
       ev.preventDefault();
+      zeiger = ev.pointerId;
       try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* ohne Capture weiter */ }
       var p = punkt(ev);
       aktuell = [p[0], p[1]];
@@ -75,19 +98,22 @@
       if (opts.beiAenderung) opts.beiAenderung();
     }
     function bewegen(ev) {
-      if (!aktuell || punkte >= MAX_PUNKTE) return;
+      if (!aktuell || ev.pointerId !== zeiger) return;
+      if (punkte >= MAX_PUNKTE) { if (opts.beiVoll) opts.beiVoll(); return; }
       var p = punkt(ev), lx = aktuell[aktuell.length - 2], ly = aktuell[aktuell.length - 1];
       if (Math.abs(p[0] - lx) + Math.abs(p[1] - ly) < MIN_ABSTAND) return;
       aktuell.push(p[0], p[1]);
       punkte++;
       zeichneAlles();
+      if (punkte >= MAX_PUNKTE && opts.beiVoll) opts.beiVoll();
     }
-    function ende() { aktuell = null; }
+    function ende(ev) { if (ev && zeiger !== null && ev.pointerId !== zeiger) return; aktuell = null; zeiger = null; }
 
     canvas.addEventListener('pointerdown', unten);
     canvas.addEventListener('pointermove', bewegen);
     canvas.addEventListener('pointerup', ende);
     canvas.addEventListener('pointercancel', ende);
+    canvas.addEventListener('lostpointercapture', ende);
     window.addEventListener('resize', groesse);
     groesse();
 
@@ -111,7 +137,7 @@
         zeichneAlles();
       },
       leeren: function () {
-        striche = []; punkte = 0; aktuell = null;
+        striche = []; punkte = 0; aktuell = null; zeiger = null;
         zeichneAlles();
         if (opts.beiAenderung) opts.beiAenderung();
       },

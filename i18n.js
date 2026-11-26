@@ -139,6 +139,7 @@ const I18N = {
     "ang.sign_hint": "Unterschreib mit dem Finger oder der Maus.",
     "ang.sign_canvas": "Unterschriftsfeld",
     "ang.sign_clear": "Löschen",
+    "ang.sign_full": "Das Feld ist voll. Lösch es und unterschreib noch mal.",
     "ang.sign_type": "Lieber Namen tippen",
     "ang.sign_draw": "Lieber unterschreiben",
     "ang.sign_name": "Dein Name als Unterschrift",

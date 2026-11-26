@@ -117,10 +117,11 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,6vw,2.5rem)
 .adr-hint{color:var(--dim);font-size:.88rem;margin:-.2rem 0 .7rem}
 /* Unterschrift bei der Annahme */
 .sig{position:relative;aspect-ratio:10/3;margin:.2rem 0 .5rem;border:1px solid var(--border-hi);border-radius:14px;background:rgba(245,233,208,.04);color:var(--cream);overflow:hidden}
-.sig canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.sig canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .sig-linie{position:absolute;left:7%;right:7%;bottom:27%;border-bottom:1px dashed var(--border-hi);pointer-events:none}
 .sig-linie::before{content:"\00D7";position:absolute;left:-.1rem;bottom:.15rem;color:var(--muted);font-size:1.1rem;line-height:1}
 .sig.fehler{border-color:var(--err)}
+.sig:focus{outline:2px solid var(--orange);outline-offset:2px}
 .sig-getippt input{width:100%;min-height:52px;padding:.65rem .8rem;border-radius:12px;border:1px solid var(--border-hi);background:rgba(245,233,208,.04);color:inherit;font:italic 1.35rem/1.2 Georgia,'Times New Roman',serif}
 .sig-getippt input:focus{outline:2px solid var(--orange);outline-offset:1px}
 .sig-getippt input[aria-invalid="true"]{border-color:var(--err)}
@@ -478,7 +479,7 @@ function sigHtml() {
     + '<p class="adr-hint">' + h(t(tippen ? 'ang.sign_name' : 'ang.sign_hint')) + '</p>'
     + (tippen
       ? '<label class="sig-getippt"><input type="text" id="sigName" maxlength="80" autocomplete="off" aria-label="' + h(t('ang.sign_name')) + '" aria-describedby="sigFehler" value="' + h(SIG_GETIPPT) + '" data-on-input="sigNameMerken()"></label>'
-      : '<div class="sig" id="sigFeld"><canvas id="sigCanvas" role="img" aria-label="' + h(t('ang.sign_canvas')) + '"></canvas><span class="sig-linie" aria-hidden="true"></span></div>')
+      : '<div class="sig" id="sigFeld" tabindex="-1"><canvas id="sigCanvas" role="img" aria-label="' + h(t('ang.sign_canvas')) + '" aria-describedby="sigFehler"></canvas><span class="sig-linie" aria-hidden="true"></span></div>')
     + '<div class="reihe sig-knoepfe">'
     + (tippen ? '' : '<button type="button" class="mini" data-on-click="sigLeeren()">' + h(t('ang.sign_clear')) + '</button>')
     + '<button type="button" class="mini" data-on-click="sigModusWechseln()">' + h(t(tippen ? 'ang.sign_draw' : 'ang.sign_type')) + '</button>'
@@ -487,14 +488,28 @@ function sigHtml() {
 }
 function sigFehlerWeg() {
   var fe = document.getElementById('sigFehler'); if (fe) fe.textContent = '';
-  var fd = document.getElementById('sigFeld'); if (fd) fd.classList.remove('fehler');
+  var fd = document.getElementById('sigFeld'); if (fd) { fd.classList.remove('fehler'); fd.removeAttribute('aria-describedby'); }
   var n = document.getElementById('sigName'); if (n) n.removeAttribute('aria-invalid');
+}
+/* Fehler am Feld: roter Rand, Text per aria-describedby am Feld, Fokus aufs Feld */
+function sigFehlerZeigen(schluessel) {
+  var tippen = SIG_GETIPPT !== null;
+  var feldEl = document.getElementById(tippen ? 'sigName' : 'sigFeld');
+  if (feldEl) {
+    if (tippen) feldEl.setAttribute('aria-invalid', 'true');
+    else { feldEl.classList.add('fehler'); feldEl.setAttribute('aria-describedby', 'sigFehler'); }
+  }
+  document.getElementById('sigFehler').textContent = t(schluessel);
+  if (feldEl) {
+    feldEl.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    feldEl.focus({ preventScroll: true });
+  }
 }
 function sigEinrichten() {
   if (SIG_FELD) { SIG_FELD.abbauen(); SIG_FELD = null; }
   var c = document.getElementById('sigCanvas');
   if (!c || !window.GNCUnterschrift) return;
-  SIG_FELD = GNCUnterschrift.feld(c, { beiAenderung: function () { SIG_STRICHE = SIG_FELD ? SIG_FELD.striche() : []; sigFehlerWeg(); } });
+  SIG_FELD = GNCUnterschrift.feld(c, { beiVoll: function () { var fe = document.getElementById('sigFehler'); if (fe) fe.textContent = t('ang.sign_full'); }, beiAenderung: function () { SIG_STRICHE = SIG_FELD ? SIG_FELD.striche() : []; sigFehlerWeg(); } });
   if (SIG_STRICHE.length) SIG_FELD.setzen(SIG_STRICHE);
   SIG_STRICHE = SIG_FELD.striche();
 }
@@ -543,14 +558,7 @@ async function angebotAnnehmen(btn) {
   document.getElementById('adrFehler').textContent = '';
   var sig = sigDaten();
   if (!sig) {
-    var tippen = SIG_GETIPPT !== null;
-    var feldEl = document.getElementById(tippen ? 'sigName' : 'sigFeld');
-    if (feldEl) { if (tippen) feldEl.setAttribute('aria-invalid', 'true'); else feldEl.classList.add('fehler'); }
-    document.getElementById('sigFehler').textContent = t(tippen ? 'ang.sign_err_name' : 'ang.sign_err');
-    if (feldEl) {
-      feldEl.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-      if (tippen) feldEl.focus();
-    }
+    sigFehlerZeigen(SIG_GETIPPT !== null ? 'ang.sign_err_name' : 'ang.sign_err');
     return;
   }
   var cb = document.getElementById('haken');
@@ -569,7 +577,7 @@ async function angebotAnnehmen(btn) {
     if (r.status === 429) { gncBusy(btn, false); document.getElementById('hakenFehler').textContent = t('ang.busy'); return; }
     if (r.status === 404) { ZUSTAND = 'fehlt'; zeichnen(); return; }
     if (d && d.error === 'adresse_fehlt') { gncBusy(btn, false); document.getElementById('adrFehler').textContent = t('ang.addr_err'); return; }
-    if (d && d.error === 'unterschrift_fehlt') { gncBusy(btn, false); document.getElementById('sigFehler').textContent = t('ang.sign_err'); return; }
+    if (d && d.error === 'unterschrift_fehlt') { gncBusy(btn, false); sigFehlerZeigen(SIG_GETIPPT !== null ? 'ang.sign_err_name' : 'ang.sign_err'); return; }
     if (d && d.angebot) {
       SIG_STRICHE = []; SIG_GETIPPT = null;
       ANGEBOT = d.angebot; MELDUNG = '';

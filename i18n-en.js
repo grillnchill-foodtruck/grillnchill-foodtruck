@@ -132,6 +132,7 @@ I18N.en = {
     "ang.sign_hint": "Sign with your finger or mouse.",
     "ang.sign_canvas": "Signature box",
     "ang.sign_clear": "Clear",
+    "ang.sign_full": "The box is full. Clear it and sign again.",
     "ang.sign_type": "Type my name instead",
     "ang.sign_draw": "Sign instead",
     "ang.sign_name": "Your name as signature",

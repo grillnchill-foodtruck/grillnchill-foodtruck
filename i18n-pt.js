@@ -132,6 +132,7 @@ I18N.pt = {
     "ang.sign_hint": "Assina com o dedo ou com o rato.",
     "ang.sign_canvas": "Campo de assinatura",
     "ang.sign_clear": "Limpar",
+    "ang.sign_full": "O campo está cheio. Limpa-o e assina outra vez.",
     "ang.sign_type": "Prefiro escrever o nome",
     "ang.sign_draw": "Prefiro assinar",
     "ang.sign_name": "O teu nome como assinatura",

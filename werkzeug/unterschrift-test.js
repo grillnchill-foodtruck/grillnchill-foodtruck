@@ -63,6 +63,15 @@ function pdfMit(u) {
   const hexText = (buf) => [...buf.toString('latin1').matchAll(/<([0-9a-fA-F]+)>/g)].map((m) => Buffer.from(m[1], 'hex').toString('latin1')).join('');
   ok('PDF mit getipptem Namen ist gültig und enthält den Namen', p2.slice(0, 5).toString() === '%PDF-' && hexText(p2).includes('Ayse Yilmaz'));
 
+  const lang = 'W'.repeat(40) + 'm'.repeat(40);
+  const dok = new PDFDocument({ size: 'A4' });
+  const gr = U.namensGroesse(dok, lang, 250, 75);
+  dok.font('Helvetica-Oblique').fontSize(gr);
+  ok('Langer Name (80 Zeichen) wird im PDF in die Box eingepasst', dok.widthOfString(lang) <= 250 && gr > 3 && gr < 22, { gr, breite: dok.widthOfString(lang) });
+  ok('Kurzer Name bleibt bei 22 pt', U.namensGroesse(dok, 'Ayse Yilmaz', 250, 75) === 22);
+  const p3 = await pdfMit({ getippt: lang });
+  ok('PDF mit 80 Zeichen langem Namen enthält den ganzen Namen', p3.slice(0, 5).toString() === '%PDF-' && hexText(p3).includes(lang));
+
   console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));
   process.exit(fehler ? 1 : 0);
 })().catch((e) => { console.log('Absturz:', e && e.stack); process.exit(1); });

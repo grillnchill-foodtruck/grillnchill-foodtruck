@@ -132,6 +132,7 @@ I18N.es = {
     "ang.sign_hint": "Firma con el dedo o con el ratón.",
     "ang.sign_canvas": "Recuadro de firma",
     "ang.sign_clear": "Borrar",
+    "ang.sign_full": "El campo está lleno. Bórralo y firma otra vez.",
     "ang.sign_type": "Prefiero escribir mi nombre",
     "ang.sign_draw": "Prefiero firmar",
     "ang.sign_name": "Tu nombre como firma",

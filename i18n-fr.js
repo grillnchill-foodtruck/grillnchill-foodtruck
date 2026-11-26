@@ -132,6 +132,7 @@ I18N.fr = {
     "ang.sign_hint": "Signe avec le doigt ou la souris.",
     "ang.sign_canvas": "Cadre de signature",
     "ang.sign_clear": "Effacer",
+    "ang.sign_full": "Le champ est plein. Efface-le et signe à nouveau.",
     "ang.sign_type": "Je préfère taper mon nom",
     "ang.sign_draw": "Je préfère signer",
     "ang.sign_name": "Ton nom comme signature",

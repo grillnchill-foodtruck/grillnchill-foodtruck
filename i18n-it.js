@@ -132,6 +132,7 @@ I18N.it = {
     "ang.sign_hint": "Firma con il dito o con il mouse.",
     "ang.sign_canvas": "Riquadro per la firma",
     "ang.sign_clear": "Cancella",
+    "ang.sign_full": "Il campo è pieno. Cancellalo e firma di nuovo.",
     "ang.sign_type": "Preferisco scrivere il nome",
     "ang.sign_draw": "Preferisco firmare",
     "ang.sign_name": "Il tuo nome come firma",

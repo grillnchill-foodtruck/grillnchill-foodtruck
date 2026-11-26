@@ -132,6 +132,7 @@ I18N.tr = {
     "ang.sign_hint": "Parmağınla veya fareyle imzala.",
     "ang.sign_canvas": "İmza alanı",
     "ang.sign_clear": "Temizle",
+    "ang.sign_full": "Alan dolu. Temizle ve tekrar imzala.",
     "ang.sign_type": "Adımı yazayım",
     "ang.sign_draw": "İmza atayım",
     "ang.sign_name": "İmza olarak adın",
