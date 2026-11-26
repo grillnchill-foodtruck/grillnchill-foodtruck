@@ -306,6 +306,38 @@ const guard = () => [...daten.keys()].filter((k) => k.startsWith('authguard|'));
   delete process.env.TELEGRAM_BOT_TOKEN; delete process.env.TELEGRAM_CHAT_ID;
   global.fetch = fetchVorher;
 
+  /* ---- Stempeluhr (Zeiterfassung 4a): Token nur für zeit.js ------------------- */
+  const geraetFn = require(F + '/team-device.js');
+  const geraetLib = require(F + '/lib/team-device.js');
+  r = await call(geraetFn, { action: 'create', password: tokenStaff, zweck: 'stempeluhr', name: 'iPad Truck' }, '10.190.0.1');
+  ok('Stempeluhr koppeln: Mitarbeiter darf nicht (403)', r.s === 403);
+  r = await call(geraetFn, { action: 'create', password: tokenKubi, zweck: 'stempeluhr', name: 'iPad Truck' }, '10.190.0.2');
+  ok('Stempeluhr koppeln: Kubi bekommt einen Code', r.s === 200 && /^\d{6}$/.test(r.d.code));
+  r = await call(geraetFn, { action: 'redeem', code: r.d.code, device: 'iPad' }, '10.190.0.3');
+  const uhrToken = r.d.token;
+  ok('Stempeluhr einlösen: Token mit Zweck, ohne Rolle', r.s === 200 && r.d.zweck === 'stempeluhr' && !r.d.role && /^[a-f0-9]{8}$/.test(r.d.id));
+  const normal = await call(geraetFn, { action: 'redeem', code: (await call(geraetFn, { action: 'create', password: tokenKubi }, '10.190.0.4')).d.code, device: 'Watch' }, '10.190.0.5');
+  ok('Zum Vergleich: normales Team-Gerät gilt weiter', !!(await geraetLib.pruefeTeamToken(normal.d.token)) && (await call(require(F + '/cockpit-data.js'), { teamToken: normal.d.token }, '10.190.0.6')).s === 200);
+  ok('pruefeTeamToken kennt die Stempeluhr nicht, pruefeStempeluhr nur sie',
+    (await geraetLib.pruefeTeamToken(uhrToken)) === null && (await geraetLib.pruefeStempeluhr(uhrToken)).name === 'iPad Truck'
+    && (await geraetLib.pruefeStempeluhr(normal.d.token)) === null);
+  // order-status sucht erst die Bestellung, dann die Anmeldung: eine Bestellung muss es geben
+  daten.set('orders|o:GNC-4242', JSON.stringify({ status: 'completed', fstate: 'received', createdAt: new Date().toISOString(), order: { reference: 'GNC-4242' } }));
+  const abgewiesen = [
+    ['cockpit-data', () => call(require(F + '/cockpit-data.js'), { teamToken: uhrToken }, '10.191.0.1')],
+    ['cockpit-inhaber', () => call(require(F + '/cockpit-inhaber.js'), { teamToken: uhrToken, action: 'menue' }, '10.191.0.2')],
+    ['orders-list', async () => { const x = await orders.handler({ httpMethod: 'GET', headers: { 'x-nf-client-connection-ip': '10.191.0.3', 'x-gnc-team-token': uhrToken }, queryStringParameters: {} }); return { s: x.statusCode }; }],
+    ['order-status', () => call(require(F + '/order-status.js'), { action: 'set', teamToken: uhrToken, reference: 'GNC-4242', state: 'ready' }, '10.191.0.4')],
+    ['liefer-heatmap', () => call(require(F + '/liefer-heatmap.js'), { teamToken: uhrToken, tage: 30 }, '10.191.0.5')],
+    ['standing-orders', () => call(require(F + '/standing-orders.js'), { action: 'plan', teamToken: uhrToken, date: '2027-01-05' }, '10.191.0.6')],
+  ];
+  for (const [name, fn] of abgewiesen) ok('Stempeluhr-Token an ' + name + ': abgewiesen (401)', (await fn()).s === 401);
+  r = await call(geraetFn, { action: 'list', password: tokenKubi }, '10.190.0.7');
+  const eintrag = (r.d.devices || []).find((x) => x.zweck === 'stempeluhr');
+  ok('Geräteliste zeigt den Zweck', !!eintrag && eintrag.name === 'iPad Truck');
+  ok('Entkoppeln: Token gilt sofort nicht mehr', (await call(geraetFn, { action: 'revoke', password: tokenKubi, id: eintrag.id }, '10.190.0.8')).s === 200
+    && (await geraetLib.pruefeStempeluhr(uhrToken)) === null);
+
   /* ---- Störungsfall: durchlassen -------------------------------------------- */
   stoerung = true;
   ok('Störung: Bremse, Kennung und Notbremse lassen durch',

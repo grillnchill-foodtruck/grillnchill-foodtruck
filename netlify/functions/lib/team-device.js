@@ -14,7 +14,16 @@
  *
  * Ablage im Store "team-devices":
  *   pair:<code>          { role, name, exp }        exp = Unix-ms, einmalig
+ *                        { zweck: 'stempeluhr', name, exp }
  *   dev:<sha256(token)>  { id, role, name, device, createdAt, lastSeen }
+ *                        { id, zweck: 'stempeluhr', name, device, createdAt, lastSeen }
+ *
+ * Zweck "stempeluhr" (Zeiterfassung, seit Dezember 2026): Kubis iPad am Truck
+ * stempelt mit eigenem Token für jede Person aus dem Dienstplan. Ein solches
+ * Gerät hat KEINE Rolle. pruefeTeamToken() kennt es nicht (null): Alle
+ * vorhandenen Endpunkte machen aus jeder Rolle außer admin ein staff, ein
+ * Stempeluhr-Token käme sonst an Bestellungen, Status und Umsatz. Nur
+ * netlify/functions/zeit.js prüft es, mit pruefeStempeluhr().
  *
  * Der Token selbst steht nirgends im Speicher, nur sein Hash. Wer den Store
  * liest, kann damit nichts anfangen.
@@ -54,7 +63,8 @@ function saubererText(x, max) {
  * @param {{role:string, name:string}} who  der Admin, der koppelt
  * @returns {Promise<{code:string, expiresAt:string}>}
  */
-async function erstelleCode(who) {
+async function erstelleCode(who, optionen) {
+  const stempeluhr = !!(optionen && optionen.zweck === 'stempeluhr');
   const s = store();
   const jetzt = Date.now();
 
@@ -75,12 +85,14 @@ async function erstelleCode(who) {
     const vorhanden = await s.get(key, { type: 'json' });
     if (vorhanden && Number(vorhanden.exp) > jetzt) continue;   // zufaellig belegt
     const exp = jetzt + CODE_GUELTIG_MS;
-    await s.setJSON(key, {
-      role: (who && who.role) === 'admin' ? 'admin' : 'staff',
-      name: saubererText(who && who.name, 40) || 'Team',
-      owner: !!(who && who.owner),   // mit dem Hauptpasswort gekoppelt: darf Umsatz sehen (Cockpit)
-      exp,
-    });
+    await s.setJSON(key, stempeluhr
+      ? { zweck: 'stempeluhr', name: saubererText(optionen.name, 40) || 'iPad Truck', exp }
+      : {
+        role: (who && who.role) === 'admin' ? 'admin' : 'staff',
+        name: saubererText(who && who.name, 40) || 'Team',
+        owner: !!(who && who.owner),   // mit dem Hauptpasswort gekoppelt: darf Umsatz sehen (Cockpit)
+        exp,
+      });
     return { code, expiresAt: new Date(exp).toISOString() };
   }
   throw new Error('kein_freier_code');
@@ -103,6 +115,13 @@ async function loeseEin(code, device) {
 
   const token = crypto.randomBytes(32).toString('base64url');
   const jetzt = new Date().toISOString();
+  if (p.zweck === 'stempeluhr') {
+    // Keine Rolle, kein owner: dieses Gerät darf nur stempeln (zeit.js)
+    const name = saubererText(p.name, 40) || 'iPad Truck';
+    const uhr = { id: crypto.randomBytes(4).toString('hex'), zweck: 'stempeluhr', name, device: saubererText(device, 40) || name, createdAt: jetzt, lastSeen: jetzt };
+    await s.setJSON('dev:' + sha(token), uhr);
+    return { token, name: uhr.name, id: uhr.id, zweck: 'stempeluhr' };
+  }
   const rec = {
     id: crypto.randomBytes(4).toString('hex'),
     role: p.role === 'admin' ? 'admin' : 'staff',
@@ -116,27 +135,50 @@ async function loeseEin(code, device) {
   return { token, name: rec.name, role: rec.role, id: rec.id, owner: rec.owner };
 }
 
+/* Datensatz zum Token lesen und lastSeen höchstens alle 10 Minuten schreiben. */
+async function geraetZumToken(token) {
+  const t = String(token == null ? '' : token).trim();
+  if (!TOKEN_FORM.test(t)) return null;
+  const s = store();
+  const key = 'dev:' + sha(t);
+  const rec = await s.get(key, { type: 'json' });
+  if (!rec || !rec.id) return null;
+  const jetzt = Date.now();
+  const zuletzt = Date.parse(rec.lastSeen || '') || 0;
+  if (jetzt - zuletzt > LASTSEEN_TAKT_MS) {
+    rec.lastSeen = new Date(jetzt).toISOString();
+    try { await s.setJSON(key, rec); } catch (e) {}
+  }
+  return rec;
+}
+
 /**
- * Token pruefen.
+ * Token pruefen (Watch, Widget, Tablet). Geräte mit einem Zweck (Stempeluhr)
+ * sind hier unbekannt: null, wie ein falscher Token.
  * @returns {Promise<{role:string, name:string, id:string, device:string, owner:boolean}|null>}
  */
 async function pruefeTeamToken(token) {
-  const t = String(token == null ? '' : token).trim();
-  if (!TOKEN_FORM.test(t)) return null;
   try {
-    const s = store();
-    const key = 'dev:' + sha(t);
-    const rec = await s.get(key, { type: 'json' });
-    if (!rec || !rec.id) return null;
-    const jetzt = Date.now();
-    const zuletzt = Date.parse(rec.lastSeen || '') || 0;
-    if (jetzt - zuletzt > LASTSEEN_TAKT_MS) {
-      rec.lastSeen = new Date(jetzt).toISOString();
-      try { await s.setJSON(key, rec); } catch (e) {}
-    }
+    const rec = await geraetZumToken(token);
+    if (!rec || rec.zweck) return null;
     return { role: rec.role === 'admin' ? 'admin' : 'staff', name: rec.name || 'Team', id: rec.id, device: rec.device || '', owner: !!rec.owner };
   } catch (e) {
     console.error('team-device pruefen:', e && e.message);
+    return null;
+  }
+}
+
+/**
+ * Stempeluhr pruefen (nur zeit.js). Andere Geräte sind hier unbekannt.
+ * @returns {Promise<{id:string, name:string, device:string}|null>}
+ */
+async function pruefeStempeluhr(token) {
+  try {
+    const rec = await geraetZumToken(token);
+    if (!rec || rec.zweck !== 'stempeluhr') return null;
+    return { id: rec.id, name: rec.name || 'iPad Truck', device: rec.device || '' };
+  } catch (e) {
+    console.error('team-device stempeluhr:', e && e.message);
     return null;
   }
 }
@@ -153,6 +195,7 @@ async function liste() {
       id: r.id,
       device: r.device || '',
       name: r.name || '',
+      zweck: r.zweck || null,
       createdAt: r.createdAt || null,
       lastSeen: r.lastSeen || null,
     });
@@ -180,4 +223,4 @@ async function widerrufe(id) {
   return null;
 }
 
-module.exports = { erstelleCode, loeseEin, pruefeTeamToken, liste, widerrufe, CODE_GUELTIG_MS };
+module.exports = { erstelleCode, loeseEin, pruefeTeamToken, pruefeStempeluhr, liste, widerrufe, CODE_GUELTIG_MS };

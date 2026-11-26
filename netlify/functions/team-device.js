@@ -5,12 +5,15 @@
  *
  *   POST { action:'create', password }           (Admin)
  *        -> { ok, code, expiresAt }              6 Ziffern, 10 Min, einmalig
+ *   POST { action:'create', password, zweck:'stempeluhr', name }   (Admin)
+ *        -> wie oben, das Gerät wird eine Stempeluhr ohne Rolle (zeit.js)
  *   POST { action:'redeem', code, device }       (App, ohne Anmeldung)
  *        -> { ok, token, name, role }            401 { error:'invalid_code' }
+ *        -> { ok, token, name, id, zweck:'stempeluhr' }   bei einer Stempeluhr
  *   POST { action:'check', token }               (App)
  *        -> { ok, name, role }                   401 { error:'unauthorized' }
  *   POST { action:'list', password }             (Admin)
- *        -> { ok, devices:[{ id, device, name, createdAt, lastSeen }] }
+ *        -> { ok, devices:[{ id, device, name, zweck, createdAt, lastSeen }] }
  *   POST { action:'revoke', password, id }       (Admin)
  *        -> { ok }                               404 { error:'not_found' }
  *
@@ -104,8 +107,9 @@ exports.handler = async (event) => {
     if (action === 'create') {
       const a = await nurAdmin(event, input);
       if (a.antwort) return a.antwort;
-      const r = await geraete.erstelleCode(a.who);
-      await auditLog(a.who, 'Team-Gerät', 'Kopplungscode erzeugt');
+      const stempeluhr = input.zweck === 'stempeluhr';
+      const r = await geraete.erstelleCode(a.who, stempeluhr ? { zweck: 'stempeluhr', name: input.name } : undefined);
+      await auditLog(a.who, 'Team-Gerät', stempeluhr ? 'Kopplungscode für eine Stempeluhr erzeugt' : 'Kopplungscode erzeugt');
       return json(200, { ok: true, code: r.code, expiresAt: r.expiresAt });
     }
 
@@ -116,6 +120,10 @@ exports.handler = async (event) => {
       if (!r) {
         await meldeErgebnis(event, false);
         return json(401, { error: 'invalid_code', hint: 'Code ungültig oder abgelaufen.' });
+      }
+      if (r.zweck === 'stempeluhr') {
+        await auditLog({ role: 'stempeluhr', name: r.name }, 'Team-Gerät', 'Stempeluhr gekoppelt: ' + r.name);
+        return json(200, { ok: true, token: r.token, name: r.name, id: r.id, zweck: 'stempeluhr' });
       }
       await auditLog({ role: r.role, name: r.name }, 'Team-Gerät', 'Gerät gekoppelt: ' + (String(input.device || '').slice(0, 40) || 'Gerät'));
       return json(200, { ok: true, token: r.token, name: r.name, role: r.role });

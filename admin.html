@@ -5177,9 +5177,9 @@ async function loadDevices(silent){
   $('devCount').textContent=list.length?String(list.length):'';
   el.innerHTML=list.length
     ? list.map(dv=>'<div class="team-row"><div><span class="tn">'+esc2(dv.device||'Gerät')+'</span>'
-        +'<small>'+esc2(dv.name||'')+' · zuletzt aktiv '+esc2(devZeit(dv.lastSeen))+'</small></div>'
+        +'<small>'+(dv.zweck==='stempeluhr'?'Stempeluhr':esc2(dv.name||''))+' · zuletzt aktiv '+esc2(devZeit(dv.lastSeen))+'</small></div>'
         +'<div style="display:flex;gap:.4rem;flex-wrap:wrap;">'
-        +'<button class="btn-ghost" data-dev-revoke="'+esc2(dv.id)+'" data-dev-label="'+esc2(dv.device||'Gerät')+'">Entkoppeln</button>'
+        +'<button class="btn-ghost" data-dev-revoke="'+esc2(dv.id)+'" data-dev-label="'+esc2(dv.device||'Gerät')+'" data-dev-zweck="'+esc2(dv.zweck||'')+'">Entkoppeln</button>'
         +'</div></div>').join('')
     : '<p class="empty">Noch kein Gerät gekoppelt.</p>';
 }
@@ -5195,7 +5195,10 @@ document.addEventListener('click',async(e)=>{
   const b=e.target.closest('[data-dev-revoke]');
   if(!b) return;
   const label=b.dataset.devLabel||'Gerät';
-  if(!confirm('„'+label+'" entkoppeln?\n\nDas Gerät verliert sofort den Zugriff auf Bestellungen und Bestellstatus. Für einen neuen Zugang braucht es wieder einen Kopplungscode.')) return;
+  const folge=b.dataset.devZweck==='stempeluhr'
+    ?'Das iPad kann danach nicht mehr stempeln. Stempel, die noch auf ihm warten, gehen erst nach einer neuen Kopplung raus.'
+    :'Das Gerät verliert sofort den Zugriff auf Bestellungen und Bestellstatus.';
+  if(!confirm('„'+label+'" entkoppeln?\n\n'+folge+' Für einen neuen Zugang braucht es wieder einen Kopplungscode.')) return;
   await withBusy(b, async()=>{
     let r;
     try{ r=await devApi({action:'revoke',id:b.dataset.devRevoke}); }
