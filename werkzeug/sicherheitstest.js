@@ -332,6 +332,11 @@ const guard = () => [...daten.keys()].filter((k) => k.startsWith('authguard|'));
     ['standing-orders', () => call(require(F + '/standing-orders.js'), { action: 'plan', teamToken: uhrToken, date: '2027-01-05' }, '10.191.0.6')],
   ];
   for (const [name, fn] of abgewiesen) ok('Stempeluhr-Token an ' + name + ': abgewiesen (401)', (await fn()).s === 401);
+  ok('Stempeluhr-Token an check: abgewiesen (401)', (await call(geraetFn, { action: 'check', token: uhrToken }, '10.190.0.9')).s === 401);
+  const codesVorher = [...daten.keys()].filter((k) => k.includes('pair:')).length;
+  r = await call(geraetFn, { action: 'create', password: tokenKubi, zweck: 'Stempeluhr', name: 'iPad Truck' }, '10.190.0.10');
+  ok('Unbekannter Zweck "Stempeluhr" (Tippfehler): create gibt 400', r.s === 400 && r.d.error === 'zweck');
+  ok('Unbekannter Zweck: es entsteht kein Kopplungscode', [...daten.keys()].filter((k) => k.includes('pair:')).length === codesVorher);
   r = await call(geraetFn, { action: 'list', password: tokenKubi }, '10.190.0.7');
   const eintrag = (r.d.devices || []).find((x) => x.zweck === 'stempeluhr');
   ok('Geräteliste zeigt den Zweck', !!eintrag && eintrag.name === 'iPad Truck');

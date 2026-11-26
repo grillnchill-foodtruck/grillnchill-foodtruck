@@ -12,6 +12,7 @@
  *        -> { ok, token, name, id, zweck:'stempeluhr' }   bei einer Stempeluhr
  *   POST { action:'check', token }               (App)
  *        -> { ok, name, role }                   401 { error:'unauthorized' }
+ *        Eine Stempeluhr bekommt hier ebenfalls 401 (sie hat keine Rolle, nur zeit.js).
  *   POST { action:'list', password }             (Admin)
  *        -> { ok, devices:[{ id, device, name, zweck, createdAt, lastSeen }] }
  *   POST { action:'revoke', password, id }       (Admin)
@@ -107,6 +108,8 @@ exports.handler = async (event) => {
     if (action === 'create') {
       const a = await nurAdmin(event, input);
       if (a.antwort) return a.antwort;
+      // Unbekannter Zweck (Tippfehler) bekommt keinen Code, sonst wuerde er als Admin-Geraet gelten
+      if (input.zweck != null && input.zweck !== 'stempeluhr') return json(400, { error: 'zweck' });
       const stempeluhr = input.zweck === 'stempeluhr';
       const r = await geraete.erstelleCode(a.who, stempeluhr ? { zweck: 'stempeluhr', name: input.name } : undefined);
       await auditLog(a.who, 'Team-Gerät', stempeluhr ? 'Kopplungscode für eine Stempeluhr erzeugt' : 'Kopplungscode erzeugt');

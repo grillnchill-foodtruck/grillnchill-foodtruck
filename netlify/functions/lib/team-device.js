@@ -61,6 +61,7 @@ function saubererText(x, max) {
 /**
  * Neuen Kopplungscode anlegen.
  * @param {{role:string, name:string}} who  der Admin, der koppelt
+ * @param {{zweck?:string, name?:string}} [optionen]  zweck 'stempeluhr' erzeugt eine Stempeluhr ohne Rolle, name nur dafuer
  * @returns {Promise<{code:string, expiresAt:string}>}
  */
 async function erstelleCode(who, optionen) {
@@ -100,7 +101,8 @@ async function erstelleCode(who, optionen) {
 
 /**
  * Code einloesen. Gelingt genau einmal und nur innerhalb der Frist.
- * @returns {Promise<{token:string, name:string, role:string, id:string}|null>}
+ * Bei zweck 'stempeluhr' (zeit.js) kommt keine Rolle zurueck, sondern { zweck:'stempeluhr' }.
+ * @returns {Promise<{token:string, name:string, id:string, role?:string, zweck?:string, owner?:boolean}|null>}
  */
 async function loeseEin(code, device) {
   const c = String(code == null ? '' : code).replace(/\D/g, '');
