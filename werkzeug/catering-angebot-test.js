@@ -279,11 +279,12 @@ const cent = (x) => Math.round(x * 100);
   ok('Getippter Name als Unterschrift: angenommen', r.s === 200 && angebotRoh(u1.id).annahme.unterschrift.getippt === 'Ayşe Yılmaz', r.d);
   r = await kundeGet({ id: u1.id, t: tu1, pdf: '1' });
   ok('PDF nach der Annahme bleibt gültig', r.s === 200 && Buffer.from(r.r.body, 'base64').slice(0, 5).toString() === '%PDF-');
-  const viel = { striche: [Array.from({ length: 1600 }, (_, i) => (i % 2 ? 100 + (i % 150) : (i * 3) % 1000))] };
+  const viel = { striche: [Array.from({ length: 2400 }, (_, i) => (i % 2 ? 20 + ((i * 7) % 260) : (i * 5) % 1000))] };
   const u2 = (await adminPost({ action: 'neu', anfrage: 'c:1700000000000-abc123' })).d.angebot;
   await adminPost({ action: 'senden', id: u2.id });
   r = await kundePost({ id: u2.id, t: tokenVon(u2.id), aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: viel });
-  ok('Lange Unterschrift (800 Punkte) passt durch die Anfragegrenze', r.s === 200, { s: r.s, d: r.d });
+  ok('Lange Unterschrift (1200 Punkte) passt durch die Anfragegrenze, unverkürzt gespeichert', r.s === 200
+    && angebotRoh(u2.id).annahme.unterschrift.striche[0].length === 2400, { s: r.s, d: r.d });
 
   // Gleichzeitig: zweites Angebot senden und fünfmal parallel annehmen
   const b = (await adminPost({ action: 'neu', anfrage: 'c:1700000000000-abc123' })).d.angebot;

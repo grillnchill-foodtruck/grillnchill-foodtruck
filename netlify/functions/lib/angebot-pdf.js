@@ -209,7 +209,7 @@ function angebotPdf(a, e) {
       const liste = bedingungen(a, e);
       doc.font('Helvetica').fontSize(8.5);
       const unterschrift = a.annahme && a.annahme.unterschrift;
-      const hoehe = liste.reduce((n, l) => n + doc.heightOfString(latin1(l), { width: B - 14 }) + 3, 0) + (unterschrift ? 150 : 70);
+      const hoehe = liste.reduce((n, l) => n + doc.heightOfString(latin1(l), { width: B - 14 }) + 3, 0) + (unterschrift ? 160 : 70);
       if (y + hoehe > UNTEN) { doc.addPage(); y = 60; }
       y += 8;
       doc.font('Helvetica-Bold').fontSize(7.5).fillColor(FARBE.grau).text('BEDINGUNGEN', L, y, { characterSpacing: 1.2 });
@@ -236,7 +236,7 @@ function angebotPdf(a, e) {
         doc.font('Helvetica-Bold').fontSize(9).fillColor(FARBE.text).text('So nimmst du an', L, y);
         y = doc.y + 2;
         doc.font('Helvetica').fontSize(8.5).fillColor(FARBE.text)
-          .text(latin1('Öffne den Link in unserer E-Mail und tippe auf „Angebot annehmen“. Oder ruf uns an: ' + VERKAEUFER.tel + '.'), L, y, { width: B });
+          .text(latin1('Öffne den Link in unserer E-Mail, unterschreib im Feld und tippe auf „Angebot annehmen“. Oder ruf uns an: ' + VERKAEUFER.tel + '.'), L, y, { width: B });
       }
 
       /* ---- Fuß auf jeder Seite ---- */
