@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * werkzeug/office-meldung-test.js
- * Versand ans GNC Office: Signatur wie im Office (Prüfvektor), 10er-Pakete, Fehler, Geheimnis aus den Blobs.
+ * Versand ans GNC Office: Signatur wie im Office (Prüfvektor), 5er-Pakete, Fehler, Geheimnis aus den Blobs.
  *   node werkzeug/office-meldung-test.js
  */
 const path = require('path');
@@ -54,6 +54,28 @@ const meldung = (i) => ({ schluessel: 'tag:2027-01-' + String(i).padStart(2, '0'
   ok('Netzfehler im zweiten Paket: Ergebnisse des ersten bleiben, Fehler benannt', r.ergebnisse.length === 5 && /^netz: /.test(r.fehler), r);
   r = await M.senden(alle, { geheimnis: G, holen: async () => new Response(JSON.stringify({ ok: false, fehler: 'signatur' }), { status: 401 }) });
   ok('Office lehnt ab: office_401 signatur', r.fehler === 'office_401 signatur' && r.ergebnisse.length === 0, r);
+  r = await M.senden(alle, { geheimnis: G, holen: async () => new Response('null', { status: 200 }) });
+  ok('Antwort null (Status 200): kein Absturz, Fehler office_200', r.fehler === 'office_200' && r.ergebnisse.length === 0, r);
+  r = await M.senden(alle, { geheimnis: G, holen: async () => new Response('null', { status: 502 }) });
+  ok('Antwort null (Status 502): kein Absturz, Fehler office_502', r.fehler === 'office_502', r);
+  r = await M.senden(alle, { geheimnis: G, holen: async () => new Response('kein json', { status: 500 }) });
+  ok('Antwort ohne JSON: office_500', r.fehler === 'office_500', r);
+  zaehler = 0;
+  r = await M.senden(alle, { geheimnis: G, holen: async (url, opt) => {
+    const d = JSON.parse(opt.body);
+    const erg = d.meldungen.map((m) => ({ schluessel: m.schluessel, status: 'gebucht' }));
+    return new Response(JSON.stringify({ ok: true, ergebnisse: ++zaehler === 2 ? erg.slice(1) : erg, offen: 0 }), { status: 200 });
+  } });
+  ok('Zu wenige Ergebnisse im zweiten Paket: antwort_unvollstaendig, nur das erste Paket zählt', r.fehler === 'antwort_unvollstaendig' && r.ergebnisse.length === 5 && zaehler === 2, r);
+  zaehler = 0;
+  r = await M.senden(alle, { geheimnis: G, frist: 30, holen: async (url, opt) => { zaehler++; await new Promise((res) => setTimeout(res, 60)); return holen(url, opt); } });
+  ok('Frist abgelaufen: keine weiteren Pakete, Fehler frist', r.fehler === 'frist' && zaehler === 1 && r.ergebnisse.length === 5, { zaehler, r });
+  zaehler = 0;
+  r = await M.senden(alle, { geheimnis: G, frist: 0, holen: async () => { zaehler++; return new Response('{}'); } });
+  ok('Frist 0: gar nichts gesendet', r.fehler === 'frist' && zaehler === 0 && r.ergebnisse.length === 0, r);
+  r = await M.senden(alle, { geheimnis: G, holen });
+  ok('Standardfrist (20 s) reicht für den Normalfall', r.fehler === null && r.ergebnisse.length === 23);
+
   zaehler = 0;
   r = await M.senden(alle, { geheimnis: 'kurz', holen: async () => { zaehler++; return new Response('{}'); } });
   ok('Zu kurzes Geheimnis: nichts gesendet', r.fehler === 'nicht_eingerichtet' && zaehler === 0, r);

@@ -10,6 +10,8 @@ const { geheimnisHolen } = require('./geheimnisse');
 
 const PAKET = 5;
 const ZEITLIMIT_MS = 10000;
+// Gesamt-Frist für alle Pakete einer Sendung (Netlify-Funktion läuft nur begrenzt); Rest bleibt für den nächsten Lauf
+const FRIST_MS = 20000;
 
 function signieren(koerper, geheimnis, zeit = Math.floor(Date.now() / 1000)) {
   const z = String(zeit);
@@ -18,26 +20,31 @@ function signieren(koerper, geheimnis, zeit = Math.floor(Date.now() / 1000)) {
 
 const eingangUrl = () => (process.env.OFFICE_URL || 'https://office.grillnchill-foodtruck.de').replace(/\/$/, '') + '/api/eingang';
 
-async function senden(meldungen, { holen = fetch, geheimnis } = {}) {
+async function senden(meldungen, { holen = fetch, geheimnis, frist = FRIST_MS } = {}) {
   const g = geheimnis || (await geheimnisHolen('office-eingang-secret', 'OFFICE_EINGANG_SECRET'));
   if (g.length < 32) return { ergebnisse: [], offen: null, sicherung: undefined, fehler: 'nicht_eingerichtet' };
   const ergebnisse = [];
   let offen = null;
   let sicherung;
+  const ende = Date.now() + frist;
   for (let i = 0; i < meldungen.length; i += PAKET) {
-    const koerper = JSON.stringify({ v: 1, meldungen: meldungen.slice(i, i + PAKET) });
+    const rest = ende - Date.now();
+    if (rest <= 0) return { ergebnisse, offen, sicherung, fehler: 'frist' };
+    const paket = meldungen.slice(i, i + PAKET);
+    const koerper = JSON.stringify({ v: 1, meldungen: paket });
     const { zeit, signatur } = signieren(koerper, g);
     let r;
     try {
       r = await holen(eingangUrl(), {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-gnc-zeit': zeit, 'x-gnc-signatur': signatur },
-        body: koerper, signal: AbortSignal.timeout(ZEITLIMIT_MS),
+        body: koerper, signal: AbortSignal.timeout(Math.min(ZEITLIMIT_MS, rest)),
       });
     } catch (e) {
       return { ergebnisse, offen, sicherung, fehler: 'netz: ' + String(e && e.message).slice(0, 100) };
     }
-    const d = await r.json().catch(() => ({}));
+    const d = (await r.json().catch(() => null)) || {};
     if (!r.ok || !Array.isArray(d.ergebnisse)) return { ergebnisse, offen, sicherung, fehler: `office_${r.status}${d.fehler ? ' ' + d.fehler : ''}` };
+    if (d.ergebnisse.length !== paket.length) return { ergebnisse, offen, sicherung, fehler: 'antwort_unvollstaendig' };
     ergebnisse.push(...d.ergebnisse);
     offen = d.offen;
     sicherung = d.sicherung;
