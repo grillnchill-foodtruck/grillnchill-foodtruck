@@ -18,6 +18,10 @@
  * start (Stichtag JJJJ-MM-TT, optional: früher meldet der Lauf nichts).
  *
  * Umzug auf die echte Datenbank des Office (31.12.2026)
+ * Reihenfolge ist Pflicht: Schritt 1 (Stichtag) VOR dem Umschalten des Office auf die echte Datenbank, spätestens vor
+ * dem Lauf um 01:20 am ersten Tag. Schaltet das Office zuerst um, landen die letzten 14 Tage der Probe in der echten
+ * Datenbank und lassen sich dort nur noch per Storno korrigieren. Den Stichtag früher zu setzen schadet nicht: bis zum
+ * Umzug geht dann nur das Lebenszeichen raus.
  * Bis dahin landen die Meldungen in der Probe-Datenbank. Die Befehle laufen aus einem Ordner ohne .netlify, mit
  * Kubis Netlify-Konto (netlify switch), und geben nur Schlüssel und das Datum aus, nie ein Geheimnis:
  *   export NETLIFY_SITE_ID=7cbf3f1b-5d01-44ba-bd5a-f71eb9b82893
@@ -203,13 +207,16 @@ async function lauf({ jetzt = new Date(), budgetMs = BUDGET_MS } = {}) {
     // Fehler und Abweichungen je Fassung einmal melden. Deren gesendet-Vermerk erst nach der Nachricht schreiben:
     // Geht die Nachricht nicht raus, kommt die Meldung wieder und wird dann gemeldet.
     const fassung = new Map(zuSenden.map((m) => [m.schluessel, fassungVon(m)]));
+    // Ein Fehler kommt in der Folgenacht als „doppelt“ mit zustand „fehler“ zurück: auch dann einmal je Fassung melden,
+    // sonst geht er verloren, wenn Telegram beim ersten Mal ausfiel oder der Lauf nach dem Senden abbrach.
+    const istFehler = (e) => e.status === 'fehler' || (e.status === 'doppelt' && e.zustand === 'fehler');
     const sofort = [];
     const fehlerhaft = [];
     const abweichend = [];
     for (const e of r.ergebnisse) {
       const id = e.schluessel + ':' + fassung.get(e.schluessel);
       let melden = false;
-      if (e.status === 'fehler' && !fehlerGemeldet.has(id)) { fehlerhaft.push(e); neueMerker.push(`fehler-gemeldet:${heute}:${id}`); melden = true; }
+      if (istFehler(e) && !fehlerGemeldet.has(id)) { fehlerhaft.push(e); neueMerker.push(`fehler-gemeldet:${heute}:${id}`); melden = true; }
       if (istAbweichend(e) && !abweichungGemeldet.has(id)) { abweichend.push(e); neueMerker.push(`abweichung-gemeldet:${heute}:${id}`); melden = true; }
       if (vermerken(e) && !gesendet.has(e.schluessel)) (melden ? neueMerker : sofort).push(`gesendet:${heute}:${e.schluessel}`);
     }

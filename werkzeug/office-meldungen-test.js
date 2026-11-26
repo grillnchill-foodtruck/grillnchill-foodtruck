@@ -391,6 +391,22 @@ setze('firmen', 'rechnung:f1:2026-12', { invoiceNo: 'GNC-2027-0001', status: 'be
   r = await nacht('2027-03-15');
   ok('… und geht danach nicht mehr raus', r.status === 'fertig' && !ANFRAGEN.slice(a).flat().includes('rechnung:GNC-2027-0006'), ANFRAGEN.slice(a));
 
+  // 9b. Fehlerzeile, deren Telegram ausfiel: in der Folgenacht kommt sie als doppelt mit Zustand fehler und wird dann gemeldet
+  setze('invoices', 'counter:2027', { n: 7 });
+  setze('invoices', 'inv:GNC-2027-0007', { invoiceNo: 'GNC-2027-0007', mode: 'sammel', createdAt: '2027-03-15T08:00:00.000Z', company: 'Beispiel AG', vat: [{ satz: 19, brutto: 11.9 }], total: 11.9 });
+  fehlerSchluessel.set('rechnung:GNC-2027-0007', () => 'server');
+  telegramKaputt = true;
+  r = await nacht('2027-03-16');
+  telegramKaputt = false;
+  tg = TELEGRAM.length;
+  r = await nacht('2027-03-17');
+  ok('Fehlerzeile mit ausgefallenem Telegram: in der Folgenacht (doppelt, Zustand fehler) genau einmal gemeldet',
+    r.ergebnisse.some((e) => e.schluessel === 'rechnung:GNC-2027-0007' && e.status === 'doppelt' && e.zustand === 'fehler')
+    && /Nicht gebucht: Rechnung GNC-2027-0007/.test(neueTexte(tg)), { t: TELEGRAM.slice(tg), e: r.ergebnisse });
+  tg = TELEGRAM.length;
+  r = await nacht('2027-03-18');
+  ok('… und danach nicht noch einmal', !/GNC-2027-0007/.test(neueTexte(tg)), TELEGRAM.slice(tg));
+
   // 14. Lange Telegram-Nachrichten
   let txt = nachricht(Array.from({ length: 40 }, (_, i) => 'Zeile ' + (i + 1)));
   let zeilen = txt.split('\n');
