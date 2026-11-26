@@ -29,7 +29,7 @@ const bestellungen = [
   { status: 'completed', kind: 'giftcard', completedAt: '2027-01-03T09:00:00.000Z', gift: { amount: 50 } },
   { status: 'completed', kind: 'burgerpass', completedAt: '2027-01-05T09:00:00.000Z' },
 ];
-const erstattungen = [{ tag: '2027-01-05', rec: bestellungen[0] }, { tag: '2027-01-05', rec: { status: 'refunded', kind: 'giftcard', gift: { amount: 20 } } }];
+const erstattungen = [{ tag: '2027-01-05', rec: bestellungen[0] }, { tag: '2027-01-05', rec: { status: 'refunded', kind: 'giftcard', completedAt: '2027-01-03T09:00:00.000Z', gift: { amount: 20 } } }];
 const truck = [{ tag: '2027-01-03', wert_cent: 2500, bestellwert_cent: 3000 }, { tag: '2027-01-03', wert_cent: 2500, bestellwert_cent: 2000 }];
 const rechnungen = [
   { invoiceNo: 'GNC-2027-0004', art: 'catering_storno', invoiceDay: '2027-01-04', kundeName: 'Hochzeit Meier', stornoZu: 'GNC-2027-0002',
@@ -76,11 +76,116 @@ ok('Zahlung einer Sammelrechnung per Überweisung', gleich(meldungen.find((m) =>
 ok('Hinweis für den Burger-Pass', hinweise.some((h) => h.tag === '2027-01-05' && /Burger-Pass/.test(h.text)), hinweise);
 ok('Keine Kundennamen und keine Gutscheincodes in Tagesmeldungen', !JSON.stringify(meldungen.filter((m) => m.art === 'tag')).match(/GNCABCDEF|gncabcdef|GRILL5|Muster|Meier/i));
 
-const nochmal = T.baueMeldungen({ von: '2027-01-01', bis: '2027-01-05', bestellungen: [...bestellungen].reverse(), erstattungen, geschenkCodes: new Set(['GNCABCDEF']), truck: [...truck].reverse(), rechnungen, firmenZahlungen });
-ok('Gleiche Daten in anderer Reihenfolge ergeben dieselben Meldungen', gleich(nochmal.meldungen, meldungen));
+const nochmal = T.baueMeldungen({ von: '2027-01-01', bis: '2027-01-05', bestellungen: [...bestellungen].reverse(), erstattungen: [...erstattungen].reverse(), geschenkCodes: new Set(['GNCABCDEF']),
+  truck: [...truck].reverse(), rechnungen: [...rechnungen].reverse(), firmenZahlungen: [...firmenZahlungen].reverse() });
+ok('Alle Eingabearten in umgekehrter Reihenfolge ergeben dieselben Meldungen und Hinweise', gleich(nochmal.meldungen, meldungen) && gleich(nochmal.hinweise, hinweise));
+const drehen = (a, k) => a.slice(k).concat(a.slice(0, k));
+const gedreht = T.baueMeldungen({ von: '2027-01-01', bis: '2027-01-05', bestellungen: drehen(bestellungen, 4), erstattungen: drehen(erstattungen, 1), geschenkCodes: new Set(['GNCABCDEF']),
+  truck: drehen(truck, 1), rechnungen: drehen(rechnungen, 2), firmenZahlungen: drehen(firmenZahlungen, 1) });
+ok('… und gedreht ebenso', gleich(gedreht.meldungen, meldungen) && gleich(gedreht.hinweise, hinweise));
 ok('Leerer Zeitraum ergibt keine Meldungen', T.baueMeldungen({ von: '2027-02-01', bis: '2027-02-14', bestellungen }).meldungen.length === 0);
 ok('tagAus versteht ISO, deutsches Datum und Zeitstempel', T.tagAus('2027-01-16') === '2027-01-16' && T.tagAus('16.01.2027') === '2027-01-16'
   && T.tagAus('2027-01-15T23:30:00.000Z') === '2027-01-16' && T.tagAus('morgen') === null);
+
+// ---- Review-Fixes ----
+const bau = (x) => T.baueMeldungen({ von: '2027-01-01', bis: '2027-12-31', ...x });
+const hat = (res, re) => res.hinweise.some((h) => re.test(h.text));
+
+// Sommerzeit: 23:30 UTC im Juli ist 01:30 am Folgetag in Berlin
+const sommer = bau({ bestellungen: [rec({ reference: 'GNC-S' }, { completedAt: '2027-07-03T23:30:00.000Z' })] });
+ok('Sommerzeit: Bestellung um 23:30 UTC gehört zum Folgetag', gleich(sommer.meldungen.map((m) => m.schluessel), ['tag:2027-07-04:online']), sommer.meldungen.map((m) => m.schluessel));
+const winter = bau({ bestellungen: [rec({ reference: 'GNC-W' }, { completedAt: '2027-01-03T23:30:00.000Z' })] });
+ok('Winterzeit: 23:30 UTC gehört ebenfalls zum Folgetag (UTC+1)', gleich(winter.meldungen.map((m) => m.schluessel), ['tag:2027-01-04:online']));
+const sommer2 = bau({ bestellungen: [rec({ reference: 'GNC-S2' }, { completedAt: '2027-07-03T21:59:00.000Z' })] });
+ok('Sommerzeit: 21:59 UTC bleibt am selben Tag', gleich(sommer2.meldungen.map((m) => m.schluessel), ['tag:2027-07-03:online']));
+
+// Schlussrechnung und Storno mit gemischten Vorzeichen
+const schluss = (nr, vat, x = {}) => ({ invoiceNo: nr, art: 'catering_schluss', invoiceDay: '2027-03-01', kundeName: 'Hochzeit Meier', vat, ...x });
+let q = bau({ rechnungen: [schluss('GNC-2027-0010', [{ satz: 19, brutto: 300 }, { satz: 7, brutto: -100 }, { satz: 19.0, brutto: 0 }])] });
+ok('Schlussrechnung mit gemischten Vorzeichen und positiver Summe: eine Meldung, beide Zeilen', q.meldungen.length === 1 && gleich(q.meldungen[0].daten.posten, [{ satz: 7, brutto_cent: -10000 }, { satz: 19, brutto_cent: 30000 }])
+  && q.meldungen[0].daten.art === 'schlussrechnung' && q.hinweise.length === 0, q);
+q = bau({ rechnungen: [schluss('GNC-2027-0011', [{ satz: 7, brutto: 0 }, { satz: 19, brutto: 119 }])] });
+ok('Schlussrechnung: Zeilen mit 0 entfallen', gleich(q.meldungen[0].daten.posten, [{ satz: 19, brutto_cent: 11900 }]));
+for (const vat of [[{ satz: 7, brutto: -100 }, { satz: 19, brutto: 100 }], [{ satz: 7, brutto: -100 }, { satz: 19, brutto: 40 }]]) {
+  q = bau({ rechnungen: [schluss('GNC-2027-0012', vat)] });
+  ok('Schlussrechnung mit Summe ' + (vat[1].brutto === 100 ? '0' : 'unter 0') + ': keine Meldung, Hinweis zum Handbuchen', q.meldungen.length === 0 && q.hinweise.length === 1
+    && q.hinweise[0].text === 'Schlussrechnung GNC-2027-0012 ergibt keinen offenen Betrag (Anzahlung höher als Endstand). Bitte im Office von Hand buchen.', q.hinweise);
+}
+ok('rechnungsMeldung liefert für Summe ≤ 0 null', T.rechnungsMeldung(schluss('GNC-2027-0013', [{ satz: 19, brutto: -5 }])) === null);
+const storno = (nr, vat) => ({ invoiceNo: nr, art: 'catering_storno', invoiceDay: '2027-03-02', kundeName: 'Hochzeit Meier', stornoZu: 'GNC-2027-0010', vat });
+q = bau({ rechnungen: [storno('GNC-2027-0014', [{ satz: 7, brutto: 100 }, { satz: 19, brutto: -300 }])] });
+ok('Storno mit gemischten Vorzeichen und negativer Summe: eine Meldung, beide Zeilen', q.meldungen.length === 1 && gleich(q.meldungen[0].daten.posten, [{ satz: 7, brutto_cent: 10000 }, { satz: 19, brutto_cent: -30000 }])
+  && q.meldungen[0].daten.bezug === 'GNC-2027-0010', q);
+for (const vat of [[{ satz: 7, brutto: 100 }, { satz: 19, brutto: -100 }], [{ satz: 7, brutto: 100 }, { satz: 19, brutto: -40 }]]) {
+  q = bau({ rechnungen: [storno('GNC-2027-0015', vat)] });
+  ok('Storno mit Summe ' + (vat[1].brutto === -100 ? '0' : 'über 0') + ': keine Meldung, Hinweis zum Handbuchen', q.meldungen.length === 0 && hat(q, /^Stornorechnung GNC-2027-0015 ergibt keinen offenen Betrag \(Anzahlung höher als Endstand\)\. Bitte im Office von Hand buchen\.$/), q.hinweise);
+}
+q = bau({ rechnungen: [schluss('GNC-2027-0016', [{ satz: 19, brutto: 50 }], { createdAt: '2027-03-01T10:00:00.000Z', invoiceDay: undefined })] });
+ok('catering_schluss: Datum aus createdAt, Art schlussrechnung', q.meldungen[0].daten.datum === '2027-03-01' && q.meldungen[0].daten.art === 'schlussrechnung');
+
+// Rechnung ohne Posten, ohne Kunde
+q = bau({ rechnungen: [schluss('GNC-2027-0017', []), schluss('GNC-2027-0018', [{ satz: 7, brutto: 0 }])] });
+ok('Rechnung ohne Posten ergibt keine Meldung', q.meldungen.length === 0 && T.rechnungsMeldung(schluss('GNC-2027-0017', [])) === null);
+const ohneName = { invoiceNo: 'GNC-2027-0019', mode: 'sammel', invoiceDay: '2027-03-01', vat: [{ satz: 7, brutto: 10 }] };
+q = bau({ rechnungen: [{ ...ohneName, email: 'kunde@beispiel.de' }] });
+ok('Kunde ohne Namen: E-Mail-Adresse', q.meldungen.length === 1 && q.meldungen[0].daten.kunde === 'kunde@beispiel.de', q);
+q = bau({ rechnungen: [{ ...ohneName, kundeName: ' ', company: '' }] });
+ok('Kunde ganz ohne Angaben: null und Hinweis mit Nummer', q.meldungen.length === 0 && hat(q, /GNC-2027-0019/) && T.rechnungsMeldung(ohneName) === null, q);
+ok('Name geht vor E-Mail', bau({ rechnungen: [{ ...ohneName, kundeName: 'Frau Meier', email: 'x@y.de' }] }).meldungen[0].daten.kunde === 'Frau Meier');
+
+// Kaputte Daten brechen den Lauf nicht ab
+let kaputt;
+try {
+  kaputt = bau({
+    bestellungen: [rec({ reference: 'GNC-K1' }, { completedAt: 'kein-datum' }), rec({ reference: 'GNC-K2' }), { status: 'completed', kind: 'giftcard', completedAt: 'x', gift: { amount: 5 } }],
+    erstattungen: [{ tag: '2027-13-45', rec: bestellungen[0] }, { tag: 'gestern', rec: bestellungen[0] }],
+    truck: [{ tag: '2027-02-30', wert_cent: 100, bestellwert_cent: 100 }],
+    rechnungen: [{ invoiceNo: 'GNC-2027-0030', art: 'catering_anzahlung', invoiceDay: 'xx', createdAt: 'yy', kundeName: 'Frau Geheim', vat: [{ satz: 7, brutto: 5 }] },
+      { invoiceNo: 'GNC-2027-0031', art: 'catering_anzahlung', invoiceDay: '2027-03-01', bezahltAm: 'kaputt', kundeName: 'Frau Geheim', vat: [{ satz: 7, brutto: 5 }] }],
+    firmenZahlungen: [{ tag: '31.02.2027', nummer: 'GNC-2027-0032', betrag_cent: 100 }],
+  });
+} catch (e) { kaputt = { fehler: e.message }; }
+ok('Kaputte Datumswerte werfen nicht', !kaputt.fehler, kaputt.fehler);
+ok('… die gesunde Bestellung kommt durch, kaputte Datensätze nicht', kaputt.meldungen && kaputt.meldungen.length === 1 && kaputt.meldungen[0].schluessel === 'tag:2027-01-03:online', kaputt.meldungen);
+ok('… Hinweise nennen Nummern: Bestellung, Rechnungen, Zahlung', ['GNC-K1', 'GNC-2027-0030', 'GNC-2027-0031', 'GNC-2027-0032'].every((nr) => hat(kaputt, new RegExp(nr))), kaputt.hinweise);
+ok('… Erstattung und Truck mit kaputtem Tag bekommen je einen Hinweis', kaputt.hinweise.filter((h) => /Erstattung/.test(h.text)).length === 2 && hat(kaputt, /Truck/), kaputt.hinweise);
+ok('… Hinweise enthalten keine Kundendaten', !JSON.stringify(kaputt.hinweise).match(/Geheim|@/));
+ok('tagAus lehnt unmögliche Kalendertage ab', ['2027-13-45', '2027-02-30', '2027-00-10', '31.02.2027', '2027-02-30T10:00:00Z', '2027-13-45T10:00:00Z', ''].every((x) => T.tagAus(x) === null) && T.tagAus('2028-02-29') === '2028-02-29' && T.tagAus('2027-02-29') === null);
+ok('berlinTag wirft bei ungültigem Wert nicht', T.berlinTag('quatsch') === null && T.berlinTag(undefined) === null);
+
+// Erstattungen
+const erst = (tag, r) => bau({ erstattungen: [{ tag, rec: r }] });
+q = erst('2027-02-01', { status: 'refunded', quelle: 'online', order: { payment: 'sumup', reference: 'GNC-E1', ...ware() } });
+ok('Erstattung ohne vorherigen Umsatz (kein completedAt): Hinweis, keine Meldung', q.meldungen.length === 0 && hat(q, /GNC-E1.*ohne vorherigen Umsatz/), q);
+q = erst('2027-02-01', { status: 'pending', quelle: 'online', completedAt: '2027-01-03T10:00:00Z', order: { payment: 'sumup', reference: 'GNC-E2', ...ware() } });
+ok('Erstattung einer nicht bezahlten Bestellung: Hinweis, keine Meldung', q.meldungen.length === 0 && hat(q, /GNC-E2/));
+q = erst('2027-02-01', { status: 'refunded', kind: 'giftcard', gift: { amount: 20 } });
+ok('Gutschein-Erstattung ohne vorherigen Verkauf: Hinweis', q.meldungen.length === 0 && hat(q, /ohne vorherigen Umsatz/));
+q = erst('2027-02-01', rec({ reference: 'GNC-E3', payment: 'cash', items: [{ qty: 1, vatSplit: { 7: 8, 19: 0 } }], subtotal: 8, total: 8 }, { status: 'refunded' }));
+ok('Erstattung bei Barzahlung: vor_ort_erstattung ohne Zahlart', gleich(q.meldungen[0].daten.posten, [{ typ: 'vor_ort_erstattung', satz: 7, brutto_cent: 800 }]), q.meldungen);
+q = erst('2027-02-01', { ...bestellungen[1], status: 'refunded' });
+ok('Erstattung mit Gutschein-Anteil: nur der bezahlte Teil, keine Einlösung', gleich(q.meldungen[0].daten.posten, [
+  { typ: 'erstattung', zahlart: 'sumup', satz: 19, brutto_cent: 679 }, { typ: 'erstattung', zahlart: 'sumup', satz: 7, brutto_cent: 1621 }]) ,
+  q.meldungen.length ? q.meldungen[0].daten : q);
+ok('… Test- und Fremdzahlungsbestellungen bleiben still', erst('2027-02-01', { ...bestellungen[4], status: 'refunded' }).hinweise.length === 0 && erst('2027-02-01', { ...bestellungen[6], status: 'refunded' }).hinweise.length === 0);
+
+// Stilles Überspringen mit Hinweis
+q = erst('2027-02-01', { status: 'refunded', kind: 'burgerpass', quelle: 'online', completedAt: '2027-01-05T09:00:00Z', reference: 'BP-1' });
+ok('Erstattung eines Burger-Passes: Hinweis', q.meldungen.length === 0 && hat(q, /Burger-Pass-Erstattung/), q);
+q = bau({ bestellungen: [{ status: 'completed', kind: 'giftcard', reference: 'GS-1', completedAt: '2027-01-03T09:00:00.000Z' }] });
+ok('Gutschein-Verkauf ohne gift: Hinweis', q.meldungen.length === 0 && hat(q, /GS-1.*ohne Gutscheindaten/), q);
+q = erst('2027-02-01', { status: 'refunded', kind: 'giftcard', reference: 'GS-2', completedAt: '2027-01-03T09:00:00.000Z' });
+ok('Gutschein-Erstattung ohne gift: Hinweis', q.meldungen.length === 0 && hat(q, /GS-2.*ohne Gutscheindaten/), q);
+ok('Erstattung außerhalb des Zeitraums: still', bau({ von: '2027-03-01', bis: '2027-03-31', erstattungen: [{ tag: '2027-02-01', rec: { status: 'refunded' } }] }).hinweise.length === 0);
+
+// Mehrere Zahlungen auf dieselbe Rechnung
+q = bau({ firmenZahlungen: [{ tag: '2027-02-10', nummer: 'GNC-2027-0040', betrag_cent: 5000, zahlart: 'ueberweisung' }, { tag: '2027-02-03', nummer: 'GNC-2027-0040', betrag_cent: 8080, zahlart: 'bar' }, { tag: '2027-02-04', nummer: 'GNC-2027-0041', betrag_cent: 100 }] });
+ok('Zwei Zahlungen auf eine Rechnung: eine Meldung mit Summe, Datum und Zahlart der letzten', q.meldungen.length === 2 && gleich(q.meldungen[0], { schluessel: 'zahlung:GNC-2027-0040', art: 'zahlung',
+  daten: { nummer: 'GNC-2027-0040', datum: '2027-02-10', zahlart: 'ueberweisung', betrag_cent: 13080 } }), q.meldungen);
+q = bau({ firmenZahlungen: [{ tag: '2027-02-03', nummer: 'GNC-2027-0040', betrag_cent: 8080, zahlart: 'bar' }, { tag: '2027-02-10', nummer: 'GNC-2027-0040', betrag_cent: 5000 }].reverse() });
+ok('… unabhängig von der Eingabereihenfolge', q.meldungen.length === 1 && q.meldungen[0].daten.betrag_cent === 13080 && q.meldungen[0].daten.datum === '2027-02-10');
+q = bau({ von: '2027-02-05', bis: '2027-02-28', firmenZahlungen: [{ tag: '2027-02-03', nummer: 'GNC-2027-0040', betrag_cent: 100 }] });
+ok('Zahlung vor dem Zeitraum: keine Meldung', q.meldungen.length === 0);
 
 console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));
 process.exit(fehler ? 1 : 0);
