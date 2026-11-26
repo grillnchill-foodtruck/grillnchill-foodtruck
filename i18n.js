@@ -791,10 +791,21 @@ function t(key) {
       || key;
 }
 
+// Wie t(), aber ohne den Schlüssel als Rückfall: Fehlt ein Eintrag, kommt ''
+// zurück und applyTranslations() lässt den Text aus dem HTML stehen.
+// Google rendert Seiten manchmal mit einer alten i18n.js aus seinem Cache.
+// Der fehlte "meta.titel", und im Suchergebnis stand "meta.titel" als Titel
+// der Startseite (26.11.2026).
+function i18nText(key) {
+  return (I18N[currentLang] && I18N[currentLang][key])
+      || (I18N.de && I18N.de[key])
+      || '';
+}
+
 // Platzhalter {name} aus data-i18n-vars='{"name":"…"}' einsetzen (Zahlen,
 // die der Build aus speisekarte.js schreibt, z. B. Kilometer und Gebühren)
 function i18nWert(el, key) {
-  let val = t(key);
+  let val = i18nText(key);
   const roh = el.getAttribute('data-i18n-vars');
   if (val && roh) {
     try {
@@ -819,11 +830,11 @@ function applyTranslations() {
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
     const key = el.getAttribute('data-i18n-placeholder');
-    const val = t(key);
+    const val = i18nText(key);
     if (val) el.setAttribute('placeholder', val);
   });
   document.querySelectorAll('[data-i18n-alt]').forEach((el) => {
-    const val = t(el.getAttribute('data-i18n-alt'));
+    const val = i18nText(el.getAttribute('data-i18n-alt'));
     if (val) el.setAttribute('alt', val);
   });
   // Screenreader-Labels mitübersetzen (Sprachmix DE/EN vermeiden)
@@ -832,7 +843,7 @@ function applyTranslations() {
     if (val) el.setAttribute('aria-label', val);
   });
   document.querySelectorAll('[data-i18n-title]').forEach((el) => {
-    const val = t(el.getAttribute('data-i18n-title'));
+    const val = i18nText(el.getAttribute('data-i18n-title'));
     if (val) el.setAttribute('title', val);
   });
   document.documentElement.setAttribute('lang', currentLang);

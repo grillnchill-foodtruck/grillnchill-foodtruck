@@ -40,6 +40,11 @@
  *    Hash; darum schreibt jeder Build _headers neu, nach allen anderen
  *    Schritten. Die übrigen Sicherheits-Header stehen in netlify.toml.
  *
+ * 5. SPRACHDATEIEN MIT VERSION
+ *    i18n.js und i18n-tr.js bekommen in jedem <script src> eine Prüfsumme
+ *    (?v=…), damit Google keine alte Fassung aus seinem Cache nimmt.
+ *    Siehe mitVersion().
+ *
  * tr/ und _headers stehen in .gitignore: Sie entstehen bei jedem Deploy neu
  * und können deshalb nie hinter index.html zurückbleiben. index.html selbst wird mit der
  * eingebauten Karte committet, damit die lokale Vorschau sie auch zeigt.
@@ -269,8 +274,11 @@ function tuerkischeSeite(deHtml) {
   h = metaInhalt(h, 'name="twitter:title"', TR.titel);
   h = metaInhalt(h, 'name="twitter:description"', TR.ogBeschreibung);
   h = ersetzePflicht(h, `<link rel="canonical" href="${SEITE}/" />`, `<link rel="canonical" href="${SEITE}/tr/" />`, 'canonical');
-  // Türkisch sofort da, kein Umweg über Deutsch
-  h = ersetzePflicht(h, '<script src="i18n.js"></script>', '<script src="/i18n.js"></script>\n<script src="/i18n-tr.js"></script>', 'i18n.js');
+  // Türkisch sofort da, kein Umweg über Deutsch. index.html trägt nach einem
+  // Build schon ?v=… an i18n.js (mitVersion), darum per Muster.
+  const i18nSkript = /<script src="i18n\.js(?:\?v=[0-9a-f]+)?"><\/script>/;
+  if (!i18nSkript.test(h)) throw new Error('Nicht gefunden (i18n.js): <script src="i18n.js"></script>');
+  h = h.replace(i18nSkript, '<script src="/i18n.js"></script>\n<script src="/i18n-tr.js"></script>');
   h = jsonLdAnpassen(h, t);
 
   h = ausserhalbVonCode(h, (stueck) => pfadeAbsolut(attributeErsetzen(textErsetzen(stueck, t), t)));
@@ -640,7 +648,7 @@ function kopfEinsetzen(datei, indexHtml) {
   html = akzentLuft(bereich(html, 'SEITENKOPF', kopfHtml(KOPF_SEITEN[datei]), datei));
   if (!html.includes('<link rel="stylesheet" href="/seitenkopf.css">')) throw new Error('seitenkopf.css fehlt im <head> von ' + datei);
   if (!html.includes('<script src="/seitenkopf.js" defer></script>')) throw new Error('seitenkopf.js fehlt in ' + datei);
-  if (!html.includes('<script src="/i18n.js"></script>')) throw new Error('i18n.js fehlt in ' + datei + ' (Sprachwahl im Kopf)');
+  if (!/<script src="\/i18n\.js(?:\?v=[0-9a-f]+)?"><\/script>/.test(html)) throw new Error('i18n.js fehlt in ' + datei + ' (Sprachwahl im Kopf)');
   if (!/<main[^>]*\bid="main"/.test(html)) throw new Error('<main id="main"> fehlt in ' + datei + ' (Sprunglink)');
   fs.writeFileSync(p, html);
 }
@@ -669,6 +677,31 @@ VORAB_SEITEN.forEach((d) => {
   const p = path.join(WURZEL, d);
   fs.writeFileSync(p, bereich(fs.readFileSync(p, 'utf8'), 'SPRACHE-VORAB', SPRACHE_VORAB, d));
 });
+
+/* ---- Sprachdateien mit Version --------------------------------------------- */
+// <script src="/i18n.js"> wird zu <script src="/i18n.js?v=<Prüfsumme>">. Jede
+// neue Fassung hat damit eine neue Adresse. Google rendert Seiten mit Skripten
+// aus seinem eigenen Cache und kümmert sich dabei nicht um Cache-Header. So
+// lief die neue Startseite mit einer i18n.js von vor dem 12.11.: Im Suchergebnis
+// stand "meta.titel" als Titel und "Grilln Chill" im Text (26.11.2026).
+// Läuft nach allen anderen Schritten, die das HTML schreiben.
+const VERSIONEN = {};
+function version(datei) {
+  if (!VERSIONEN[datei]) VERSIONEN[datei] = require('crypto').createHash('sha256').update(lies(datei)).digest('hex').slice(0, 10);
+  return VERSIONEN[datei];
+}
+function mitVersion(html) {
+  return html.replace(/<script src="(\/?)(i18n(?:-[a-z]{2})?\.js)(?:\?v=[0-9a-f]+)?"><\/script>/g,
+    (_, schraeg, datei) => `<script src="${schraeg}${datei}?v=${version(datei)}"></script>`);
+}
+let versioniert = 0;
+for (const f of fs.readdirSync(WURZEL).filter((d) => d.endsWith('.html')).concat('tr/index.html')) {
+  const p = path.join(WURZEL, f);
+  const alt = fs.readFileSync(p, 'utf8');
+  const neu = mitVersion(alt);
+  if (neu !== alt) fs.writeFileSync(p, neu);
+  if (/src="\/?i18n\.js\?v=/.test(neu)) versioniert++;
+}
 
 /* ---- Content-Security-Policy ---------------------------------------------- */
 /* SumUp-Widget in der Kasse („Bezahlen ohne Umweg“, Admin-Schalter, Paket
@@ -741,4 +774,5 @@ fs.writeFileSync(path.join(WURZEL, '_headers'),
 const reste = (trHtml.match(/data-i18n="[^"]+"/g) || []).length;
 console.log('seiten-bauen: Speisekarte mit ' + SK.MENU.length + ' Artikeln in index.html, tr/index.html geschrieben ('
   + Math.round(trHtml.length / 1024) + ' KB, ' + reste + ' data-i18n-Stellen), liefergebiet.html, halal.html und agb.html aktualisiert, '
+  + 'i18n.js mit Version auf ' + versioniert + ' Seiten, '
   + '_headers mit ' + hashes.size + ' Skript-Hashes aus ' + seiten.length + ' Seiten.');
