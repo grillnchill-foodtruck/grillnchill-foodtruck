@@ -116,7 +116,7 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,6vw,2.5rem)
 @media(max-width:420px){.adr{grid-template-columns:1fr}}
 .adr-hint{color:var(--dim);font-size:.88rem;margin:-.2rem 0 .7rem}
 /* Unterschrift bei der Annahme */
-.sig{position:relative;aspect-ratio:10/3;margin:.2rem 0 .5rem;border:1px solid var(--border-hi);border-radius:14px;background:rgba(245,233,208,.04);color:var(--cream);overflow:hidden}
+.sig{position:relative;aspect-ratio:10/3;min-height:5.5rem;margin:.2rem 0 .5rem;border:1px solid var(--border-hi);border-radius:14px;background:rgba(245,233,208,.04);color:var(--cream);overflow:hidden}
 .sig canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .sig-linie{position:absolute;left:7%;right:7%;bottom:27%;border-bottom:1px dashed var(--border-hi);pointer-events:none}
 .sig-linie::before{content:"\00D7";position:absolute;left:-.1rem;bottom:.15rem;color:var(--muted);font-size:1.1rem;line-height:1}
@@ -260,7 +260,7 @@ function datum(ymd, lang) {
   var o = lang ? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' } : { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' };
   return new Intl.DateTimeFormat(locale(), o).format(new Date(ymd + 'T12:00:00Z'));
 }
-function tagVon(iso) { var d = new Date(iso); return isNaN(d) ? '' : new Intl.DateTimeFormat(locale(), { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d); }
+function tagVon(iso) { var d = new Date(iso); return isNaN(d) ? '' : new Intl.DateTimeFormat(locale(), { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Berlin' }).format(d); }
 
 /* ---- Warten sichtbar machen (wie auf den anderen Seiten) ---- */
 function gncBusy(btn, on) {
@@ -427,7 +427,7 @@ function zeichnen() {
       + '<button type="button" class="btn" id="annehmenKnopf" data-on-click="angebotAnnehmen(this)">' + ICON.ok + '<span>' + h(t('ang.accept')) + '</span></button>'
       + '<p class="klein">' + h(f('ang.total_short', { amount: geld(a.gesamt) })) + '</p></section>';
   }
-  if (a.unterschrift) html += signiertHtml(a.unterschrift);
+  if (a.unterschrift && (st === 'angenommen' || st === 'bezahlt')) html += signiertHtml(a.unterschrift);
   html += '<div class="reihe" style="margin:0 0 1rem"><a class="mini" ' + hrefAttr(API + '?id=' + encodeURIComponent(ANG_ID) + '&t=' + encodeURIComponent(ANG_T) + '&pdf=1')
     + ' target="_blank" rel="noopener">' + ICON.pdf + '<span>' + h(t('ang.pdf')) + '</span></a></div>';
   html += kontaktHtml();

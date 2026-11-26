@@ -118,7 +118,7 @@
     groesse();
 
     return {
-      // null, solange es keine Unterschrift ist (zu wenig Punkte oder winzig): gleiche Regel wie der Server
+      // null, solange es keine Unterschrift ist (zu wenig Punkte, winzig oder flach): gleiche Regel wie der Server
       daten: function () {
         if (punkte < MIN_PUNKTE) return null;
         var minX = BREITE, maxX = 0, minY = HOEHE, maxY = 0;
@@ -127,7 +127,7 @@
             minX = Math.min(minX, s[i]); maxX = Math.max(maxX, s[i]); minY = Math.min(minY, s[i + 1]); maxY = Math.max(maxY, s[i + 1]);
           }
         });
-        if (maxX - minX < 60 && maxY - minY < 30) return null;
+        if (maxX - minX < 60 || maxY - minY < 30) return null;
         return { striche: striche.map(function (s) { return s.slice(); }) };
       },
       striche: function () { return striche; },
