@@ -82,6 +82,68 @@ function bestellung(korb, x = {}) {
   a = S.aufteilung({ ...bestellung(k2), total: 28.51 });
   ok('Rundungsrest landet in der größeren Zeile, rest wird gemeldet', a.bezahlt[7] === 2101 && a.rest === 1, a);
 
+  // 5. Untergrenze, Rückfall zum vollen Satz, leere Eingaben
+  const k3 = { a: menue('classic', 2, 'fritz-kola'), b: einzeln('fritz-or', 1) };
+  a = S.aufteilung({ ...bestellung(k3), total: 1, isTest: true });
+  ok('Testbestellung über 1 €: kein Anteil negativ, Summe = total', a.bezahlt[7] >= 0 && a.bezahlt[19] >= 0 && a.bezahlt[7] + a.bezahlt[19] === 100, a);
+  a = S.aufteilung({ ...bestellung(k3), total: 0 });
+  ok('Total 0 bei vollem Warenwert: beide Anteile 0', gleich(a.bezahlt, { 7: 0, 19: 0 }), a);
+  const ohneSub = bestellung(k3); delete ohneSub.subtotal; ohneSub.total = 20;
+  a = S.aufteilung(ohneSub);
+  ok('Ohne subtotal bei total > 0: alles 19 %, geschätzt', gleich(a.bezahlt, { 7: 0, 19: 2000 }) && a.quelle === 'geschaetzt', a);
+  a = S.aufteilung({ ...bestellung(k3), subtotal: 0, total: 20 });
+  ok('subtotal 0 bei total > 0: alles 19 %, geschätzt', gleich(a.bezahlt, { 7: 0, 19: 2000 }) && a.quelle === 'geschaetzt', a);
+  let wirft = null; try { a = S.aufteilung(null); } catch (e) { wirft = e; }
+  ok('aufteilung(null) wirft nicht und liefert eine leere Aufteilung', !wirft && a.quelle === 'geschaetzt' && gleich(a.bezahlt, { 7: 0, 19: 0 }) && gleich(a.gutschein, { 7: 0, 19: 0 }), wirft && wirft.message);
+  wirft = null; try { a = S.aufteilung({ ...bestellung(k3), cartSnapshot: { x: null, ...k3 }, items: [] }); } catch (e) { wirft = e; }
+  ok('null-Eintrag im Warenkorb wird übersprungen', !wirft && a.quelle === 'warenkorb' && gleich(a.bezahlt, { 7: 2100, 19: 750 }), wirft ? wirft.message : a);
+
+  // 6. Zufallsvergleich mit dem Browser: 2000 Bestellungen, fester Startwert (LCG), echte Preise
+  let seed = 20270103;
+  const r = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+  const ids = SK.MENU.map((m) => m.id);
+  const pick = (liste) => liste[Math.floor(r() * liste.length)];
+  const f = { negativ: 0, summe: 0, gutschein: 0, browser: 0, abweichend1: 0 };
+  for (let k = 0; k < 2000; k++) {
+    const korb = {};
+    const positionen = 1 + Math.floor(r() * 4);
+    for (let i = 0; i < positionen; i++) {
+      const e = { menuId: pick(ids), qty: 1 + Math.floor(r() * 3) };
+      if (r() < 0.5) { e.isMenu = true; e.drink = pick(SK.MENU_DRINK_IDS); e.side = pick(SK.MENU_SIDE_OPTIONS).id; }
+      if (r() < 0.3) e.double = true;
+      korb['k' + i] = e;
+    }
+    const sub = SK.warenwert(korb);
+    // Der Deal gilt nur auf Speisen zu 7 %, höchstens 4 €; sonst stimmt schon die Beleg-Summe im Browser nicht mit dem Betrag überein
+    const speisen7 = Object.values(korb).reduce((sum, e) => sum + B.splitVat(e, SK.einzelpreis(e) * e.qty)[7], 0);
+    const deal = r() < 0.2 ? +Math.min(4, speisen7).toFixed(2) : 0;
+    const aktion = r() < 0.3 ? +(sub * 0.1).toFixed(2) : 0;
+    const gutschein = r() < 0.3 ? +(r() * sub * 1.2).toFixed(2) : 0;
+    const treue = r() < 0.2 ? 5 : 0;
+    // Deckt der Deal den ganzen Warenwert, verteilt der Browser die Liefergebühr auf keine Zeile (Anteil 0): Randfall, der hier nicht verglichen wird
+    const liefer = r() < 0.4 && sub - deal > 0 ? 3.5 : 0;
+    const tip = r() < 0.4 ? +(r() * 3).toFixed(2) : 0;
+    const total = SK.gesamtbetrag({ warenwert: sub, aktionsRabatt: aktion, dealRabatt: deal, treueRabatt: treue, gutscheinRabatt: gutschein, liefergebuehr: liefer, trinkgeld: tip });
+    const items = Object.values(korb).map((e) => ({ qty: e.qty, vatSplit: B.splitVat(e, SK.einzelpreis(e) * e.qty) }));
+    const o = { items, subtotal: sub, discount: aktion + gutschein + deal, dealDiscount: deal, loyaltyDiscount: treue, deliveryFee: liefer, tip, total, cartSnapshot: korb };
+    const gc = Math.round(gutschein * 100);
+    const x = S.aufteilung(o, { gutscheinCent: gc });
+    if ([x.bezahlt[7], x.bezahlt[19], x.gutschein[7], x.gutschein[19]].some((v) => v < 0)) f.negativ++;
+    if (x.bezahlt[7] + x.bezahlt[19] !== Math.round(total * 100)) f.summe++;
+    if (gc && x.gutschein[7] + x.gutschein[19] !== gc) f.gutschein++;
+    // Browser: Rabatt gesamt = Aktion + Gutschein + Treue, Deal getrennt (nur 7 %)
+    const br = JSON.parse(JSON.stringify(B.buildVatSummary(korb, aktion + gutschein + treue, liefer, tip, deal)));
+    const erw = { 7: 0, 19: 0 };
+    br.forEach((z) => { erw[z.satz] = Math.round(z.brutto * 100); });
+    const d7 = Math.abs(x.bezahlt[7] - erw[7]), d19 = Math.abs(x.bezahlt[19] - erw[19]);
+    if (d7 > 1 || d19 > 1) { f.browser++; if (process.env.DBG) console.log(JSON.stringify({ sub, deal, aktion, gutschein, treue, liefer, tip, total, bezahlt: x.bezahlt, erw, rest: x.rest })); }
+    if (d7 || d19) f.abweichend1++;
+  }
+  ok('2000 Zufallsbestellungen: kein Anteil negativ', f.negativ === 0, f);
+  ok('2000 Zufallsbestellungen: Summe bezahlt = total auf den Cent', f.summe === 0, f);
+  ok('2000 Zufallsbestellungen: Summe Gutschein = eingelöster Betrag auf den Cent', f.gutschein === 0, f);
+  ok('2000 Zufallsbestellungen: 7-/19-%-Zeilen höchstens 1 Cent neben dem Browser (bekannte Gleitkomma-Abweichung bei Deals)', f.browser === 0, f);
+
   console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));
   process.exit(fehler ? 1 : 0);
 })().catch((e) => { console.log('Absturz:', e && e.stack); process.exit(1); });
