@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * werkzeug/office-meldung-test.js
- * Versand ans GNC Office: Signatur wie im Office (Prüfvektor), 5er-Pakete, Fehler, Geheimnis aus den Blobs.
+ * Versand ans GNC Office: Signatur wie im Office (Prüfvektor), 5er-Pakete, Lebenszeichen, Fehler, Geheimnis aus den Blobs.
  *   node werkzeug/office-meldung-test.js
  */
 const path = require('path');
@@ -48,6 +48,7 @@ const meldung = (i) => ({ schluessel: 'tag:2027-01-' + String(i).padStart(2, '0'
   const erwartet = crypto.createHmac('sha256', G).update(a0.kopf['x-gnc-zeit'] + '.' + JSON.stringify(a0.d)).digest('base64url');
   ok('… jede Anfrage signiert über Zeit und Körper', a0.kopf['x-gnc-signatur'] === erwartet && /^\d{10}$/.test(a0.kopf['x-gnc-zeit']));
   ok('… alle Ergebnisse, offen aus der letzten Antwort, kein Fehler', r.ergebnisse.length === 23 && r.offen === 5 && r.fehler === null, r.fehler);
+  ok('… pakete zählt die Anfragen', r.pakete === 5, r.pakete);
 
   let zaehler = 0;
   r = await M.senden(alle, { geheimnis: G, holen: async (url, opt) => { if (++zaehler === 2) throw new Error('getaddrinfo ENOTFOUND office.test'); return holen(url, opt); } });
@@ -79,8 +80,20 @@ const meldung = (i) => ({ schluessel: 'tag:2027-01-' + String(i).padStart(2, '0'
   zaehler = 0;
   r = await M.senden(alle, { geheimnis: 'kurz', holen: async () => { zaehler++; return new Response('{}'); } });
   ok('Zu kurzes Geheimnis: nichts gesendet', r.fehler === 'nicht_eingerichtet' && zaehler === 0, r);
-  r = await M.senden([], { geheimnis: G, holen: async () => { throw new Error('nicht aufrufen'); } });
-  ok('Keine Meldungen: keine Anfrage', r.fehler === null && r.ergebnisse.length === 0);
+  const leer = [];
+  r = await M.senden([], { geheimnis: G, holen: async (url, opt) => {
+    leer.push(JSON.parse(opt.body));
+    return new Response(JSON.stringify({ ergebnisse: [], offen: 2, sicherung: '2027-01-05' }), { status: 200 });
+  } });
+  ok('Keine Meldungen: genau ein leeres Paket als Lebenszeichen, offen und sicherung kommen an', r.fehler === null && r.ergebnisse.length === 0 && r.pakete === 1
+    && leer.length === 1 && leer[0].v === 1 && Array.isArray(leer[0].meldungen) && leer[0].meldungen.length === 0 && r.offen === 2 && r.sicherung === '2027-01-05', { r, leer });
+
+  // Zeitlimit je Anfrage (AbortSignal.timeout): eigener Fehler, nicht "netz"
+  // AbortSignal.timeout hält den Prozess nicht am Leben: solange ein eigener Zeitgeber
+  const halten = setTimeout(() => {}, 5000);
+  r = await M.senden(alle, { geheimnis: G, frist: 60, holen: (url, opt) => new Promise((res, rej) => opt.signal.addEventListener('abort', () => rej(opt.signal.reason))) });
+  clearTimeout(halten);
+  ok('Zeitlimit einer Anfrage: Fehler zeitlimit', r.fehler === 'zeitlimit' && r.ergebnisse.length === 0 && r.pakete === 1, r);
 
   r = await M.senden(alle.slice(0, 7), { geheimnis: G, holen: async (url, opt) => { const d = JSON.parse(opt.body); return new Response(JSON.stringify({ ok: true, ergebnisse: d.meldungen.map((m) => ({ schluessel: m.schluessel, status: 'gebucht' })), offen: 0, sicherung: '2027-01-02' }), { status: 200 }); } });
   ok('sicherung aus der letzten Antwort', r.sicherung === '2027-01-02' && r.fehler === null, r);
