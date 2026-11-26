@@ -42,8 +42,8 @@ function pruefen(u) {
     if (punkte > MAX_PUNKTE) return null;
     striche.push(s.slice());
   }
-  // Ein Punkt oder ein winziges Gekritzel ist keine Unterschrift
-  if (punkte < MIN_PUNKTE || (maxX - minX < 60 && maxY - minY < 30)) return null;
+  // Ein Punkt, ein winziges Gekritzel oder eine flache Linie ist keine Unterschrift
+  if (punkte < MIN_PUNKTE || (maxX - minX < 60 || maxY - minY < 30)) return null;
   return { striche };
 }
 
@@ -54,11 +54,13 @@ function kanonisch(x) {
   return JSON.stringify(x === undefined ? null : x);
 }
 
-// Prüfsumme über das, was der Kunde annimmt: Nummer, Rechnungsadresse, Event, Positionen, Beträge, Gültigkeit, Hinweis.
+// Das, was der Kunde annimmt: Nummer, Rechnungsadresse, Event, Positionen, Beträge, Gültigkeit, Hinweis.
 // Nicht dabei: Status, Token, E-Mail, Telefon, Verlauf. Die ändern sich, ohne dass sich das Angebot ändert.
-function angebotHash(a) {
+// Über JSON normalisiert (fehlende Felder fallen weg), damit die bei der Annahme gespeicherte Fassung
+// später genau dieselbe Prüfsumme ergibt wie das Angebot im Moment der Annahme.
+function inhalt(a) {
   const k = a.kunde || {};
-  const inhalt = {
+  const roh = {
     nummer: a.nummer || '',
     kunde: { name: k.name || '', firma: k.firma || '', strasse: k.strasse || '', plz: k.plz || '', ort: k.ort || '', ustId: k.ustId || '' },
     event: a.event || {},
@@ -68,8 +70,14 @@ function angebotHash(a) {
     anzahlungProzent: a.anzahlungProzent, anzahlung: a.anzahlung, rest: a.rest,
     gueltigBis: a.gueltigBis || '', hinweis: a.hinweis || '',
   };
-  return crypto.createHash('sha256').update(kanonisch(inhalt)).digest('hex');
+  return JSON.parse(JSON.stringify(roh));
 }
+
+// Prüfsumme (SHA-256) über die Fassung. Nachrechnen: sha256(kanonisch(a.annahme.fassung)).
+function hashVon(fassung) {
+  return crypto.createHash('sha256').update(kanonisch(fassung)).digest('hex');
+}
+function angebotHash(a) { return hashVon(inhalt(a)); }
 
 function zeitText(iso) {
   const d = new Date(iso);
@@ -88,9 +96,36 @@ function namensGroesse(doc, text, w, h) {
   return breit > w ? oben * w / breit * 0.98 : oben;
 }
 
-// Zeichnet die Unterschrift in das Rechteck (x, y, w, h) eines pdfkit-Dokuments, Seitenverhältnis bleibt
-function zeichnenPdf(doc, u, x, y, w, h, { latin1 = (s) => s } = {}) {
+const NAME_HINWEIS = 'Name enthält Zeichen, die das PDF nicht darstellen kann; gespeichert ist er vollständig.';
+const MIN_NAMEN_PT = 9;
+
+// Name für das PDF: S ist die Schrift aus lib/pdf-schrift.js. vollstaendig = jedes Zeichen hat eine Glyphe.
+function namePdf(S, name) {
+  const roh = String(name == null ? '' : name);
+  const text = S.text(roh).trim();
+  const zahl = (x) => [...x.replace(/\s+/g, '')].length;
+  return { text, vollstaendig: zahl(text) > 0 && zahl(text) === zahl(roh) };
+}
+
+// Zeichnet die Unterschrift in das Rechteck (x, y, w, h) eines pdfkit-Dokuments, Seitenverhältnis bleibt.
+// Mit S (Schrift aus pdf-schrift.js): Name in Inter, schräg, ab 9 pt bei Bedarf zweizeilig; ohne Glyphen der Hinweis.
+// Ohne S (nur noch für Tests mit Standardschrift): Helvetica-Oblique in einer Zeile.
+function zeichnenPdf(doc, u, x, y, w, h, { latin1 = (s) => s, S = null } = {}) {
   const farbe = '#111111';
+  if (u.getippt && S) {
+    const n = namePdf(S, u.getippt);
+    if (!n.vollstaendig) {
+      const o = { breite: w - 4, groesse: MIN_NAMEN_PT, farbe: '#444444' };
+      S.schraeg.zeichnen(NAME_HINWEIS, x, y + Math.max(0, (h - S.schraeg.hoehe(NAME_HINWEIS, o)) / 2), o);
+      return;
+    }
+    let g = Math.min(22, h * 0.45);
+    doc.font(S.normal).fontSize(g);
+    while (g > MIN_NAMEN_PT && doc.widthOfString(n.text) > w - 8) { g -= 0.5; doc.fontSize(g); }
+    const o = { breite: w - 8, groesse: g, farbe, maxHoehe: h };
+    S.schraeg.zeichnen(n.text, x, y + Math.max(0, (h - Math.min(h, S.schraeg.hoehe(n.text, o))) / 2), o);
+    return;
+  }
   if (u.getippt) {
     const text = latin1(u.getippt), groesse = namensGroesse(doc, text, w, h);
     doc.save().font('Helvetica-Oblique').fontSize(groesse).fillColor(farbe)
@@ -109,4 +144,4 @@ function zeichnenPdf(doc, u, x, y, w, h, { latin1 = (s) => s } = {}) {
   doc.restore();
 }
 
-module.exports = { namensGroesse, pruefen, angebotHash, zeitText, hashKurz, zeichnenPdf, BREITE, HOEHE, MAX_STRICHE, MAX_PUNKTE };
+module.exports = { namePdf, NAME_HINWEIS, namensGroesse, pruefen, inhalt, hashVon, kanonisch, angebotHash, zeitText, hashKurz, zeichnenPdf, BREITE, HOEHE, MAX_STRICHE, MAX_PUNKTE };

@@ -20,6 +20,8 @@
 
 const Module = require('module');
 const path = require('path');
+const crypto = require('crypto');
+const { pdfTextDicht } = require('./pdf-text.js');
 
 const F = path.join(__dirname, '..', 'netlify', 'functions');
 const daten = new Map();
@@ -80,6 +82,7 @@ console.log = ((log) => (...a) => { if (!String(a[0]).startsWith('catering-angeb
 const sitzung = require(F + '/lib/admin-sitzung.js');
 const { hashen } = require(F + '/lib/team-passwort.js');
 const L = require(F + '/lib/catering-angebot.js');
+const U = require(F + '/lib/unterschrift.js');
 const admin = require(F + '/catering-angebot.js');
 const kunde = require(F + '/angebot.js');
 const webhook = require(F + '/sumup-webhook.js');
@@ -266,6 +269,11 @@ const cent = (x) => Math.round(x * 100);
   ok('Telegram nennt die Unterschrift', telegramm[0].includes('Unterschrieben von Ayşe Yılmaz'), telegramm);
   r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: SIG });
   ok('Zweites Annehmen -> 409 schon_angenommen, kein zweites Telegram', r.s === 409 && r.d.error === 'schon_angenommen' && telegramm.length === 1);
+  const SIG2 = { striche: [[50, 50, 400, 250, 100, 250, 450, 60, 200, 150, 300, 90, 500, 200, 600, 100]] };
+  const vorZweiter = JSON.stringify(angebotRoh(a1.id).annahme);
+  r = await kundePost({ id: a1.id, t: t1, aktion: 'annehmen', haken: true, adresse: { ...ADR, name: 'Anderer Name' }, unterschrift: SIG2 });
+  ok('Zweite Annahme mit anderer Unterschrift und anderem Namen: 409, erste Annahme und Adresse unverändert',
+    r.s === 409 && JSON.stringify(angebotRoh(a1.id).annahme) === vorZweiter && angebotRoh(a1.id).kunde.name === 'Ayşe Yılmaz', r.d);
 
   /* ---- Unterschrift ---------------------------------------------------------- */
   const u1 = (await adminPost({ action: 'neu', anfrage: 'c:1700000000000-abc123' })).d.angebot;
@@ -295,6 +303,104 @@ const cent = (x) => Math.round(x * 100);
   ok('5 gleichzeitige Annahmen: genau eine 200, vier 409, ein Telegram',
     parallel.filter((x) => x.s === 200).length === 1 && parallel.filter((x) => x.s === 409).length === 4 && telegramm.length === 1,
     parallel.map((x) => x.s));
+
+  /* ---- Beweiswert der Unterschrift ------------------------------------------ */
+  const neuGesendet = async () => {
+    const x = (await adminPost({ action: 'neu', anfrage: 'c:1700000000000-abc123' })).d.angebot;
+    await adminPost({ action: 'senden', id: x.id });
+    return x;
+  };
+  // Prüfsumme bleibt nachrechenbar, auch wenn der Admin die Adresse später ändert; das PDF zeigt die angenommene Adresse
+  const f1 = await neuGesendet();
+  r = await kundePost({ id: f1.id, t: tokenVon(f1.id), aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: SIG });
+  const nachrechnen = (id) => { const an = angebotRoh(id).annahme; return crypto.createHash('sha256').update(U.kanonisch(an.fassung)).digest('hex') === an.unterschrift.angebotHash; };
+  ok('Annahme speichert die Fassung, ihre Prüfsumme stimmt mit der Unterschrift überein', r.s === 200 && angebotRoh(f1.id).annahme.fassung.kunde.strasse === 'Teststraße 1' && nachrechnen(f1.id), angebotRoh(f1.id).annahme);
+  r = await adminPost({ action: 'adresse', id: f1.id, adresse: { name: 'Ayşe Yılmaz', firma: 'Şahin Events GmbH', strasse: 'Neuweg 99', plz: '10115', ort: 'Berlin' } });
+  ok('Admin ändert die Rechnungsadresse nach der Annahme', r.s === 200 && angebotRoh(f1.id).kunde.strasse === 'Neuweg 99', r.d);
+  ok('Prüfsumme der angenommenen Fassung bleibt nachrechenbar', nachrechnen(f1.id));
+  ok('Aktuelles Angebot hat jetzt eine andere Prüfsumme (Adresse zählt zum Inhalt)', U.angebotHash(angebotRoh(f1.id)) !== angebotRoh(f1.id).annahme.unterschrift.angebotHash);
+  r = await kundeGet({ id: f1.id, t: tokenVon(f1.id) });
+  ok('Kundenansicht liefert weder Prüfsumme noch Fassung aus', !JSON.stringify(r.d).includes('fassung') && !JSON.stringify(r.d).includes('angebotHash') && !JSON.stringify(r.d).includes(angebotRoh(f1.id).annahme.unterschrift.angebotHash));
+  r = await kundeGet({ id: f1.id, t: tokenVon(f1.id), pdf: '1' });
+  const pdfF1 = pdfTextDicht(Buffer.from(r.r.body, 'base64'));
+  ok('PDF nennt die angenommene Adresse, nicht die neue', pdfF1.includes('Teststraße1') && pdfF1.includes('33602Bielefeld') && !pdfF1.includes('Neuweg99'), pdfF1.slice(0, 300));
+  ok('PDF zeigt Unterschriftsblock mit Namen und Prüfsumme', pdfF1.includes('ANGENOMMENUNDUNTERSCHRIEBEN') && pdfF1.includes('AyşeYılmaz') && pdfF1.includes(U.hashKurz(angebotRoh(f1.id).annahme.unterschrift.angebotHash).replace(/ /g, '')), pdfF1.slice(-400));
+
+  // Admin-Statuswechsel löscht die Online-Unterschrift nicht
+  const w1 = await neuGesendet();
+  await kundePost({ id: w1.id, t: tokenVon(w1.id), aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: SIG });
+  const beweis = JSON.stringify(angebotRoh(w1.id).annahme);
+  r = await adminPost({ action: 'status', id: w1.id, status: 'abgelehnt' });
+  ok('Online angenommenes Angebot von Hand auf abgelehnt', r.s === 200 && angebotRoh(w1.id).status === 'abgelehnt', r.d);
+  r = await adminPost({ action: 'status', id: w1.id, status: 'angenommen' });
+  const nach = angebotRoh(w1.id);
+  ok('„Doch angenommen“ behält Unterschrift, Name, Zeit, Prüfsumme und Fassung', r.s === 200 && nach.status === 'angenommen'
+    && JSON.stringify(nach.annahme) === beweis && nach.annahme.weg === 'online' && !!nach.annahme.unterschrift.striche && nach.annahme.unterschrift.name === 'Ayşe Yılmaz'
+    && nachrechnen(w1.id), nach.annahme);
+  ok('… mit Vermerk im Verlauf', nach.verlauf.some((v) => /wieder auf angenommen gesetzt/.test(v.was)), nach.verlauf);
+  r = await kundeGet({ id: w1.id, t: tokenVon(w1.id) });
+  ok('… Kundenansicht zeigt die Unterschrift weiter', r.d.angebot.unterschrift && r.d.angebot.unterschrift.name === 'Ayşe Yılmaz');
+  // Zum Schluss wieder abgelehnt: das Angebot muss den Aufräumlauf nach 12 Monaten überleben (siehe unten)
+  await adminPost({ action: 'status', id: w1.id, status: 'abgelehnt' });
+  r = await kundeGet({ id: w1.id, t: tokenVon(w1.id) });
+  ok('Abgelehnt: Kundenseite zeigt die Unterschrift nicht mehr als Annahme (Status abgelehnt)', r.d.angebot.status === 'abgelehnt');
+  r = await kundeGet({ id: w1.id, t: tokenVon(w1.id), pdf: '1' });
+  const pdfW1 = pdfTextDicht(Buffer.from(r.r.body, 'base64'));
+  ok('Abgelehnt: PDF ohne Unterschriftsblock, mit „So nimmst du an“ nicht verfälscht', !pdfW1.includes('ANGENOMMENUNDUNTERSCHRIEBEN'), pdfW1.slice(-300));
+
+  // Telefonisch angenommen: kein „So nimmst du an“ im PDF
+  const p1 = await neuGesendet();
+  await adminPost({ action: 'status', id: p1.id, status: 'angenommen' });
+  r = await kundeGet({ id: p1.id, t: tokenVon(p1.id), pdf: '1' });
+  const pdfP1 = pdfTextDicht(Buffer.from(r.r.body, 'base64'));
+  ok('PDF eines telefonisch angenommenen Angebots: „Angenommen am … (telefonisch).“ statt Anleitung',
+    /Angenommenam\d\d\.\d\d\.\d{4}\(telefonisch\)\./.test(pdfP1) && !pdfP1.includes('Sonimmstduan') && !pdfP1.includes('ANGENOMMENUNDUNTERSCHRIEBEN'), pdfP1.slice(-300));
+  const offenPdf = await neuGesendet();
+  r = await kundeGet({ id: offenPdf.id, t: tokenVon(offenPdf.id), pdf: '1' });
+  ok('PDF eines offenen Angebots erklärt weiter, wie man annimmt', pdfTextDicht(Buffer.from(r.r.body, 'base64')).includes('Sonimmstduan'));
+  await adminPost({ action: 'status', id: offenPdf.id, status: 'abgelehnt' });   // soll später keine Erinnerung auslösen
+
+  // Getippter Name: Telegram-Vermerk; Name aus nur der Firma
+  const g1 = await neuGesendet();
+  telegramm.length = 0;
+  r = await kundePost({ id: g1.id, t: tokenVon(g1.id), aktion: 'annehmen', haken: true, adresse: { firma: 'Nur Firma GmbH', strasse: 'Weg 1', plz: '33602', ort: 'Bielefeld' }, unterschrift: { getippt: 'Łucja Ślusarczyk-Wójcik' } });
+  ok('Telegram nennt „(Name getippt)“', r.s === 200 && telegramm[0].includes('Unterschrieben von Nur Firma GmbH (Name getippt)'), telegramm);
+  ok('Nur Firma ausgefüllt: Name ist die Firma, nicht der alte Kontaktname', angebotRoh(g1.id).kunde.name === 'Nur Firma GmbH' && angebotRoh(g1.id).annahme.unterschrift.name === 'Nur Firma GmbH'
+    && angebotRoh(g1.id).annahme.fassung.kunde.name === 'Nur Firma GmbH', angebotRoh(g1.id).kunde);
+  // Name mit Sonderzeichen steht im PDF so, wie er getippt wurde
+  const g2 = await neuGesendet();
+  r = await kundePost({ id: g2.id, t: tokenVon(g2.id), aktion: 'annehmen', haken: true, adresse: { name: 'Łucja Ślusarczyk-Wójcik', strasse: 'Weg 1', plz: '33602', ort: 'Bielefeld' }, unterschrift: { getippt: 'Łucja Ślusarczyk-Wójcik' } });
+  r = await kundeGet({ id: g2.id, t: tokenVon(g2.id), pdf: '1' });
+  const pdfG2 = pdfTextDicht(Buffer.from(r.r.body, 'base64'));
+  ok('Angebots-PDF: Łucja Ślusarczyk-Wójcik steht unverändert da (Anschrift, Satz und Unterschriftsfeld)', (pdfG2.match(/ŁucjaŚlusarczyk-Wójcik/g) || []).length >= 3, pdfG2.slice(0, 200));
+  const g3 = await neuGesendet();
+  r = await kundePost({ id: g3.id, t: tokenVon(g3.id), aktion: 'annehmen', haken: true, adresse: { name: 'Ayşe Yılmaz', strasse: 'Weg 1', plz: '33602', ort: 'Bielefeld' }, unterschrift: { getippt: 'Ayşe Yılmaz' } });
+  r = await kundeGet({ id: g3.id, t: tokenVon(g3.id), pdf: '1' });
+  ok('Angebots-PDF: Ayşe Yılmaz steht unverändert da', (pdfTextDicht(Buffer.from(r.r.body, 'base64')).match(/AyşeYılmaz/g) || []).length >= 3);
+  // Arabischer Name: Hinweis statt leerem Feld, vollständig gespeichert
+  const g4 = await neuGesendet();
+  r = await kundePost({ id: g4.id, t: tokenVon(g4.id), aktion: 'annehmen', haken: true, adresse: { name: 'محمد علي', strasse: 'Weg 1', plz: '33602', ort: 'Bielefeld' }, unterschrift: { getippt: 'محمد علي' } });
+  r = await kundeGet({ id: g4.id, t: tokenVon(g4.id), pdf: '1' });
+  const pdfG4 = pdfTextDicht(Buffer.from(r.r.body, 'base64'));
+  ok('Angebots-PDF: Name ohne Glyphen ergibt den Hinweis, der Name ist vollständig gespeichert',
+    pdfG4.includes('NameenthältZeichen,diedasPDFnichtdarstellenkann;gespeichertistervollständig.') && angebotRoh(g4.id).annahme.unterschrift.name === 'محمد علي', pdfG4.slice(-420));
+  // Grenzen
+  const g5 = await neuGesendet();
+  const sechzigStriche = { striche: Array.from({ length: 60 }, (_, i) => [i * 15 + 20, 40, i * 15 + 30, 200 - (i % 5) * 20]) };
+  r = await kundePost({ id: g5.id, t: tokenVon(g5.id), aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: sechzigStriche });
+  ok('60 Striche werden online angenommen', r.s === 200 && angebotRoh(g5.id).annahme.unterschrift.striche.length === 60, r.d);
+  const g6 = await neuGesendet();
+  const achtzig = 'W'.repeat(40) + 'm'.repeat(40);
+  r = await kundePost({ id: g6.id, t: tokenVon(g6.id), aktion: 'annehmen', haken: true, adresse: { ...ADR, name: achtzig }, unterschrift: { getippt: achtzig } });
+  ok('80 Zeichen langer Name wird online angenommen', r.s === 200 && angebotRoh(g6.id).annahme.unterschrift.getippt === achtzig, r.d);
+  const g7 = await neuGesendet();
+  r = await kundePost({ id: g7.id, t: tokenVon(g7.id), aktion: 'annehmen', haken: true, adresse: ADR, unterschrift: { striche: [[100, 150, 110, 150, 120, 150, 130, 150, 140, 150, 150, 150, 160, 150, 170, 150]] } });
+  ok('Flache Linie (70 × 0) wird online abgelehnt', r.s === 400 && r.d.error === 'unterschrift_fehlt' && angebotRoh(g7.id).status === 'gesendet', r.d);
+  await adminPost({ action: 'status', id: g7.id, status: 'abgelehnt' });
+  // Mail ohne Anhang erwähnt keinen Anhang
+  const eStd = await L.einstellungenLesen(L.store());
+  const aMail = angebotRoh(f1.id);
+  ok('Bestätigungsmail: „Im Anhang“ nur mit Anhang', L.mailAnnahme(aMail, eStd, 'https://x', true).html.includes('Im Anhang') && !L.mailAnnahme(aMail, eStd, 'https://x', false).html.includes('Im Anhang'));
 
   /* ---- Schalter Anzahlung online AUS --------------------------------------- */
   const kassenVorher = kassen.length;
@@ -503,6 +609,8 @@ const cent = (x) => Math.round(x * 100);
   const nachher = [...daten.keys()].filter((k) => k.startsWith('catering|angebot:'));
   ok('Nach 365 Tagen: Entwürfe, abgelehnte und abgelaufene weg, bezahlte bleiben',
     lauf.geloescht > 0 && nachher.length < vorher && daten.has('catering|angebot:' + a1.id) && daten.has('catering|angebot:' + b.id), { vorher, nachher: nachher.length });
+  ok('Abgelehntes, online unterschriebenes Angebot wird nie automatisch gelöscht (Aufbewahrungsfrist)',
+    angebotRoh(w1.id).status === 'abgelehnt' && !!angebotRoh(w1.id).annahme.unterschrift && daten.has('catering|angebot-annahme:' + w1.id));
 
   r = antwort(await taeglich.handler({}));
   ok('Zeitplan-Function läuft (200, Bericht)', r.s === 200 && typeof r.d.geprueft === 'number');

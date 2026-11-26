@@ -545,13 +545,19 @@ async function annehmen(id, token, { lang, ipHash, jetzt, basis, adresse, unters
     const name = einzeilig(adresse.name, 80), firma = einzeilig(adresse.firma, 80);
     if (name) a.kunde.name = name;
     if (firma) a.kunde.firma = firma;
+    // Nur die Firma ausgefüllt: sie steht als Name (nicht der alte Kontaktname aus der Anfrage)
+    if (!name && firma) a.kunde.name = firma;
   }
   a.status = 'angenommen';
   a.angenommenAm = t.toISOString();
+  // Die angenommene Fassung wird mitgespeichert: ändert der Admin später die Rechnungsadresse, bleibt die Prüfsumme
+  // nachrechenbar (sha256 über kanonisch(fassung)) und das PDF zeigt die Adresse von damals.
+  const fassung = U.inhalt(a);
   a.annahme = {
     weg: 'online', lang: lang || '', ipHash: ipHash || '', gesamt: a.gesamt,
     // Name aus der Rechnungsadresse, Zeitpunkt vom Server, Prüfsumme über genau die angenommene Fassung
-    unterschrift: { ...unterschrift, name: String(a.kunde.name || a.kunde.firma || '').slice(0, 80), am: t.toISOString(), angebotHash: U.angebotHash(a) },
+    unterschrift: { ...unterschrift, name: String(a.kunde.name || a.kunde.firma || '').slice(0, 80), am: t.toISOString(), angebotHash: U.hashVon(fassung) },
+    fassung,
   };
   a.geaendertAm = t.toISOString();
   vermerk(a, 'vom Kunden online angenommen', 'Kunde', t);
@@ -562,14 +568,14 @@ async function annehmen(id, token, { lang, ipHash, jetzt, basis, adresse, unters
     telegram(telegramAnnahme(a, e), { html: true }),
     (async () => {
       const anhaenge = await signiertesPdf(a, e);
-      try { const m = mailAnnahme(a, e, link); await brevo({ an: a.kunde.email, name: a.kunde.name, betreff: m.betreff, html: m.html, anhaenge }); }
+      try { const m = mailAnnahme(a, e, link, anhaenge.length > 0); await brevo({ an: a.kunde.email, name: a.kunde.name, betreff: m.betreff, html: m.html, anhaenge }); }
       catch (err) { console.error('angebot annahme-mail:', err.message); }
       // Kopie an Kubi mit dem unterschriebenen PDF
       if (process.env.OWNER_EMAIL) {
         try {
           const u = a.annahme.unterschrift;
           await brevo({ an: process.env.OWNER_EMAIL, name: "Grill'n Chill", betreff: 'Angebot ' + a.nummer + ' unterschrieben: ' + u.name,
-            html: '<p>' + h(u.name) + ' hat Angebot ' + h(a.nummer) + ' am ' + h(U.zeitText(u.am)) + ' online angenommen und unterschrieben. Das PDF mit Unterschrift hängt an.</p>', anhaenge });
+            html: '<p>' + h(u.name) + ' hat Angebot ' + h(a.nummer) + ' am ' + h(U.zeitText(u.am)) + ' online angenommen und unterschrieben. ' + (anhaenge.length ? 'Das PDF mit Unterschrift hängt an.' : 'Das PDF konnte nicht erzeugt werden: bitte im Admin herunterladen.') + '</p>', anhaenge });
         } catch (err) { console.error('angebot annahme-kopie:', err.message); }
       }
     })(),
@@ -599,9 +605,14 @@ async function statusSetzen(id, ziel, { wer, jetzt } = {}) {
     if (a.anzahlungsrechnung) await stornoErstellen(s, a, wer, t);
   } else if (ziel === 'angenommen') {
     a.angenommenAm = iso;
-    a.annahme = { weg: 'telefon', wer: wer || '', gesamt: a.gesamt };
-    await s.setJSON('angebot-annahme:' + id, { at: iso, weg: 'telefon' }, { onlyIfNew: true });
-    vermerk(a, 'von Hand angenommen (Telefon)', wer, t);
+    if (a.annahme && a.annahme.unterschrift) {
+      // Online unterschrieben: Unterschrift, Name, Zeit und Prüfsumme bleiben als Beweis, auch nach Absage und erneutem Annehmen
+      vermerk(a, 'wieder auf angenommen gesetzt (die Online-Unterschrift vom ' + U.zeitText(a.annahme.unterschrift.am) + ' gilt weiter)', wer, t);
+    } else {
+      a.annahme = { weg: 'telefon', wer: wer || '', gesamt: a.gesamt };
+      await s.setJSON('angebot-annahme:' + id, { at: iso, weg: 'telefon' }, { onlyIfNew: true });
+      vermerk(a, 'von Hand angenommen (Telefon)', wer, t);
+    }
   } else if (ziel === 'bezahlt') {
     if (!a.angenommenAm) {
       a.angenommenAm = iso;
@@ -995,7 +1006,8 @@ async function taeglicherLauf(jetzt, basis) {
         const r = await zahlungPruefen(a, 'zeitplan');
         if (r && r.aktion === 'bezahlt') bericht.bezahlt.push(a);
       }
-      if (['entwurf', 'abgelehnt', 'abgelaufen'].includes(a.status) && tageSeit(a.geaendertAm || a.erstelltAm, t) > AUFBEWAHREN_TAGE) {
+      // Unterschriebene Angebote nie automatisch löschen: sie sind ein Beweis und fallen unter die Aufbewahrungsfristen
+      if (['entwurf', 'abgelehnt', 'abgelaufen'].includes(a.status) && !(a.annahme && a.annahme.unterschrift) && tageSeit(a.geaendertAm || a.erstelltAm, t) > AUFBEWAHREN_TAGE) {
         await s.delete('angebot:' + a.id);
         for (const k of ['angebot-annahme:', 'angebot-zahlung:', 'angebot-erinnerung:']) { try { await s.delete(k + a.id); } catch (x) {} }
         bericht.geloescht++;
@@ -1204,7 +1216,7 @@ function kundenUnterschrift(a) {
   return { ...(u.striche ? { striche: u.striche } : { getippt: u.getippt }), name: u.name || '', am: u.am };
 }
 
-function mailAnnahme(a, e, link) {
+function mailAnnahme(a, e, link, mitAnhang = true) {
   const online = e.anzahlungOnline && a.anzahlung > 0;
   const anz = a.anzahlung > 0
     ? (online
@@ -1216,7 +1228,7 @@ function mailAnnahme(a, e, link) {
     + tabelle(eckdaten(a))
     + anz
     + '<p style="margin:14px 0 6px;">Vor dem Event klären wir mit dir Stellplatz, Strom und wie viele Gäste vegetarisch oder vegan essen.</p>'
-    + (a.annahme && a.annahme.unterschrift ? '<p style="margin:0 0 6px;">Im Anhang findest du das Angebot mit deiner Unterschrift vom ' + h(U.zeitText(a.annahme.unterschrift.am)) + '.</p>' : '')
+    + (mitAnhang && a.annahme && a.annahme.unterschrift ? '<p style="margin:0 0 6px;">Im Anhang findest du das Angebot mit deiner Unterschrift vom ' + h(U.zeitText(a.annahme.unterschrift.am)) + '.</p>' : '')
     + '<p style="margin:0;">Dein Angebot findest du jederzeit hier: <a href="' + h(link) + '" style="color:#CC4715;font-weight:600;text-decoration:none;">Angebot ansehen</a></p>'
     + '<p style="margin:18px 0 0;">Wir freuen uns auf dein Event.<br><strong>Kubi und das Grill\'n Chill Team</strong></p>';
   return { betreff: 'Danke für deine Zusage: Catering ' + (a.event && a.event.datum ? 'am ' + deDatum(a.event.datum) : a.nummer), html: rahmen('ZUSAGE ERHALTEN', inhalt) };
