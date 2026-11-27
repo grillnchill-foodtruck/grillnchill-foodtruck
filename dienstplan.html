@@ -137,6 +137,11 @@
   .mzeile input[type=color]{width:44px;height:44px;border:none;background:none;padding:0;border-radius:8px}
   .mzeile input[type=text]{flex:1;margin:0}
   .mzeile .weg{background:none;border:none;color:var(--faint);font-size:1.3rem;min-width:44px;min-height:44px}
+  /* Team-Login (Zeiterfassung): eigene Zeile unter dem Namen, bündig mit dem Namensfeld */
+  .mzeile{flex-wrap:wrap}
+  .mzeile select{flex:0 0 calc(100% - 44px - .6rem);margin-left:calc(44px + .6rem);min-height:44px;padding:0 .7rem;
+    background:var(--bg);border:1px solid var(--border-hi);color:var(--cream);border-radius:var(--r-sm)}
+  .team-hinweis{font-size:.78rem;color:var(--dim);margin:-.2rem 0 .9rem}
 
   html.native-tabbar body{padding-bottom:calc(env(safe-area-inset-bottom) + 110px)}
   html.native-tabbar .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
@@ -243,6 +248,7 @@
 <div class="sheet" id="teamSheet" role="dialog" aria-modal="true" aria-labelledby="teamTitel">
   <div class="griff" aria-hidden="true"></div>
   <h2 id="teamTitel">Team verwalten</h2>
+  <p class="team-hinweis">Team-Login: Mit diesem Zugang stempelt die Person am Handy im Tab „Zeit“. Am iPad stempelt jede Person auch ohne Login.</p>
   <div id="teamListe"></div>
   <button class="plus" data-on-click="mitarbeiterHinzufuegen()" style="margin-bottom:1rem;">+ Person hinzufügen</button>
   <button class="ok" data-on-click="teamSpeichern(this)">Speichern</button>
@@ -266,6 +272,7 @@ const PW_KEY = 'gnc_admin_pw';   // gleiche Sitzung wie das Admin-Tool
 const TAGE_NAMEN = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
 
 let personal = [];
+let logins = [];                 // Team-Zugänge für die Zuordnung (nur Admins bekommen sie)
 let schichten = {};              // { 'JJJJ-MM-TT': [{pid,von,bis,notiz}] }
 let istAdmin = false;
 let montag = wochenMontag(new Date());
@@ -431,6 +438,7 @@ function planGesperrt(on) {
 function zeigePlan(d, woche) {
   geladeneWoche = woche || iso(montag);
   personal = d.personal || [];
+  logins = Array.isArray(d.logins) ? d.logins : [];
   schichten = d.schichten || {};
   istAdmin = d.rolle === 'admin';
   $('login').hidden = true;
@@ -625,8 +633,11 @@ function teamZeile(p) {
   div.className = 'mzeile';
   div.innerHTML = '<input type="color" value="' + (p.farbe || FARBEN[$('teamListe').children.length % FARBEN.length]) + '" aria-label="Farbe">'
     + '<input type="text" maxlength="40" placeholder="Name" aria-label="Name">'
-    + '<button class="weg" aria-label="Person entfernen" data-on-click="elternEntfernen(this)">×</button>';
+    + '<button class="weg" aria-label="Person entfernen" data-on-click="elternEntfernen(this)">×</button>'
+    + '<select aria-label="Team-Login"><option value="">Ohne Team-Login</option>'
+    + logins.map(l => '<option value="' + esc(l.login) + '">' + esc(l.name) + '</option>').join('') + '</select>';
   div.querySelector('input[type=text]').value = p.name || '';
+  div.querySelector('select').value = p.login || '';
   div.dataset.pid = p.id || '';
   $('teamListe').appendChild(div);
 }
@@ -641,6 +652,7 @@ async function teamSpeichernRun() {
     id: z.dataset.pid || undefined,
     name: z.querySelector('input[type=text]').value.trim(),
     farbe: z.querySelector('input[type=color]').value,
+    login: z.querySelector('select').value || undefined,
   })).filter(p => p.name);
   const { status, d } = await api('personal', { personal: neu });
   if (d.ok) { personal = d.personal; teamSheetZu(); render(); toast('Team gespeichert ✓'); }

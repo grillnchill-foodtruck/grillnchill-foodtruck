@@ -4,14 +4,18 @@
  * Personalplanung fuer den Truck (Seite /dienstplan).
  *
  *   POST { password, action, ... }
- *     'lesen'     { woche }             → { personal, schichten, rolle }
+ *     'lesen'     { woche }             → { personal, schichten, rolle, logins? }
  *                 jede Team-Rolle: das Personal darf den Plan mit dem eigenen
- *                 Team-Passwort ansehen
+ *                 Team-Passwort ansehen. Nur Admins bekommen login je Person
+ *                 und die Liste der Team-Zugänge (logins: [{ login, name }]).
  *     'personal'  { personal: [...] }   → Mitarbeiterliste speichern (nur Admin)
+ *                 400 login_unbekannt | login_doppelt
  *     'speichern' { woche, schichten }  → ganze Woche speichern (nur Admin)
  *
  * Datenmodell (Blobs-Store 'dienstplan'):
- *   'personal'        → [{ id, name, farbe }]
+ *   'personal'        → [{ id, name, farbe, login? }]
+ *                       login: Team-Zugang (Schlüssel u:<login> im Store team), mit dem
+ *                       die Person am Handy stempelt (zeit.js). Höchstens eine Person je Login.
  *   'w:<montag>'      → { schichten: { '<YYYY-MM-DD>': [{ pid, von, bis, notiz }] } }
  * Der Schluessel ist der Montag der Woche (YYYY-MM-DD) – einfach, sortierbar,
  * und "Vorwoche uebernehmen" ist ein einziger get/set.
@@ -72,12 +76,31 @@ const clean = (x, n) => String(x == null ? '' : x).replace(/[<>]/g, '').trim().s
 
 function bereinigePersonal(roh) {
   if (!Array.isArray(roh)) return [];
-  return roh.slice(0, 30).map((p) => ({
-    id: clean(p.id, 12) || Math.random().toString(36).slice(2, 8),
-    name: clean(p.name, 40),
-    farbe: /^#[0-9a-fA-F]{6}$/.test(String(p.farbe || '')) ? p.farbe : '#E85A24',
-  })).filter((p) => p.name);
+  return roh.slice(0, 30).map((p) => {
+    const x = {
+      id: clean(p.id, 12) || Math.random().toString(36).slice(2, 8),
+      name: clean(p.name, 40),
+      farbe: /^#[0-9a-fA-F]{6}$/.test(String(p.farbe || '')) ? p.farbe : '#E85A24',
+    };
+    const login = clean(p.login, 30);
+    if (login) x.login = login;
+    return x;
+  }).filter((p) => p.name);
 }
+
+/* Team-Zugänge aus dem Store team (Schlüssel u:<login>), für die Zuordnung im Dienstplan */
+async function teamLogins() {
+  const t = store('team');
+  const { blobs } = await t.list({ prefix: 'u:' });
+  const aus = [];
+  for (const b of blobs) {
+    const u = await t.get(b.key, { type: 'json' });
+    if (u) aus.push({ login: b.key.slice(2), name: u.name || b.key.slice(2) });
+  }
+  return aus.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+// Mitarbeiter sehen den Plan, aber nicht, welcher Zugang zu wem gehört
+const ohneLogin = (personal) => personal.map(({ login, ...p }) => p);
 
 function bereinigeSchichten(roh) {
   const aus = {};
@@ -115,7 +138,8 @@ exports.handler = async (event) => {
     if (!woche) return json(400, { error: 'bad_week', hint: 'woche muss ein Montag im Format JJJJ-MM-TT sein' });
     const personal = (await s.get('personal', { type: 'json' })) || [];
     const plan = (await s.get('w:' + woche, { type: 'json' })) || { schichten: {} };
-    return json(200, { ok: true, rolle: who.role, name: who.name, personal, schichten: plan.schichten || {} });
+    if (who.role !== 'admin') return json(200, { ok: true, rolle: who.role, name: who.name, personal: ohneLogin(personal), schichten: plan.schichten || {} });
+    return json(200, { ok: true, rolle: who.role, name: who.name, personal, schichten: plan.schichten || {}, logins: await teamLogins() });
   }
 
   // Ab hier: nur der Chef plant
@@ -123,6 +147,12 @@ exports.handler = async (event) => {
 
   if (input.action === 'personal') {
     const personal = bereinigePersonal(input.personal);
+    const vergeben = personal.map((p) => p.login).filter(Boolean);
+    if (new Set(vergeben).size !== vergeben.length) return json(400, { error: 'login_doppelt', hint: 'Ein Team-Login gehört zu höchstens einer Person.' });
+    if (vergeben.length) {
+      const da = new Set((await teamLogins()).map((l) => l.login));
+      if (vergeben.some((l) => !da.has(l))) return json(400, { error: 'login_unbekannt', hint: 'Diesen Team-Login gibt es nicht mehr. Lade die Seite neu.' });
+    }
     await s.setJSON('personal', personal);
     return json(200, { ok: true, personal });
   }
