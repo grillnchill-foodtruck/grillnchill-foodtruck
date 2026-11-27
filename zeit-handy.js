@@ -30,6 +30,20 @@
   var SPEICHER = speicherHolen() || { getItem: function () { return null; }, setItem: function () { throw new Error('kein Speicher'); } };
   function lies(k) { try { return JSON.parse(window.localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function schreib(k, v) { try { if (v == null) window.localStorage.removeItem(k); else window.localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  // Bindung des Stand-Caches an die Sitzung: FNV-1a über den Token, nur der Hash wird gespeichert, nie der Token.
+  // Meldet sich jemand anders an (auch im Admin-Tool, dessen Abmelden diesen Cache nicht kennt), passt der Cache nicht mehr.
+  function abdruck(t) {
+    var h = 0x811c9dc5;
+    for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+    return 'f' + h.toString(16);
+  }
+  function standSpeichern() { if (st.cred && st.person) schreib(STAND_KEY, { person: st.person, heute: st.heute, bindung: abdruck(st.cred) }); }
+  function standLesen() {
+    var g = lies(STAND_KEY);
+    if (g && g.person && st.cred && g.bindung === abdruck(st.cred)) return g;
+    if (g) schreib(STAND_KEY, null);   // gehört einer anderen Sitzung
+    return null;
+  }
   var fehlercode = function (daten) { return daten && (daten.fehler || daten.error); };
 
   if (window.GNCAppLeiste) GNCAppLeiste.start({ modus: 'team', selected: 'zeit', zurueck: ['appZurueck', 'appZurueckLogin'] });
@@ -69,6 +83,8 @@
     senden: function (e) {
       // Ohne Anmeldung nie senden: Die Stempel bleiben liegen, bis jemand angemeldet ist
       if (!st.cred) return Promise.resolve({ status: 401, daten: {} });
+      // Nur Stempel der eigenen Person: alles andere bleibt liegen (Lauf stoppt wie ohne Netz)
+      if (!eigeneId() || e.person_id !== eigeneId()) return Promise.resolve({ status: 0, daten: {} });
       return post(e.typ === 'stempeln'
         ? { aktion: 'stempeln', schluessel: e.schluessel, person_id: e.person_id, art: e.art, zeit: e.zeit }
         : { aktion: 'zuruecknehmen', schluessel: e.schluessel, person_id: e.person_id, bezug_schluessel: e.bezug_schluessel, zeit: e.zeit });
@@ -105,7 +121,7 @@
   function fremdeDa() {
     var id = eigeneId();
     if (!id) return false;
-    return q.wartend().some(function (e) { return e.person_id !== id; }) || q.abgelehnt().some(function (e) { return e.person_id !== id; });
+    return q.wartend().some(function (e) { return e.person_id !== id; });   // Abgelehnte gehen nicht von selbst raus: kein Hinweis
   }
   function meldungenZeigen() {
     var t = st.info + (fremdeDa() ? (st.info ? ' ' : '') + TEXT_FREMD : '');
@@ -161,7 +177,7 @@
     if (!p || p.id !== personId || !y || !y.daten || !y.daten.stand) return;
     p.stand = y.daten.stand;
     st.merk = ++st.seq;
-    schreib(STAND_KEY, { person: p, heute: st.heute });
+    standSpeichern();
   }
   // Alle Ergebnisse eines Laufs einarbeiten (Stände, Ablehnungen, Uhr, Anmeldung). eigen: Schlüssel, um den sich der Aufrufer selbst kümmert.
   // Liefert true, wenn die Sitzung abgelaufen ist und die Seite zur Anmeldung gewechselt hat.
@@ -190,7 +206,7 @@
     if (!gueltig()) return;
     if (r.status === 401) return abmelden(q.wartend().length ? TEXT_NEU_ANMELDEN : 'Bitte melde dich neu an.');
     if (r.status === 403) {
-      st.person = null; st.heute = ''; schreib(STAND_KEY, null);
+      st.person = null; st.heute = ''; st.unfrei = true; schreib(STAND_KEY, null);
       fertigZu();
       zeigeZeit();
       $('zhName').textContent = 'Noch nicht freigeschaltet';
@@ -202,16 +218,17 @@
       meldungenZeigen(); wartendZeigen(); zeichneAbgelehnt();
       return;
     }
+    st.unfrei = false;
     st.offline = r.status === 200 ? '' : r.status === 0 ? 'netz' : 'dienst';
     if (r.status === 200 && r.daten.personen && r.daten.personen[0]) {
       var neu = r.daten.personen[0];
       if (st.person && st.person.id === neu.id && st.merk > von) neu.stand = st.person.stand;
       st.person = neu;
       st.heute = r.daten.heute;
-      schreib(STAND_KEY, { person: st.person, heute: st.heute });
+      standSpeichern();
     } else if (!st.person) {
-      var g = lies(STAND_KEY);
-      if (g && g.person) { st.person = g.person; st.heute = g.heute; }
+      var g = standLesen();
+      if (g) { st.person = g.person; st.heute = g.heute; }
     }
     zeigeZeit();
     if (!st.person) {
@@ -337,7 +354,7 @@
     }).join('');
   }
   async function nochmalSenden(schluessel, knopf) {
-    if (!st.cred) return;
+    if (!st.cred || !eigeneId()) return;
     if (knopf) { knopf.disabled = true; knopf.setAttribute('aria-busy', 'true'); }
     var sz = st.sitzung;
     var r = await q.erneut(schluessel, { person: eigeneId() });
@@ -430,7 +447,7 @@
   function abmelden(text) {
     if (st.cred) fetch(URL_TEAM, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: st.cred, action: 'abmelden' }) }).catch(function () {});
     try { sessionStorage.removeItem(PW_KEY); window.localStorage.removeItem(PW_KEY + '_p'); } catch (e) {}
-    st.cred = ''; st.person = null; st.heute = ''; st.montag = ''; st.info = ''; st.offline = '';
+    st.cred = ''; st.person = null; st.unfrei = false; st.heute = ''; st.montag = ''; st.info = ''; st.offline = '';
     st.sitzung++; st.ladeNr++; st.wocheNr++; st.vorgang++;
     Object.keys(st.weg).forEach(function (k) { clearTimeout(st.weg[k]); });
     st.weg = {};
@@ -454,11 +471,12 @@
   // Nachsenden: wieder online, jede Minute, wenn die Seite wieder sichtbar wird. Ohne Anmeldung nie.
   function nachsenden() {
     var id = eigeneId(), sz = st.sitzung;
-    if (!st.cred || !id || !q.wartend(id).length) return;
+    if (st.cred && !id) { if (!st.unfrei) laden(); return; }   // Anmeldung da, Person unbekannt (stand scheiterte): erneut versuchen
+    if (!st.cred || !q.wartend(id).length) return;
     q.abarbeiten({ person: id }).then(function (r) {
       if (sz !== st.sitzung || verarbeite(r)) return;
       zeichneStand();
-      if (r.ergebnisse.some(function (y) { return y.status === 200; }) && !r.wartend) laden();
+      if (r.ergebnisse.some(function (y) { return y.status === 200; }) && !q.wartend(id).length) laden();
     });
   }
   addEventListener('online', nachsenden);

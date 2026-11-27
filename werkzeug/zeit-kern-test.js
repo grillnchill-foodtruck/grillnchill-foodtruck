@@ -388,6 +388,31 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     ok('Ohne Option senden alle', sende.length === 4 && o.q.wartend().length === 0);
   }
 
+  // 10: laufender Lauf für p1, angehängter Lauf für p2; erneut nur für die eigene Person
+  {
+    const sende = []; let frei;
+    const tor = new Promise((res) => { frei = res; });
+    let erster = true;
+    const o = frisch({ senden: async (e) => { if (erster) { erster = false; await tor; } sende.push(e.person_id); return { status: 200, daten: { ok: true } }; } });
+    o.q.stempeln('p1', 'beginn'); o.q.stempeln('p2', 'beginn');
+    const l1 = o.q.abarbeiten({ person: 'p1' });
+    const l2 = o.q.abarbeiten({ person: 'p2' });   // läuft erst nach dem ersten
+    frei(); await l1; const x2 = await l2;
+    ok('Angehängter Lauf für p2 sendet nur p2, p1 wird nicht doppelt gesendet', sende.join() === 'p1,p2' && x2.ergebnisse.every((y) => y.eintrag.person_id === 'p2'), sende);
+    // erneut mit person
+    const o2 = frisch({ senden: async () => ({ status: 400, daten: { fehler: 'eingabe' } }) });
+    const a1 = o2.q.stempeln('p1', 'beginn'), a2 = o2.q.stempeln('p2', 'beginn');
+    await o2.q.abarbeiten();
+    ok('Beide abgelehnt', o2.q.abgelehnt().length === 2);
+    const gesendet = [];
+    const sp = o2.speicher;
+    const q3 = K.warteschlange({ speicher: sp, via: 'stempeluhr', jetzt: () => uhr, uuid, senden: async (e) => { gesendet.push(e.person_id); return { status: 200, daten: { ok: true } }; } });
+    const r = await q3.erneut(a1.schluessel, { person: 'p2' });
+    ok('erneut für fremde Person: nichts gesendet, Eintrag bleibt abgelehnt', gesendet.length === 0 && q3.abgelehnt().length === 1 && q3.wartend().length === 1);
+    await q3.abarbeiten({ person: 'p1' });
+    ok('erneut mit eigener Person sendet nur diese', gesendet.join() === 'p1' && q3.wartend().length === 0 && q3.abgelehnt().length === 1 && q3.abgelehnt()[0].schluessel === a2.schluessel);
+  }
+
   console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));
   process.exit(fehler ? 1 : 0);
 })().catch((e) => { console.log('Absturz:', e && e.stack); process.exit(1); });
