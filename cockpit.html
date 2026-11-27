@@ -510,6 +510,7 @@
   }
   .bericht-vorschau strong{font-weight:700;color:var(--foreground)}
 </style>
+<link rel="stylesheet" href="/zeit.css">
 </head>
 <body>
 <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -544,6 +545,8 @@
       <button type="submit" class="btn btn-primary btn-block" id="loginBtn"><span>Anmelden</span></button>
     </form>
   </section>
+  <!-- Stempeln geht ohne Anmeldung, sobald dieses iPad als Stempeluhr gekoppelt ist (zeit-stempeln.js) -->
+  <button type="button" class="btn btn-primary btn-block zs-login-knopf" data-stempeln hidden><span>Stempeln</span></button>
 </main>
 
 <!-- ================= Cockpit ================= -->
@@ -566,6 +569,7 @@
         </span>
       </div>
       <div class="actions">
+        <button type="button" class="btn btn-primary" data-stempeln hidden><span>Stempeln</span></button>
         <button type="button" class="icon-btn" id="refreshBtn" aria-label="Jetzt aktualisieren" title="Jetzt aktualisieren">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
         </button>
@@ -721,6 +725,26 @@
 
     </div>
 
+    <!-- Stempeluhr (zeit-stempeln.js): sichtbar nur für Admins -->
+    <section class="card zs-karte" id="cardStempeluhr" aria-labelledby="hStempeluhr" hidden>
+      <div class="card-header">
+        <div>
+          <h2 class="card-title" id="hStempeluhr">Dieses iPad als Stempeluhr</h2>
+          <p class="card-description">Danach stempelt das Team hier mit seinem Namen, auch wenn du abgemeldet bist.</p>
+        </div>
+      </div>
+      <div class="card-content">
+        <form id="stempeluhrForm" class="stack" novalidate>
+          <div class="field">
+            <label class="label" for="stempeluhrName">Name des Geräts</label>
+            <input class="input" id="stempeluhrName" maxlength="40" value="iPad Truck" autocomplete="off">
+          </div>
+          <p class="field-error" id="stempeluhrFehler" role="alert" hidden></p>
+          <button type="submit" class="btn btn-primary" id="stempeluhrKnopf"><span>Als Stempeluhr koppeln</span></button>
+        </form>
+        <p class="card-description" id="stempeluhrGekoppelt" hidden></p>
+      </div>
+    </section>
   </main>
 
   <!-- ================= Auswertung (nur Inhaber) ================= -->
@@ -856,7 +880,7 @@
   'use strict';
 
   // In der App (Cockpit-Widget): Zurück zur Kunden-App und Team-Leiste, siehe app-leiste.js
-  if (window.GNCAppLeiste) GNCAppLeiste.start({ modus: 'team', selected: 'cockpit', zurueck: ['appZurueck', 'appZurueckLogin'] });
+  if (window.GNCAppLeiste) GNCAppLeiste.start({ modus: 'team', selected: 'cockpit', zurueck: ['appZurueck', 'appZurueckLogin'], verdeckt: '.zs-dlg[open]' });
 
   /* Gleicher Speicher wie admin.html, damit eine Anmeldung fuer beide gilt:
      sessionStorage[PW_KEY]        Passwort fuer diesen Tab (wie im Admin-Tool)
@@ -1133,8 +1157,9 @@
     steuerungAktiv(true);
     zeichneStatus(d.status || {});
     inhaberAnsicht(d.owner === true);
-    // Liefer-Heatmap (cockpit-heatmap.js) zeigt sich nur dem Inhaber
-    document.dispatchEvent(new CustomEvent('gnc-cockpit', { detail: { owner: d.owner === true, cred: cred } }));
+    // Liefer-Heatmap (cockpit-heatmap.js) zeigt sich nur dem Inhaber.
+    // role: Die Karte „Dieses iPad als Stempeluhr“ (zeit-stempeln.js) zeigt sich nur Admins
+    document.dispatchEvent(new CustomEvent('gnc-cockpit', { detail: { owner: d.owner === true, cred: cred, role: d.role || '' } }));
   }
 
   /* Offene Abholnummern als kleine Liste: „Nr. 12 Grill", Telefon/Truck dazu */
@@ -2201,5 +2226,7 @@
 </script>
 <script src="/karte.js"></script>
 <script src="/cockpit-heatmap.js"></script>
+<script src="/zeit-kern.js"></script>
+<script src="/zeit-stempeln.js"></script>
 </body>
 </html>

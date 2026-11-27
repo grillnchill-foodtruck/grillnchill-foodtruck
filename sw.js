@@ -28,6 +28,10 @@ const PRECACHE_URLS = [
   '/icon-192.png',
   '/icon-512.png',
   '/manifest.webmanifest',
+  // Stempeluhr am iPad: muss nach einem Neuladen ohne Netz da sein (Network-First holt sie online trotzdem frisch)
+  '/zeit.css',
+  '/zeit-kern.js',
+  '/zeit-stempeln.js',
 ];
 
 // Code-Dateien, die IMMER frisch aus dem Netz geladen werden

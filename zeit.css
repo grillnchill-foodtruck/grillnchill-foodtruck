@@ -1,0 +1,82 @@
+/* ============================================================================
+   zeit.css
+   Stempeln am iPad (Sheet im Cockpit, zeit-stempeln.js) und am Handy (zeit.html, zeit-handy.js).
+   Nutzt die Farb-Tokens des Cockpits (--card, --muted, --foreground …); zeit.html bringt dieselben mit.
+   UX: Tippflächen ab 44 px (Stempel-Knöpfe 64 px), Rot nur für Fehler, Hinweise in Bernstein.
+   ========================================================================== */
+
+/* ---- Sheet am iPad: <dialog> mit overflow clip, Startfokus aufs Sheet (iOS-Safari) ---- */
+.zs-dlg{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;
+  background:transparent;color:var(--foreground);overflow:hidden;overflow:clip;overscroll-behavior:none}
+.zs-dlg::backdrop{background:rgba(0,0,0,0);transition:background-color .25s}
+.zs-dlg.da::backdrop{background:rgba(0,0,0,.6)}
+.zs-dlg[open]{display:flex;align-items:flex-end;justify-content:center}
+.zs-sheet{width:100%;max-width:640px;max-height:calc(100% - 24px - env(safe-area-inset-top));overflow-y:auto;overscroll-behavior:contain;
+  padding:.6rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));background:var(--card);border:1px solid var(--border);border-bottom:0;
+  border-radius:20px 20px 0 0;box-shadow:0 -10px 40px -10px rgba(0,0,0,.6);transform:translateY(100%);transition:transform .32s var(--ease)}
+.zs-dlg.da .zs-sheet{transform:none}
+.zs-sheet:focus{outline:none}
+@media (min-width:760px){
+  .zs-dlg[open]{align-items:center}
+  .zs-sheet{border-bottom:1px solid var(--border);border-radius:20px}
+}
+.zs-griff{width:38px;height:5px;margin:0 auto .9rem;border-radius:3px;background:var(--input)}
+.zs-kopf{display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem}
+.zs-kopf h2{flex:1;min-width:0;font-family:var(--font-display);font-weight:400;font-size:1.35rem;line-height:1.15}
+.zs-x{width:44px;height:44px;flex:none;display:grid;place-items:center;border:0;border-radius:50%;background:var(--muted);color:var(--foreground);cursor:pointer}
+.zs-x svg{width:18px;height:18px}
+.zs-abschnitt{margin:1rem 0 .5rem;color:var(--muted-foreground);font-size:.8125rem;font-weight:600}
+.zs-liste{display:grid;gap:.5rem}
+.zs-person{display:flex;align-items:center;gap:.75rem;width:100%;min-height:64px;padding:.6rem .9rem;border:1px solid var(--border);
+  border-radius:14px;background:var(--muted);color:var(--foreground);font:inherit;text-align:left;cursor:pointer;transition:transform .12s var(--ease),border-color .15s}
+.zs-person:hover{border-color:var(--input)}
+.zs-person:active{transform:scale(.98)}
+.zs-punkt{width:12px;height:12px;flex:none;border-radius:50%;background:var(--muted-foreground)}
+.zs-person span{min-width:0;flex:1}
+.zs-person b{display:block;font-size:1.0625rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zs-person small{display:block;color:var(--muted-foreground);font-size:.875rem}
+.zs-person .zs-plan{flex:none;color:var(--muted-foreground);font-size:.875rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.zs-person.ist-dienst small{color:var(--success)}
+.zs-person.ist-pause small{color:var(--warning)}
+
+/* ---- Person und Knöpfe (iPad und Handy) ---- */
+.zs-name{font-family:var(--font-display);font-weight:400;font-size:1.6rem;line-height:1.1}
+.zs-stand{margin-top:.35rem;font-size:1.0625rem;font-variant-numeric:tabular-nums}
+.zs-plan-text{margin-top:.2rem;color:var(--muted-foreground);font-size:.9375rem}
+.zs-knoepfe{display:grid;gap:.6rem;margin-top:1.1rem}
+.zs-knopf{min-height:64px;padding:0 1rem;border:1px solid var(--primary-solid);border-radius:14px;background:var(--primary-solid);color:#fff;
+  font:700 1.125rem/1.2 var(--font-sans);cursor:pointer;transition:transform .12s var(--ease),opacity .2s}
+.zs-knopf:active{transform:scale(.98)}
+.zs-knopf.zweit{background:transparent;border-color:var(--input);color:var(--foreground)}
+.zs-knopf[disabled]{opacity:.5;cursor:progress}
+.zs-hinweis{margin-top:.9rem;padding:.7rem .9rem;border:1px solid rgba(255,201,60,.35);border-radius:12px;background:rgba(255,201,60,.08);font-size:.9375rem}
+.zs-fehler{margin-top:.9rem;padding:.7rem .9rem;border:1px solid rgba(224,72,72,.4);border-radius:12px;background:rgba(224,72,72,.1);color:var(--destructive-text);font-size:.9375rem}
+.zs-fertig{font-size:1.25rem;font-weight:600;line-height:1.35;font-variant-numeric:tabular-nums}
+.zs-rueckgaengig{display:inline-flex;align-items:center;gap:.5rem;min-height:48px;margin-top:1rem;padding:0 1.1rem;border:1px solid var(--input);
+  border-radius:999px;background:transparent;color:var(--foreground);font:600 1rem var(--font-sans);cursor:pointer}
+.zs-rueckgaengig .zs-sek{min-width:1.4em;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.zs-fuss{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem;margin-top:1.1rem;color:var(--muted-foreground);font-size:.875rem}
+/* Eigenständiger Link: kleine Pille mit Rand, Tippfläche über ::before auf 44 px erweitert */
+.zs-pille{position:relative;display:inline-flex;align-items:center;min-height:32px;padding:0 .8rem;border:1px solid var(--input);border-radius:999px;
+  background:none;color:var(--foreground);font:600 .875rem var(--font-sans);text-decoration:none;cursor:pointer}
+.zs-pille::before{content:"";position:absolute;inset:-6px -2px}
+.zs-wartend{color:var(--warning)}
+@media (prefers-reduced-motion:reduce){.zs-sheet,.zs-person,.zs-knopf{transition:none}}
+
+/* ---- Abgelehnte Stempel: Name, Uhrzeit, Art, Grund, dazu "Nochmal senden" und "Verwerfen" ---- */
+.zs-abgel{padding:.7rem .9rem;border:1px solid rgba(255,201,60,.35);border-radius:14px;background:rgba(255,201,60,.08)}
+.zs-abgel b{display:block;font-size:1rem;font-weight:600}
+.zs-abgel p{margin-top:.15rem;font-size:.875rem;color:var(--muted-foreground)}
+.zs-abgel .zs-aktionen{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem}
+.zs-abgel .zs-pille{min-height:44px;padding:0 1rem;font-size:.9375rem}
+.zs-abgel .zs-pille::before{inset:0}
+.zs-weg{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-height:48px;padding:.4rem .9rem;border:1px solid var(--border);
+  border-radius:14px;background:var(--muted);font-size:.9375rem}
+.zs-weg .zs-pille{min-height:44px;padding:0 1rem}
+.zs-weg .zs-pille::before{inset:0}
+
+/* ---- Nur im Cockpit ---- */
+.zs-login-knopf{width:100%;max-width:420px;min-height:64px;margin-top:16px;font-size:1.125rem}
+.login:has(> .zs-login-knopf:not([hidden])){align-content:center;gap:0}
+.zs-karte{margin-top:16px}
+.zs-karte .btn[aria-busy="true"]{opacity:.6;cursor:progress}
