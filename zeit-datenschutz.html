@@ -52,6 +52,7 @@
   <h2>1. Wer verantwortlich ist</h2>
   <p>Grill'n Chill Yildiz und Öztas GbR, vertreten durch Kutluay Öztas und Rasim Kubilay Yildiz, Im Teich 9, 49152 Bad Essen.<br>
     E-Mail: <a href="mailto:info@grillnchill-foodtruck.de">info@grillnchill-foodtruck.de</a>, Telefon: +49 151 18 54 06 04</p>
+  <p>Deine Ansprechperson im Team ist Kubi (Rasim Kubilay Yildiz).</p>
 
   <h2>2. Worum es geht</h2>
   <p>Du stempelst Beginn, Pausen und Ende deiner Schicht am iPad am Truck oder mit deinem Handy im Tab „Zeit“. Der Stempel wird zuerst auf dem Gerät gespeichert und geht raus, sobald Netz da ist. Dann landet er im GNC Office, der Buchhaltung von Grill'n Chill.</p>
@@ -63,7 +64,8 @@
     <li>das Gerät: „iPad Truck“ oder „Handy“</li>
     <li>wer gestempelt hat: das Gerät am iPad, dein Team-Login am Handy</li>
     <li>die Gutschrift von derzeit 5 Minuten je Schichtende. Sie steht als eigener Wert neben deiner echten Endzeit, die Endzeit bleibt unverändert</li>
-    <li>Hinweise zum Stempel samt Grund: ohne Schicht im Plan, früher als geplant, Uhr des Geräts weicht ab, passt nicht zum Stand</li>
+    <li>Hinweise zum Stempel samt Grund: ohne Schicht im Plan, früher als geplant, Uhr des Geräts weicht ab</li>
+    <li>einen eigenen Status „Konflikt“: Ein Stempel, der nicht zu deinem Stand passt, wird als Konflikt gespeichert. Er zählt erst, wenn Kubi entscheidet</li>
     <li>Rücknahmen („Rückgängig“) und Nachträge, bei einem Nachtrag mit Grund und wer ihn eingetragen hat</li>
   </ul>
   <p><b>Was wir nicht speichern:</b> keine Ortung, keine Fotos, keine Biometrie (Fingerabdruck, Gesicht) und sonst nichts von deinem Handy.</p>
@@ -71,9 +73,9 @@
   <h2>4. Wozu und auf welcher Grundlage</h2>
   <ul>
     <li>für deinen Lohn: gearbeitete Zeit plus Gutschrift (Art. 6 Abs. 1 lit. b DSGVO, dein Arbeitsvertrag)</li>
-    <li>weil das Gesetz es verlangt: Beginn, Ende und Dauer der täglichen Arbeitszeit aufzeichnen (§ 17 Mindestlohngesetz) und Arbeitszeiten und Pausen einhalten (Arbeitszeitgesetz), dazu die Aufbewahrung von Lohnunterlagen (Art. 6 Abs. 1 lit. c DSGVO)</li>
+    <li>weil das Gesetz es verlangt (Art. 6 Abs. 1 lit. c DSGVO): Beginn, Ende und Dauer der täglichen Arbeitszeit aufzeichnen (§ 17 Mindestlohngesetz), Arbeitszeit über acht Stunden am Tag aufzeichnen (§ 16 Abs. 2 Arbeitszeitgesetz) und Lohnunterlagen aufbewahren</li>
   </ul>
-  <p>Die Aufzeichnung ist Pflicht. Fehlt ein Stempel, trägt Kubi die Zeit nach. Es gibt keine automatischen Entscheidungen über dich: Hinweise wie „früher als geplant“ liest Kubi selbst.</p>
+  <p>Du musst stempeln, weil wir die Zeiten aufzeichnen müssen. Fehlt ein Stempel, tragen Kubi oder das Büro die Zeit nach. Ohne Aufzeichnung fehlt der Nachweis für deinen Lohn und für die Pflichtaufzeichnung. Es gibt keine automatischen Entscheidungen über dich: Hinweise wie „früher als geplant“ liest Kubi selbst.</p>
 
   <h2>5. Wer die Daten sieht</h2>
   <ul>
@@ -84,17 +86,19 @@
 
   <h2>6. Wo die Daten liegen</h2>
   <ul>
-    <li>Der Weg: Gerät, dann die Website von Grill'n Chill bei Netlify, Inc. (USA), dann das GNC Office bei Cloudflare, Inc. Die Datenbank des Office liegt in der Europäischen Union.</li>
-    <li>Bei Netlify laufen die Stempel nur durch und bleiben dort nicht liegen. Der Dienstplan mit deinem Namen und deinem Team-Zugang liegt dort schon heute. Wie Netlify Daten verarbeitet, steht in der <a href="/#datenschutz">Datenschutzerklärung der Website</a> unter „Hosting durch Netlify“.</li>
+    <li>Der Weg: Gerät, dann die Website von Grill'n Chill bei Netlify, dann das GNC Office bei Cloudflare.</li>
+    <li>Netlify, Inc. (San Francisco, USA) betreibt die Website und leitet die Stempel nur technisch durch. Sie bleiben dort nicht gespeichert, ausgenommen kurze technische Protokolle und ein Zähler gegen zu viele Anfragen. Der Dienstplan mit deinem Namen und deinem Team-Zugang liegt dort schon heute. Netlify ist unser Auftragsverarbeiter mit Vertrag nach Art. 28 DSGVO. Die Übermittlung in die USA stützt sich auf das EU-US Data Privacy Framework (Netlify ist zertifiziert), ergänzend auf Standardvertragsklauseln. Mehr steht in der <a href="/#datenschutz">Datenschutzerklärung der Website</a> unter „Hosting durch Netlify“.</li>
+    <li>Cloudflare, Inc. (San Francisco, USA) betreibt das GNC Office und speichert die Stempel. Auch Cloudflare ist unser Auftragsverarbeiter mit Vertrag nach Art. 28 DSGVO, zertifiziert nach dem EU-US Data Privacy Framework, ergänzend mit Standardvertragsklauseln. Die Datenbank liegt in der Europäischen Union. Weil Cloudflare ein US-Unternehmen ist, kann ein Zugriff aus den USA trotzdem nicht ausgeschlossen werden.</li>
     <li>Auf dem iPad und deinem Handy speichert der Browser jeden Stempel sofort. Nimmt das Office einen Stempel nicht an, bleibt er in der Liste „Nicht übertragen“, bis er erneut gesendet oder verworfen wird. Am iPad darf nur Kubi mit Anmeldung verwerfen, am eigenen Handy du selbst.</li>
-    <li>Dein Handy merkt sich außerdem deinen letzten Stand, gebunden an deine Anmeldung. Bei „Abmelden“ oder einer neuen Anmeldung wird er gelöscht.</li>
+    <li>Am Handy bleiben nicht übertragene Stempel auch nach „Abmelden“ liegen, bis du dich wieder anmeldest und sie rausgehen oder du sie verwirfst. Deinen letzten Stand merkt sich das Handy gebunden an deine Anmeldung, bei „Abmelden“ oder neuer Anmeldung wird er gelöscht.</li>
+    <li>Das iPad speichert seine Kopplung, die Namensliste mit Stand und wartende Stempel.</li>
   </ul>
 
   <h2>7. Wie lange</h2>
-  <p>Wir bewahren die Stempel sechs Jahre auf, gerechnet ab dem Ende des Jahres, in dem du gestempelt hast. So lange müssen Lohnunterlagen aufbewahrt werden. Danach löschen wir sie.</p>
+  <p>Lohnunterlagen bewahren wir bis zum Ende des sechsten Kalenderjahres nach der letzten Eintragung auf (§ 41 Abs. 1 EStG, § 147 AO). Die Aufzeichnungen nach Mindestlohngesetz und Arbeitszeitgesetz mindestens zwei Jahre. Nach Ablauf der Frist löschen wir sie.</p>
 
   <h2>8. Deine Rechte</h2>
-  <p>Du kannst Auskunft über deine Daten verlangen, falsche Zeiten berichtigen lassen und Einschränkung oder Löschung verlangen, soweit die Aufbewahrungspflicht das zulässt (Art. 15 bis 18 DSGVO). Stimmt eine Zeit nicht, sag Kubi Bescheid.</p>
+  <p>Du kannst Auskunft über deine Daten verlangen, falsche Zeiten berichtigen lassen, Löschung oder Einschränkung verlangen, soweit die Aufbewahrungspflicht das zulässt, und deine Daten in einem gängigen Format bekommen (Art. 15 bis 18 und 20 DSGVO). Schreib uns dafür an die E-Mail-Adresse aus Abschnitt 1 oder sprich direkt mit Kubi. Stimmt eine Zeit nicht, sag ihm Bescheid.</p>
   <p>Du kannst dich bei einer Datenschutz-Aufsichtsbehörde beschweren (Art. 77 DSGVO), zum Beispiel bei der Landesbeauftragten für den Datenschutz Niedersachsen, Prinzenstraße 5, 30159 Hannover.</p>
 
   <h2>9. Änderungen</h2>
