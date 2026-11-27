@@ -88,6 +88,8 @@ const jetzt = () => new Date().toISOString();
   /* ---- Dienstplan-Helfer --------------------------------------------------- */
   const plan = { schichten: { '2027-01-05': [{ pid: 'b', von: '16:00', bis: '20:30' }, { pid: 'a', von: '11:30', bis: '15:00' }, { pid: 'a', von: '17:00', bis: '21:00' }] } };
   ok('Schicht am Tag: zwei Schichten werden eine', JSON.stringify(D.schichtAm(plan, '2027-01-05', 'a')) === '{"von":"11:30","bis":"21:00"}' && D.schichtAm(plan, '2027-01-06', 'a') === null);
+  ok('Schicht mit ungültiger Zeit (25:00) wird ignoriert, die gültige bleibt', D.schichtAm({ schichten: { '2027-01-05': [{ pid: 'a', von: '25:00', bis: '21:00' }] } }, '2027-01-05', 'a') === null
+    && JSON.stringify(D.schichtAm({ schichten: { '2027-01-05': [{ pid: 'a', von: '24:00', bis: '26:00' }, { pid: 'a', von: '09:00', bis: '12:00' }] } }, '2027-01-05', 'a')) === '{"von":"09:00","bis":"12:00"}');
   const liste = D.personenListe([{ id: 'c', name: 'Cem' }, { id: 'b', name: 'Bea' }, { id: 'a', name: 'Ali' }, { id: 'd', name: 'Ada' }], plan, '2027-01-05');
   ok('Namensliste: erst mit Schicht nach Beginn, dann die übrigen nach Namen', liste.map((p) => p.id).join() === 'a,b,d,c');
   ok('Montag und Berliner Tag', D.montagVon('2027-01-10') === '2027-01-04' && D.istMontag('2027-01-04') && !D.istMontag('2027-01-05') && D.berlinTag(Date.parse('2027-01-04T23:30:00Z')) === '2027-01-05');
@@ -136,6 +138,20 @@ const jetzt = () => new Date().toISOString();
   r = await call(zeit, { password: ali, aktion: 'stempeln', person_id: 'p-ali', art: 'beginn', schluessel: uuid(), zeit: jetzt() });
   a = anfragen[anfragen.length - 1].d;
   ok('Handy stempelt: Quelle handy, Gerät Handy, von t-ali-test, ohne Schicht', r.s === 200 && a.quelle === 'handy' && a.geraet === 'Handy' && a.von === 't-ali-test' && a.schicht === null);
+  const wochePlan = 'dienstplan|w:' + D.montagVon(heute);
+  const planVorher = daten.get(wochePlan);
+  daten.set(wochePlan, JSON.stringify({ schichten: { [heute]: [{ pid: 'p-ali', von: '25:00', bis: '21:00' }] } }));
+  r = await call(zeit, { password: ali, aktion: 'stempeln', person_id: 'p-ali', art: 'ende', schluessel: uuid(), zeit: jetzt() });
+  a = anfragen[anfragen.length - 1].d;
+  ok('Plan mit 25:00: der Stempel geht trotzdem durch, schicht ist null', r.s === 200 && a.aktion === 'stempeln' && a.schicht === null, a);
+  daten.set(wochePlan, planVorher);
+  /* Der Client kann keine Server-Felder setzen: Quelle, Herkunft, Gerät, Schicht und Person kommen vom Server */
+  r = await call(zeit, { password: ali, aktion: 'stempeln', person_id: 'p-ali', art: 'beginn', schluessel: uuid(), zeit: jetzt(), quelle: 'nachtrag', von: 'x', geraet: 'falsch', schicht: { von: '00:00', bis: '23:59' }, person: { id: 'p-x', name: 'X' } });
+  a = anfragen[anfragen.length - 1].d;
+  ok('Handy: Client-Felder werden verworfen (quelle, von, geraet, schicht, person)', r.s === 200 && a.quelle === 'handy' && a.von === 't-ali-test' && a.geraet === 'Handy' && a.schicht === null && a.person.id === 'p-ali' && a.person.name === 'Ali', a);
+  r = await call(zeit, { stempeluhr: uhr.token, aktion: 'stempeln', person_id: 'p-bea', art: 'beginn', schluessel: uuid(), zeit: jetzt(), quelle: 'nachtrag', von: 'x', geraet: 'falsch', schicht: { von: '00:00', bis: '23:59' }, person: { id: 'p-x', name: 'X' } });
+  a = anfragen[anfragen.length - 1].d;
+  ok('iPad: Client-Felder werden verworfen (Schicht und Person kommen aus dem Plan)', r.s === 200 && a.quelle === 'stempeluhr' && a.von === 'geraet:' + uhr.id && a.geraet === 'iPad Truck' && a.schicht.von === '11:30' && a.schicht.bis === '20:30' && a.person.id === 'p-bea' && a.person.name === 'Bea', a);
   r = await call(zeit, { password: ali, aktion: 'woche', montag: D.montagVon(heute) });
   a = anfragen[anfragen.length - 1].d;
   ok('Handy: eigene Woche', r.s === 200 && a.aktion === 'woche' && a.person_id === 'p-ali' && a.montag === D.montagVon(heute));
@@ -148,8 +164,10 @@ const jetzt = () => new Date().toISOString();
   ok('von aus dem Login: Großbuchstaben, Leerzeichen, Sonderzeichen und Länge werden zur Office-Regel', [
     D.vonLogin('Ali'), D.vonLogin('Ali Müller'), D.vonLogin('a.b@c_d'), D.vonLogin('ÄÖÜ'), D.vonLogin('x'.repeat(80)), D.vonLogin('!!!'),
   ].every((v) => VON_OFFICE.test(v)) && D.vonLogin('Ali Müller') === 't-ali-müller' && D.vonLogin('Ali Müller') === D.vonLogin('Ali Müller'), [D.vonLogin('Ali Müller'), D.vonLogin('!!!')]);
+  ok('von: Bindestriche am Rand bleiben, ali- und ali kollidieren nicht', D.vonLogin('ali-') === 't-ali-' && D.vonLogin('-ali') === 't--ali' && D.vonLogin('ali-') !== D.vonLogin('ali'));
   ok('von der Stempeluhr: geraet: plus 8 Hex', VON_OFFICE.test('geraet:' + uhr.id));
   ok('Ohne Anmeldung: 401', (await call(zeit, { aktion: 'stand' })).s === 401);
+  ok('Jede abgefangene Office-Anfrage hat eine gültige Signatur', anfragen.length > 0 && anfragen.every((a) => a.sigOk));
 
   console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));
   process.exit(fehler ? 1 : 0);
