@@ -268,6 +268,13 @@
         }
         // Keine Antwort des Servers (HTML-404 der Sammelregel, 204, 408, 413 ohne JSON): bleibt liegen.
         if (!code) return 'netz';
+        // 409 zustand: Der Stempel ist nicht gespeichert. Seine wartende Rücknahme geht dann auch nicht raus (sonst nicht_zuruecknehmbar).
+        if (status === 409 && code === 'zustand' && e.typ === 'stempeln') {
+          schreiben(lesen().filter(function (x) {
+            return x.schluessel !== e.schluessel && !(x.typ === 'zuruecknehmen' && x.bezug_schluessel === e.schluessel && !x.abgelehnt);
+          }));
+          ergebnisse.push({ eintrag: e, status: status, daten: daten }); continue;
+        }
         if (istEndgueltig(code)) { entfernen(e.schluessel); ergebnisse.push({ eintrag: e, status: status, daten: daten }); continue; }
         // Unbekannter Grund: nicht wegwerfen. Der Eintrag bleibt im selben Array und trägt das Feld abgelehnt.
         ablehnen(e, status, code, typeof daten.hint === 'string' ? daten.hint : '');

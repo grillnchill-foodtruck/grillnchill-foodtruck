@@ -255,6 +255,24 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     ok('Rückgängig während des Sendens: Rücknahme angestellt und nach dem Stempel gesendet', log.join() === 'stempeln,zuruecknehmen' && rr.wartend === 0);
   }
 
+  // Stempel nicht gespeichert (409 zustand) mit wartender Rücknahme: Rücknahme still weg
+  {
+    const log = [];
+    const o = frisch({ senden: async (e) => {
+      log.push(e.typ);
+      if (log.length === 1) throw new Error('offline');
+      if (e.typ === 'zuruecknehmen') return { status: 400, daten: { fehler: 'nicht_zuruecknehmbar' } };
+      return { status: 409, daten: { fehler: 'zustand', stand: { zustand: 'frei' } } };
+    } });
+    const e = o.q.stempeln('p1', 'beginn');
+    await o.q.abarbeiten();
+    const rn = o.q.rueckgaengig(e.schluessel, 'p1');
+    ok('Rückgängig nach gescheitertem Senden: Rücknahme wartet', rn.typ === 'zuruecknehmen' && o.q.wartend().length === 2);
+    const rr = await o.q.abarbeiten();
+    ok('409 zustand: Rücknahme wird nicht gesendet und ist nicht mehr in der Schlange', log.join() === 'stempeln,stempeln' && o.q.wartend().length === 0 && rr.wartend === 0);
+    ok('… kein Ergebnis nicht_zuruecknehmbar, Stempel mit 409 zustand im Ergebnis', rr.ergebnisse.length === 1 && rr.ergebnisse[0].status === 409 && rr.ergebnisse[0].daten.fehler === 'zustand' && rr.ergebnisse[0].eintrag.schluessel === e.schluessel && o.q.abgelehnt().length === 0);
+  }
+
   // 5. Vorläufiger Stand
   {
     const paar = K.vorlaeufig({ zustand: 'frei' }, [{ typ: 'stempeln', schluessel: 'a', art: 'beginn', zeit: '2027-01-05T09:00:00.000Z' }, { typ: 'zuruecknehmen', schluessel: 'b', bezug_schluessel: 'a', zeit: '2027-01-05T09:01:00.000Z' }]);
