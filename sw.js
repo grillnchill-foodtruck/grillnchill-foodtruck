@@ -87,6 +87,7 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/send-email') ||
     url.pathname.startsWith('/status-update') ||
     url.pathname.startsWith('/shop-status') ||
+    url.pathname.startsWith('/wallet-pass') ||   // persönliche Pässe: nie cachen
     url.pathname.startsWith('/track') ||
     url.pathname.startsWith('/push-subscribe') ||
     url.pathname.startsWith('/push-send') ||
@@ -110,8 +111,11 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() =>
           caches.match(request)
-            // Seite mit anderem Suchteil (/cockpit?app=1 statt /cockpit): erst der Treffer ohne Suchteil, dann die Startseite
-            .then((r) => r || (request.mode === 'navigate' ? caches.match(request, { ignoreSearch: true }) : null))
+            // Seite mit Suchteil (/cockpit?app=1): genau der Pfad ohne Suchteil (/cockpit, / bei der Startseite), nur als HTML.
+            // Nie die Antwort eines anderen Suchteils.
+            .then((r) => r || (request.mode === 'navigate'
+              ? caches.match(url.origin + url.pathname).then((h) => (h && /text\/html/i.test(h.headers.get('content-type') || '') ? h : null))
+              : null))
             .then((r) => r || caches.match('/index.html'))
         )
     );

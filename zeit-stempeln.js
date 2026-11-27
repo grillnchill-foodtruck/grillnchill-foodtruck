@@ -358,7 +358,10 @@
     var x = r.ergebnisse.find(function (y) { return y.eintrag.schluessel === schluessel; });
     if (mein !== st.vorgang || !st.dlg.open) {
       // Der Nutzer hat die Bestätigung schon verlassen: Eine eigene endgültige Ablehnung darf nicht still verschwinden
-      if (x && x.status !== 200 && !x.abgelehnt) st.meldung = endText(x);
+      if (x && x.status !== 200 && !x.abgelehnt) {
+        st.meldung = (st.meldung ? st.meldung + ' ' : '') + endText(x);   // anhängen, Hinweise zu anderen Personen bleiben
+        if (st.dlg.open && st.ansicht === 'liste') listeZeigen();
+      }
       wartendZeigen();
       return { x: x, fertig: true };
     }
@@ -489,7 +492,8 @@
       navigator.serviceWorker.register('/sw.js').catch(function () {});
       // Erst wenn der Worker diese Seite steuert, laufen die Abrufe über ihn (beim ersten Mal nach controllerchange)
       navigator.serviceWorker.ready.then(function () { if (navigator.serviceWorker.controller) dateienHolen(); }).catch(function () {});
-      navigator.serviceWorker.addEventListener('controllerchange', dateienHolen);
+      // Nach einem Worker-Update (neue Cache-Version, alter Cache gelöscht) einmal je Controllerwechsel erneut
+      navigator.serviceWorker.addEventListener('controllerchange', function () { warm = false; dateienHolen(); });
     } catch (e) {}
   }
   function start() {
