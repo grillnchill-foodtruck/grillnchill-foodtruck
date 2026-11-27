@@ -4,11 +4,11 @@
  * ----------------------------------------------------------------------------
  * Lokale Vorschau fürs Stempeln: Cockpit (/cockpit), Handy-Tab (/zeit) und Datenschutzhinweis (/zeit/datenschutz)
  * mit echten Functions (team, team-device, cockpit-data, dienstplan, zeit) und einem Blob-Speicher im Arbeitsspeicher.
- * zeit.js spricht mit einem lokalen GNC Office (Worktree /Users/pasqualesgro/Downloads/Claude Code/gnc-office-zeit, sonst gnc-office: npm run db:lokal && npm run dev, Port 8791).
+ * zeit.js spricht mit einem lokalen GNC Office (Worktree gnc-office-zeit, sonst gnc-office: npm run db:lokal && npm run dev, Port 8791).
  * Zwei-Faktor ist hier aus (ZWEI_FAKTOR=aus): Anmelden nur mit Passwort, nichts davon gilt live.
  *
  *   node werkzeug/seiten-bauen.js        (CSP-Hashes für cockpit.html, sonst blockt der Browser das Inline-Skript)
- *   OFFICE_ZEIT_SECRET="$(sed -n 's/^OFFICE_ZEIT_SECRET=//p' "/Users/pasqualesgro/Downloads/Claude Code/gnc-office-zeit/.dev.vars")" \
+ *   OFFICE_ZEIT_SECRET="$(sed -n 's/^OFFICE_ZEIT_SECRET=//p' "<Office-Worktree>/.dev.vars")" \
  *     node werkzeug/zeit-vorschau.js
  *
  *   http://127.0.0.1:8657/cockpit   Kubi: kubi-lokal (Admin, koppelt das iPad als Stempeluhr)

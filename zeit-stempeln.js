@@ -81,6 +81,8 @@
     karte.hidden = !(st.role === 'superadmin' || st.role === 'admin');
     $('stempeluhrForm').hidden = !!g;
     $('stempeluhrGekoppelt').hidden = !g;
+    var swHinweis = $('stempeluhrSw');
+    if (swHinweis) swHinweis.hidden = 'serviceWorker' in navigator;
     if (g) $('stempeluhrGekoppelt').textContent = 'Gekoppelt als „' + g.name + '“. Entkoppeln geht im Admin-Tool unter Team-Geräte.';
   }
   // Token und zwischengespeicherte Namen weg. Die Warteschlange bleibt: Sie enthält unübertragene Pflichtaufzeichnungen.
@@ -208,8 +210,10 @@
     });
     if (abgel) texte.push(abgel === 1 ? 'Ein Stempel wurde abgelehnt. Du findest ihn in der Liste unter „Nicht übertragen“.' : abgel + ' Stempel wurden abgelehnt. Du findest sie in der Liste unter „Nicht übertragen“.');
     if (r.gestoppt === 'anmeldung') entkoppelt();
-    if (r.gestoppt === 'uhr') st.meldung = K.fehlerText('zukunft');
-    if (texte.length) st.meldung = texte.join(' ');
+    // Anhängen statt ersetzen (wie nachlauf), aber nichts doppelt: Der Lauf kommt jede Minute wieder
+    var dazu = function (t) { if (t && (st.meldung || '').indexOf(t) < 0) st.meldung = (st.meldung ? st.meldung + ' ' : '') + t; };
+    if (r.gestoppt === 'uhr') dazu(K.fehlerText('zukunft'));
+    if (texte.length) dazu(texte.join(' '));
     if (!r.gestoppt) st.offline = false;
     knoepfeZeigen();
     return texte;
@@ -220,7 +224,7 @@
     var von = st.seq;   // Stände, die während des Ladens aus Stempel-Antworten kamen, sind neuer als diese Antwort
     var r = await post(URL_ZEIT, { stempeluhr: g.token, aktion: 'stand' });
     if (r.status === 401) { entkoppelt(); st.meldung = TEXT_ENTKOPPELT; return; }
-    st.offline = r.status !== 200;
+    st.offline = r.status === 200 ? false : r.status === 0 ? 'netz' : 'dienst';   // 0: keine Verbindung, sonst (z. B. 503) gerade nicht erreichbar
     if (r.status === 200 && Array.isArray(r.daten.personen)) {
       var alt = {};
       ((st.daten && st.daten.personen) || []).forEach(function (p) { alt[p.id] = p; });
@@ -235,7 +239,7 @@
     if (!el) return;
     if (st.speicherFehler && n) el.textContent = K.fehlerText('speicher');
     else if (n) el.textContent = K.wartendText(n);
-    else el.textContent = st.offline ? 'Ohne Verbindung. Angezeigt wird der letzte Stand.' : '';
+    else el.textContent = st.offline === 'netz' ? 'Ohne Verbindung. Angezeigt wird der letzte Stand.' : st.offline ? 'Gerade nicht erreichbar. Angezeigt wird der letzte Stand.' : '';
     if (!n) st.speicherFehler = false;
   }
   // Der Tag kommt von der Uhr des Geräts. Der Plan in st.daten gilt nur, wenn er für diesen Tag geladen wurde (offline über Mitternacht nicht).
@@ -254,7 +258,7 @@
   function abgelehntZeile(e) {
     var p = findePerson(e.person_id);
     var was = e.typ === 'zuruecknehmen' ? 'Rückgängig' : (ART[e.art] || 'Stempel');
-    var grund = K.fehlerText(e.fehler);
+    var grund = K.fehlerText(e.fehler, e.hint);
     var s = esc(e.schluessel);
     return '<div class="zs-abgel"><b>' + esc(p ? p.name : 'Unbekannte Person') + ', ' + esc(wannText(e.zeit)) + '</b>'
       + '<p>' + esc(was) + '. ' + esc(grund) + '</p>'
@@ -285,13 +289,13 @@
     var zeile = function (p) {
       var s = standVon(p);
       return '<button type="button" class="zs-person ' + (s.zustand === 'im_dienst' ? 'ist-dienst' : s.zustand === 'pause' ? 'ist-pause' : '') + '" data-zs-person="' + esc(p.id) + '">'
-        + '<i class="zs-punkt" data-farbe="' + esc(p.farbe || '') + '"></i><span><b>' + esc(p.name) + '</b><small>' + esc(K.standText(s, heute())) + '</small></span>'
+        + '<i class="zs-punkt" data-farbe="' + esc(p.farbe || '') + '"></i><span><b>' + esc(p.name) + '</b><small>' + esc(K.standText(s, heute()) + (s.rueckgaengig ? ', wird rückgängig gemacht' : '')) + '</small></span>'
         + (schichtVon(p) ? '<span class="zs-plan">' + esc(p.schicht.von) + ' bis ' + esc(p.schicht.bis) + '</span>' : '') + '</button>';
     };
     var mit = personen.filter(schichtVon), ohne = personen.filter(function (p) { return !schichtVon(p); });
     var namen;
     if (!g) namen = '<p class="zs-hinweis">' + esc(TEXT_ENTKOPPELT) + '</p>';
-    else if (!personen.length) namen = '<p class="zs-hinweis">' + (st.offline ? 'Ohne Verbindung und noch ohne gespeicherte Namen.' : 'Namen werden geladen.') + '</p>';
+    else if (!personen.length) namen = '<p class="zs-hinweis">' + (st.offline === 'netz' ? 'Ohne Verbindung und noch ohne gespeicherte Namen.' : st.offline ? 'Gerade nicht erreichbar und noch ohne gespeicherte Namen.' : 'Namen werden geladen.') + '</p>';
     else namen = (mit.length ? '<h3 class="zs-abschnitt">Heute im Plan</h3><div class="zs-liste">' + mit.map(zeile).join('') + '</div>' : '')
       + (ohne.length ? '<h3 class="zs-abschnitt">' + (mit.length || !planGilt() ? 'Weitere' : 'Team') + '</h3><div class="zs-liste">' + ohne.map(zeile).join('') + '</div>' : '');
     st.inhalt.innerHTML = (st.meldung && (g || st.meldung !== TEXT_ENTKOPPELT) ? '<p class="zs-hinweis" role="status">' + esc(st.meldung) + '</p>' : '') + namen + abgelehntBlock();
@@ -313,6 +317,7 @@
     st.inhalt.innerHTML = '<p class="zs-stand">' + esc(K.standText(s, heute())) + '</p>'
       + '<p class="zs-plan-text">' + (schichtVon(p) ? 'Heute im Plan: ' + esc(p.schicht.von) + ' bis ' + esc(p.schicht.bis) : 'Heute nicht im Plan') + '</p>'
       + (s.vergessen ? '<p class="zs-hinweis">' + esc(K.vergessenText(s, heute())) + '</p>' : '')
+      + (s.rueckgaengig ? '<p class="zs-hinweis">Ein Stempel wird rückgängig gemacht. Der Stand kann sich gleich noch ändern.</p>' : '')
       + '<div class="zs-knoepfe">' + K.knoepfe(s.zustand).map(function (k, i) {
         return '<button type="button" class="zs-knopf' + (i ? ' zweit' : '') + '" data-zs-art="' + esc(k.art) + '" data-zs-person-id="' + esc(p.id) + '">' + esc(k.text) + '</button>';
       }).join('') + '</div>'

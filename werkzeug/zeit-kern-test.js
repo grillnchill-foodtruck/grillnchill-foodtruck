@@ -63,7 +63,7 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
   const ee = q.stempeln('p1', 'beginn');
   antworten = [{ status: 400, daten: { fehler: 'eingabe' } }];
   r = await q.abarbeiten();
-  ok('Anderer 400: Stempel wird verworfen, Grund in den Ergebnissen', r.gestoppt === null && r.wartend === 0 && r.ergebnisse[0].status === 400 && r.ergebnisse[0].eintrag.schluessel === ee.schluessel);
+  ok('Anderer 400: Stempel wird abgelehnt, Grund in den Ergebnissen', r.gestoppt === null && r.wartend === 0 && r.ergebnisse[0].status === 400 && r.ergebnisse[0].eintrag.schluessel === ee.schluessel);
   q.stempeln('p1', 'ende');
   await q.abarbeiten();
 
@@ -408,9 +408,54 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     const sp = o2.speicher;
     const q3 = K.warteschlange({ speicher: sp, via: 'stempeluhr', jetzt: () => uhr, uuid, senden: async (e) => { gesendet.push(e.person_id); return { status: 200, daten: { ok: true } }; } });
     const r = await q3.erneut(a1.schluessel, { person: 'p2' });
-    ok('erneut für fremde Person: nichts gesendet, Eintrag bleibt abgelehnt', gesendet.length === 0 && q3.abgelehnt().length === 1 && q3.wartend().length === 1);
-    await q3.abarbeiten({ person: 'p1' });
+    ok('erneut für fremde Person: null, nichts gesendet, Eintrag bleibt abgelehnt', r === null && gesendet.length === 0 && q3.abgelehnt().length === 2 && q3.wartend().length === 0);
+    await q3.erneut(a1.schluessel, { person: 'p1' });
     ok('erneut mit eigener Person sendet nur diese', gesendet.join() === 'p1' && q3.wartend().length === 0 && q3.abgelehnt().length === 1 && q3.abgelehnt()[0].schluessel === a2.schluessel);
+  }
+
+  // 11: Rückgängig nach unklarer Übertragung (Office hat gespeichert, Antwort ging verloren)
+  {
+    const office = new Map();
+    let verlieren = true;
+    const o = frisch({ senden: async (e) => {
+      if (e.typ === 'stempeln') office.set(e.schluessel, e);
+      else if (office.has(e.bezug_schluessel)) office.set(e.schluessel, e);
+      else return { status: 409, daten: { fehler: 'nicht_zuruecknehmbar' } };
+      if (verlieren) { verlieren = false; return { status: 0, daten: {} }; }
+      return { status: 200, daten: {} };
+    } });
+    const e = o.q.stempeln('p-falsch', 'beginn');
+    const r1 = await o.q.abarbeiten();
+    ok('Unklar beendet: Stempel bleibt liegen, Office hat ihn', r1.gestoppt === 'netz' && r1.wartend === 1 && office.has(e.schluessel));
+    ok('Der Eintrag ist als versucht markiert', o.q.wartend()[0].versucht === true);
+    const rk = o.q.rueckgaengig(e.schluessel, 'p-falsch');
+    ok('Rückgängig löscht nicht lokal, sondern stellt eine Rücknahme an', rk.weg !== true && rk.typ === 'zuruecknehmen' && o.q.wartend().length === 2);
+    const r2 = await o.q.abarbeiten();
+    const rn = [...office.values()].filter((x) => x.typ === 'zuruecknehmen');
+    ok('Nächster Lauf: Stempel und danach die Rücknahme beim Office', r2.wartend === 0 && rn.length === 1 && rn[0].bezug_schluessel === e.schluessel && r2.ergebnisse.length === 2 && r2.ergebnisse[0].eintrag.typ === 'stempeln');
+    // nie versucht: weiter nur lokal
+    const o2 = frisch({ senden: async () => ({ status: 200, daten: {} }) });
+    const e2 = o2.q.stempeln('p1', 'beginn');
+    ok('Nie versucht: Rückgängig bleibt rein lokal', o2.q.rueckgaengig(e2.schluessel, 'p1').weg === true && o2.q.wartend().length === 0);
+  }
+
+  // 12: vorläufiger Stand mit wartender Rücknahme für einen schon übertragenen Stempel
+  {
+    const stand = { zustand: 'im_dienst', seit: '2027-01-05T09:00:00.000Z', beginn: '2027-01-05T09:00:00.000Z' };
+    const v = K.vorlaeufig(stand, [{ typ: 'zuruecknehmen', schluessel: 'r', bezug_schluessel: 'schon-uebertragen', zeit: '2027-01-05T09:01:00.000Z' }]);
+    ok('Wartende Rücknahme für übertragenen Stempel: Hinweis gesetzt, Stand bleibt', v.rueckgaengig === true && v.zustand === 'im_dienst');
+    ok('Ohne Rücknahme kein Hinweis', K.vorlaeufig(stand, []).rueckgaengig === false);
+    const w = K.vorlaeufig({ zustand: 'frei' }, [{ typ: 'stempeln', schluessel: 'a', art: 'beginn', zeit: '2027-01-05T09:00:00.000Z' }, { typ: 'zuruecknehmen', schluessel: 'b', bezug_schluessel: 'a', zeit: '2027-01-05T09:01:00.000Z' }]);
+    ok('Stempel samt Rücknahme in der Schlange zählt nicht und zeigt den Hinweis', w.zustand === 'frei' && w.rueckgaengig === true);
+  }
+
+  // 13: hint bleibt beim Ablehnen erhalten
+  {
+    const o = frisch({ senden: async () => ({ status: 409, daten: { fehler: 'keine_person', hint: 'Bitte Kubi fragen.' } }) });
+    o.q.stempeln('p1', 'beginn');
+    await o.q.abarbeiten();
+    const a = o.q.abgelehnt()[0];
+    ok('keine_person: hint steht im abgelehnten Eintrag', a && a.fehler === 'keine_person' && a.hint === 'Bitte Kubi fragen.');
   }
 
   console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));

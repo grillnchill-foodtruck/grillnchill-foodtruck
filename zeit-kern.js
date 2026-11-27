@@ -97,8 +97,8 @@
   function vorlaeufig(stand, eintraege, jetzt) {
     var s = Object.assign({ zustand: 'frei', seit: null, beginn: null, vergessen: null }, stand || {});
     var liste = eintraege || [];
-    var zurueck = {};
-    liste.forEach(function (e) { if (e && e.typ === 'zuruecknehmen' && e.bezug_schluessel) zurueck[e.bezug_schluessel] = true; });
+    var zurueck = {}, rueck = false;
+    liste.forEach(function (e) { if (e && e.typ === 'zuruecknehmen' && e.bezug_schluessel) { zurueck[e.bezug_schluessel] = true; rueck = true; } });
     liste.forEach(function (e) {
       if (e.typ !== 'stempeln' || zurueck[e.schluessel]) return;   // Stempel samt wartender Rücknahme zählt nicht
       if (e.art === 'beginn') s = Object.assign({}, s, { zustand: 'im_dienst', seit: e.zeit, beginn: e.zeit, vergessen: null });
@@ -109,7 +109,8 @@
     if (jetzt != null && s.zustand !== 'frei' && s.beginn && alsMs(jetzt) - Date.parse(s.beginn) >= VERGESSEN_MS) {
       s = Object.assign({}, s, { zustand: 'frei', seit: null, beginn: null, vergessen: { beginn: s.beginn, tag: tagVon(s.beginn) } });
     }
-    return Object.assign(s, { wartend: liste.length });
+    // rueckgaengig: Eine Rücknahme wartet (auch für einen schon übertragenen Stempel, dessen Wirkung im Stand steckt). Die Seiten zeigen den Hinweis.
+    return Object.assign(s, { wartend: liste.length, rueckgaengig: rueck });
   }
 
   // UUID v4; ohne crypto.randomUUID (vor iOS/iPadOS 15.4) aus getRandomValues
@@ -191,8 +192,9 @@
     function stempeln(personId, art) {
       return neu({ typ: 'stempeln', via: via, schluessel: uuid(), person_id: personId, art: art, zeit: new Date(jetzt()).toISOString() });
     }
-    // Noch nicht gesendet: einfach weg (nur wenn das Schreiben klappt). Schon beim Office, gerade unterwegs oder
-    // nicht sicher gelöscht: Rücknahme hinten anstellen. Schon abgelehnt: entfernen, keine Rücknahme.
+    // Nie versucht zu senden: einfach weg (nur wenn das Schreiben klappt). Schon versucht (versucht: true, auch wenn die
+    // Antwort verloren ging), gerade unterwegs oder nicht sicher gelöscht: Rücknahme hinten anstellen, der Lauf sendet
+    // erst den Stempel (gleicher Schlüssel, gleiches Ergebnis), dann die Rücknahme. Schon abgelehnt: entfernen, keine Rücknahme.
     function rueckgaengig(bezug, personId) {
       var l = lesen();
       var e = l.filter(function (x) { return x.schluessel === bezug && eigene(x); })[0];
@@ -201,7 +203,7 @@
         zurueck(l);
         return { weg: false, grund: 'speicher' };
       }
-      if (e && unterwegs !== bezug) {
+      if (e && unterwegs !== bezug && !e.versucht) {
         if (schreiben(ohneSchluessel(l, bezug))) return { weg: true };
         zurueck(l);   // Löschen nicht sicher: alten Stand halten
       }
@@ -219,15 +221,18 @@
       var l = lesen(), gefunden = false;
       var neuL = l.map(function (e) {
         if (e.schluessel !== schluessel || !eigene(e) || !e.abgelehnt) return e;
+        if (opt && opt.person && e.person_id !== opt.person) return e;   // fremder Eintrag bleibt abgelehnt
         gefunden = true; var r = Object.assign({}, e); delete r.abgelehnt; return r;
       });
       if (!gefunden) return Promise.resolve(null);
       schreiben(neuL);
       return abarbeiten(opt);
     }
-    function ablehnen(e, status, code) {
+    function ablehnen(e, status, code, hint) {
+      var a = { status: status, fehler: code, am: new Date(jetzt()).toISOString() };
+      if (hint) a.hint = hint;
       schreiben(lesen().map(function (x) {
-        return x.schluessel === e.schluessel ? Object.assign({}, x, { abgelehnt: { status: status, fehler: code, am: new Date(jetzt()).toISOString() } }) : x;
+        return x.schluessel === e.schluessel ? Object.assign({}, x, { abgelehnt: a }) : x;
       }));
     }
     async function lauf(ergebnisse, person) {
@@ -238,6 +243,10 @@
         var e = wartend(person).filter(function (x) { return !gesehen[x.schluessel]; })[0];
         if (!e) break;
         gesehen[e.schluessel] = true;
+        // Vor dem ersten Senden markieren (ein Schreibvorgang): Ging die Antwort verloren, weiß rueckgaengig, dass das Office ihn haben kann.
+        if (!e.versucht) {
+          schreiben(lesen().map(function (x) { return x.schluessel === e.schluessel ? Object.assign({}, x, { versucht: true }) : x; }));
+        }
         var r;
         unterwegs = e.schluessel; letzter = e.schluessel;
         try { r = await senden(e); } catch (err) { r = null; } finally { unterwegs = null; }
@@ -260,8 +269,8 @@
         // Keine Antwort des Servers (HTML-404 der Sammelregel, 204, 408, 413 ohne JSON): bleibt liegen.
         if (!code) return 'netz';
         if (istEndgueltig(code)) { entfernen(e.schluessel); ergebnisse.push({ eintrag: e, status: status, daten: daten }); continue; }
-        // Unbekannter Grund: nicht wegwerfen. Erst in "abgelehnt" sichern, dann aus der Schlange nehmen.
-        ablehnen(e, status, code);
+        // Unbekannter Grund: nicht wegwerfen. Der Eintrag bleibt im selben Array und trägt das Feld abgelehnt.
+        ablehnen(e, status, code, typeof daten.hint === 'string' ? daten.hint : '');
         ergebnisse.push({ eintrag: e, status: status, daten: daten, abgelehnt: true });
       }
       return null;

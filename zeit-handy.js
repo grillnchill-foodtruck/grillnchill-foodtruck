@@ -51,7 +51,7 @@
   var st = {
     cred: '', person: null, heute: '', offline: '', montag: '', uhr: null,
     vorgang: 0, ladeNr: 0, seq: 0, merk: 0, sperre: 0, phase: '',
-    info: '', speicherFehler: false, weg: {}, wocheNr: 0, sitzung: 0,
+    info: '', speicherFehler: false, weg: {}, wocheNr: 0, sitzung: 0, unfrei: false,
   };
 
   function toast(text, art) {
@@ -154,7 +154,7 @@
     wartendZeigen();
     if (!s) return;
     $('zhPlan').textContent = planGilt() ? (p.schicht ? 'Heute im Plan: ' + p.schicht.von + ' bis ' + p.schicht.bis : 'Heute nicht im Plan') : '';
-    var h = K.vergessenText(s, heute());
+    var h = [K.vergessenText(s, heute()), s.rueckgaengig ? 'Ein Stempel wird rückgängig gemacht. Der Stand kann sich gleich noch ändern.' : ''].filter(Boolean).join(' ');
     $('zhHinweis').textContent = h;
     $('zhHinweis').hidden = !h;
     // Während der Bestätigung bleiben die Knöpfe weg, auch wenn im Hintergrund etwas nachgesendet wird
@@ -348,7 +348,7 @@
       var s = esc(e.schluessel);
       if (st.weg[e.schluessel]) return '<div class="zs-weg" role="status"><span>Verworfen.</span><button type="button" class="zs-pille" data-wegzurueck="' + s + '">Rückgängig</button></div>';
       var was = e.typ === 'zuruecknehmen' ? 'Rückgängig' : (ART[e.art] || 'Stempel');
-      return '<div class="zs-abgel"><b>' + esc(was) + ', ' + esc(wannText(e.zeit)) + '</b><p>' + esc(K.fehlerText(e.fehler)) + '</p>'
+      return '<div class="zs-abgel"><b>' + esc(was) + ', ' + esc(wannText(e.zeit)) + '</b><p>' + esc(K.fehlerText(e.fehler, e.hint)) + '</p>'
         + '<div class="zs-aktionen"><button type="button" class="zs-pille" data-nochmal="' + s + '">Nochmal senden</button>'
         + '<button type="button" class="zs-pille" data-verwerfen="' + s + '">Verwerfen</button></div></div>';
     }).join('');
