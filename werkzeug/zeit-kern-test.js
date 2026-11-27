@@ -139,7 +139,13 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     const rr = await o.q.abarbeiten();
     ok('409 zustand hält die folgenden Einträge nicht an', rr.gestoppt === null && log.length === 2 && rr.ergebnisse.length === 2 && rr.ergebnisse[0].status === 409 && rr.wartend === 0 && o.q.abgelehnt().length === 0);
   }
-  for (const code of ['nicht_zuruecknehmbar', 'schluessel_anders', 'eingabe', 'aktion', 'art', 'schluessel', 'bezug', 'zeit']) {
+  for (const code of ['eingabe', 'aktion', 'art', 'schluessel', 'bezug', 'zeit', 'constructor', 'toString', '__proto__']) {
+    const o = frisch({ senden: antwortFolge([{ status: 400, daten: { fehler: code } }], []) });
+    o.q.stempeln('p1', 'beginn');
+    const rr = await o.q.abarbeiten();
+    ok('Code ' + code + ' wird nicht verworfen, sondern abgelehnt', rr.wartend === 0 && o.q.abgelehnt().length === 1 && o.q.abgelehnt()[0].fehler === code && rr.ergebnisse[0].abgelehnt === true);
+  }
+  for (const code of ['zustand', 'nicht_zuruecknehmbar', 'schluessel_anders']) {
     const o = frisch({ senden: antwortFolge([{ status: 400, daten: { fehler: code } }], []) });
     o.q.stempeln('p1', 'beginn');
     const rr = await o.q.abarbeiten();
@@ -273,6 +279,93 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     ok('UUID ohne randomUUID: v4 aus getRandomValues', UUID4.test(u));
     const fake0 = { getRandomValues: (a) => { for (let i = 0; i < a.length; i++) a[i] = i * 17 + 3; return a; } };
     ok('… Version- und Variant-Bits stimmen bei anderen Zufallswerten', UUID4.test(K.uuidV4(fake0)) && K.uuidV4({ randomUUID: () => 'x' }) === 'x');
+  }
+
+  /* ---- Zweite Nachbesserung ------------------------------------------------- */
+  const voll = (nurKey) => { const sp2 = speicher(); sp2.setItem = (k) => { if (!nurKey || k === nurKey) throw new Error('QuotaExceededError'); }; const orig = speicher; return sp2; };
+  const vollMitM = (nurKey) => { const sp2 = speicher(); const set = sp2.setItem; sp2.setItem = (k, v) => { if (!nurKey || k === nurKey) throw new Error('QuotaExceededError'); set(k, v); }; return sp2; };
+  // 1
+  {
+    const log = [];
+    const o = frisch({ speicher: vollMitM(), senden: async (e) => { log.push(e.typ + ':' + e.person_id); return { status: 200, daten: {} }; } });
+    o.q.stempeln('pA', 'beginn'); uhr += 1000;
+    const b = o.q.stempeln('pB', 'beginn'); uhr += 1000;
+    o.q.rueckgaengig(b.schluessel, 'pB');
+    ok('Speicher voll, B macht rückgängig: Stempel von A bleibt in wartend', o.q.wartend().some((e) => e.person_id === 'pA' && e.typ === 'stempeln'));
+    await o.q.abarbeiten();
+    ok('… und wird gesendet', log[0] === 'stempeln:pA');
+  }
+  // 2
+  {
+    const log = []; let antw = [{ status: 404, daten: { fehler: 'person_fehlt' } }];
+    const o = frisch({ senden: async (e) => { log.push(e.typ); return antw.shift() || { status: 200, daten: {} }; } });
+    const e = o.q.stempeln('p1', 'beginn');
+    await o.q.abarbeiten();
+    const r2 = o.q.rueckgaengig(e.schluessel, 'p1');
+    await o.q.abarbeiten();
+    await o.q.erneut(e.schluessel);
+    ok('Rückgängig auf abgelehnt: weg, keine Rücknahme, nichts geht mehr raus', r2.weg === true && o.q.abgelehnt().length === 0 && o.q.wartend().length === 0 && log.join() === 'stempeln');
+  }
+  // 3
+  {
+    const s0 = vollMitM('gnc_zeit_abgelehnt');
+    const o = frisch({ speicher: s0, senden: async () => ({ status: 404, daten: { fehler: 'person_fehlt' } }) });
+    o.q.stempeln('p1', 'beginn');
+    await o.q.abarbeiten();
+    const q2 = K.warteschlange({ speicher: s0, via: 'stempeluhr', senden, jetzt: () => uhr, uuid });
+    ok('Abgelehnt nicht schreibbar: nach Neuladen in keiner Liste verschwunden', q2.wartend().length + q2.abgelehnt().length >= 1 && o.q.abgelehnt().length === 1 && o.q.wartend().length === 0);
+    // erneut: Ziel (Schlange) nicht schreibbar
+    const s1 = vollMitM();
+    const m = s1.setItem;
+    const o2 = frisch({ speicher: speicher(), senden: antwortFolge([{ status: 404, daten: { fehler: 'person_fehlt' } }], []) });
+    const e = o2.q.stempeln('p1', 'beginn'); await o2.q.abarbeiten();
+    const sp3 = o2.speicher; const set3 = sp3.setItem; sp3.setItem = (k, v) => { if (k === 'gnc_zeit_warteschlange') throw new Error('voll'); set3(k, v); };
+    o2.q.erneut(e.schluessel);
+    const q3 = K.warteschlange({ speicher: sp3, via: 'stempeluhr', senden, jetzt: () => uhr, uuid });
+    ok('erneut mit nicht schreibbarer Schlange: nach Neuladen weiter in abgelehnt', q3.abgelehnt().length === 1);
+  }
+  // 4
+  {
+    const log = [];
+    const o = frisch({ senden: async (e) => { const echt = Date.parse('2027-01-05T10:00:00.000Z'); if (Date.parse(e.zeit) - echt > 120000) return { status: 400, daten: { fehler: 'zukunft' } }; log.push(e.person_id); return { status: 200, daten: {} }; } });
+    uhr = Date.parse('2027-01-06T10:00:00.000Z'); o.q.stempeln('pA', 'beginn');
+    uhr = Date.parse('2027-01-05T10:00:00.000Z'); o.q.stempeln('pB', 'beginn');
+    const rr = await o.q.abarbeiten();
+    ok('Uhr korrigiert: alter Stempel nach abgelehnt (zukunft), neuer geht raus', rr.gestoppt === null && log.join() === 'pB' && o.q.abgelehnt().length === 1 && o.q.abgelehnt()[0].fehler === 'zukunft' && rr.wartend === 0);
+    uhr = Date.parse('2027-01-05T09:02:00.000Z');
+  }
+  {
+    const o = frisch({ senden: antwortFolge([{ status: 400, daten: { fehler: 'zukunft' } }], []) });
+    uhr += 60000; o.q.stempeln('p1', 'beginn'); uhr -= 60000;
+    const rr = await o.q.abarbeiten();
+    ok('Uhr geht nur eine Minute vor: bleibt liegen, uhr', rr.gestoppt === 'uhr' && o.q.wartend().length === 1 && o.q.abgelehnt().length === 0);
+  }
+  // 5
+  {
+    const gemeldet = []; const alt = console.error; console.error = (...a) => gemeldet.push(a.join(' '));
+    let boese = true;
+    const o = frisch({ senden: async () => { if (boese) return { get status() { throw new Error('kaputt'); } }; return { status: 200, daten: {} }; } });
+    const e = o.q.stempeln('p1', 'beginn');
+    const rr = await o.q.abarbeiten();
+    console.error = alt;
+    ok('Fehler im Lauf: gestoppt netz, Eintrag bleibt, console.error mit Schlüssel', rr.gestoppt === 'netz' && o.q.wartend().length === 1 && gemeldet.length === 1 && gemeldet[0].includes(e.schluessel) && !gemeldet[0].includes('p1'));
+    const o3 = frisch({ senden: async () => { throw new Error('offline'); } });
+    o3.q.stempeln('p1', 'beginn');
+    const r3 = await o3.q.abarbeiten();
+    ok('senden wirft: gestoppt netz, Eintrag bleibt', r3.gestoppt === 'netz' && o3.q.wartend().length === 1);
+  }
+  // 7
+  {
+    const v = K.vorlaeufig({ zustand: 'im_dienst', seit: '2027-01-05T09:00:00.000Z', beginn: '2027-01-05T09:00:00.000Z' }, [], Date.parse('2027-01-06T04:00:00.000Z'));
+    ok('Vergessen wie im Office: frei, beginn null, vergessen mit Beginn und Berliner Tag', v.zustand === 'frei' && v.beginn === null && v.seit === null && v.vergessen.beginn === '2027-01-05T09:00:00.000Z' && v.vergessen.tag === '2027-01-05');
+  }
+  // 8
+  {
+    const o = frisch({ senden: antwortFolge([{ status: 404, daten: { fehler: 'person_fehlt' } }], []) });
+    const e = o.q.stempeln('p1', 'beginn'); await o.q.abarbeiten();
+    const nein = o.q.verwerfen('gibts-nicht');
+    const ja = o.q.verwerfen(e.schluessel);
+    ok('verwerfen entfernt endgültig aus abgelehnt, Unbekanntes false', nein === false && ja === true && o.q.abgelehnt().length === 0 && JSON.parse(o.speicher.m.get('gnc_zeit_abgelehnt')).length === 0);
   }
 
   console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));
