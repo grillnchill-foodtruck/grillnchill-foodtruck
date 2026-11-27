@@ -374,6 +374,20 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     ok('verwerfen entfernt endgültig aus abgelehnt, Unbekanntes false', nein === false && ja === true && o.q.abgelehnt().length === 0 && JSON.parse(o.speicher.m.get('gnc_zeit_warteschlange')).length === 0);
   }
 
+  // 9: Lauf nur für eine Person (geteiltes Handy)
+  {
+    const sende = [];
+    const o = frisch({ senden: async (e) => { sende.push(e.person_id); return { status: 200, daten: { ok: true } }; } });
+    o.q.stempeln('p1', 'beginn'); o.q.stempeln('p2', 'beginn');
+    const r2 = await o.q.abarbeiten({ person: 'p2' });
+    ok('Lauf mit person p2 sendet nur p2, p1 bleibt wartend (nicht abgelehnt)', sende.join() === 'p2' && r2.ergebnisse.length === 1 && o.q.wartend('p1').length === 1 && o.q.abgelehnt().length === 0 && r2.wartend === 1);
+    const r1 = await o.q.abarbeiten({ person: 'p1' });
+    ok('Späterer Lauf mit person p1 sendet p1', sende.join() === 'p2,p1' && r1.wartend === 0);
+    o.q.stempeln('p1', 'ende'); o.q.stempeln('p2', 'ende');
+    await o.q.abarbeiten();
+    ok('Ohne Option senden alle', sende.length === 4 && o.q.wartend().length === 0);
+  }
+
   console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));
   process.exit(fehler ? 1 : 0);
 })().catch((e) => { console.log('Absturz:', e && e.stack); process.exit(1); });

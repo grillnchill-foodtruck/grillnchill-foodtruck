@@ -257,6 +257,7 @@
   function rolleMerken(rolle) {
     if (rolle !== 'staff' && rolle !== 'admin' && rolle !== 'superadmin') return;
     try { localStorage.setItem('gnc_team_rolle', rolle === 'staff' ? 'staff' : 'admin'); } catch (e) {}
+    if (window.GNCAppLeiste) window.GNCAppLeiste.neu();   // Leiste der App gleich passend zur Rolle
   }
   async function anmelden(passwort, optionen) {
     var merken = !!(optionen && optionen.merken);
@@ -274,5 +275,6 @@
     anmelden: anmelden,
     istToken: function (x) { return typeof x === 'string' && TOKEN_FORM.test(x); },
     wartezeit: wartezeit,
+    rolleMerken: rolleMerken,
   };
 })();

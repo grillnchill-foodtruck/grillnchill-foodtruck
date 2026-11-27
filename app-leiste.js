@@ -21,7 +21,8 @@
  *     selected: 'cockpit',  markierter Tab der Team-Leiste
  *     lokal:   fn(id),      true = Tab auf der Seite selbst erledigt (kein Seitenwechsel)
  *     vorWechsel: fn(id),   false = Wechsel abbrechen (z. B. Fahrt mit Live-Standort)
- *   })  -> { waehle(id) }   markierten Tab nachträglich setzen
+ *   })  -> { waehle(id), neu() }   markierten Tab nachträglich setzen / Tabs nach einer Anmeldung neu bestimmen
+ *   (GNCAppLeiste.neu() wirkt auf die zuletzt gestartete Leiste)
  *
  * Team-Leiste (Admin, Cockpit, Fahrer, Dienstplan, Firmen, Zeit): Heute, Bestellungen,
  * Cockpit, Fahrer, Mehr. Mitarbeiter (Rolle staff, localStorage gnc_team_rolle) sehen
@@ -65,7 +66,8 @@
     heute: '/admin.html?tab=today&app=1', orders: '/admin.html?tab=orders&app=1',
     cockpit: '/cockpit.html?app=1', zeit: '/zeit?app=1', fahrer: '/fahrer?app=1', mehr: '/admin.html?menu=1&app=1',
   };
-  var LEER = { waehle: function () {} };
+  var LEER = { waehle: function () {}, neu: function () {} };
+  var letzte = null;
 
   function ids(x) { return Array.isArray(x) ? x : (x ? [x] : []); }
 
@@ -89,11 +91,13 @@
     function post(m) { try { h.postMessage(m); } catch (e) {} }
     var team = o.modus === 'team';
     var tabs = null;
-    if (team) tabs = teamRolle() === 'staff' ? TEAM_STAFF : TEAM;
-    else {
-      try { tabs = JSON.parse(localStorage.getItem('gnc_ntb_tabs') || 'null'); } catch (e) {}
-      if (!Array.isArray(tabs) || !tabs.length) tabs = o.tabs || ERSATZ;
+    function tabsWaehlen() {
+      if (team) return teamRolle() === 'staff' ? TEAM_STAFF : TEAM;
+      var t = null;
+      try { t = JSON.parse(localStorage.getItem('gnc_ntb_tabs') || 'null'); } catch (e) {}
+      return Array.isArray(t) && t.length ? t : (o.tabs || ERSATZ);
     }
+    tabs = tabsWaehlen();
     var gewaehlt = o.selected || '';
     function melden() { post({ type: 'configure', tabs: tabs, selected: gewaehlt }); }
     var aktiv = false, zuletzt = null, raf = 0;
@@ -126,8 +130,16 @@
       if (ziel) location.href = ziel;
     };
     melden();
-    return { waehle: function (id) { if ((id || '') === gewaehlt) return; gewaehlt = id || ''; melden(); } };
+    // Nach einer Anmeldung neu bestimmen (die gemerkte Rolle kann sich geändert haben); meldet nur bei geänderten Tabs
+    function neu() {
+      var t = tabsWaehlen();
+      if (JSON.stringify(t) === JSON.stringify(tabs)) return;
+      tabs = t;
+      melden();
+    }
+    letzte = { neu: neu };
+    return { waehle: function (id) { if ((id || '') === gewaehlt) return; gewaehlt = id || ''; melden(); }, neu: neu };
   }
 
-  window.GNCAppLeiste = { inApp: inApp, start: start, START: START };
+  window.GNCAppLeiste = { inApp: inApp, start: start, START: START, neu: function () { if (letzte) letzte.neu(); } };
 })();

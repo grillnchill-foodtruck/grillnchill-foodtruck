@@ -21,6 +21,7 @@
   var VERWERFEN_MS = 6000;
   var SPERRE_MS = 400;
   var ART = { beginn: 'Schicht beginnen', pause_beginn: 'Pause beginnen', pause_ende: 'Pause beenden', ende: 'Schicht beenden' };
+  var TEXT_FREMD = 'Auf diesem Handy warten noch Stempel einer anderen Person. Sie gehen raus, sobald sie sich hier anmeldet.';
   var TEXT_NEU_ANMELDEN = 'Bitte melde dich neu an. Deine Stempel bleiben gespeichert.';
   var $ = function (id) { return document.getElementById(id); };
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -36,7 +37,7 @@
   var st = {
     cred: '', person: null, heute: '', offline: '', montag: '', uhr: null,
     vorgang: 0, ladeNr: 0, seq: 0, merk: 0, sperre: 0, phase: '',
-    info: '', fehler: '', speicherFehler: false, weg: {}, wocheNr: 0,
+    info: '', speicherFehler: false, weg: {}, wocheNr: 0, sitzung: 0,
   };
 
   function toast(text, art) {
@@ -87,26 +88,32 @@
     $('zeitView').hidden = true;
     $('loginView').hidden = false;
     var n = q.wartend().length;
-    $('loginWartend').textContent = n ? (n === 1 ? 'Auf diesem Handy wartet ein Stempel.' : 'Auf diesem Handy warten ' + n + ' Stempel.') + ' Er geht raus, sobald du dich anmeldest.' : '';
+    $('loginWartend').textContent = n ? (n === 1 ? 'Auf diesem Handy wartet ein Stempel. Er geht raus, sobald sich die Person hier anmeldet, zu der er gehört.' : 'Auf diesem Handy warten ' + n + ' Stempel. Sie gehen raus, sobald sich die Personen hier anmelden, zu denen sie gehören.') : '';
     $('loginWartend').hidden = !n;
     $('pwFehler').textContent = text || '';
     $('pwFehler').hidden = !text;
   }
   function zeigeZeit() { $('loginView').hidden = true; $('zeitView').hidden = false; }
 
-  // Meldungen: Hinweise in Bernstein (zhInfo), Fehler in Rot (zhFehler). Gleicher Text nur einmal.
+  // Meldungen: Hinweise in Bernstein (zhInfo). Gleicher Text nur einmal.
   function infoDazu(text) {
     if (!text || st.info.indexOf(text) !== -1) return;
     st.info = st.info ? st.info + ' ' + text : text;
   }
+  // Eigene Person bekannt: Stempel anderer Personen (wartend oder abgelehnt) auf diesem Handy bekommen einen neutralen Hinweis
+  var eigeneId = function () { return st.person ? st.person.id : null; };
+  function fremdeDa() {
+    var id = eigeneId();
+    if (!id) return false;
+    return q.wartend().some(function (e) { return e.person_id !== id; }) || q.abgelehnt().some(function (e) { return e.person_id !== id; });
+  }
   function meldungenZeigen() {
-    $('zhInfo').textContent = st.info;
-    $('zhInfo').hidden = !st.info;
-    $('zhFehler').textContent = st.fehler;
-    $('zhFehler').hidden = !st.fehler;
+    var t = st.info + (fremdeDa() ? (st.info ? ' ' : '') + TEXT_FREMD : '');
+    $('zhInfo').textContent = t;
+    $('zhInfo').hidden = !t;
   }
   function wartendZeigen() {
-    var n = q.wartend().length;
+    var n = q.wartend(eigeneId() || '-').length;
     var el = $('zhWartend');
     if (st.speicherFehler && n) el.textContent = K.fehlerText('speicher');
     else if (n) el.textContent = K.wartendText(n);
@@ -176,15 +183,15 @@
 
   /* ---------------- Laden ---------------- */
   async function laden() {
-    var nr = ++st.ladeNr;
-    if (verarbeite(await q.abarbeiten())) return;
-    if (nr !== st.ladeNr || !st.cred) return;
+    var nr = ++st.ladeNr, sz = st.sitzung;
+    var gueltig = function () { return nr === st.ladeNr && sz === st.sitzung && !!st.cred; };
     var von = st.seq;   // Stände aus Stempel-Antworten während des Ladens sind neuer als diese Antwort
-    var r = await post({ aktion: 'stand' });
-    if (nr !== st.ladeNr || !st.cred) return;
+    var r = await post({ aktion: 'stand' });   // erst die eigene Person kennen, dann senden (geteiltes Handy)
+    if (!gueltig()) return;
     if (r.status === 401) return abmelden(q.wartend().length ? TEXT_NEU_ANMELDEN : 'Bitte melde dich neu an.');
     if (r.status === 403) {
       st.person = null; st.heute = ''; schreib(STAND_KEY, null);
+      fertigZu();
       zeigeZeit();
       $('zhName').textContent = 'Noch nicht freigeschaltet';
       $('zhStand').textContent = K.fehlerText(fehlercode(r.daten), r.daten.hint);
@@ -216,8 +223,13 @@
       return;
     }
     zeichneStand();
-    if (!st.montag) st.montag = montagVon(st.heute || heute());
     $('zhWocheBereich').hidden = false;
+    // Nur Stempel dieser Person gehen raus, Stempel anderer Personen auf diesem Handy bleiben liegen
+    var rq = await q.abarbeiten({ person: st.person.id });
+    if (!gueltig()) return;
+    if (verarbeite(rq)) return;
+    zeichneStand();
+    if (!st.montag) st.montag = montagVon(st.heute || heute());
     wocheLaden();
   }
 
@@ -232,7 +244,8 @@
     if (!p || Date.now() < st.sperre) return;
     var mein = ++st.vorgang;
     st.sperre = Date.now() + SPERRE_MS;   // Ein Doppeltipp trifft nicht „Rückgängig“, das an derselben Stelle erscheint
-    st.info = ''; st.fehler = '';
+    st.info = '';
+    var sz = st.sitzung;
     var e = q.stempeln(p.id, art);
     if (e.gespeichert === false) st.speicherFehler = true;
     st.phase = 'fertig';
@@ -253,7 +266,8 @@
       if (rest > 0) { knopf.querySelector('.zs-sek').textContent = rest; return; }
       fertigZu(); knopf.hidden = true; zeichneStand();
     }, 1000);
-    var r = await q.abarbeiten();
+    var r = await q.abarbeiten({ person: p.id });
+    if (sz !== st.sitzung) return;
     if (verarbeite(r, e.schluessel)) return;
     var x = r.ergebnisse.find(function (y) { return y.eintrag.schluessel === e.schluessel; });
     var hier = mein === st.vorgang;   // false: die Person hat inzwischen Rückgängig getippt, der Rest macht rueckgaengig()
@@ -273,7 +287,7 @@
 
   async function rueckgaengig(p, e) {
     if (Date.now() < st.sperre) return;
-    var mein = ++st.vorgang;
+    var mein = ++st.vorgang, sz = st.sitzung;
     st.sperre = Date.now() + SPERRE_MS;   // Die Knöpfe erscheinen an derselben Stelle wieder
     clearInterval(st.uhr);
     $('zhRueckgaengig').hidden = true;
@@ -297,7 +311,8 @@
     $('zhFertigText').textContent = 'Wird rückgängig gemacht.';
     if (st.speicherFehler) infoDazu(K.fehlerText('speicher'));
     meldungenZeigen();
-    var r = await q.abarbeiten();
+    var r = await q.abarbeiten({ person: p.id });
+    if (sz !== st.sitzung) return;
     if (verarbeite(r, weg.schluessel)) return;
     var x = r.ergebnisse.find(function (y) { return y.eintrag.schluessel === weg.schluessel; });
     if (mein === st.vorgang) fertigZu();
@@ -310,7 +325,7 @@
 
   /* ---------------- Abgelehnte Stempel ---------------- */
   function zeichneAbgelehnt() {
-    var liste = q.abgelehnt();
+    var liste = q.abgelehnt().filter(function (e) { return e.person_id === eigeneId(); });
     $('zhAbgelehntBereich').hidden = !liste.length;
     $('zhAbgelehnt').innerHTML = liste.map(function (e) {
       var s = esc(e.schluessel);
@@ -324,7 +339,9 @@
   async function nochmalSenden(schluessel, knopf) {
     if (!st.cred) return;
     if (knopf) { knopf.disabled = true; knopf.setAttribute('aria-busy', 'true'); }
-    var r = await q.erneut(schluessel);
+    var sz = st.sitzung;
+    var r = await q.erneut(schluessel, { person: eigeneId() });
+    if (sz !== st.sitzung) return;
     if (r) {
       if (verarbeite(r, schluessel)) return;
       var x = r.ergebnisse.find(function (y) { return y.eintrag.schluessel === schluessel; });
@@ -360,11 +377,12 @@
 
   async function wocheLaden() {
     var m = st.montag;
-    var nr = ++st.wocheNr;
+    if (!m || !st.cred) return;
+    var nr = ++st.wocheNr, sz = st.sitzung;
     $('zhWoche').textContent = kurz(m) + ' bis ' + kurz(plusTage(m, 6));
     $('zhFolgewoche').disabled = plusTage(m, 7) > (st.heute || heute());
     var r = await post({ aktion: 'woche', montag: m });
-    if (nr !== st.wocheNr || m !== st.montag || !st.cred) return;
+    if (nr !== st.wocheNr || m !== st.montag || sz !== st.sitzung || !st.cred) return;
     if (r.status === 401) return abmelden(q.wartend().length ? TEXT_NEU_ANMELDEN : 'Bitte melde dich neu an.');
     if (r.status !== 200 || !Array.isArray(r.daten.tage)) { $('zhTage').innerHTML = '<p class="zh-leer">Die Woche ist gerade nicht abrufbar.</p>'; return; }
     var zeilen = [];
@@ -396,6 +414,10 @@
       $('pwFehler').hidden = false;
       return;
     }
+    // Neue Anmeldung: Der Stand-Cache gehörte der Person davor
+    st.sitzung++;
+    st.person = null; st.heute = ''; st.montag = ''; st.info = '';
+    schreib(STAND_KEY, null);
     st.cred = an.token;
     try {
       sessionStorage.setItem(PW_KEY, an.token);
@@ -408,8 +430,10 @@
   function abmelden(text) {
     if (st.cred) fetch(URL_TEAM, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: st.cred, action: 'abmelden' }) }).catch(function () {});
     try { sessionStorage.removeItem(PW_KEY); window.localStorage.removeItem(PW_KEY + '_p'); } catch (e) {}
-    st.cred = ''; st.person = null; st.heute = ''; st.montag = ''; st.info = ''; st.fehler = ''; st.offline = '';
-    st.ladeNr++; st.wocheNr++; st.vorgang++;
+    st.cred = ''; st.person = null; st.heute = ''; st.montag = ''; st.info = ''; st.offline = '';
+    st.sitzung++; st.ladeNr++; st.wocheNr++; st.vorgang++;
+    Object.keys(st.weg).forEach(function (k) { clearTimeout(st.weg[k]); });
+    st.weg = {};
     fertigZu();
     schreib(STAND_KEY, null);
     zeigeLogin(typeof text === 'string' ? text : '');
@@ -429,9 +453,10 @@
   $('zhFolgewoche').addEventListener('click', function () { st.montag = plusTage(st.montag, 7); wocheLaden(); });
   // Nachsenden: wieder online, jede Minute, wenn die Seite wieder sichtbar wird. Ohne Anmeldung nie.
   function nachsenden() {
-    if (!st.cred || !q.wartend().length) return;
-    q.abarbeiten().then(function (r) {
-      if (verarbeite(r)) return;
+    var id = eigeneId(), sz = st.sitzung;
+    if (!st.cred || !id || !q.wartend(id).length) return;
+    q.abarbeiten({ person: id }).then(function (r) {
+      if (sz !== st.sitzung || verarbeite(r)) return;
       zeichneStand();
       if (r.ergebnisse.some(function (y) { return y.status === 200; }) && !r.wartend) laden();
     });
@@ -441,5 +466,6 @@
   setInterval(nachsenden, 60000);
 
   st.cred = gemerkteAnmeldung();
-  if (st.cred) laden(); else zeigeLogin();
+  // Ohne gültige Anmeldung gehört der Stand-Cache niemandem mehr
+  if (st.cred) laden(); else { schreib(STAND_KEY, null); zeigeLogin(); }
 })();

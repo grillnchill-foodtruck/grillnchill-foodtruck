@@ -136,7 +136,7 @@
     var speicher = o.speicher, via = o.via, senden = o.senden;
     var jetzt = o.jetzt || function () { return Date.now(); };
     var uuid = o.uuid || function () { return uuidV4(); };
-    var laeuft = null, nochmal = false, unterwegs = null, letzter = null;
+    var laeuft = null, laufPerson = null, nochmal = false, unterwegs = null, letzter = null;
     // Kopie im Speicher der Seite. Maßgeblich, solange der localStorage nicht lesbar oder nicht beschreibbar ist.
     var kopie = { liste: [], massgeblich: false };
 
@@ -215,7 +215,7 @@
       return zurueck(l);
     }
     // Abgelehnten Eintrag wieder in die Warteschlange (Schlüssel, Gerätezeit und nr bleiben) und senden. Promise: Ergebnis von abarbeiten, null wenn unbekannt.
-    function erneut(schluessel) {
+    function erneut(schluessel, opt) {
       var l = lesen(), gefunden = false;
       var neuL = l.map(function (e) {
         if (e.schluessel !== schluessel || !eigene(e) || !e.abgelehnt) return e;
@@ -223,19 +223,19 @@
       });
       if (!gefunden) return Promise.resolve(null);
       schreiben(neuL);
-      return abarbeiten();
+      return abarbeiten(opt);
     }
     function ablehnen(e, status, code) {
       schreiben(lesen().map(function (x) {
         return x.schluessel === e.schluessel ? Object.assign({}, x, { abgelehnt: { status: status, fehler: code, am: new Date(jetzt()).toISOString() } }) : x;
       }));
     }
-    async function lauf(ergebnisse) {
+    async function lauf(ergebnisse, person) {
       var gesehen = {};
       for (;;) {
         // Immer den nächsten noch nicht versuchten Eintrag frisch aus der Schlange: Was während des Sendens
         // dazukommt (Rücknahme), geht im selben Lauf raus. Rückgängig gemachte Einträge sind schon weg.
-        var e = wartend().filter(function (x) { return !gesehen[x.schluessel]; })[0];
+        var e = wartend(person).filter(function (x) { return !gesehen[x.schluessel]; })[0];
         if (!e) break;
         gesehen[e.schluessel] = true;
         var r;
@@ -266,19 +266,24 @@
       }
       return null;
     }
-    function abarbeiten() {
+    // opt.person: nur wartende Einträge dieser person_id senden, die anderen bleiben unberührt liegen (geteiltes Handy).
+    // Ohne Option alle. Läuft schon ein Lauf für eine andere Person, folgt dieser danach.
+    function abarbeiten(opt) {
+      var person = (opt && opt.person) || null;
+      if (laeuft && laufPerson !== person) { return laeuft.then(function () { return abarbeiten(opt); }); }
       if (laeuft) { nochmal = true; return laeuft; }
+      laufPerson = person;
       laeuft = (async function () {
         var ergebnisse = [], gestoppt;
         letzter = null;
         try {
-          do { nochmal = false; gestoppt = await lauf(ergebnisse); } while (nochmal && !gestoppt);
+          do { nochmal = false; gestoppt = await lauf(ergebnisse, person); } while (nochmal && !gestoppt);
         } catch (err) {
           // Alles bleibt liegen, der nächste Lauf versucht es wieder. Nur der Schlüssel ins Log, keine Personendaten.
           if (typeof console !== 'undefined' && console.error) console.error('zeit-kern: Lauf abgebrochen bei ' + letzter + ': ' + (err && err.message));
           gestoppt = 'netz';
         }   // unerwarteter Fehler: alles bleibt liegen, der nächste Lauf versucht es wieder
-        finally { laeuft = null; unterwegs = null; }
+        finally { laeuft = null; laufPerson = null; unterwegs = null; }
         return { ergebnisse: ergebnisse, gestoppt: gestoppt, wartend: wartend().length };
       })();
       return laeuft;

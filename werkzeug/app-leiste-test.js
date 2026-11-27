@@ -58,6 +58,22 @@ ok('Tipp auf Zeit öffnet /zeit?app=1', sel.ctx.location.href === '/zeit?app=1',
 admin.window.gncNativeTabSelect('cockpit');
 ok('Tipp auf Cockpit öffnet /cockpit.html?app=1', admin.ctx.location.href === '/cockpit.html?app=1', admin.ctx.location.href);
 
+/* ---- Leiste neu bestimmen (direkt nach der Anmeldung) ---- */
+{
+  const sp = speicher();
+  const l = leiste(sp);
+  const vorher = l.nachrichten.length;
+  l.window.GNCAppLeiste.neu();
+  ok('neu() ohne geänderte Rolle meldet nichts', l.nachrichten.length === vorher);
+  sp.setItem('gnc_team_rolle', 'staff');
+  l.window.GNCAppLeiste.neu();
+  const letzte = l.nachrichten[l.nachrichten.length - 1];
+  ok('neu() nach Rolle staff meldet Leiste mit Zeit', l.nachrichten.length === vorher + 1 && letzte.tabs.map((t) => t.id).join() === 'heute,orders,zeit,fahrer,mehr', letzte.tabs.map((t) => t.id).join());
+  sp.setItem('gnc_team_rolle', 'admin');
+  l.l.neu();
+  ok('Rückgabe-Objekt neu(): admin wieder mit Cockpit', l.nachrichten[l.nachrichten.length - 1].tabs.map((t) => t.id).join() === 'heute,orders,cockpit,fahrer,mehr');
+}
+
 /* ---- Kunden-Leiste bleibt unberührt ---- */
 const kunde = leiste(speicher({ gnc_team_rolle: 'staff' }), { modus: undefined });
 ok('Kunden-Leiste ohne Team-Tabs', !/zeit|cockpit/.test(tabIds(kunde)), tabIds(kunde));
@@ -73,9 +89,17 @@ function anmeldung(antwort) {
   };
   vm.createContext(ctx);
   vm.runInContext(quelle('admin-anmeldung.js'), ctx);
-  return { storage, api: window.GNCAnmeldung };
+  return { storage, window, api: window.GNCAnmeldung };
 }
 (async () => {
+  // Weg über das Cockpit: GNCAnmeldung.rolleMerken (cockpit.html ruft sie mit d.role auf) und Leiste neu
+  for (const [rolle, erwartet] of [['staff', 'staff'], ['admin', 'admin'], ['superadmin', 'admin'], ['team', null], ['', null], [undefined, null]]) {
+    const a = anmeldung({});
+    let neu = 0;
+    a.window.GNCAppLeiste = { neu: () => neu++ };
+    a.api.rolleMerken(rolle);
+    ok('rolleMerken(' + JSON.stringify(rolle) + ') merkt ' + (erwartet || '(nichts)') + (erwartet ? ' und meldet die Leiste neu' : ''), a.storage.getItem('gnc_team_rolle') === erwartet && neu === (erwartet ? 1 : 0), { gemerkt: a.storage.getItem('gnc_team_rolle'), neu });
+  }
   for (const [rolle, erwartet] of [['staff', 'staff'], ['admin', 'admin'], ['superadmin', 'admin'], ['team', null]]) {
     const a = anmeldung({ ok: true, token: 'x'.repeat(64), exp: 1, role: rolle, name: 'N' });
     let r;
