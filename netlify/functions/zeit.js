@@ -16,7 +16,8 @@
  *   POST { aktion:'woche', montag, person_id? }   nur Handy         → { ok, montag, tage, summe }
  *
  * Fehler: 401 unauthorized, 403 keine_person | fremde_person | nur_handy, 404 person_fehlt, 400 eingabe,
- *         503 office_weg (das Gerät behält den Stempel und sendet später).
+ *         503 office_weg | speicher_gestoert (Office nicht erreichbar bzw. Geräte-Speicher gestört: das Gerät behält Token und
+ *         Stempel und sendet später; ein Speicherfehler ist nie ein 401).
  *
  * Bremse: Ein Stempeluhr-Token besteht aus 32 Zufallsbytes und lässt sich nicht raten. Ein falscher Token zählt
  * deshalb NICHT als Fehlversuch (lib/auth-guard.js): ein entkoppeltes iPad, das jede Minute nachsendet, würde sonst
@@ -68,7 +69,7 @@ async function anmeldung(event, input) {
   if (typeof input.stempeluhr === 'string' && input.stempeluhr) {
     const dev = await geraete.pruefeStempeluhr(input.stempeluhr.slice(0, 200));
     // Speicher gestört: 503, nicht 401. Das iPad behält Token und Stempel und sendet später (kein Fehlversuch)
-    if (dev && dev.speicher) return { antwort: fehler(503, 'speicher', 'Gerade nicht erreichbar. Der Stempel bleibt auf dem iPad.') };
+    if (dev && dev.speicher) return { antwort: fehler(503, 'speicher_gestoert', 'Gerade nicht erreichbar. Der Stempel bleibt auf dem iPad.') };
     if (!dev) return { antwort: fehler(401, 'unauthorized', 'Dieses iPad ist nicht mehr als Stempeluhr gekoppelt.') };
     return { wer: { art: 'stempeluhr', id: dev.id, geraet: dev.name } };
   }

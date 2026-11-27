@@ -109,7 +109,10 @@ self.addEventListener('fetch', (event) => {
           return res;
         })
         .catch(() =>
-          caches.match(request).then((r) => r || caches.match('/index.html'))
+          caches.match(request)
+            // Seite mit anderem Suchteil (/cockpit?app=1 statt /cockpit): erst der Treffer ohne Suchteil, dann die Startseite
+            .then((r) => r || (request.mode === 'navigate' ? caches.match(request, { ignoreSearch: true }) : null))
+            .then((r) => r || caches.match('/index.html'))
         )
     );
     return;

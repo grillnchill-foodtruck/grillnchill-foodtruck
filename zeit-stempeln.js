@@ -113,6 +113,7 @@
     }
     schreib(TOKEN_KEY, { token: r.daten.token, name: r.daten.name, id: r.daten.id });
     knoepfeZeigen();
+    offlineBereit();
     // Was während der Entkopplung liegen blieb, geht jetzt raus
     nachsenden();
   }
@@ -132,9 +133,11 @@
     d.addEventListener('cancel', function (ev) { ev.preventDefault(); zu(); });
     d.addEventListener('click', function (ev) {
       var t = ev.target;
-      if (t === d || t.closest('[data-zs-zu]')) return zu();
-      // Kurze Tippsperre nach jedem Ansichtswechsel: Ein Doppeltipp trifft nicht den Knopf der nächsten Ansicht
+      if (t.closest('[data-zs-zu]')) return zu();
+      // Kurze Tippsperre nach jedem Ansichtswechsel (auch für den Hintergrund): Ein Doppeltipp trifft nicht die nächste Ansicht.
+      // Nur der Schließen-Knopf ist ausgenommen.
       if (Date.now() < st.sperre) return;
+      if (t === d) return zu();
       var p = t.closest('[data-zs-person]');
       if (p) return personZeigen(p.getAttribute('data-zs-person'), true);
       var a = t.closest('[data-zs-art]');
@@ -186,6 +189,11 @@
     await standLaden();
     if (st.dlg.open && st.tiefe === 1) listeZeigen();
   }
+  // Hinweis zu einer endgültig abgelehnten Antwort: Name, Art, Grund
+  function endText(y) {
+    var p = findePerson(y.eintrag.person_id);
+    return (p ? p.name : 'Unbekannte Person') + ', ' + (y.eintrag.typ === 'zuruecknehmen' ? 'Rückgängig' : (ART[y.eintrag.art] || 'Stempel')) + ': ' + K.fehlerText(fehlercode(y.daten), y.daten.hint);
+  }
   // Alle Ergebnisse eines Laufs: neue Stände (auch anderer Personen), Anmeldung weg, Uhr, Ablehnungen.
   // eigen: Schlüssel des Stempels, um den sich der Aufrufer selbst kümmert. Liefert Hinweistexte für die Anzeige.
   function bei(r, eigen) {
@@ -196,8 +204,7 @@
       if (y.status === 200 || y.eintrag.schluessel === eigen) return;
       if (y.abgelehnt) { abgel++; return; }
       // Endgültig abgelehnt (zustand, nicht_zuruecknehmbar, schluessel_anders): nicht still verschwinden lassen
-      var p = findePerson(y.eintrag.person_id);
-      texte.push((p ? p.name : 'Unbekannte Person') + ', ' + (y.eintrag.typ === 'zuruecknehmen' ? 'Rückgängig' : (ART[y.eintrag.art] || 'Stempel')) + ': ' + K.fehlerText(fehlercode(y.daten), y.daten.hint));
+      texte.push(endText(y));
     });
     if (abgel) texte.push(abgel === 1 ? 'Ein Stempel wurde abgelehnt. Du findest ihn in der Liste unter „Nicht übertragen“.' : abgel + ' Stempel wurden abgelehnt. Du findest sie in der Liste unter „Nicht übertragen“.');
     if (r.gestoppt === 'anmeldung') entkoppelt();
@@ -349,7 +356,12 @@
   function nachlauf(r, schluessel, mein) {
     var h = bei(r, schluessel);
     var x = r.ergebnisse.find(function (y) { return y.eintrag.schluessel === schluessel; });
-    if (mein !== st.vorgang || !st.dlg.open) { wartendZeigen(); return { x: x, fertig: true }; }
+    if (mein !== st.vorgang || !st.dlg.open) {
+      // Der Nutzer hat die Bestätigung schon verlassen: Eine eigene endgültige Ablehnung darf nicht still verschwinden
+      if (x && x.status !== 200 && !x.abgelehnt) st.meldung = endText(x);
+      wartendZeigen();
+      return { x: x, fertig: true };
+    }
     if (r.gestoppt === 'anmeldung') { fehlerZeigen(TEXT_ENTKOPPELT + ' Der Stempel bleibt auf dem iPad, bis es neu gekoppelt ist.'); return { x: x, fertig: true }; }
     if (x && x.status !== 200) { fehlerZeigen(ablehnText(x)); return { x: x, fertig: true }; }
     if (r.gestoppt === 'uhr') infoZeigen(K.fehlerText('zukunft'));
@@ -458,7 +470,30 @@
       if (st.dlg && st.dlg.open && st.ansicht === 'liste') listeZeigen(); else wartendZeigen();
     });
   }
+  /* ---------------- Offline: Service Worker und Cockpit-Dateien ---------------- */
+  // Das Cockpit registriert sonst keinen Service Worker. Ein iPad, das nur /cockpit öffnet, hätte nach einem Neuladen ohne Netz
+  // nichts. Nur für gekoppelte Stempeluhren. Der Worker (Network-First) legt die geholten Dateien im Laufzeit-Cache ab.
+  var WARM = ['/cockpit', '/cockpit.html', '/zeit.css', '/zeit-kern.js', '/zeit-stempeln.js', '/admin-anmeldung.js', '/app-leiste.js',
+    '/karte.js', '/cockpit-heatmap.js', '/logo.png'];
+  var warm = false, swAngemeldet = false;
+  function dateienHolen() {
+    if (warm) return;   // höchstens einmal je Seitenaufruf
+    warm = true;
+    WARM.forEach(function (u) { try { fetch(u, { credentials: 'same-origin' }).catch(function () {}); } catch (e) {} });
+  }
+  function offlineBereit() {
+    if (swAngemeldet || !geraet()) return;
+    try {
+      if (!('serviceWorker' in navigator)) return;
+      swAngemeldet = true;
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
+      // Erst wenn der Worker diese Seite steuert, laufen die Abrufe über ihn (beim ersten Mal nach controllerchange)
+      navigator.serviceWorker.ready.then(function () { if (navigator.serviceWorker.controller) dateienHolen(); }).catch(function () {});
+      navigator.serviceWorker.addEventListener('controllerchange', dateienHolen);
+    } catch (e) {}
+  }
   function start() {
+    offlineBereit();
     document.querySelectorAll('[data-stempeln]').forEach(function (b) { b.addEventListener('click', oeffnen); });
     var f = $('stempeluhrForm');
     if (f) f.addEventListener('submit', koppeln);
