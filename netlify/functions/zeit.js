@@ -67,6 +67,8 @@ async function teamLogin(pw) {
 async function anmeldung(event, input) {
   if (typeof input.stempeluhr === 'string' && input.stempeluhr) {
     const dev = await geraete.pruefeStempeluhr(input.stempeluhr.slice(0, 200));
+    // Speicher gestört: 503, nicht 401. Das iPad behält Token und Stempel und sendet später (kein Fehlversuch)
+    if (dev && dev.speicher) return { antwort: fehler(503, 'speicher', 'Gerade nicht erreichbar. Der Stempel bleibt auf dem iPad.') };
     if (!dev) return { antwort: fehler(401, 'unauthorized', 'Dieses iPad ist nicht mehr als Stempeluhr gekoppelt.') };
     return { wer: { art: 'stempeluhr', id: dev.id, geraet: dev.name } };
   }

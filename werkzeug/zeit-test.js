@@ -12,8 +12,9 @@ const crypto = require('crypto');
 
 const F = path.join(__dirname, '..', 'netlify', 'functions');
 const daten = new Map();
+let speicherKaputt = false;   // Blob-Speicher der Geräte wirft (Test: Störung ist keine Entkopplung)
 const store = (name) => ({
-  async get(k, o) { const v = daten.get(name + '|' + k); return v === undefined ? null : (o && o.type === 'json' ? JSON.parse(v) : v); },
+  async get(k, o) { if (speicherKaputt && name === 'team-devices') throw new Error('blob weg'); const v = daten.get(name + '|' + k); return v === undefined ? null : (o && o.type === 'json' ? JSON.parse(v) : v); },
   async setJSON(k, v) { daten.set(name + '|' + k, JSON.stringify(v)); },
   async set(k, v) { daten.set(name + '|' + k, String(v)); },
   async delete(k) { daten.delete(name + '|' + k); },
@@ -166,6 +167,13 @@ const jetzt = () => new Date().toISOString();
   ].every((v) => VON_OFFICE.test(v)) && D.vonLogin('Ali Müller') === 't-ali-müller' && D.vonLogin('Ali Müller') === D.vonLogin('Ali Müller'), [D.vonLogin('Ali Müller'), D.vonLogin('!!!')]);
   ok('von: Bindestriche am Rand bleiben, ali- und ali kollidieren nicht', D.vonLogin('ali-') === 't-ali-' && D.vonLogin('-ali') === 't--ali' && D.vonLogin('ali-') !== D.vonLogin('ali'));
   ok('von der Stempeluhr: geraet: plus 8 Hex', VON_OFFICE.test('geraet:' + uhr.id));
+  speicherKaputt = true;
+  r = await call(zeit, { stempeluhr: uhr.token, aktion: 'stand' });
+  const nachStoerung = anfragen.length;
+  ok('Speicher gestört: 503 statt 401, Token bleibt gültig', r.s === 503 && r.d.fehler === 'speicher' && r.s !== 401, r);
+  speicherKaputt = false;
+  ok('Nach der Störung geht derselbe Token wieder', (await call(zeit, { stempeluhr: uhr.token, aktion: 'stand' })).s === 200 && nachStoerung > 0);
+  ok('Falscher Token bleibt 401', (await call(zeit, { stempeluhr: 'x'.repeat(43), aktion: 'stand' })).s === 401);
   ok('Ohne Anmeldung: 401', (await call(zeit, { aktion: 'stand' })).s === 401);
   ok('Jede abgefangene Office-Anfrage hat eine gültige Signatur', anfragen.length > 0 && anfragen.every((a) => a.sigOk));
 

@@ -172,7 +172,8 @@ async function pruefeTeamToken(token) {
 
 /**
  * Stempeluhr pruefen (nur zeit.js). Andere Geräte sind hier unbekannt.
- * @returns {Promise<{id:string, name:string, device:string}|null>}
+ * @returns {Promise<{id:string, name:string, device:string}|{speicher:true}|null>} null = Token unbekannt oder entkoppelt,
+ *          { speicher: true } = Speicher gestört (der Token kann trotzdem gültig sein)
  */
 async function pruefeStempeluhr(token) {
   try {
@@ -181,7 +182,7 @@ async function pruefeStempeluhr(token) {
     return { id: rec.id, name: rec.name || 'iPad Truck', device: rec.device || '' };
   } catch (e) {
     console.error('team-device stempeluhr:', e && e.message);
-    return null;
+    return { speicher: true };   // gestört, nicht entkoppelt: das iPad muss seinen Token behalten
   }
 }
 

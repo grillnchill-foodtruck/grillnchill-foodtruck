@@ -4,16 +4,16 @@
  * ----------------------------------------------------------------------------
  * Lokale Vorschau fürs Stempeln: Cockpit (/cockpit), Handy-Tab (/zeit) und Datenschutzhinweis (/zeit/datenschutz)
  * mit echten Functions (team, team-device, cockpit-data, dienstplan, zeit) und einem Blob-Speicher im Arbeitsspeicher.
- * zeit.js spricht mit einem lokalen GNC Office (im gnc-office: npm run db:lokal && npm run dev, Port 8791).
+ * zeit.js spricht mit einem lokalen GNC Office (Worktree /Users/pasqualesgro/Downloads/Claude Code/gnc-office-zeit, sonst gnc-office: npm run db:lokal && npm run dev, Port 8791).
  * Zwei-Faktor ist hier aus (ZWEI_FAKTOR=aus): Anmelden nur mit Passwort, nichts davon gilt live.
  *
  *   node werkzeug/seiten-bauen.js        (CSP-Hashes für cockpit.html, sonst blockt der Browser das Inline-Skript)
  *   OFFICE_ZEIT_SECRET="$(sed -n 's/^OFFICE_ZEIT_SECRET=//p' "/Users/pasqualesgro/Downloads/Claude Code/gnc-office-zeit/.dev.vars")" \
  *     node werkzeug/zeit-vorschau.js
  *
- *   http://localhost:8657/cockpit   Kubi: kubi-lokal (Admin, koppelt das iPad als Stempeluhr)
- *   http://localhost:8657/zeit      Ali: ali-lokal-passwort (Login ali-lokal, steht im Dienstplan)
- *   http://localhost:8657/dienstplan  Kubi: Team verwalten mit Feld „Team-Login“
+ *   http://127.0.0.1:8657/cockpit   Kubi: kubi-lokal (Admin, koppelt das iPad als Stempeluhr)
+ *   http://127.0.0.1:8657/zeit      Ali: ali-lokal-passwort (Login ali-lokal, steht im Dienstplan)
+ *   http://127.0.0.1:8657/dienstplan  Kubi: Team verwalten mit Feld „Team-Login“
  * Anderer Port: PORT=8658. Anderes Office: OFFICE_URL=http://localhost:8795
  * ----------------------------------------------------------------------------
  */
@@ -24,7 +24,7 @@ const Module = require('module');
 
 const ROOT = path.join(__dirname, '..');
 const F = path.join(ROOT, 'netlify', 'functions');
-if (!process.env.OFFICE_ZEIT_SECRET) { console.error('OFFICE_ZEIT_SECRET fehlt (aus gnc-office/.dev.vars, siehe Kopf dieser Datei)'); process.exit(1); }
+if (!process.env.OFFICE_ZEIT_SECRET) { console.error('OFFICE_ZEIT_SECRET fehlt (aus .dev.vars des Office, siehe Kopf dieser Datei)'); process.exit(1); }
 Object.assign(process.env, { ADMIN_PASSWORD: 'kubi-lokal', ZWEI_FAKTOR: 'aus', OFFICE_URL: process.env.OFFICE_URL || 'http://localhost:8791' });
 delete process.env.NETLIFY_BLOBS_SITE_ID;
 
@@ -72,12 +72,12 @@ http.createServer(async (req, res) => {
     return res.end(r.body || '');
   }
   const datei = path.join(ROOT, SEITEN[url.pathname] || decodeURIComponent(url.pathname));
-  if (!datei.startsWith(ROOT) || !fs.existsSync(datei) || !fs.statSync(datei).isFile()) { res.writeHead(404); return res.end('404'); }
+  if ((datei !== ROOT && !datei.startsWith(ROOT + path.sep)) || !fs.existsSync(datei) || !fs.statSync(datei).isFile()) { res.writeHead(404); return res.end('404'); }
   const kopf = { 'Content-Type': TYP[path.extname(datei)] || 'application/octet-stream', 'Cache-Control': 'no-store' };
   if (datei.endsWith('.html') && csp()) kopf['Content-Security-Policy'] = csp().replace('upgrade-insecure-requests', '');
   res.writeHead(200, kopf);
   fs.createReadStream(datei).pipe(res);
-}).listen(Number(process.env.PORT) || 8657, async function () {
+}).listen(Number(process.env.PORT) || 8657, '127.0.0.1', async function () {
   await anlegen();
-  console.log('zeit-vorschau auf http://localhost:' + this.address().port + '/cockpit und /zeit, Office ' + process.env.OFFICE_URL);
+  console.log('zeit-vorschau auf http://127.0.0.1:' + this.address().port + '/cockpit und /zeit, Office ' + process.env.OFFICE_URL);
 });

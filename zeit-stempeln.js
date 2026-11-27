@@ -22,6 +22,7 @@
   var STAND_KEY = 'gnc_zeit_stand';
   var RUECKGAENGIG_SEK = 10;
   var VERWERFEN_MS = 6000;
+  var SPERRE_MS = 400;
   var ART = { beginn: 'Schicht beginnen', pause_beginn: 'Pause beginnen', pause_ende: 'Pause beenden', ende: 'Schicht beenden' };
   var $ = function (id) { return document.getElementById(id); };
   var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
@@ -37,7 +38,7 @@
 
   var st = {
     cred: '', role: '', dlg: null, inhalt: null, tiefe: 0, ignorieren: 0, daten: lies(STAND_KEY), uhr: null, zuTimer: null,
-    offline: false, speicherFehler: false, vorgang: 0, ansicht: '', meldung: '', weg: {},
+    offline: false, speicherFehler: false, vorgang: 0, ansicht: '', meldung: '', weg: {}, seq: 0, merk: {}, sperre: 0,
   };
   var geraet = function () { var g = lies(TOKEN_KEY); return g && typeof g.token === 'string' && g.token ? g : null; };
 
@@ -82,8 +83,11 @@
     $('stempeluhrGekoppelt').hidden = !g;
     if (g) $('stempeluhrGekoppelt').textContent = 'Gekoppelt als „' + g.name + '“. Entkoppeln geht im Admin-Tool unter Team-Geräte.';
   }
+  // Token und zwischengespeicherte Namen weg. Die Warteschlange bleibt: Sie enthält unübertragene Pflichtaufzeichnungen.
   function entkoppelt() {
     schreib(TOKEN_KEY, null);
+    schreib(STAND_KEY, null);
+    st.daten = null;
     knoepfeZeigen();
   }
   document.addEventListener('gnc-cockpit', function (e) {
@@ -129,6 +133,8 @@
     d.addEventListener('click', function (ev) {
       var t = ev.target;
       if (t === d || t.closest('[data-zs-zu]')) return zu();
+      // Kurze Tippsperre nach jedem Ansichtswechsel: Ein Doppeltipp trifft nicht den Knopf der nächsten Ansicht
+      if (Date.now() < st.sperre) return;
       var p = t.closest('[data-zs-person]');
       if (p) return personZeigen(p.getAttribute('data-zs-person'), true);
       var a = t.closest('[data-zs-art]');
@@ -160,6 +166,7 @@
   function schliessen() {
     clearInterval(st.uhr); clearTimeout(st.zuTimer);
     st.vorgang++;
+    st.meldung = '';
     if (!st.dlg || !st.dlg.open) return;
     st.dlg.classList.remove('da');
     setTimeout(function () { if (st.dlg.open && !st.dlg.classList.contains('da')) st.dlg.close(); }, 320);
@@ -169,7 +176,7 @@
     if (!st.dlg) bauen();
     if (st.dlg.open) return;
     if (!geraet() && !q.wartend().length && !q.abgelehnt().length) return;
-    st.meldung = '';
+    st.sperre = Date.now() + SPERRE_MS;
     st.dlg.showModal();
     requestAnimationFrame(function () { st.dlg.classList.add('da'); });
     eintragen();
@@ -179,28 +186,41 @@
     await standLaden();
     if (st.dlg.open && st.tiefe === 1) listeZeigen();
   }
-  // Nach einem Lauf außerhalb eines Stempel-Vorgangs: Anmeldung weg, Uhr, neue Ablehnungen
-  function bei(r) {
-    if (!r) return;
-    // Neuer Stand aus den gesendeten Stempeln, sonst zeigt die Liste bis zum nächsten Laden den alten
+  // Alle Ergebnisse eines Laufs: neue Stände (auch anderer Personen), Anmeldung weg, Uhr, Ablehnungen.
+  // eigen: Schlüssel des Stempels, um den sich der Aufrufer selbst kümmert. Liefert Hinweistexte für die Anzeige.
+  function bei(r, eigen) {
+    var texte = [], abgel = 0;
+    if (!r) return texte;
     r.ergebnisse.forEach(function (y) {
-      var p = y.status === 200 && findePerson(y.eintrag.person_id);
-      if (p) standMerken(p, y);
+      standMerken(y.eintrag.person_id, y);   // 200 und 409 zustand bringen beide den aktuellen Stand mit
+      if (y.status === 200 || y.eintrag.schluessel === eigen) return;
+      if (y.abgelehnt) { abgel++; return; }
+      // Endgültig abgelehnt (zustand, nicht_zuruecknehmbar, schluessel_anders): nicht still verschwinden lassen
+      var p = findePerson(y.eintrag.person_id);
+      texte.push((p ? p.name : 'Unbekannte Person') + ', ' + (y.eintrag.typ === 'zuruecknehmen' ? 'Rückgängig' : (ART[y.eintrag.art] || 'Stempel')) + ': ' + K.fehlerText(fehlercode(y.daten), y.daten.hint));
     });
+    if (abgel) texte.push(abgel === 1 ? 'Ein Stempel wurde abgelehnt. Du findest ihn in der Liste unter „Nicht übertragen“.' : abgel + ' Stempel wurden abgelehnt. Du findest sie in der Liste unter „Nicht übertragen“.');
     if (r.gestoppt === 'anmeldung') entkoppelt();
     if (r.gestoppt === 'uhr') st.meldung = K.fehlerText('zukunft');
-    var neu = r.ergebnisse.filter(function (y) { return y.abgelehnt; });
-    if (neu.length) st.meldung = neu.length === 1 ? 'Ein Stempel wurde abgelehnt. Du findest ihn unten unter „Nicht übertragen“.' : neu.length + ' Stempel wurden abgelehnt. Du findest sie unten unter „Nicht übertragen“.';
+    if (texte.length) st.meldung = texte.join(' ');
     if (!r.gestoppt) st.offline = false;
     knoepfeZeigen();
+    return texte;
   }
   async function standLaden() {
     var g = geraet();
     if (!g) return;
+    var von = st.seq;   // Stände, die während des Ladens aus Stempel-Antworten kamen, sind neuer als diese Antwort
     var r = await post(URL_ZEIT, { stempeluhr: g.token, aktion: 'stand' });
     if (r.status === 401) { entkoppelt(); st.meldung = TEXT_ENTKOPPELT; return; }
     st.offline = r.status !== 200;
-    if (r.status === 200 && Array.isArray(r.daten.personen)) { st.daten = { heute: r.daten.heute, personen: r.daten.personen }; schreib(STAND_KEY, st.daten); }
+    if (r.status === 200 && Array.isArray(r.daten.personen)) {
+      var alt = {};
+      ((st.daten && st.daten.personen) || []).forEach(function (p) { alt[p.id] = p; });
+      r.daten.personen.forEach(function (p) { if (st.merk[p.id] > von && alt[p.id]) p.stand = alt[p.id].stand; });
+      st.daten = { heute: r.daten.heute, personen: r.daten.personen };
+      schreib(STAND_KEY, st.daten);
+    }
   }
   function wartendZeigen() {
     var n = q.wartend().length;
@@ -211,7 +231,10 @@
     else el.textContent = st.offline ? 'Ohne Verbindung. Angezeigt wird der letzte Stand.' : '';
     if (!n) st.speicherFehler = false;
   }
-  var heute = function () { return (st.daten && st.daten.heute) || K.tagVon(new Date().toISOString()); };
+  // Der Tag kommt von der Uhr des Geräts. Der Plan in st.daten gilt nur, wenn er für diesen Tag geladen wurde (offline über Mitternacht nicht).
+  var heute = function () { return K.tagVon(new Date().toISOString()); };
+  var planGilt = function () { return !!(st.daten && st.daten.heute === heute()); };
+  var schichtVon = function (p) { return planGilt() ? p.schicht : null; };
   function standVon(p) { return K.vorlaeufig(p.stand, q.wartend(p.id), Date.now()); }
   var findePerson = function (id) { return ((st.daten && st.daten.personen) || []).find(function (x) { return x.id === id; }); };
   function wannText(iso) {
@@ -219,16 +242,18 @@
     return t === heute() ? K.uhrzeit(iso) : t.slice(8, 10) + '.' + t.slice(5, 7) + '. ' + K.uhrzeit(iso);
   }
 
+  // Verwerfen löscht eine Pflichtaufzeichnung: nur mit Admin-Sitzung (Kubi) im Cockpit
+  var istAdmin = function () { return st.role === 'superadmin' || st.role === 'admin'; };
   function abgelehntZeile(e) {
     var p = findePerson(e.person_id);
     var was = e.typ === 'zuruecknehmen' ? 'Rückgängig' : (ART[e.art] || 'Stempel');
-    var grund = K.fehlerText(e.fehler, e.fehler === 'nicht_zuruecknehmbar' ? 'abgelehnt' : undefined);
+    var grund = K.fehlerText(e.fehler);
     var s = esc(e.schluessel);
     return '<div class="zs-abgel"><b>' + esc(p ? p.name : 'Unbekannte Person') + ', ' + esc(wannText(e.zeit)) + '</b>'
       + '<p>' + esc(was) + '. ' + esc(grund) + '</p>'
       + '<div class="zs-aktionen">'
       + (geraet() ? '<button type="button" class="zs-pille" data-zs-nochmal="' + s + '">Nochmal senden</button>' : '')
-      + '<button type="button" class="zs-pille" data-zs-verwerfen="' + s + '">Verwerfen</button></div></div>';
+      + (istAdmin() ? '<button type="button" class="zs-pille" data-zs-verwerfen="' + s + '">Verwerfen</button>' : '') + '</div></div>';
   }
   function abgelehntBlock() {
     var liste = q.abgelehnt();
@@ -239,10 +264,14 @@
     }).join('') + '</div>';
   }
 
+  function ansichtWechsel(neu) {
+    if (st.ansicht !== neu) st.sperre = Date.now() + SPERRE_MS;
+    st.ansicht = neu;
+  }
   function listeZeigen() {
     clearInterval(st.uhr); clearTimeout(st.zuTimer);
     st.vorgang++;
-    st.ansicht = 'liste';
+    ansichtWechsel('liste');
     $('zsTitel').textContent = 'Stempeln';
     var g = geraet();
     var personen = (g && st.daten && st.daten.personen) || [];
@@ -250,14 +279,14 @@
       var s = standVon(p);
       return '<button type="button" class="zs-person ' + (s.zustand === 'im_dienst' ? 'ist-dienst' : s.zustand === 'pause' ? 'ist-pause' : '') + '" data-zs-person="' + esc(p.id) + '">'
         + '<i class="zs-punkt" data-farbe="' + esc(p.farbe || '') + '"></i><span><b>' + esc(p.name) + '</b><small>' + esc(K.standText(s, heute())) + '</small></span>'
-        + (p.schicht ? '<span class="zs-plan">' + esc(p.schicht.von) + ' bis ' + esc(p.schicht.bis) + '</span>' : '') + '</button>';
+        + (schichtVon(p) ? '<span class="zs-plan">' + esc(p.schicht.von) + ' bis ' + esc(p.schicht.bis) + '</span>' : '') + '</button>';
     };
-    var mit = personen.filter(function (p) { return p.schicht; }), ohne = personen.filter(function (p) { return !p.schicht; });
+    var mit = personen.filter(schichtVon), ohne = personen.filter(function (p) { return !schichtVon(p); });
     var namen;
     if (!g) namen = '<p class="zs-hinweis">' + esc(TEXT_ENTKOPPELT) + '</p>';
     else if (!personen.length) namen = '<p class="zs-hinweis">' + (st.offline ? 'Ohne Verbindung und noch ohne gespeicherte Namen.' : 'Namen werden geladen.') + '</p>';
     else namen = (mit.length ? '<h3 class="zs-abschnitt">Heute im Plan</h3><div class="zs-liste">' + mit.map(zeile).join('') + '</div>' : '')
-      + (ohne.length ? '<h3 class="zs-abschnitt">' + (mit.length ? 'Weitere' : 'Team') + '</h3><div class="zs-liste">' + ohne.map(zeile).join('') + '</div>' : '');
+      + (ohne.length ? '<h3 class="zs-abschnitt">' + (mit.length || !planGilt() ? 'Weitere' : 'Team') + '</h3><div class="zs-liste">' + ohne.map(zeile).join('') + '</div>' : '');
     st.inhalt.innerHTML = (st.meldung && (g || st.meldung !== TEXT_ENTKOPPELT) ? '<p class="zs-hinweis" role="status">' + esc(st.meldung) + '</p>' : '') + namen + abgelehntBlock();
     // Farbpunkt erst nach dem Einsetzen und nur in der Form #RRGGBB setzen
     st.inhalt.querySelectorAll('[data-farbe]').forEach(function (i) { if (/^#[0-9a-fA-F]{6}$/.test(i.getAttribute('data-farbe'))) i.style.background = i.getAttribute('data-farbe'); });
@@ -271,11 +300,11 @@
     clearInterval(st.uhr); clearTimeout(st.zuTimer);
     st.vorgang++;
     st.meldung = '';
-    st.ansicht = 'person';
+    ansichtWechsel('person');
     var s = standVon(p);
     $('zsTitel').textContent = p.name;
     st.inhalt.innerHTML = '<p class="zs-stand">' + esc(K.standText(s, heute())) + '</p>'
-      + '<p class="zs-plan-text">' + (p.schicht ? 'Heute im Plan: ' + esc(p.schicht.von) + ' bis ' + esc(p.schicht.bis) : 'Heute nicht im Plan') + '</p>'
+      + '<p class="zs-plan-text">' + (schichtVon(p) ? 'Heute im Plan: ' + esc(p.schicht.von) + ' bis ' + esc(p.schicht.bis) : 'Heute nicht im Plan') + '</p>'
       + (s.vergessen ? '<p class="zs-hinweis">' + esc(K.vergessenText(s, heute())) + '</p>' : '')
       + '<div class="zs-knoepfe">' + K.knoepfe(s.zustand).map(function (k, i) {
         return '<button type="button" class="zs-knopf' + (i ? ' zweit' : '') + '" data-zs-art="' + esc(k.art) + '" data-zs-person-id="' + esc(p.id) + '">' + esc(k.text) + '</button>';
@@ -288,7 +317,7 @@
   function fehlerZeigen(text) {
     if (!st.inhalt) return;
     clearInterval(st.uhr); clearTimeout(st.zuTimer);
-    st.ansicht = 'fehler';
+    ansichtWechsel('fehler');
     st.inhalt.innerHTML = '<p class="zs-fehler" role="alert">' + esc(text) + '</p><div class="zs-fuss"><button type="button" class="zs-pille" data-zs-liste>Zur Liste</button></div>';
     wartendZeigen();
   }
@@ -307,8 +336,25 @@
     var t = K.fehlerText(code, x.daten.hint);
     return x.abgelehnt ? t + ' Er wartet in der Liste unter „Nicht übertragen“.' : t;
   }
-  function standMerken(p, x) {
-    if (x && x.daten && x.daten.stand) { p.stand = x.daten.stand; schreib(STAND_KEY, st.daten); }
+  // Immer über die Person im aktuellen st.daten: Ein Laden zwischendurch ersetzt die Objekte
+  function standMerken(personId, x) {
+    var p = findePerson(personId);
+    if (!p || !x || !x.daten || !x.daten.stand) return;
+    p.stand = x.daten.stand;
+    st.merk[p.id] = ++st.seq;
+    schreib(STAND_KEY, st.daten);
+  }
+  // Gemeinsamer Nachlauf von stempeln() und rueckgaengig(): Ergebnisse einarbeiten, dann nur anzeigen, wenn der Nutzer noch hier ist.
+  // fertig: true = der Aufrufer muss nichts mehr anzeigen
+  function nachlauf(r, schluessel, mein) {
+    var h = bei(r, schluessel);
+    var x = r.ergebnisse.find(function (y) { return y.eintrag.schluessel === schluessel; });
+    if (mein !== st.vorgang || !st.dlg.open) { wartendZeigen(); return { x: x, fertig: true }; }
+    if (r.gestoppt === 'anmeldung') { fehlerZeigen(TEXT_ENTKOPPELT + ' Der Stempel bleibt auf dem iPad, bis es neu gekoppelt ist.'); return { x: x, fertig: true }; }
+    if (x && x.status !== 200) { fehlerZeigen(ablehnText(x)); return { x: x, fertig: true }; }
+    if (r.gestoppt === 'uhr') infoZeigen(K.fehlerText('zukunft'));
+    h.forEach(infoZeigen);
+    return { x: x, fertig: false };
   }
 
   async function stempeln(id, art) {
@@ -318,14 +364,14 @@
     var e = q.stempeln(p.id, art);
     if (e.gespeichert === false) st.speicherFehler = true;
     knoepfeZeigen();
-    st.ansicht = 'ende';
+    ansichtWechsel('ende');
     var text = K.bestaetigung(p.name, art, e.zeit);
     st.inhalt.innerHTML = '<p class="zs-fertig" role="status" data-zs-text>' + esc(text) + '</p>'
       + '<button type="button" class="zs-rueckgaengig" data-zs-rueck>Rückgängig <span class="zs-sek" aria-hidden="true">' + RUECKGAENGIG_SEK + '</span></button>'
       + '<p class="zs-hinweis" data-zs-info hidden></p>';
     if (st.speicherFehler) infoZeigen(K.fehlerText('speicher'));
     var rest = RUECKGAENGIG_SEK, knopf = st.inhalt.querySelector('[data-zs-rueck]');
-    knopf.onclick = function () { rueckgaengig(p, e); };
+    knopf.onclick = function () { if (Date.now() >= st.sperre) rueckgaengig(p, e); };
     clearInterval(st.uhr);
     st.uhr = setInterval(function () {
       rest--;
@@ -334,23 +380,10 @@
     }, 1000);
     spaeterZu();
     wartendZeigen();
-    var r = await q.abarbeiten();
-    var x = r.ergebnisse.find(function (y) { return y.eintrag.schluessel === e.schluessel; });
-    if (x && x.status === 200) standMerken(p, x);
-    if (r.gestoppt === 'anmeldung') entkoppelt();
-    if (!r.gestoppt) st.offline = false;
-    knoepfeZeigen();
-    // Der Nutzer ist schon woanders (Rückgängig, Liste, zu): nur noch die Daten pflegen
-    if (mein !== st.vorgang || !st.dlg.open) { wartendZeigen(); return; }
-    if (r.gestoppt === 'anmeldung') return fehlerZeigen(TEXT_ENTKOPPELT + ' Der Stempel bleibt auf dem iPad, bis es neu gekoppelt ist.');
-    if (r.gestoppt === 'uhr') infoZeigen(K.fehlerText('zukunft'));
-    var fremd = r.ergebnisse.filter(function (y) { return y !== x && y.abgelehnt; });
-    if (fremd.length) infoZeigen('Ein früherer Stempel wurde abgelehnt. Du findest ihn in der Liste unter „Nicht übertragen“.');
+    var n = nachlauf(await q.abarbeiten(), e.schluessel, mein);
+    if (n.fertig) return;
+    var x = n.x;
     if (!x) return wartendZeigen();   // ohne Netz: der Fuß zeigt „Gespeichert, wird übertragen“
-    if (x.status !== 200) {
-      standMerken(p, x);
-      return fehlerZeigen(ablehnText(x));
-    }
     if (x.daten.konflikt) { infoZeigen('Gespeichert, passt aber nicht zum Stand. Kubi sieht es im Office.'); return wartendZeigen(); }
     var textEl = st.inhalt.querySelector('[data-zs-text]');
     if (textEl) textEl.textContent = K.bestaetigung(p.name, art, e.zeit, x.daten);
@@ -372,16 +405,9 @@
     if (weg.gespeichert === false) st.speicherFehler = true;
     st.inhalt.innerHTML = '<p class="zs-fertig" role="status" data-zs-text>Wird rückgängig gemacht.</p><p class="zs-hinweis" data-zs-info hidden></p>';
     if (st.speicherFehler) infoZeigen(K.fehlerText('speicher'));
-    var r = await q.abarbeiten();
-    var x = r.ergebnisse.find(function (y) { return y.eintrag.schluessel === weg.schluessel; });
-    if (x && x.status === 200) standMerken(p, x);
-    if (r.gestoppt === 'anmeldung') entkoppelt();
-    if (!r.gestoppt) st.offline = false;
-    knoepfeZeigen();
-    if (mein !== st.vorgang || !st.dlg.open) { wartendZeigen(); return; }
-    if (r.gestoppt === 'anmeldung') return fehlerZeigen(TEXT_ENTKOPPELT + ' Der Stempel bleibt auf dem iPad, bis es neu gekoppelt ist.');
-    if (x && x.status !== 200) { standMerken(p, x); return fehlerZeigen(ablehnText(x)); }
-    if (r.gestoppt === 'uhr') infoZeigen(K.fehlerText('zukunft'));
+    var n = nachlauf(await q.abarbeiten(), weg.schluessel, mein);
+    if (n.fertig) return;
+    var x = n.x;
     var t = st.inhalt.querySelector('[data-zs-text]');
     if (t) t.textContent = x ? 'Rückgängig gemacht.' : 'Rückgängig gespeichert, wird übertragen.';
     spaeterZu();
@@ -394,21 +420,21 @@
     if (knopf) { knopf.disabled = true; knopf.setAttribute('aria-busy', 'true'); }
     var r = await q.erneut(schluessel);
     if (r) {
+      var h = bei(r, schluessel);
       var x = r.ergebnisse.find(function (y) { return y.eintrag.schluessel === schluessel; });
-      if (r.gestoppt === 'anmeldung') entkoppelt();
       st.meldung = r.gestoppt === 'anmeldung' ? TEXT_ENTKOPPELT
         : x && x.status === 200 ? 'Gesendet.'
         : x ? ablehnText(x)
         : r.gestoppt === 'uhr' ? K.fehlerText('zukunft')
         : 'Keine Verbindung. Der Stempel wartet auf diesem iPad und geht von selbst raus.';
-      if (x && x.status === 200 && x.daten.stand) { var p = findePerson(x.eintrag.person_id); if (p) standMerken(p, x); }
+      if (h.length) st.meldung += ' ' + h.join(' ');
     }
     knoepfeZeigen();
     if (st.dlg && st.dlg.open && st.ansicht === 'liste') listeZeigen();
   }
   // Verwerfen ohne Bestätigungsdialog: erst ausblenden, wenige Sekunden „Rückgängig“, dann wirklich weg
   function verwerfenAnstossen(schluessel) {
-    if (st.weg[schluessel]) return;
+    if (st.weg[schluessel] || !istAdmin()) return;
     st.weg[schluessel] = setTimeout(function () {
       delete st.weg[schluessel];
       q.verwerfen(schluessel);
