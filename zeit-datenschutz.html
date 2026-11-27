@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0A0A0A">
+<title>Grill'n Chill · Datenschutz bei der Zeiterfassung</title>
+<meta name="description" content="Datenschutzhinweis von Grill'n Chill für das Team: was die Zeiterfassung speichert, wozu, wer es sieht und wie lange.">
+<link rel="icon" href="/logo.png">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/bowlby-one-latin-400-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-400-normal.woff2" crossorigin>
+<style>
+  @font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/inter-latin-600-normal.woff2')format('woff2')}
+  :root{
+    --background:#0A0A0A;--foreground:#F5E9D0;--card:#141414;--muted:#1C1C1C;--muted-foreground:#9A8E7A;
+    --input:#706250;--border:#2A2520;--ring:#FF7A3D;--radius:14px;
+    --font-display:'Bowlby One',Impact,'Arial Black',sans-serif;
+    --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;color-scheme:dark}
+  body{margin:0;background:var(--background);color:var(--foreground);font:400 16px/1.6 var(--font-sans);-webkit-font-smoothing:antialiased}
+  :focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+  .seite{max-width:680px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+  h1{margin:.75rem 0 .25rem;font-family:var(--font-display);font-weight:400;font-size:1.75rem;line-height:1.15;text-wrap:balance}
+  h2{margin:2rem 0 .5rem;font-size:1.0625rem;font-weight:600;text-wrap:balance}
+  p,ul{margin:0 0 .75rem}
+  ul{padding-left:1.2rem}
+  li{margin-bottom:.35rem}
+  .stand{color:var(--muted-foreground);font-size:.9375rem}
+  .kasten{margin:1rem 0;padding:.9rem 1rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+  .kasten p:last-child,.kasten ul:last-child{margin-bottom:0}
+  /* Eigenständige Links als kleine Pille mit Rand */
+  .pille{position:relative;display:inline-flex;align-items:center;min-height:32px;padding:0 .8rem;border:1px solid var(--input);border-radius:999px;color:var(--foreground);font-size:.875rem;font-weight:600;text-decoration:none}
+  .pille::before{content:"";position:absolute;inset:-6px -2px}
+  a{color:var(--foreground)}
+</style>
+</head>
+<body>
+<main class="seite">
+  <a class="pille" href="/zeit">Zur Zeiterfassung</a>
+  <h1>Datenschutz bei der Zeiterfassung</h1>
+  <p class="stand">Stand: November 2026</p>
+
+  <div class="kasten">
+    <p><b>Kurz gesagt:</b> Wir speichern, wann du deine Schicht beginnst, Pause machst und aufhörst, dazu deinen Namen und das Gerät. Das brauchen wir für deinen Lohn und weil das Gesetz es verlangt. Wir orten dich nicht.</p>
+  </div>
+
+  <h2>1. Wer verantwortlich ist</h2>
+  <p>Grill'n Chill Yildiz und Öztas GbR, vertreten durch Kutluay Öztas und Rasim Kubilay Yildiz, Im Teich 9, 49152 Bad Essen.<br>
+    E-Mail: <a href="mailto:info@grillnchill-foodtruck.de">info@grillnchill-foodtruck.de</a>, Telefon: +49 151 18 54 06 04</p>
+
+  <h2>2. Worum es geht</h2>
+  <p>Du stempelst Beginn, Pausen und Ende deiner Schicht am iPad am Truck oder mit deinem Handy im Tab „Zeit“. Der Stempel wird zuerst auf dem Gerät gespeichert und geht raus, sobald Netz da ist. Dann landet er im GNC Office, der Buchhaltung von Grill'n Chill.</p>
+
+  <h2>3. Was wir speichern</h2>
+  <ul>
+    <li>deinen Namen, wie er im Dienstplan steht, und die Kennung aus dem Dienstplan</li>
+    <li>jeden Stempel: Art (Beginn, Pause, Pause Ende, Ende), die Uhrzeit deines Geräts und die Zeit, zu der er im Office ankam</li>
+    <li>das Gerät: „iPad Truck“ oder „Handy“</li>
+    <li>wer gestempelt hat: das Gerät am iPad, dein Team-Login am Handy</li>
+    <li>die Gutschrift von derzeit 5 Minuten je Schichtende. Sie steht als eigener Wert neben deiner echten Endzeit, die Endzeit bleibt unverändert</li>
+    <li>Hinweise zum Stempel samt Grund: ohne Schicht im Plan, früher als geplant, Uhr des Geräts weicht ab, passt nicht zum Stand</li>
+    <li>Rücknahmen („Rückgängig“) und Nachträge, bei einem Nachtrag mit Grund und wer ihn eingetragen hat</li>
+  </ul>
+  <p><b>Was wir nicht speichern:</b> keine Ortung, keine Fotos, keine Biometrie (Fingerabdruck, Gesicht) und sonst nichts von deinem Handy.</p>
+
+  <h2>4. Wozu und auf welcher Grundlage</h2>
+  <ul>
+    <li>für deinen Lohn: gearbeitete Zeit plus Gutschrift (Art. 6 Abs. 1 lit. b DSGVO, dein Arbeitsvertrag)</li>
+    <li>weil das Gesetz es verlangt: Beginn, Ende und Dauer der täglichen Arbeitszeit aufzeichnen (§ 17 Mindestlohngesetz) und Arbeitszeiten und Pausen einhalten (Arbeitszeitgesetz), dazu die Aufbewahrung von Lohnunterlagen (Art. 6 Abs. 1 lit. c DSGVO)</li>
+  </ul>
+  <p>Die Aufzeichnung ist Pflicht. Fehlt ein Stempel, trägt Kubi die Zeit nach. Es gibt keine automatischen Entscheidungen über dich: Hinweise wie „früher als geplant“ liest Kubi selbst.</p>
+
+  <h2>5. Wer die Daten sieht</h2>
+  <ul>
+    <li>du selbst: deinen Stand und deine Woche im Tab „Zeit“</li>
+    <li>im GNC Office die Inhaber, das Büro und der IT-Dienstleister, der die Technik betreut (nur für die technische Betreuung). Alle melden sich mit Zwei-Faktor-Anmeldung an</li>
+    <li>alle am Truck, die das iPad in die Hand nehmen: Am iPad stehen die Namensliste und der Stand (frei, im Dienst seit, in Pause) ohne Anmeldung, damit alle schnell stempeln können. Deine Stempelzeiten der Woche zeigt das iPad nicht</li>
+  </ul>
+
+  <h2>6. Wo die Daten liegen</h2>
+  <ul>
+    <li>Der Weg: Gerät, dann die Website von Grill'n Chill bei Netlify, Inc. (USA), dann das GNC Office bei Cloudflare, Inc. Die Datenbank des Office liegt in der Europäischen Union.</li>
+    <li>Bei Netlify laufen die Stempel nur durch und bleiben dort nicht liegen. Der Dienstplan mit deinem Namen und deinem Team-Zugang liegt dort schon heute. Wie Netlify Daten verarbeitet, steht in der <a href="/#datenschutz">Datenschutzerklärung der Website</a> unter „Hosting durch Netlify“.</li>
+    <li>Auf dem iPad und deinem Handy speichert der Browser jeden Stempel sofort. Nimmt das Office einen Stempel nicht an, bleibt er in der Liste „Nicht übertragen“, bis er erneut gesendet oder verworfen wird. Am iPad darf nur Kubi mit Anmeldung verwerfen, am eigenen Handy du selbst.</li>
+    <li>Dein Handy merkt sich außerdem deinen letzten Stand, gebunden an deine Anmeldung. Bei „Abmelden“ oder einer neuen Anmeldung wird er gelöscht.</li>
+  </ul>
+
+  <h2>7. Wie lange</h2>
+  <p>Wir bewahren die Stempel sechs Jahre auf, gerechnet ab dem Ende des Jahres, in dem du gestempelt hast. So lange müssen Lohnunterlagen aufbewahrt werden. Danach löschen wir sie.</p>
+
+  <h2>8. Deine Rechte</h2>
+  <p>Du kannst Auskunft über deine Daten verlangen, falsche Zeiten berichtigen lassen und Einschränkung oder Löschung verlangen, soweit die Aufbewahrungspflicht das zulässt (Art. 15 bis 18 DSGVO). Stimmt eine Zeit nicht, sag Kubi Bescheid.</p>
+  <p>Du kannst dich bei einer Datenschutz-Aufsichtsbehörde beschweren (Art. 77 DSGVO), zum Beispiel bei der Landesbeauftragten für den Datenschutz Niedersachsen, Prinzenstraße 5, 30159 Hannover.</p>
+
+  <h2>9. Änderungen</h2>
+  <p>Ändert sich etwas an der Zeiterfassung, steht der neue Stand hier, und Kubi sagt dem Team Bescheid.</p>
+
+  <p><a class="pille" href="/zeit">Zur Zeiterfassung</a></p>
+</main>
+</body>
+</html>

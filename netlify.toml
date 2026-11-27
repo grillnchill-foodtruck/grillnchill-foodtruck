@@ -81,6 +81,11 @@
   to     = "/zeit.html"
   status = 200
 
+[[redirects]]
+  from   = "/zeit/datenschutz"
+  to     = "/zeit-datenschutz.html"
+  status = 200
+
 # Sicherheits-Header
 [[headers]]
   for = "/*"
@@ -291,6 +296,12 @@
     X-Robots-Tag    = "noindex, nofollow"
     X-Frame-Options = "DENY"
     Cache-Control   = "no-store"
+
+[[headers]]
+  for = "/zeit-datenschutz.html"
+  [headers.values]
+    X-Robots-Tag    = "noindex, nofollow"
+    X-Frame-Options = "DENY"
 
 # Türkische Seite /tr/ (entsteht beim Build): Bilder, Skripte und Sprachpakete,
 # die JavaScript relativ nachlädt, liegen im Hauptverzeichnis. Ohne force, also
