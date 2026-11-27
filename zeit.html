@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GNC Zeit">
+<title>Grill'n Chill · Zeit</title>
+<meta name="description" content="Internes Werkzeug von Grill'n Chill für das Team, nur mit Anmeldung.">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/bowlby-one-latin-400-normal.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/inter-latin-400-normal.woff2" crossorigin>
+<style>
+  @font-face{font-family:'Bowlby One';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/bowlby-one-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/inter-latin-400-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/inter-latin-600-normal.woff2')format('woff2')}
+  @font-face{font-family:'Inter';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/inter-latin-700-normal.woff2')format('woff2')}
+  /* Farb-Tokens wie im Cockpit (cockpit.html), damit zeit.css auf beiden Seiten gleich aussieht */
+  :root{
+    --background:#0A0A0A;--foreground:#F5E9D0;--card:#141414;--muted:#1C1C1C;--muted-foreground:#9A8E7A;
+    --primary-solid:#CC4715;--primary-bright:#FF7A3D;--border:#2A2520;--input:#706250;--ring:#FF7A3D;
+    --success:#6DBE45;--warning:#FFC93C;--destructive:#E04848;--destructive-text:#F07070;--radius:14px;
+    --font-display:'Bowlby One',Impact,'Arial Black',sans-serif;
+    --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    --ease:cubic-bezier(.2,.8,.2,1);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;color-scheme:dark}
+  body{margin:0;min-height:100dvh;background:var(--background);color:var(--foreground);font:400 16px/1.5 var(--font-sans);-webkit-font-smoothing:antialiased}
+  h1,h2,h3,p{margin:0}
+  button,input{font:inherit;color:inherit}
+  [hidden]{display:none!important}
+  :focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+  .display{font-family:var(--font-display);font-weight:400;letter-spacing:.01em;line-height:1.05}
+  .login{min-height:100dvh;display:grid;place-items:center;padding:24px 16px}
+  .login-karte{width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px;padding:28px 24px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+  .login-karte p{color:var(--muted-foreground);font-size:.9375rem}
+  .login-karte > .zs-pille{align-self:flex-start}
+  .feld{display:flex;flex-direction:column;gap:6px}
+  .feld label{font-size:.875rem;font-weight:600}
+  .eingabe{width:100%;min-height:48px;padding:0 14px;border:1px solid var(--input);border-radius:10px;background:var(--background);font-size:1rem}
+  .haken{display:flex;align-items:center;gap:10px;min-height:44px;font-size:.9375rem;color:var(--muted-foreground)}
+  .haken input{width:22px;height:22px;accent-color:var(--primary-solid)}
+  .feldfehler{color:var(--destructive-text);font-size:.875rem}
+  .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));z-index:50;max-width:calc(100% - 32px);transform:translateX(-50%);padding:10px 16px;
+    border:1px solid var(--border);border-radius:999px;background:var(--muted);font-size:.9375rem;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.da{opacity:1}
+  .toast.err{border-color:var(--destructive);color:var(--destructive-text)}
+  html.native-tabbar .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
+</style>
+<link rel="stylesheet" href="/zeit.css">
+</head>
+<body>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- ================= Anmeldung (wie im Admin-Tool, mit Code) ================= -->
+<main id="loginView" class="login" hidden>
+  <section class="login-karte" aria-labelledby="loginTitel">
+    <a class="zs-pille" id="appZurueckLogin" href="/" hidden>Zurück</a>
+    <h1 class="display" id="loginTitel">Zeit</h1>
+    <p>Melde dich mit deinem Team-Zugang an. Danach stempelst du hier deine Schicht.</p>
+    <p class="zs-hinweis" id="loginWartend" hidden></p>
+    <form id="loginForm" class="feld" novalidate>
+      <label for="pw">Passwort</label>
+      <input class="eingabe" type="password" id="pw" autocomplete="current-password" autocapitalize="off" spellcheck="false" aria-describedby="pwFehler">
+      <p class="feldfehler" id="pwFehler" role="alert" hidden></p>
+      <label class="haken"><input type="checkbox" id="pwBleiben" checked>Angemeldet bleiben, 30 Tage auf diesem Handy</label>
+      <button type="submit" class="zs-knopf" id="loginKnopf">Anmelden</button>
+    </form>
+    <a class="zs-pille" href="/zeit/datenschutz">Datenschutz bei der Zeiterfassung</a>
+  </section>
+</main>
+
+<!-- ================= Zeit ================= -->
+<main id="zeitView" class="zh" hidden>
+  <header class="zh-kopf">
+    <a class="zs-pille" id="appZurueck" href="/" hidden>Zurück</a>
+    <h1 class="display">Zeit</h1>
+    <button type="button" class="zs-pille" id="abmelden">Abmelden</button>
+  </header>
+
+  <section class="zh-karte" aria-labelledby="zhName">
+    <h2 class="zs-name" id="zhName"></h2>
+    <p class="zs-stand" id="zhStand" aria-live="polite"></p>
+    <p class="zs-plan-text" id="zhPlan"></p>
+    <p class="zs-hinweis" id="zhHinweis" hidden></p>
+    <p class="zs-hinweis" id="zhInfo" role="status" hidden></p>
+    <p class="zs-fehler" id="zhFehler" role="alert" hidden></p>
+    <div class="zs-knoepfe" id="zhKnoepfe"></div>
+    <div id="zhFertig" hidden>
+      <p class="zs-fertig" id="zhFertigText" role="status"></p>
+      <button type="button" class="zs-rueckgaengig" id="zhRueckgaengig">Rückgängig <span class="zs-sek" aria-hidden="true"></span></button>
+    </div>
+    <p class="zs-wartend" id="zhWartend" hidden></p>
+  </section>
+
+  <div id="zhAbgelehntBereich" hidden>
+    <h2 class="zh-abschnitt">Nicht übertragen</h2>
+    <div class="zs-liste" id="zhAbgelehnt"></div>
+  </div>
+
+  <div id="zhWocheBereich" hidden>
+  <div class="zh-wochenwahl">
+    <button type="button" class="zh-rund" id="zhVorwoche" aria-label="Vorwoche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+    <h2 id="zhWoche"></h2>
+    <button type="button" class="zh-rund" id="zhFolgewoche" aria-label="Folgewoche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+  </div>
+  <section class="zh-karte" id="zhTage" aria-labelledby="zhWoche" aria-live="polite"></section>
+  </div>
+
+  <p class="zs-fuss"><a class="zs-pille" href="/zeit/datenschutz">Datenschutz bei der Zeiterfassung</a></p>
+</main>
+
+<script src="/admin-anmeldung.js"></script>
+<script src="/app-leiste.js"></script>
+<script src="/zeit-kern.js"></script>
+<script src="/zeit-handy.js"></script>
+</body>
+</html>

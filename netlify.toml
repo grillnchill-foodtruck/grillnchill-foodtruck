@@ -75,6 +75,12 @@
   to     = "/dienstplan.html"
   status = 200
 
+# Zeiterfassung: Tab „Zeit“ fürs Team (gleiche Anmeldung wie das Admin-Tool)
+[[redirects]]
+  from   = "/zeit"
+  to     = "/zeit.html"
+  status = 200
+
 # Sicherheits-Header
 [[headers]]
   for = "/*"
@@ -274,6 +280,13 @@
 
 [[headers]]
   for = "/dienstplan.html"
+  [headers.values]
+    X-Robots-Tag    = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    Cache-Control   = "no-store"
+
+[[headers]]
+  for = "/zeit.html"
   [headers.values]
     X-Robots-Tag    = "noindex, nofollow"
     X-Frame-Options = "DENY"

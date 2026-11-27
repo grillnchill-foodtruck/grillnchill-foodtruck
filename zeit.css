@@ -80,3 +80,24 @@
 .login:has(> .zs-login-knopf:not([hidden])){align-content:center;gap:0}
 .zs-karte{margin-top:16px}
 .zs-karte .btn[aria-busy="true"]{opacity:.6;cursor:progress}
+
+/* ---- Handy-Seite /zeit ---- */
+.zh{max-width:560px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+html.native-tabbar .zh{padding-bottom:calc(env(safe-area-inset-bottom) + 110px)}
+.zh-kopf{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+.zh-kopf h1{flex:1;font-size:1.75rem}
+.zh-karte{padding:1.1rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+.zh-abschnitt{margin:1.5rem 0 .6rem;color:var(--muted-foreground);font-size:.875rem;font-weight:600}
+.zh-wochenwahl{display:flex;align-items:center;gap:.25rem;margin:1.5rem 0 .6rem}
+.zh-wochenwahl h2{flex:1;text-align:center;font-size:1rem;font-variant-numeric:tabular-nums}
+.zh-rund{width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:50%;background:transparent;color:var(--foreground);cursor:pointer}
+.zh-rund[disabled]{opacity:.35;cursor:default}
+.zh-rund svg{width:20px;height:20px}
+.zh-tag{display:flex;align-items:center;gap:.75rem;min-height:56px;padding:.55rem 0;border-bottom:1px solid var(--border)}
+.zh-tag:last-child{border-bottom:0}
+.zh-tag span{flex:1;min-width:0}
+.zh-tag b{display:block;font-weight:600}
+.zh-tag small{display:block;color:var(--muted-foreground);font-size:.84rem}
+.zh-tag .zh-wert{flex:none;text-align:right;font-variant-numeric:tabular-nums}
+.zh-summe{display:flex;justify-content:space-between;gap:1rem;padding-top:.7rem;font-weight:700;font-variant-numeric:tabular-nums}
+.zh-leer{color:var(--muted-foreground);padding:.6rem 0}

@@ -23,8 +23,10 @@
  *     vorWechsel: fn(id),   false = Wechsel abbrechen (z. B. Fahrt mit Live-Standort)
  *   })  -> { waehle(id) }   markierten Tab nachträglich setzen
  *
- * Team-Leiste (Admin, Cockpit, Fahrer, Dienstplan, Firmen): Heute, Bestellungen,
- * Cockpit, Fahrer, Mehr. „Mehr“ öffnet das Admin-Menü mit allen Bereichen, den
+ * Team-Leiste (Admin, Cockpit, Fahrer, Dienstplan, Firmen, Zeit): Heute, Bestellungen,
+ * Cockpit, Fahrer, Mehr. Mitarbeiter (Rolle staff, localStorage gnc_team_rolle) sehen
+ * „Zeit“ statt „Cockpit“: Sie stempeln, Kubi nicht. Höchstens fünf Tabs (UX-Regel 5).
+ * „Mehr“ öffnet das Admin-Menü mit allen Bereichen, den
  * übrigen Werkzeugen und dem Weg zur Kunden-App. So bleibt man im Team-Bereich,
  * statt mit jedem Tipp in der Kunden-Ansicht zu landen.
  *
@@ -55,9 +57,13 @@
     { id: 'fahrer', label: 'Fahrer', symbol: 'car' },
     { id: 'mehr', label: 'Mehr', symbol: 'ellipsis', action: true },
   ];
+  // Mitarbeiter stempeln, Kubi nicht: Rolle staff bekommt „Zeit“ an der Stelle von „Cockpit“.
+  // Die Rolle schreiben admin-anmeldung.js (Anmelden) und cockpit.html (Zahlen geladen); unbekannt = Leiste mit Cockpit.
+  var TEAM_STAFF = TEAM.map(function (t) { return t.id === 'cockpit' ? { id: 'zeit', label: 'Zeit', symbol: 'clock' } : t; });
+  function teamRolle() { try { return localStorage.getItem('gnc_team_rolle') || ''; } catch (e) { return ''; } }
   var TEAM_ZIEL = {
     heute: '/admin.html?tab=today&app=1', orders: '/admin.html?tab=orders&app=1',
-    cockpit: '/cockpit.html?app=1', fahrer: '/fahrer?app=1', mehr: '/admin.html?menu=1&app=1',
+    cockpit: '/cockpit.html?app=1', zeit: '/zeit?app=1', fahrer: '/fahrer?app=1', mehr: '/admin.html?menu=1&app=1',
   };
   var LEER = { waehle: function () {} };
 
@@ -83,7 +89,7 @@
     function post(m) { try { h.postMessage(m); } catch (e) {} }
     var team = o.modus === 'team';
     var tabs = null;
-    if (team) tabs = TEAM;
+    if (team) tabs = teamRolle() === 'staff' ? TEAM_STAFF : TEAM;
     else {
       try { tabs = JSON.parse(localStorage.getItem('gnc_ntb_tabs') || 'null'); } catch (e) {}
       if (!Array.isArray(tabs) || !tabs.length) tabs = o.tabs || ERSATZ;

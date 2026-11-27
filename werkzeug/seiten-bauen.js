@@ -735,7 +735,8 @@ fs.writeFileSync(path.join(WURZEL, '_headers'),
   + '  Speculation-Rules: "/spekulation.json"\n'
   + '\n/spekulation.json\n  Content-Type: application/speculationrules+json\n'
   // Team-Werkzeuge nie in Suchmaschinen, auch wenn ein Crawler sie findet
-  + ['/admin', '/admin.html', '/cockpit', '/cockpit.html', '/fahrer', '/fahrer.html', '/dienstplan', '/dienstplan.html', '/firmen-admin', '/firmen-admin.html']
+  + ['/admin', '/admin.html', '/cockpit', '/cockpit.html', '/fahrer', '/fahrer.html', '/dienstplan', '/dienstplan.html', '/firmen-admin', '/firmen-admin.html',
+    '/zeit', '/zeit.html', '/zeit/datenschutz', '/zeit-datenschutz.html']
     .map((pfad) => '\n' + pfad + '\n  X-Robots-Tag: noindex, nofollow\n').join(''));
 
 const reste = (trHtml.match(/data-i18n="[^"]+"/g) || []).length;

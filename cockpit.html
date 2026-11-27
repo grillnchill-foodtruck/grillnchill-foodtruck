@@ -1159,6 +1159,7 @@
     inhaberAnsicht(d.owner === true);
     // Liefer-Heatmap (cockpit-heatmap.js) zeigt sich nur dem Inhaber.
     // role: Die Karte „Dieses iPad als Stempeluhr“ (zeit-stempeln.js) zeigt sich nur Admins
+    if (d.role === 'staff' || d.role === 'admin' || d.role === 'superadmin') { try { localStorage.setItem('gnc_team_rolle', d.role === 'staff' ? 'staff' : 'admin'); } catch (e) {} }
     document.dispatchEvent(new CustomEvent('gnc-cockpit', { detail: { owner: d.owner === true, cred: cred, role: d.role || '' } }));
   }
 

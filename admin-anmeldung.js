@@ -204,6 +204,7 @@
         laeuft = false; los.disabled = false;
         if (r.status === 200 && r.d.ok && r.d.token) {
           var erfolg = { ok: true, token: r.d.token, exp: r.d.exp, role: r.d.role, name: r.d.name || '' };
+          rolleMerken(r.d.role);
           if (r.d.notfallCodes) { notfallCodesZeigen(f, r.d.notfallCodes, function () { f.zu(); fertig(erfolg); }); return; }
           if (typeof r.d.notfallRest === 'number') {
             hinweisZeigen(f, 'Mit Notfallcode angemeldet', 'Du hast noch ' + r.d.notfallRest + ' Notfallcodes. Hast du dein Handy verloren, lass dir im Admin-Tool unter Team die Zwei-Faktor-App zurücksetzen und richte sie neu ein.', function () { f.zu(); fertig(erfolg); });
@@ -251,6 +252,12 @@
   }
 
   /* ---- Einstieg ----------------------------------------------------------- */
+  // Für die Team-Leiste der App (app-leiste.js): staff bekommt den Tab „Zeit“, admin und superadmin das Cockpit.
+  // Andere Rollen (z. B. gekoppeltes Team-Gerät) ändern die gemerkte Rolle nicht.
+  function rolleMerken(rolle) {
+    if (rolle !== 'staff' && rolle !== 'admin' && rolle !== 'superadmin') return;
+    try { localStorage.setItem('gnc_team_rolle', rolle === 'staff' ? 'staff' : 'admin'); } catch (e) {}
+  }
   async function anmelden(passwort, optionen) {
     var merken = !!(optionen && optionen.merken);
     var r = await senden({ action: 'anmelden', password: passwort, merken: merken });
@@ -258,7 +265,7 @@
     if (r.status === 401) return { ok: false, grund: 'passwort' };
     if (r.status === 429) return { ok: false, grund: 'gesperrt', retryAfter: Number(r.d.retryAfter) || 900 };
     if (r.status !== 200) return { ok: false, grund: 'stoerung', hinweis: r.d && r.d.hint };
-    if (r.d.ok && r.d.token) return { ok: true, token: r.d.token, exp: r.d.exp, role: r.d.role, name: r.d.name || '' };
+    if (r.d.ok && r.d.token) { rolleMerken(r.d.role); return { ok: true, token: r.d.token, exp: r.d.exp, role: r.d.role, name: r.d.name || '' }; }
     if (r.d.schritt === 'code' || r.d.schritt === 'einrichten') return codeFenster(passwort, merken, r.d);
     return { ok: false, grund: 'stoerung' };
   }
