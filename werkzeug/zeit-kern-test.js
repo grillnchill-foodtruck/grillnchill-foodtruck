@@ -157,7 +157,7 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     const rr = await o.q.abarbeiten();
     const ab = o.q.abgelehnt();
     ok('person_fehlt wandert nach abgelehnt, Lauf geht weiter', rr.gestoppt === null && rr.wartend === 0 && ab.length === 1 && ab[0].schluessel === a1.schluessel && ab[0].status === 403 && ab[0].fehler === 'person_fehlt' && typeof ab[0].am === 'string' && log.length === 2);
-    ok('… mit Grund in den Ergebnissen und eigenem Speicherschlüssel', rr.ergebnisse[0].daten.fehler === 'person_fehlt' && rr.ergebnisse[0].eintrag.schluessel === a1.schluessel && JSON.parse(o.speicher.m.get('gnc_zeit_abgelehnt')).length === 1);
+    ok('… mit Grund in den Ergebnissen und demselben Speicherschlüssel', rr.ergebnisse[0].daten.fehler === 'person_fehlt' && rr.ergebnisse[0].eintrag.schluessel === a1.schluessel && JSON.parse(o.speicher.m.get('gnc_zeit_warteschlange')).filter((x) => x.abgelehnt).length === 1 && !o.speicher.m.has('gnc_zeit_abgelehnt'));
     const log2 = log.length;
     const r2 = await o.q.erneut(a1.schluessel);
     ok('erneut holt ihn zurück, sendet mit Schlüssel und Gerätezeit, 200 geht durch', o.q.abgelehnt().length === 0 && o.q.wartend().length === 0 && log.length === log2 + 1 && log[log.length - 1] === a1.schluessel && r2.ergebnisse[0].status === 200 && r2.ergebnisse[0].eintrag.zeit === a1.zeit);
@@ -218,10 +218,12 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     let boese = true;
     const log = [], o = frisch({ senden: async (e) => { if (boese) return { get status() { throw new Error('kaputt'); } }; log.push(e.schluessel); return { status: 200, daten: {} }; } });
     o.q.stempeln('p1', 'beginn');
-    await o.q.abarbeiten().catch(() => {});
+    const alt = console.error; console.error = () => {};
+    const r1 = await o.q.abarbeiten();
+    console.error = alt;
     boese = false;
     const rr = await o.q.abarbeiten();
-    ok('Fehler in einem Lauf blockiert weitere Läufe nicht', log.length === 1 && rr.wartend === 0);
+    ok('Fehler in einem Lauf blockiert weitere Läufe nicht', r1.gestoppt === 'netz' && log.length === 1 && rr.wartend === 0);
   }
 
   // 4. Reihenfolge per Zähler
@@ -236,11 +238,11 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
   }
   {
     const sp2 = speicher();
-    sp2.setItem('gnc_zeit_warteschlange', JSON.stringify([{ schluessel: 'neu', via: 'stempeluhr', zeit: '2027-01-05T10:00:00.000Z', nr: 3 }, { schluessel: 'alt2', via: 'stempeluhr', zeit: '2027-01-05T09:00:00.000Z' }, { schluessel: 'alt1', via: 'stempeluhr', zeit: '2027-01-05T08:00:00.000Z' }]));
-    sp2.setItem('gnc_zeit_abgelehnt', JSON.stringify([{ schluessel: 'ab', via: 'stempeluhr', nr: 7 }]));
+    sp2.setItem('gnc_zeit_warteschlange', JSON.stringify([{ schluessel: 'neu', via: 'stempeluhr', zeit: '2027-01-05T10:00:00.000Z', nr: 3 }, { schluessel: 'alt2', via: 'stempeluhr', zeit: '2027-01-05T09:00:00.000Z' }, { schluessel: 'alt1', via: 'stempeluhr', zeit: '2027-01-05T08:00:00.000Z' },
+      { schluessel: 'ab', via: 'stempeluhr', nr: 7, zeit: '2027-01-05T07:00:00.000Z', abgelehnt: { status: 404, fehler: 'person_fehlt', am: '2027-01-05T07:01:00.000Z' } }]));
     const q2 = K.warteschlange({ speicher: sp2, via: 'stempeluhr', senden, jetzt: () => uhr, uuid });
     const n8 = q2.stempeln('p1', 'beginn');
-    ok('Alte Einträge ohne nr zählen 0 und behalten Zeitreihenfolge; neue nr = größte in Schlange und abgelehnt plus 1', q2.wartend().map((e) => e.schluessel).slice(0, 3).join() === 'alt1,alt2,neu' && n8.nr === 8);
+    ok('Alte Einträge ohne nr zählen 0 und behalten Zeitreihenfolge; neue nr = größte im Array (auch bei abgelehnten) plus 1', q2.wartend().map((e) => e.schluessel).slice(0, 3).join() === 'alt1,alt2,neu' && q2.abgelehnt().length === 1 && q2.abgelehnt()[0].fehler === 'person_fehlt' && q2.abgelehnt()[0].status === 404 && !('abgelehnt' in q2.abgelehnt()[0]) && n8.nr === 8);
   }
 
   // Rückgängig während des Sendens
@@ -282,7 +284,6 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
   }
 
   /* ---- Zweite Nachbesserung ------------------------------------------------- */
-  const voll = (nurKey) => { const sp2 = speicher(); sp2.setItem = (k) => { if (!nurKey || k === nurKey) throw new Error('QuotaExceededError'); }; const orig = speicher; return sp2; };
   const vollMitM = (nurKey) => { const sp2 = speicher(); const set = sp2.setItem; sp2.setItem = (k, v) => { if (!nurKey || k === nurKey) throw new Error('QuotaExceededError'); set(k, v); }; return sp2; };
   // 1
   {
@@ -306,23 +307,28 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     await o.q.erneut(e.schluessel);
     ok('Rückgängig auf abgelehnt: weg, keine Rücknahme, nichts geht mehr raus', r2.weg === true && o.q.abgelehnt().length === 0 && o.q.wartend().length === 0 && log.join() === 'stempeln');
   }
-  // 3
+  // 3: ein gemeinsames Kontingent wie beim echten localStorage: X wird abgelehnt, Y geht im selben Lauf durch, Neuladen
   {
-    const s0 = vollMitM('gnc_zeit_abgelehnt');
-    const o = frisch({ speicher: s0, senden: async () => ({ status: 404, daten: { fehler: 'person_fehlt' } }) });
-    o.q.stempeln('p1', 'beginn');
-    await o.q.abarbeiten();
-    const q2 = K.warteschlange({ speicher: s0, via: 'stempeluhr', senden, jetzt: () => uhr, uuid });
-    ok('Abgelehnt nicht schreibbar: nach Neuladen in keiner Liste verschwunden', q2.wartend().length + q2.abgelehnt().length >= 1 && o.q.abgelehnt().length === 1 && o.q.wartend().length === 0);
-    // erneut: Ziel (Schlange) nicht schreibbar
-    const s1 = vollMitM();
-    const m = s1.setItem;
+    const m = new Map(); const kont = { grenze: 0 };
+    const groesse = () => { let n = 0; for (const [k, v] of m) n += k.length + v.length; return n; };
+    const sp2 = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem(k, v) { const alt = m.get(k); m.set(k, String(v)); if (groesse() > kont.grenze) { if (alt === undefined) m.delete(k); else m.set(k, alt); throw new Error('QuotaExceededError'); } } };
+    kont.grenze = 1e9;
+    const q0 = K.warteschlange({ speicher: sp2, via: 'stempeluhr', uuid, jetzt: () => uhr, senden: async () => ({ status: 0 }) });
+    const x = q0.stempeln('pX', 'beginn'); uhr += 1000; q0.stempeln('pY', 'beginn');
+    kont.grenze = groesse() + 20;
+    const q = K.warteschlange({ speicher: sp2, via: 'stempeluhr', uuid, jetzt: () => uhr, senden: async (e) => (e.person_id === 'pX' ? { status: 404, daten: { fehler: 'person_fehlt' } } : { status: 200, daten: {} }) });
+    const rr = await q.abarbeiten();
+    const q2 = K.warteschlange({ speicher: sp2, via: 'stempeluhr', uuid, jetzt: () => uhr, senden: async () => ({ status: 200, daten: {} }) });
+    ok('Gemeinsames Kontingent: abgelehntes X ist nach dem Neuladen nicht verschwunden', rr.ergebnisse.length === 2 && q.abgelehnt().length === 1
+      && q2.wartend().concat(q2.abgelehnt()).some((e) => e.schluessel === x.schluessel));
+  }
+  {
     const o2 = frisch({ speicher: speicher(), senden: antwortFolge([{ status: 404, daten: { fehler: 'person_fehlt' } }], []) });
     const e = o2.q.stempeln('p1', 'beginn'); await o2.q.abarbeiten();
-    const sp3 = o2.speicher; const set3 = sp3.setItem; sp3.setItem = (k, v) => { if (k === 'gnc_zeit_warteschlange') throw new Error('voll'); set3(k, v); };
+    const sp3 = o2.speicher; sp3.setItem = () => { throw new Error('voll'); };
     o2.q.erneut(e.schluessel);
     const q3 = K.warteschlange({ speicher: sp3, via: 'stempeluhr', senden, jetzt: () => uhr, uuid });
-    ok('erneut mit nicht schreibbarer Schlange: nach Neuladen weiter in abgelehnt', q3.abgelehnt().length === 1);
+    ok('erneut bei vollem Speicher: nach Neuladen weiter in abgelehnt', q3.abgelehnt().length === 1);
   }
   // 4
   {
@@ -365,7 +371,7 @@ const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{
     const e = o.q.stempeln('p1', 'beginn'); await o.q.abarbeiten();
     const nein = o.q.verwerfen('gibts-nicht');
     const ja = o.q.verwerfen(e.schluessel);
-    ok('verwerfen entfernt endgültig aus abgelehnt, Unbekanntes false', nein === false && ja === true && o.q.abgelehnt().length === 0 && JSON.parse(o.speicher.m.get('gnc_zeit_abgelehnt')).length === 0);
+    ok('verwerfen entfernt endgültig aus abgelehnt, Unbekanntes false', nein === false && ja === true && o.q.abgelehnt().length === 0 && JSON.parse(o.speicher.m.get('gnc_zeit_warteschlange')).length === 0);
   }
 
   console.log('\n' + (fehler ? '❌ ' + fehler + ' von ' + n + ' Prüfungen fehlgeschlagen' : '✅ Alle ' + n + ' Prüfungen grün'));

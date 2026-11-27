@@ -16,7 +16,7 @@
      400 zukunft, Uhr schon korrigiert (Stempel liegt mehr als 2 Minuten nach der Gerätezeit)   wie ein anderer Code: abgelehnt
      endgültige Codes (nur zustand, nicht_zuruecknehmbar, schluessel_anders)
                               raus aus der Schlange, Grund in den Ergebnissen, Lauf geht weiter
-     jeder andere Fehlercode  wandert in die Liste 'abgelehnt' (gnc_zeit_abgelehnt) mit Status, Fehler und Zeit. Die Seite
+     jeder andere Fehlercode  bleibt im selben Array (gleicher Schlüssel), markiert mit abgelehnt { status, fehler, am }. Die Seite
                               zeigt sie mit Grund und "Nochmal senden" (erneut). Lauf geht weiter.
    Fehlercode = daten.fehler || daten.error. Scheitert das Schreiben in den localStorage, hält die Seite eine Kopie im
    Speicher: Der Stempel wird trotzdem gesendet, stempeln meldet gespeichert: false.
@@ -128,44 +128,36 @@
   var ENDGUELTIG = { zustand: 1, nicht_zuruecknehmbar: 1, schluessel_anders: 1 };
   var istEndgueltig = function (code) { return Object.prototype.hasOwnProperty.call(ENDGUELTIG, code); };
   var UHR_TOLERANZ_MS = 2 * 60 * 1000;
-  var ABGELEHNT = 'gnc_zeit_abgelehnt';
-
   /* o: { speicher (localStorage), via, senden(eintrag) -> Promise<{ status, daten }>, jetzt?, uuid? }
-     Schnittstelle: stempeln, rueckgaengig, wartend, abgelehnt, erneut, abarbeiten */
+     Schnittstelle: stempeln, rueckgaengig, wartend, abgelehnt, erneut, verwerfen, abarbeiten.
+     Alles liegt in EINEM Array unter einem Schlüssel; ein abgelehnter Eintrag trägt das Feld abgelehnt { status, fehler, am }.
+     So braucht jede Änderung genau einen Schreibvorgang und nichts fällt zwischen zwei Speicherorte. */
   function warteschlange(o) {
     var speicher = o.speicher, via = o.via, senden = o.senden;
     var jetzt = o.jetzt || function () { return Date.now(); };
     var uuid = o.uuid || function () { return uuidV4(); };
     var laeuft = null, nochmal = false, unterwegs = null, letzter = null;
-    // Kopie im Speicher der Seite je Liste. Maßgeblich, solange der localStorage nicht lesbar oder nicht beschreibbar ist.
-    var kopie = {}; kopie[SCHLUESSEL] = { liste: [], massgeblich: false }; kopie[ABGELEHNT] = { liste: [], massgeblich: false };
+    // Kopie im Speicher der Seite. Maßgeblich, solange der localStorage nicht lesbar oder nicht beschreibbar ist.
+    var kopie = { liste: [], massgeblich: false };
 
-    function lesenAus(key) {
-      var k = kopie[key];
-      if (k.massgeblich) return k.liste.slice();
+    function lesen() {
+      if (kopie.massgeblich) return kopie.liste.slice();
       try {
-        var l = JSON.parse(speicher.getItem(key) || '[]');
-        if (!Array.isArray(l)) return k.liste.slice();
+        var l = JSON.parse(speicher.getItem(SCHLUESSEL) || '[]');
+        if (!Array.isArray(l)) return kopie.liste.slice();
         var da = {};
-        k.liste = l.filter(function (e) {
+        kopie.liste = l.filter(function (e) {
           if (!e || typeof e !== 'object' || typeof e.schluessel !== 'string' || da[e.schluessel]) return false;
           da[e.schluessel] = true; return true;
         });
-        return k.liste.slice();
-      } catch (e) { return k.liste.slice(); }
+        return kopie.liste.slice();
+      } catch (e) { return kopie.liste.slice(); }
     }
     // true, wenn der localStorage den Stand hält. Sonst gilt die Kopie, bis ein Schreiben klappt.
-    function schreibenIn(key, l) {
-      var k = kopie[key];
-      k.liste = l.slice();
-      try { speicher.setItem(key, JSON.stringify(l)); k.massgeblich = false; return true; } catch (e) { k.massgeblich = true; return false; }
+    function schreiben(l) {
+      kopie.liste = l.slice();
+      try { speicher.setItem(SCHLUESSEL, JSON.stringify(l)); kopie.massgeblich = false; return true; } catch (e) { kopie.massgeblich = true; return false; }
     }
-    // Nur die Kopie der Seite ändern, den localStorage nicht anfassen (Quelle beim Verschieben, wenn das Ziel nicht schreibbar ist:
-    // nach einem Neuladen liegt der Eintrag dann lieber doppelt als gar nicht)
-    function nurKopie(key, l) { kopie[key].liste = l.slice(); kopie[key].massgeblich = true; }
-    function ohneSchluessel(l, s) { return l.filter(function (e) { return e.schluessel !== s; }); }
-    function lesen() { return lesenAus(SCHLUESSEL); }
-    function schreiben(l) { return schreibenIn(SCHLUESSEL, l); }
     function reihenfolge(a, b) {
       var x = a.nr || 0, y = b.nr || 0;
       if (x !== y) return x - y;
@@ -173,7 +165,7 @@
     }
     function naechsteNr() {
       var m = 0;
-      lesen().concat(lesenAus(ABGELEHNT)).forEach(function (e) { if ((e.nr || 0) > m) m = e.nr; });
+      lesen().forEach(function (e) { if ((e.nr || 0) > m) m = e.nr; });
       return m + 1;
     }
     function neu(e) {
@@ -182,63 +174,61 @@
       var gespeichert = schreiben(l);
       return Object.assign({}, e, { gespeichert: gespeichert });
     }
-    function entfernen(s) { return schreiben(lesen().filter(function (e) { return e.schluessel !== s; })); }
+    function ohneSchluessel(l, s) { return l.filter(function (e) { return e.schluessel !== s; }); }
+    function entfernen(s) { return schreiben(ohneSchluessel(lesen(), s)); }
+    // Zurück auf den alten Stand, wenn ein Schreiben nicht klappte (die Kopie bleibt maßgeblich)
+    function zurueck(l) { kopie.liste = l.slice(); return false; }
+    function eigene(e) { return e.via === via; }
     function wartend(personId) {
-      return lesen().filter(function (e) { return e.via === via && (!personId || e.person_id === personId); }).sort(reihenfolge);
+      return lesen().filter(function (e) { return eigene(e) && !e.abgelehnt && (!personId || e.person_id === personId); }).sort(reihenfolge);
     }
+    // Eintrag plus status, fehler, am
     function abgelehnt() {
-      return lesenAus(ABGELEHNT).filter(function (e) { return e.via === via; }).sort(reihenfolge);
+      return lesen().filter(function (e) { return eigene(e) && e.abgelehnt; }).sort(reihenfolge).map(function (e) {
+        var r = Object.assign({}, e, e.abgelehnt); delete r.abgelehnt; return r;
+      });
     }
     function stempeln(personId, art) {
       return neu({ typ: 'stempeln', via: via, schluessel: uuid(), person_id: personId, art: art, zeit: new Date(jetzt()).toISOString() });
     }
     // Noch nicht gesendet: einfach weg (nur wenn das Schreiben klappt). Schon beim Office, gerade unterwegs oder
-    // nicht sicher gelöscht: Rücknahme hinten anstellen.
+    // nicht sicher gelöscht: Rücknahme hinten anstellen. Schon abgelehnt: entfernen, keine Rücknahme.
     function rueckgaengig(bezug, personId) {
       var l = lesen();
-      var i = l.findIndex(function (e) { return e.schluessel === bezug && e.via === via; });
-      if (i >= 0 && unterwegs !== bezug) {
+      var e = l.filter(function (x) { return x.schluessel === bezug && eigene(x); })[0];
+      if (e && e.abgelehnt) {
         if (schreiben(ohneSchluessel(l, bezug))) return { weg: true };
-        kopie[SCHLUESSEL].liste = l;   // Löschen nicht sicher: alten Stand halten (massgeblich bleibt, schreibenIn hat es gesetzt)
-      } else if (i < 0) {
-        // Schon abgelehnt: dort entfernen, keine Rücknahme (der Stempel steht nicht im Office)
-        var ab = lesenAus(ABGELEHNT);
-        if (ab.some(function (e) { return e.schluessel === bezug && e.via === via; })) {
-          if (schreibenIn(ABGELEHNT, ohneSchluessel(ab, bezug))) return { weg: true };
-          kopie[ABGELEHNT].liste = ab;
-          return { weg: false, grund: 'speicher' };
-        }
+        zurueck(l);
+        return { weg: false, grund: 'speicher' };
+      }
+      if (e && unterwegs !== bezug) {
+        if (schreiben(ohneSchluessel(l, bezug))) return { weg: true };
+        zurueck(l);   // Löschen nicht sicher: alten Stand halten
       }
       return neu({ typ: 'zuruecknehmen', via: via, schluessel: uuid(), person_id: personId, bezug_schluessel: bezug, zeit: new Date(jetzt()).toISOString() });
     }
     // Endgültig aus "abgelehnt" entfernen (z. B. weil Kubi die Zeit im Office nachgetragen hat). true, wenn gelöscht.
     function verwerfen(schluessel) {
-      var ab = lesenAus(ABGELEHNT);
-      if (!ab.some(function (e) { return e.schluessel === schluessel && e.via === via; })) return false;
-      if (schreibenIn(ABGELEHNT, ohneSchluessel(ab, schluessel))) return true;
-      kopie[ABGELEHNT].liste = ab;
-      return false;
-    }
-    // Abgelehnten Eintrag zurück in die Schlange (Schlüssel, Gerätezeit und nr bleiben) und senden. Promise: Ergebnis von abarbeiten, null wenn unbekannt.
-    function erneut(schluessel) {
-      var liste = lesenAus(ABGELEHNT);
-      var e = liste.filter(function (x) { return x.schluessel === schluessel && x.via === via; })[0];
-      if (!e) return Promise.resolve(null);
-      var rein = Object.assign({}, e); delete rein.status; delete rein.fehler; delete rein.am;
       var l = lesen();
-      if (!l.some(function (x) { return x.schluessel === schluessel; })) l.push(rein);
-      // Erst Ziel schreiben, dann Quelle leeren
-      if (schreiben(l)) schreibenIn(ABGELEHNT, ohneSchluessel(liste, schluessel));
-      else nurKopie(ABGELEHNT, ohneSchluessel(liste, schluessel));
+      if (!l.some(function (e) { return e.schluessel === schluessel && eigene(e) && e.abgelehnt; })) return false;
+      if (schreiben(ohneSchluessel(l, schluessel))) return true;
+      return zurueck(l);
+    }
+    // Abgelehnten Eintrag wieder in die Warteschlange (Schlüssel, Gerätezeit und nr bleiben) und senden. Promise: Ergebnis von abarbeiten, null wenn unbekannt.
+    function erneut(schluessel) {
+      var l = lesen(), gefunden = false;
+      var neuL = l.map(function (e) {
+        if (e.schluessel !== schluessel || !eigene(e) || !e.abgelehnt) return e;
+        gefunden = true; var r = Object.assign({}, e); delete r.abgelehnt; return r;
+      });
+      if (!gefunden) return Promise.resolve(null);
+      schreiben(neuL);
       return abarbeiten();
     }
-    // Aus der Schlange nach "abgelehnt": erst dort schreiben, dann aus der Schlange nehmen
     function ablehnen(e, status, code) {
-      var l = ohneSchluessel(lesenAus(ABGELEHNT), e.schluessel);
-      l.push(Object.assign({}, e, { status: status, fehler: code, am: new Date(jetzt()).toISOString() }));
-      var rest = ohneSchluessel(lesen(), e.schluessel);
-      if (schreibenIn(ABGELEHNT, l)) schreiben(rest);
-      else nurKopie(SCHLUESSEL, rest);
+      schreiben(lesen().map(function (x) {
+        return x.schluessel === e.schluessel ? Object.assign({}, x, { abgelehnt: { status: status, fehler: code, am: new Date(jetzt()).toISOString() } }) : x;
+      }));
     }
     async function lauf(ergebnisse) {
       var gesehen = {};
@@ -280,6 +270,7 @@
       if (laeuft) { nochmal = true; return laeuft; }
       laeuft = (async function () {
         var ergebnisse = [], gestoppt;
+        letzter = null;
         try {
           do { nochmal = false; gestoppt = await lauf(ergebnisse); } while (nochmal && !gestoppt);
         } catch (err) {
@@ -295,7 +286,7 @@
     return { stempeln: stempeln, rueckgaengig: rueckgaengig, wartend: wartend, abgelehnt: abgelehnt, erneut: erneut, verwerfen: verwerfen, abarbeiten: abarbeiten };
   }
 
-  var api = { SCHLUESSEL: SCHLUESSEL, ABGELEHNT: ABGELEHNT, uuidV4: uuidV4, warteschlange: warteschlange, vorlaeufig: vorlaeufig, knoepfe: knoepfe, standText: standText,
+  var api = { SCHLUESSEL: SCHLUESSEL, uuidV4: uuidV4, warteschlange: warteschlange, vorlaeufig: vorlaeufig, knoepfe: knoepfe, standText: standText,
     vergessenText: vergessenText, bestaetigung: bestaetigung, fehlerText: fehlerText, wartendText: wartendText, uhrzeit: uhrzeit, dauerText: dauerText, tagVon: tagVon };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else wurzel.GNCZeit = api;
